@@ -9,7 +9,7 @@ class TestLeagueStandings:
         """LeagueStandings uses sensible defaults."""
         endpoint = LeagueStandings()
 
-        assert endpoint.season == "2025-26"
+        assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
         assert endpoint.league_id == "00"
 
