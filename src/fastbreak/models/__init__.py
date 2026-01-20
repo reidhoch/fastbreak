@@ -60,6 +60,7 @@ from fastbreak.models.broadcaster import Broadcaster, Broadcasters
 from fastbreak.models.chart import Charts, ChartTeam
 from fastbreak.models.four_factors_statistics import FourFactorsStatistics
 from fastbreak.models.gravity_leader import GravityLeader, GravityLeadersResponse
+from fastbreak.models.league_standings import LeagueStandingsResponse, TeamStanding
 from fastbreak.models.matchup_statistics import MatchupStatistics
 from fastbreak.models.meeting import LastFiveMeetings, Meeting, MeetingTeam
 from fastbreak.models.meta import Meta
@@ -124,6 +125,7 @@ __all__ = [
     "GravityLeadersResponse",
     "InactivePlayer",
     "LastFiveMeetings",
+    "LeagueStandingsResponse",
     "MatchupOpponent",
     "MatchupStatistics",
     "MatchupsPlayer",
@@ -150,6 +152,7 @@ __all__ = [
     "SummaryTeam",
     "Team",
     "TeamPlayerTrackStatistics",
+    "TeamStanding",
     "TraditionalGroupStatistics",
     "TraditionalPlayer",
     "TraditionalStatistics",
