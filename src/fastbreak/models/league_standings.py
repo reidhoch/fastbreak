@@ -1,11 +1,10 @@
 """Models for the league standings endpoint."""
 
-from typing import Any, cast
+from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-# Define locally to avoid circular import from fastbreak.models
-type JSON = dict[str, JSON] | list[JSON] | str | int | float | bool | None
+from fastbreak.models.result_set import is_tabular_response, parse_result_set
 
 
 class TeamStanding(BaseModel):
@@ -169,16 +168,9 @@ class LeagueStandingsResponse(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def from_result_sets(cls, data: JSON) -> dict[str, list[dict[str, JSON]]]:
+    def from_result_sets(cls, data: object) -> dict[str, Any]:
         """Transform NBA's tabular resultSets format into structured data."""
-        if not isinstance(data, dict) or "resultSets" not in data:
-            return cast("dict[str, list[dict[str, JSON]]]", data)  # Already transformed
-
-        result_sets = cast("list[dict[str, Any]]", data["resultSets"])
-        result_set = result_sets[0]
-        headers = cast("list[str]", result_set["headers"])
-        rows = cast("list[list[JSON]]", result_set["rowSet"])
-
-        return {
-            "standings": [dict(zip(headers, row, strict=True)) for row in rows],
-        }
+        if not is_tabular_response(data):
+            return data  # type: ignore[return-value]
+        # is_tabular_response confirms data is dict with resultSets
+        return {"standings": parse_result_set(data)}  # type: ignore[arg-type]

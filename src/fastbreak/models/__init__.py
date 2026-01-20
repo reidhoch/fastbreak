@@ -77,6 +77,11 @@ from fastbreak.models.player_track_statistics import (
     PlayerTrackStatistics,
     TeamPlayerTrackStatistics,
 )
+from fastbreak.models.result_set import (
+    is_tabular_response,
+    parse_result_set,
+    parse_result_set_by_name,
+)
 from fastbreak.models.scoring_statistics import ScoringStatistics
 from fastbreak.models.summary_player import InactivePlayer, SummaryPlayer
 from fastbreak.models.summary_team import SummaryTeam
@@ -160,4 +165,7 @@ __all__ = [
     "UsagePlayer",
     "UsageStatistics",
     "UsageTeam",
+    "is_tabular_response",
+    "parse_result_set",
+    "parse_result_set_by_name",
 ]
