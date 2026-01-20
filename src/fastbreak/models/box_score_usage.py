@@ -1,0 +1,47 @@
+from pydantic import BaseModel
+
+from fastbreak.models.meta import Meta
+from fastbreak.models.usage_statistics import UsageStatistics
+
+
+class UsagePlayer(BaseModel):
+    """Player with usage statistics."""
+
+    personId: int
+    firstName: str
+    familyName: str
+    nameI: str
+    playerSlug: str
+    position: str
+    comment: str
+    jerseyNum: str
+    statistics: UsageStatistics
+
+
+class UsageTeam(BaseModel):
+    """Team with players and usage statistics."""
+
+    teamId: int
+    teamCity: str
+    teamName: str
+    teamTricode: str
+    teamSlug: str
+    players: list[UsagePlayer]
+    statistics: UsageStatistics
+
+
+class BoxScoreUsageData(BaseModel):
+    """Box score usage data for a game."""
+
+    gameId: str
+    awayTeamId: int
+    homeTeamId: int
+    homeTeam: UsageTeam
+    awayTeam: UsageTeam
+
+
+class BoxScoreUsageResponse(BaseModel):
+    """Response from the boxscoreusage endpoint."""
+
+    meta: Meta
+    boxScoreUsage: BoxScoreUsageData
