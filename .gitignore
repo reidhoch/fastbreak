@@ -8,3 +8,21 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Auto-generated version file (hatch-vcs)
+src/fastbreak/_version.py
+
+# Testing and coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Type checking and linting caches
+.mypy_cache/
+.ruff_cache/
+
+# macOS
+.DS_Store
+
+# Serena memories (optional: remove if you want to share project context)
+.serena/
