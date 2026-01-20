@@ -60,6 +60,7 @@ from fastbreak.models.broadcaster import Broadcaster, Broadcasters
 from fastbreak.models.chart import Charts, ChartTeam
 from fastbreak.models.four_factors_statistics import FourFactorsStatistics
 from fastbreak.models.gravity_leader import GravityLeader, GravityLeadersResponse
+from fastbreak.models.league_standings import LeagueStandingsResponse, TeamStanding
 from fastbreak.models.matchup_statistics import MatchupStatistics
 from fastbreak.models.meeting import LastFiveMeetings, Meeting, MeetingTeam
 from fastbreak.models.meta import Meta
@@ -75,6 +76,11 @@ from fastbreak.models.player import Player
 from fastbreak.models.player_track_statistics import (
     PlayerTrackStatistics,
     TeamPlayerTrackStatistics,
+)
+from fastbreak.models.result_set import (
+    is_tabular_response,
+    parse_result_set,
+    parse_result_set_by_name,
 )
 from fastbreak.models.scoring_statistics import ScoringStatistics
 from fastbreak.models.summary_player import InactivePlayer, SummaryPlayer
@@ -124,6 +130,7 @@ __all__ = [
     "GravityLeadersResponse",
     "InactivePlayer",
     "LastFiveMeetings",
+    "LeagueStandingsResponse",
     "MatchupOpponent",
     "MatchupStatistics",
     "MatchupsPlayer",
@@ -150,6 +157,7 @@ __all__ = [
     "SummaryTeam",
     "Team",
     "TeamPlayerTrackStatistics",
+    "TeamStanding",
     "TraditionalGroupStatistics",
     "TraditionalPlayer",
     "TraditionalStatistics",
@@ -157,4 +165,7 @@ __all__ = [
     "UsagePlayer",
     "UsageStatistics",
     "UsageTeam",
+    "is_tabular_response",
+    "parse_result_set",
+    "parse_result_set_by_name",
 ]

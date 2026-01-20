@@ -9,6 +9,7 @@ from fastbreak.endpoints.box_score_summary import BoxScoreSummary
 from fastbreak.endpoints.box_score_traditional import BoxScoreTraditional
 from fastbreak.endpoints.box_score_usage import BoxScoreUsage
 from fastbreak.endpoints.gravity_leaders import GravityLeaders
+from fastbreak.endpoints.league_standings import LeagueStandings
 from fastbreak.endpoints.play_by_play import PlayByPlay
 
 __all__ = [
@@ -24,5 +25,6 @@ __all__ = [
     "Endpoint",
     "GameEndpoint",
     "GravityLeaders",
+    "LeagueStandings",
     "PlayByPlay",
 ]
