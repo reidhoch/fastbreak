@@ -1,8 +1,12 @@
-from fastbreak.endpoints.base import GameEndpoint
+from dataclasses import dataclass
+from typing import ClassVar
+
+from fastbreak.endpoints.base import Endpoint
 from fastbreak.models import BoxScoreMiscResponse
 
 
-class BoxScoreMisc(GameEndpoint[BoxScoreMiscResponse]):
+@dataclass
+class BoxScoreMisc(Endpoint[BoxScoreMiscResponse]):
     """Fetch miscellaneous box score statistics for a game.
 
     This endpoint provides miscellaneous statistics including points
@@ -10,5 +14,11 @@ class BoxScoreMisc(GameEndpoint[BoxScoreMiscResponse]):
     off turnovers for both player and team levels.
     """
 
-    path = "boxscoremiscv3"
-    response_model = BoxScoreMiscResponse
+    path: ClassVar[str] = "boxscoremiscv3"
+    response_model: ClassVar[type[BoxScoreMiscResponse]] = BoxScoreMiscResponse
+
+    game_id: str
+
+    def params(self) -> dict[str, str]:
+        """Return the query parameters for this endpoint."""
+        return {"GameID": self.game_id}

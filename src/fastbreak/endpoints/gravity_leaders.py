@@ -1,7 +1,11 @@
+from dataclasses import dataclass
+from typing import ClassVar
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models import GravityLeadersResponse
 
 
+@dataclass
 class GravityLeaders(Endpoint[GravityLeadersResponse]):
     """Fetch gravity leaders for a given season.
 
@@ -9,20 +13,15 @@ class GravityLeaders(Endpoint[GravityLeadersResponse]):
     based on how close defenders stay to them.
     """
 
-    path = "gravityleaders"
-    response_model = GravityLeadersResponse
+    path: ClassVar[str] = "gravityleaders"
+    response_model: ClassVar[type[GravityLeadersResponse]] = GravityLeadersResponse
 
-    def __init__(
-        self,
-        season: str = "2024-25",
-        season_type: str = "Regular Season",
-        league_id: str = "00",
-    ) -> None:
-        self.season = season
-        self.season_type = season_type
-        self.league_id = league_id
+    season: str = "2024-25"
+    season_type: str = "Regular Season"
+    league_id: str = "00"
 
     def params(self) -> dict[str, str]:
+        """Return the query parameters for this endpoint."""
         return {
             "LeagueID": self.league_id,
             "Season": self.season,
