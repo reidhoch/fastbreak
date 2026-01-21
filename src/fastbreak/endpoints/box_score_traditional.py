@@ -1,12 +1,10 @@
-from dataclasses import dataclass
 from typing import ClassVar
 
-from fastbreak.endpoints.base import Endpoint
+from fastbreak.endpoints.base import GameIdEndpoint
 from fastbreak.models import BoxScoreTraditionalResponse
 
 
-@dataclass(frozen=True)
-class BoxScoreTraditional(Endpoint[BoxScoreTraditionalResponse]):
+class BoxScoreTraditional(GameIdEndpoint[BoxScoreTraditionalResponse]):
     """Fetch traditional box score statistics for a game.
 
     This endpoint provides standard box score statistics including
@@ -19,9 +17,3 @@ class BoxScoreTraditional(Endpoint[BoxScoreTraditionalResponse]):
     response_model: ClassVar[type[BoxScoreTraditionalResponse]] = (
         BoxScoreTraditionalResponse
     )
-
-    game_id: str
-
-    def params(self) -> dict[str, str]:
-        """Return the query parameters for this endpoint."""
-        return {"GameID": self.game_id}

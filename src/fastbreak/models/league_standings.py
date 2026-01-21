@@ -1,10 +1,8 @@
 """Models for the league standings endpoint."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
-from fastbreak.models.result_set import is_tabular_response, parse_result_set
+from fastbreak.models.result_set import tabular_validator
 
 
 class TeamStanding(BaseModel):
@@ -166,11 +164,4 @@ class LeagueStandingsResponse(BaseModel):
 
     standings: list[TeamStanding]
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-        # is_tabular_response confirms data is dict with resultSets
-        return {"standings": parse_result_set(data)}  # type: ignore[arg-type]
+    from_result_sets = model_validator(mode="before")(tabular_validator("standings"))
