@@ -5,7 +5,7 @@ from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.play_by_play import PlayByPlayResponse
 
 
-@dataclass
+@dataclass(frozen=True)
 class PlayByPlay(Endpoint[PlayByPlayResponse]):
     """Fetch play-by-play data for a game.
 

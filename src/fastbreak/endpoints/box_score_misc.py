@@ -5,7 +5,7 @@ from fastbreak.endpoints.base import Endpoint
 from fastbreak.models import BoxScoreMiscResponse
 
 
-@dataclass
+@dataclass(frozen=True)
 class BoxScoreMisc(Endpoint[BoxScoreMiscResponse]):
     """Fetch miscellaneous box score statistics for a game.
 

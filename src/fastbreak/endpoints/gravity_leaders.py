@@ -5,7 +5,7 @@ from fastbreak.endpoints.base import Endpoint
 from fastbreak.models import GravityLeadersResponse
 
 
-@dataclass
+@dataclass(frozen=True)
 class GravityLeaders(Endpoint[GravityLeadersResponse]):
     """Fetch gravity leaders for a given season.
 

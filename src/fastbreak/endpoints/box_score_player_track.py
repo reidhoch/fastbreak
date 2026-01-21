@@ -5,7 +5,7 @@ from fastbreak.endpoints.base import Endpoint
 from fastbreak.models import BoxScorePlayerTrackResponse
 
 
-@dataclass
+@dataclass(frozen=True)
 class BoxScorePlayerTrack(Endpoint[BoxScorePlayerTrackResponse]):
     """Fetch player tracking statistics for a game.
 

@@ -5,7 +5,7 @@ from fastbreak.endpoints.base import Endpoint
 from fastbreak.models import BoxScoreTraditionalResponse
 
 
-@dataclass
+@dataclass(frozen=True)
 class BoxScoreTraditional(Endpoint[BoxScoreTraditionalResponse]):
     """Fetch traditional box score statistics for a game.
 
