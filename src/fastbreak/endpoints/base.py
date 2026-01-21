@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import ClassVar
 
 from pydantic import BaseModel
@@ -27,3 +28,18 @@ class Endpoint[T: BaseModel](ABC):
     def parse_response(self, data: JSON) -> T:
         """Parse the API response into the response model."""
         return self.response_model.model_validate(data)
+
+
+@dataclass(frozen=True)
+class GameIdEndpoint[T: BaseModel](Endpoint[T]):
+    """Base class for endpoints that only require a game_id parameter.
+
+    This covers all box score endpoints and similar single-game queries.
+    Subclasses only need to define path and response_model.
+    """
+
+    game_id: str
+
+    def params(self) -> dict[str, str]:
+        """Return the query parameters for this endpoint."""
+        return {"GameID": self.game_id}

@@ -1,12 +1,10 @@
-from dataclasses import dataclass
 from typing import ClassVar
 
-from fastbreak.endpoints.base import Endpoint
+from fastbreak.endpoints.base import GameIdEndpoint
 from fastbreak.models import BoxScoreScoringResponse
 
 
-@dataclass(frozen=True)
-class BoxScoreScoring(Endpoint[BoxScoreScoringResponse]):
+class BoxScoreScoring(GameIdEndpoint[BoxScoreScoringResponse]):
     """Fetch scoring distribution statistics for a game.
 
     This endpoint provides percentage breakdowns of how points are
@@ -16,9 +14,3 @@ class BoxScoreScoring(Endpoint[BoxScoreScoringResponse]):
 
     path: ClassVar[str] = "boxscorescoringv3"
     response_model: ClassVar[type[BoxScoreScoringResponse]] = BoxScoreScoringResponse
-
-    game_id: str
-
-    def params(self) -> dict[str, str]:
-        """Return the query parameters for this endpoint."""
-        return {"GameID": self.game_id}
