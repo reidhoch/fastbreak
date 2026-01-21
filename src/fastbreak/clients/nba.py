@@ -2,12 +2,30 @@ from asyncio import Lock
 from types import TracebackType
 from typing import ClassVar, Self, TypeVar
 
-from aiohttp import ClientSession, ClientTimeout, TCPConnector
+from aiohttp import ClientResponseError, ClientSession, ClientTimeout, TCPConnector
 from pydantic import BaseModel
+from tenacity import (
+    AsyncRetrying,
+    retry_if_exception,
+    stop_after_attempt,
+    wait_exponential_jitter,
+)
 
 from fastbreak.endpoints.base import Endpoint
 
 T = TypeVar("T", bound=BaseModel)
+
+HTTP_TOO_MANY_REQUESTS = 429
+HTTP_SERVER_ERROR_MIN = 500
+
+
+def _is_retryable_error(exc: BaseException) -> bool:
+    """Check if an exception should trigger a retry."""
+    if isinstance(exc, ClientResponseError):
+        return (
+            exc.status == HTTP_TOO_MANY_REQUESTS or exc.status >= HTTP_SERVER_ERROR_MIN
+        )
+    return isinstance(exc, (TimeoutError, OSError))
 
 
 class NBAClient:
@@ -33,11 +51,20 @@ class NBAClient:
         self,
         session: ClientSession | None = None,
         timeout: ClientTimeout | None = None,
+        max_retries: int = 3,
+        retry_wait_min: float = 1.0,
+        retry_wait_max: float = 10.0,
     ) -> None:
         self._session = session
         self._owns_session = session is None
         self._timeout = timeout or ClientTimeout(total=30)
         self._session_lock = Lock()
+        self._retry = AsyncRetrying(
+            stop=stop_after_attempt(max_retries + 1),
+            wait=wait_exponential_jitter(initial=retry_wait_min, max=retry_wait_max),
+            retry=retry_if_exception(_is_retryable_error),
+            reraise=True,
+        )
 
     async def _get_session(self) -> ClientSession:
         async with self._session_lock:
@@ -83,7 +110,14 @@ class NBAClient:
         """
         session = await self._get_session()
         url = f"{self.BASE_URL}/{endpoint.path}"
-        async with session.get(url, params=endpoint.params()) as resp:
-            resp.raise_for_status()
-            data = await resp.json()
-            return endpoint.parse_response(data)
+
+        async for attempt in self._retry:
+            with attempt:
+                async with session.get(url, params=endpoint.params()) as resp:
+                    resp.raise_for_status()
+                    data = await resp.json()
+                    return endpoint.parse_response(data)
+
+        # This line is unreachable due to reraise=True, but satisfies the type checker
+        msg = "Retry loop exited unexpectedly"
+        raise RuntimeError(msg)
