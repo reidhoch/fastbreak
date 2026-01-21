@@ -196,3 +196,227 @@ class TestNBAClientSession:
 
         assert client._session is None
         mock_session.close.assert_called_once()
+
+
+class TestNBAClientRetry:
+    """Tests for retry logic."""
+
+    @pytest.fixture
+    def mock_success_response(self, mock_play_by_play_response):
+        """Create a successful mock response."""
+        response = AsyncMock()
+        response.raise_for_status = MagicMock()
+        response.json = AsyncMock(return_value=mock_play_by_play_response)
+        response.__aenter__ = AsyncMock(return_value=response)
+        response.__aexit__ = AsyncMock(return_value=None)
+        return response
+
+    @pytest.fixture
+    def mock_error_response(self):
+        """Create a factory for error responses."""
+        from aiohttp import ClientResponseError, RequestInfo
+        from multidict import CIMultiDict
+        from yarl import URL
+
+        def _make_error(status: int):
+            request_info = RequestInfo(
+                url=URL("https://stats.nba.com/stats/test"),
+                method="GET",
+                headers=CIMultiDict(),
+                real_url=URL("https://stats.nba.com/stats/test"),
+            )
+            return ClientResponseError(
+                request_info=request_info,
+                history=(),
+                status=status,
+            )
+
+        return _make_error
+
+    @pytest.mark.asyncio
+    async def test_retries_on_429(
+        self, mock_success_response, mock_error_response, mock_play_by_play_response
+    ):
+        """Retry on 429 rate limit error."""
+        call_count = 0
+
+        def side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count < 3:
+                error_response = AsyncMock()
+                error_response.raise_for_status = MagicMock(
+                    side_effect=mock_error_response(429)
+                )
+                error_response.__aenter__ = AsyncMock(return_value=error_response)
+                error_response.__aexit__ = AsyncMock(return_value=None)
+                return error_response
+            return mock_success_response
+
+        mock_session = MagicMock(spec=ClientSession)
+        mock_session.get = MagicMock(side_effect=side_effect)
+
+        client = NBAClient(
+            session=mock_session, retry_wait_min=0.01, retry_wait_max=0.02
+        )
+        endpoint = PlayByPlay("0022500571")
+
+        result = await client.get(endpoint)
+
+        assert call_count == 3
+        assert isinstance(result, PlayByPlayResponse)
+
+    @pytest.mark.asyncio
+    async def test_retries_on_500(
+        self, mock_success_response, mock_error_response, mock_play_by_play_response
+    ):
+        """Retry on 500 server error."""
+        call_count = 0
+
+        def side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                error_response = AsyncMock()
+                error_response.raise_for_status = MagicMock(
+                    side_effect=mock_error_response(500)
+                )
+                error_response.__aenter__ = AsyncMock(return_value=error_response)
+                error_response.__aexit__ = AsyncMock(return_value=None)
+                return error_response
+            return mock_success_response
+
+        mock_session = MagicMock(spec=ClientSession)
+        mock_session.get = MagicMock(side_effect=side_effect)
+
+        client = NBAClient(
+            session=mock_session, retry_wait_min=0.01, retry_wait_max=0.02
+        )
+        endpoint = PlayByPlay("0022500571")
+
+        result = await client.get(endpoint)
+
+        assert call_count == 2
+        assert isinstance(result, PlayByPlayResponse)
+
+    @pytest.mark.asyncio
+    async def test_retries_on_timeout(
+        self, mock_success_response, mock_play_by_play_response
+    ):
+        """Retry on timeout error."""
+        call_count = 0
+
+        def side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                error_response = AsyncMock()
+                error_response.__aenter__ = AsyncMock(
+                    side_effect=TimeoutError("Connection timed out")
+                )
+                error_response.__aexit__ = AsyncMock(return_value=None)
+                return error_response
+            return mock_success_response
+
+        mock_session = MagicMock(spec=ClientSession)
+        mock_session.get = MagicMock(side_effect=side_effect)
+
+        client = NBAClient(
+            session=mock_session, retry_wait_min=0.01, retry_wait_max=0.02
+        )
+        endpoint = PlayByPlay("0022500571")
+
+        result = await client.get(endpoint)
+
+        assert call_count == 2
+        assert isinstance(result, PlayByPlayResponse)
+
+    @pytest.mark.asyncio
+    async def test_no_retry_on_404(self, mock_error_response):
+        """No retry on 404 client error."""
+        from aiohttp import ClientResponseError
+
+        error_response = AsyncMock()
+        error_response.raise_for_status = MagicMock(
+            side_effect=mock_error_response(404)
+        )
+        error_response.__aenter__ = AsyncMock(return_value=error_response)
+        error_response.__aexit__ = AsyncMock(return_value=None)
+
+        mock_session = MagicMock(spec=ClientSession)
+        mock_session.get = MagicMock(return_value=error_response)
+
+        client = NBAClient(
+            session=mock_session, retry_wait_min=0.01, retry_wait_max=0.02
+        )
+        endpoint = PlayByPlay("0022500571")
+
+        with pytest.raises(ClientResponseError) as exc_info:
+            await client.get(endpoint)
+
+        assert exc_info.value.status == 404
+        assert mock_session.get.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_no_retry_on_401(self, mock_error_response):
+        """No retry on 401 auth error."""
+        from aiohttp import ClientResponseError
+
+        error_response = AsyncMock()
+        error_response.raise_for_status = MagicMock(
+            side_effect=mock_error_response(401)
+        )
+        error_response.__aenter__ = AsyncMock(return_value=error_response)
+        error_response.__aexit__ = AsyncMock(return_value=None)
+
+        mock_session = MagicMock(spec=ClientSession)
+        mock_session.get = MagicMock(return_value=error_response)
+
+        client = NBAClient(
+            session=mock_session, retry_wait_min=0.01, retry_wait_max=0.02
+        )
+        endpoint = PlayByPlay("0022500571")
+
+        with pytest.raises(ClientResponseError) as exc_info:
+            await client.get(endpoint)
+
+        assert exc_info.value.status == 401
+        assert mock_session.get.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_exhausted_retries_raises(self, mock_error_response):
+        """Exception raised after max retries exhausted."""
+        from aiohttp import ClientResponseError
+
+        error_response = AsyncMock()
+        error_response.raise_for_status = MagicMock(
+            side_effect=mock_error_response(429)
+        )
+        error_response.__aenter__ = AsyncMock(return_value=error_response)
+        error_response.__aexit__ = AsyncMock(return_value=None)
+
+        mock_session = MagicMock(spec=ClientSession)
+        mock_session.get = MagicMock(return_value=error_response)
+
+        # max_retries=2 means 3 total attempts (1 initial + 2 retries)
+        client = NBAClient(
+            session=mock_session,
+            max_retries=2,
+            retry_wait_min=0.01,
+            retry_wait_max=0.02,
+        )
+        endpoint = PlayByPlay("0022500571")
+
+        with pytest.raises(ClientResponseError) as exc_info:
+            await client.get(endpoint)
+
+        assert exc_info.value.status == 429
+        assert mock_session.get.call_count == 3
+
+    def test_custom_retry_config(self):
+        """Custom retry parameters are stored correctly."""
+        client = NBAClient(max_retries=5, retry_wait_min=2.0, retry_wait_max=30.0)
+
+        # Verify the retry config was built with correct stop condition
+        # stop_after_attempt(6) since max_retries=5 means 6 total attempts
+        assert client._retry.stop.max_attempt_number == 6
