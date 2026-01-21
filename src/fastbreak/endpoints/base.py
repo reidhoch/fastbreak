@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import ClassVar
 
 from pydantic import BaseModel
 
@@ -8,14 +9,15 @@ from fastbreak.models import JSON
 class Endpoint[T: BaseModel](ABC):
     """Base class for NBA API endpoints.
 
-    Each endpoint defines:
-    - path: The URL path segment (e.g., "gravityleaders")
-    - response_model: The Pydantic model to parse the response
-    - params(): Method returning the query parameters
+    Subclasses should be decorated with @dataclass and define:
+    - path: ClassVar[str] - The URL path segment (e.g., "gravityleaders")
+    - response_model: ClassVar - The Pydantic model to parse the response
+    - Instance fields for query parameters
+    - params(): Method returning the query parameters dict
     """
 
-    path: str
-    response_model: type[T]
+    path: ClassVar[str]
+    response_model: ClassVar[type[T]]
 
     @abstractmethod
     def params(self) -> dict[str, str]:
@@ -25,17 +27,3 @@ class Endpoint[T: BaseModel](ABC):
     def parse_response(self, data: JSON) -> T:
         """Parse the API response into the response model."""
         return self.response_model.model_validate(data)
-
-
-class GameEndpoint[T: BaseModel](Endpoint[T]):
-    """Base class for endpoints that accept a game_id parameter.
-
-    This simplifies endpoints that only need a game ID by providing
-    a common __init__ and params implementation.
-    """
-
-    def __init__(self, game_id: str) -> None:
-        self.game_id = game_id
-
-    def params(self) -> dict[str, str]:
-        return {"GameID": self.game_id}

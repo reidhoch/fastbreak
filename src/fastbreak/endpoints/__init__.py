@@ -1,4 +1,4 @@
-from fastbreak.endpoints.base import Endpoint, GameEndpoint
+from fastbreak.endpoints.base import Endpoint
 from fastbreak.endpoints.box_score_advanced import BoxScoreAdvanced
 from fastbreak.endpoints.box_score_four_factors import BoxScoreFourFactors
 from fastbreak.endpoints.box_score_matchups import BoxScoreMatchups
@@ -23,7 +23,6 @@ __all__ = [
     "BoxScoreTraditional",
     "BoxScoreUsage",
     "Endpoint",
-    "GameEndpoint",
     "GravityLeaders",
     "LeagueStandings",
     "PlayByPlay",

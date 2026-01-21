@@ -9,11 +9,7 @@ description = "Add your description here"
 readme = "README.md"
 authors = [{ name = "Reid Hochstedler", email = "reidhoch@gmail.com" }]
 requires-python = ">=3.12"
-dependencies = [
-    "aiodns>=4.0",
-    "aiohttp>=3.13",
-    "pydantic>=2.12",
-]
+dependencies = ["aiodns>=4.0", "aiohttp>=3.13", "pydantic>=2.12"]
 
 [tool.hatch.version]
 source = "vcs"
@@ -34,7 +30,7 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 exclude = ["tests/**/*"]
 select = ["ALL"]
-ignore = ["D", "E501", "N815"]
+ignore = ["COM812", "D", "E501", "N815"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["fastbreak"]
