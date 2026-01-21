@@ -5,7 +5,7 @@ from fastbreak.endpoints.base import Endpoint
 from fastbreak.models import BoxScoreScoringResponse
 
 
-@dataclass
+@dataclass(frozen=True)
 class BoxScoreScoring(Endpoint[BoxScoreScoringResponse]):
     """Fetch scoring distribution statistics for a game.
 

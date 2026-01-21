@@ -5,7 +5,7 @@ from fastbreak.endpoints.base import Endpoint
 from fastbreak.models import BoxScoreAdvancedResponse
 
 
-@dataclass
+@dataclass(frozen=True)
 class BoxScoreAdvanced(Endpoint[BoxScoreAdvancedResponse]):
     """Fetch advanced box score statistics for a game.
 

@@ -7,7 +7,7 @@ from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.league_standings import LeagueStandingsResponse
 
 
-@dataclass
+@dataclass(frozen=True)
 class LeagueStandings(Endpoint[LeagueStandingsResponse]):
     """Fetch NBA league standings.
 

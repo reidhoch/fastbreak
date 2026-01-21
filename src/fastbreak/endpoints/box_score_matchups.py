@@ -5,7 +5,7 @@ from fastbreak.endpoints.base import Endpoint
 from fastbreak.models import BoxScoreMatchupsResponse
 
 
-@dataclass
+@dataclass(frozen=True)
 class BoxScoreMatchups(Endpoint[BoxScoreMatchupsResponse]):
     """Fetch player-vs-player defensive matchup statistics for a game.
 
