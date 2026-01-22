@@ -1,9 +1,11 @@
+from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import GameIdEndpoint
 from fastbreak.models import BoxScoreUsageResponse
 
 
+@dataclass(frozen=True)
 class BoxScoreUsage(GameIdEndpoint[BoxScoreUsageResponse]):
     """Fetch usage percentage statistics for a game.
 

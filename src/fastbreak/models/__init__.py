@@ -137,7 +137,7 @@ if TYPE_CHECKING:
     from fastbreak.models.four_factors_statistics import (
         FourFactorsStatistics as FourFactorsStatistics,
     )
-    from fastbreak.models.gravity_leader import (
+    from fastbreak.models.gravity_leaders import (
         GravityLeader as GravityLeader,
         GravityLeadersResponse as GravityLeadersResponse,
     )

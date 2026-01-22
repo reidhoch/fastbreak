@@ -1,9 +1,11 @@
+from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import GameIdEndpoint
 from fastbreak.models import BoxScoreAdvancedResponse
 
 
+@dataclass(frozen=True)
 class BoxScoreAdvanced(GameIdEndpoint[BoxScoreAdvancedResponse]):
     """Fetch advanced box score statistics for a game.
 

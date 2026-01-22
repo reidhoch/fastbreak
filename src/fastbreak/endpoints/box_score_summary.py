@@ -1,9 +1,11 @@
+from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import GameIdEndpoint
 from fastbreak.models import BoxScoreSummaryResponse
 
 
+@dataclass(frozen=True)
 class BoxScoreSummary(GameIdEndpoint[BoxScoreSummaryResponse]):
     """Fetch box score summary for a game.
 
