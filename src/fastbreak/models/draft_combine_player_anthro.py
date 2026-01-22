@@ -44,7 +44,7 @@ class AnthroPlayer(BaseModel):
 class DraftCombinePlayerAnthroResponse(BaseModel):
     """Response from the draft combine player anthro endpoint."""
 
-    players: list[AnthroPlayer] = Field(default_factory=list[AnthroPlayer])
+    players: list[AnthroPlayer] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod

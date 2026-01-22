@@ -29,7 +29,7 @@ class DraftPick(BaseModel):
 class DraftHistoryResponse(BaseModel):
     """Response from the draft history endpoint."""
 
-    picks: list[DraftPick] = Field(default_factory=list[DraftPick])
+    picks: list[DraftPick] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod

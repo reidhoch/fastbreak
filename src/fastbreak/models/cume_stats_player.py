@@ -99,9 +99,7 @@ class CumeStatsPlayerResponse(BaseModel):
     - total_player_stats: Cumulative totals across all specified games
     """
 
-    game_by_game_stats: list[GameByGameStat] = Field(
-        default_factory=list[GameByGameStat]
-    )
+    game_by_game_stats: list[GameByGameStat] = Field(default_factory=list)
     total_player_stats: TotalPlayerStat | None = None
 
     from_result_sets = model_validator(mode="before")(

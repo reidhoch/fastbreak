@@ -27,8 +27,8 @@ class RotationEntry(BaseModel):
 class GameRotationResponse(BaseModel):
     """Response from the game rotation endpoint."""
 
-    away_team: list[RotationEntry] = Field(default_factory=list[RotationEntry])
-    home_team: list[RotationEntry] = Field(default_factory=list[RotationEntry])
+    away_team: list[RotationEntry] = Field(default_factory=list)
+    home_team: list[RotationEntry] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod

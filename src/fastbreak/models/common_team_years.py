@@ -18,6 +18,6 @@ class TeamYear(BaseModel):
 class CommonTeamYearsResponse(BaseModel):
     """Response from the commonteamyears endpoint."""
 
-    teams: list[TeamYear] = Field(default_factory=list[TeamYear])
+    teams: list[TeamYear] = Field(default_factory=list)
 
     from_result_sets = model_validator(mode="before")(tabular_validator("teams"))

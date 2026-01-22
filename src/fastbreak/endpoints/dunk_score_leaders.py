@@ -1,3 +1,5 @@
+"""Endpoint for fetching dunk score leaders."""
+
 from dataclasses import dataclass
 from typing import ClassVar
 

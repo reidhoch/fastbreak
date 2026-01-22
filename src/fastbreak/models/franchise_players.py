@@ -49,7 +49,7 @@ class FranchisePlayer(BaseModel):
 class FranchisePlayersResponse(BaseModel):
     """Response from the franchise players endpoint."""
 
-    players: list[FranchisePlayer] = Field(default_factory=list[FranchisePlayer])
+    players: list[FranchisePlayer] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod

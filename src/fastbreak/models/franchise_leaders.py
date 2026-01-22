@@ -29,7 +29,7 @@ class FranchiseLeader(BaseModel):
 class FranchiseLeadersResponse(BaseModel):
     """Response from the franchise leaders endpoint."""
 
-    leaders: list[FranchiseLeader] = Field(default_factory=list[FranchiseLeader])
+    leaders: list[FranchiseLeader] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
