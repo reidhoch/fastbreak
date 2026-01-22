@@ -2,10 +2,11 @@
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.result_set import tabular_validator
 
 
-class TeamStanding(BaseModel):
+class TeamStanding(PandasMixin, PolarsMixin):
     """A single team's standings entry."""
 
     # Team identification

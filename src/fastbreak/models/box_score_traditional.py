@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+from fastbreak.models.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.meta import Meta
 from fastbreak.models.traditional_statistics import (
     TraditionalGroupStatistics,
@@ -7,7 +8,7 @@ from fastbreak.models.traditional_statistics import (
 )
 
 
-class TraditionalPlayer(BaseModel):
+class TraditionalPlayer(PandasMixin, PolarsMixin):
     """Player with traditional statistics."""
 
     personId: int

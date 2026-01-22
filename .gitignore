@@ -24,5 +24,16 @@ htmlcov/
 # macOS
 .DS_Store
 
+# IDE
+.vscode/
+.idea/
+
+# Environment variables
+.env
+.env.*
+
 # Serena memories (optional: remove if you want to share project context)
 .serena/
+
+# Claude
+.claude/
