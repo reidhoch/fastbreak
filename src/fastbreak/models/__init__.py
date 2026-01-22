@@ -134,8 +134,49 @@ if TYPE_CHECKING:
         PandasMixin as PandasMixin,
         PolarsMixin as PolarsMixin,
     )
+    from fastbreak.models.draft_combine_drill_results import (
+        DraftCombineDrillResultsResponse as DraftCombineDrillResultsResponse,
+        DrillResultsPlayer as DrillResultsPlayer,
+    )
+    from fastbreak.models.draft_combine_nonstationary_shooting import (
+        DraftCombineNonstationaryShootingResponse as DraftCombineNonstationaryShootingResponse,
+        NonstationaryShootingPlayer as NonstationaryShootingPlayer,
+    )
+    from fastbreak.models.draft_combine_player_anthro import (
+        AnthroPlayer as AnthroPlayer,
+        DraftCombinePlayerAnthroResponse as DraftCombinePlayerAnthroResponse,
+    )
+    from fastbreak.models.draft_combine_spot_shooting import (
+        DraftCombineSpotShootingResponse as DraftCombineSpotShootingResponse,
+        SpotShootingPlayer as SpotShootingPlayer,
+    )
+    from fastbreak.models.draft_combine_stats import (
+        CombinePlayer as CombinePlayer,
+        DraftCombineStatsResponse as DraftCombineStatsResponse,
+    )
+    from fastbreak.models.draft_history import (
+        DraftHistoryResponse as DraftHistoryResponse,
+        DraftPick as DraftPick,
+    )
+    from fastbreak.models.dunk_score_leaders import (
+        Dunk as Dunk,
+        DunkScoreLeadersResponse as DunkScoreLeadersResponse,
+    )
     from fastbreak.models.four_factors_statistics import (
         FourFactorsStatistics as FourFactorsStatistics,
+    )
+    from fastbreak.models.franchise_history import (
+        Franchise as Franchise,
+        FranchiseHistoryResponse as FranchiseHistoryResponse,
+    )
+    from fastbreak.models.franchise_leaders import (
+        FranchiseLeader as FranchiseLeader,
+        FranchiseLeadersResponse as FranchiseLeadersResponse,
+        StatLeader as StatLeader,
+    )
+    from fastbreak.models.franchise_players import (
+        FranchisePlayer as FranchisePlayer,
+        FranchisePlayersResponse as FranchisePlayersResponse,
     )
     from fastbreak.models.gravity_leaders import (
         GravityLeader as GravityLeader,
