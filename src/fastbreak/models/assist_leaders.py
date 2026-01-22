@@ -38,8 +38,10 @@ class AssistLeadersResponse(BaseModel):
     PlayerOrTeam parameter used in the request.
     """
 
-    team_leaders: list[TeamAssistLeader] = Field(default_factory=list)
-    player_leaders: list[PlayerAssistLeader] = Field(default_factory=list)
+    team_leaders: list[TeamAssistLeader] = Field(default_factory=list[TeamAssistLeader])
+    player_leaders: list[PlayerAssistLeader] = Field(
+        default_factory=list[PlayerAssistLeader]
+    )
 
     @model_validator(mode="before")
     @classmethod

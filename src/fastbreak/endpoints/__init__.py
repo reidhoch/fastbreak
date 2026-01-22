@@ -68,6 +68,34 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.cume_stats_team_games import (
         CumeStatsTeamGames as CumeStatsTeamGames,
     )
+    from fastbreak.endpoints.draft_combine_drill_results import (
+        DraftCombineDrillResults as DraftCombineDrillResults,
+    )
+    from fastbreak.endpoints.draft_combine_nonstationary_shooting import (
+        DraftCombineNonstationaryShooting as DraftCombineNonstationaryShooting,
+    )
+    from fastbreak.endpoints.draft_combine_player_anthro import (
+        DraftCombinePlayerAnthro as DraftCombinePlayerAnthro,
+    )
+    from fastbreak.endpoints.draft_combine_spot_shooting import (
+        DraftCombineSpotShooting as DraftCombineSpotShooting,
+    )
+    from fastbreak.endpoints.draft_combine_stats import (
+        DraftCombineStats as DraftCombineStats,
+    )
+    from fastbreak.endpoints.draft_history import DraftHistory as DraftHistory
+    from fastbreak.endpoints.dunk_score_leaders import (
+        DunkScoreLeaders as DunkScoreLeaders,
+    )
+    from fastbreak.endpoints.franchise_history import (
+        FranchiseHistory as FranchiseHistory,
+    )
+    from fastbreak.endpoints.franchise_leaders import (
+        FranchiseLeaders as FranchiseLeaders,
+    )
+    from fastbreak.endpoints.franchise_players import (
+        FranchisePlayers as FranchisePlayers,
+    )
     from fastbreak.endpoints.gravity_leaders import GravityLeaders as GravityLeaders
     from fastbreak.endpoints.league_standings import (
         LeagueStandings as LeagueStandings,
