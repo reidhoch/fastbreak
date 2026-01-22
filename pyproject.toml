@@ -9,7 +9,12 @@ description = "Add your description here"
 readme = "README.md"
 authors = [{ name = "Reid Hochstedler", email = "reidhoch@gmail.com" }]
 requires-python = ">=3.12"
-dependencies = ["aiodns>=4.0", "aiohttp>=3.13", "pydantic>=2.12", "tenacity>=8.0"]
+dependencies = [
+    "aiodns>=4.0",
+    "aiohttp>=3.13",
+    "pydantic>=2.12",
+    "tenacity>=8.0",
+]
 
 [tool.hatch.version]
 source = "vcs"
@@ -26,9 +31,10 @@ artifacts = ["src/fastbreak/py.typed"]
 target-version = "py312"
 line-length = 88
 src = ["src", "tests"]
+exclude = ["src/fastbreak/_version.py"]
 
 [tool.ruff.lint]
-exclude = ["tests/**/*"]
+exclude = ["tests/**/*", "src/fastbreak/_version.py"]
 select = ["ALL"]
 ignore = ["COM812", "D", "E501", "N815"]
 
@@ -61,10 +67,12 @@ src_paths = ["src", "tests"]
 
 [dependency-groups]
 dev = [
-    "mypy>=1.15",
+    "mypy>=1.19.1",
     "pre-commit>=4.5",
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
     "pytest-cov>=7.0.0",
     "ruff>=0.14",
 ]
+pandas = ["pandas>=3.0.0", "pandas-stubs>=2.3.3.260113"]
+polars = ["polars>=1.37.1"]

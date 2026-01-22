@@ -130,6 +130,10 @@ if TYPE_CHECKING:
         CumeStatsTeamGamesResponse as CumeStatsTeamGamesResponse,
         TeamGame as TeamGame,
     )
+    from fastbreak.models.dataframe import (
+        PandasMixin as PandasMixin,
+        PolarsMixin as PolarsMixin,
+    )
     from fastbreak.models.four_factors_statistics import (
         FourFactorsStatistics as FourFactorsStatistics,
     )

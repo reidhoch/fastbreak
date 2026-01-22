@@ -2,10 +2,11 @@
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.result_set import tabular_validator
 
 
-class CommonPlayer(BaseModel):
+class CommonPlayer(PandasMixin, PolarsMixin):
     """A player entry from the CommonAllPlayers endpoint."""
 
     person_id: int = Field(alias="PERSON_ID")
