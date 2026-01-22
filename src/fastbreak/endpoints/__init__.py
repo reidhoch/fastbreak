@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.assist_leaders import AssistLeaders as AssistLeaders
     from fastbreak.endpoints.assist_tracker import AssistTracker as AssistTracker
     from fastbreak.endpoints.base import (
+        DraftCombineEndpoint as DraftCombineEndpoint,
         Endpoint as Endpoint,
         GameIdEndpoint as GameIdEndpoint,
     )
@@ -96,6 +97,7 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.franchise_players import (
         FranchisePlayers as FranchisePlayers,
     )
+    from fastbreak.endpoints.game_rotation import GameRotation as GameRotation
     from fastbreak.endpoints.gravity_leaders import GravityLeaders as GravityLeaders
     from fastbreak.endpoints.league_standings import (
         LeagueStandings as LeagueStandings,
