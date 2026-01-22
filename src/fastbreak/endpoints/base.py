@@ -43,3 +43,22 @@ class GameIdEndpoint[T: BaseModel](Endpoint[T]):
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""
         return {"GameID": self.game_id}
+
+
+@dataclass(frozen=True)
+class DraftCombineEndpoint[T: BaseModel](Endpoint[T]):
+    """Base class for draft combine endpoints with common parameters.
+
+    This covers all draft combine endpoints (stats, drill results, anthro, shooting).
+    Subclasses only need to define path and response_model.
+    """
+
+    league_id: str = "00"
+    season_year: str = "2024-25"
+
+    def params(self) -> dict[str, str]:
+        """Return the query parameters for this endpoint."""
+        return {
+            "LeagueID": self.league_id,
+            "SeasonYear": self.season_year,
+        }

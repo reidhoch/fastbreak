@@ -178,6 +178,10 @@ if TYPE_CHECKING:
         FranchisePlayer as FranchisePlayer,
         FranchisePlayersResponse as FranchisePlayersResponse,
     )
+    from fastbreak.models.game_rotation import (
+        GameRotationResponse as GameRotationResponse,
+        RotationEntry as RotationEntry,
+    )
     from fastbreak.models.gravity_leaders import (
         GravityLeader as GravityLeader,
         GravityLeadersResponse as GravityLeadersResponse,
