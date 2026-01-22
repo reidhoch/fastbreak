@@ -20,7 +20,7 @@ class PlayoffSeriesGame(BaseModel):
 class CommonPlayoffSeriesResponse(BaseModel):
     """Response from the common playoff series endpoint."""
 
-    games: list[PlayoffSeriesGame] = Field(default_factory=list[PlayoffSeriesGame])
+    games: list[PlayoffSeriesGame] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod

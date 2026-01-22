@@ -108,9 +108,7 @@ class CumeStatsTeamResponse(BaseModel):
     - total_team_stats: Aggregate team totals
     """
 
-    game_by_game_stats: list[TeamPlayerStat] = Field(
-        default_factory=list[TeamPlayerStat]
-    )
+    game_by_game_stats: list[TeamPlayerStat] = Field(default_factory=list)
     total_team_stats: TotalTeamStat | None = None
 
     from_result_sets = model_validator(mode="before")(

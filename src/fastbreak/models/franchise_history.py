@@ -37,8 +37,8 @@ class FranchiseHistoryResponse(BaseModel):
     - defunct_teams: Teams that no longer exist in the NBA
     """
 
-    franchise_history: list[Franchise] = Field(default_factory=list[Franchise])
-    defunct_teams: list[Franchise] = Field(default_factory=list[Franchise])
+    franchise_history: list[Franchise] = Field(default_factory=list)
+    defunct_teams: list[Franchise] = Field(default_factory=list)
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

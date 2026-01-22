@@ -92,9 +92,7 @@ class NonstationaryShootingPlayer(BaseModel):
 class DraftCombineNonstationaryShootingResponse(BaseModel):
     """Response from the draft combine non-stationary shooting endpoint."""
 
-    players: list[NonstationaryShootingPlayer] = Field(
-        default_factory=list[NonstationaryShootingPlayer]
-    )
+    players: list[NonstationaryShootingPlayer] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod

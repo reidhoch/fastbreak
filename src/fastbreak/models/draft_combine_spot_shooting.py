@@ -137,7 +137,7 @@ class SpotShootingPlayer(BaseModel):
 class DraftCombineSpotShootingResponse(BaseModel):
     """Response from the draft combine spot shooting endpoint."""
 
-    players: list[SpotShootingPlayer] = Field(default_factory=list[SpotShootingPlayer])
+    players: list[SpotShootingPlayer] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod

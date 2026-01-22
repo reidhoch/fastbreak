@@ -44,8 +44,8 @@ class Coach(BaseModel):
 class CommonTeamRosterResponse(BaseModel):
     """Response from the commonteamroster endpoint."""
 
-    players: list[RosterPlayer] = Field(default_factory=list[RosterPlayer])
-    coaches: list[Coach] = Field(default_factory=list[Coach])
+    players: list[RosterPlayer] = Field(default_factory=list)
+    coaches: list[Coach] = Field(default_factory=list)
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

@@ -42,7 +42,7 @@ class DrillResultsPlayer(BaseModel):
 class DraftCombineDrillResultsResponse(BaseModel):
     """Response from the draft combine drill results endpoint."""
 
-    players: list[DrillResultsPlayer] = Field(default_factory=list[DrillResultsPlayer])
+    players: list[DrillResultsPlayer] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod

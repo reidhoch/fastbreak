@@ -117,7 +117,7 @@ class CombinePlayer(BaseModel):
 class DraftCombineStatsResponse(BaseModel):
     """Response from the draft combine stats endpoint."""
 
-    players: list[CombinePlayer] = Field(default_factory=list[CombinePlayer])
+    players: list[CombinePlayer] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
