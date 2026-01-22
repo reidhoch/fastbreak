@@ -1,9 +1,11 @@
+from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import GameIdEndpoint
 from fastbreak.models import BoxScoreScoringResponse
 
 
+@dataclass(frozen=True)
 class BoxScoreScoring(GameIdEndpoint[BoxScoreScoringResponse]):
     """Fetch scoring distribution statistics for a game.
 

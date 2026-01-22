@@ -1,9 +1,11 @@
+from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import GameIdEndpoint
 from fastbreak.models import BoxScoreFourFactorsResponse
 
 
+@dataclass(frozen=True)
 class BoxScoreFourFactors(GameIdEndpoint[BoxScoreFourFactorsResponse]):
     """Fetch four factors box score statistics for a game.
 
