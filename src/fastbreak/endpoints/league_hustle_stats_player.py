@@ -1,0 +1,46 @@
+"""League hustle stats player endpoint."""
+
+from dataclasses import dataclass
+from typing import ClassVar
+
+from fastbreak.endpoints.base import Endpoint
+from fastbreak.models.league_hustle_stats_player import LeagueHustleStatsPlayerResponse
+
+
+@dataclass(frozen=True)
+class LeagueHustleStatsPlayer(Endpoint[LeagueHustleStatsPlayerResponse]):
+    """Fetch season-aggregated hustle statistics for all players.
+
+    Hustle stats include contested shots, deflections, loose balls recovered,
+    screen assists, charges drawn, and box outs aggregated across the season.
+
+    Args:
+        season: Season in YYYY-YY format (e.g., "2024-25")
+        season_type: Type of season ("Regular Season", "Playoffs")
+        per_mode: Stat aggregation mode ("PerGame", "Totals")
+        league_id: League identifier ("00" for NBA)
+
+    """
+
+    path: ClassVar[str] = "leaguehustlestatsplayer"
+    response_model: ClassVar[type[LeagueHustleStatsPlayerResponse]] = (
+        LeagueHustleStatsPlayerResponse
+    )
+
+    season: str = "2024-25"
+    season_type: str = "Regular Season"
+    per_mode: str = "PerGame"
+    league_id: str | None = None
+
+    def params(self) -> dict[str, str]:
+        """Return the query parameters for this endpoint."""
+        result: dict[str, str] = {
+            "Season": self.season,
+            "SeasonType": self.season_type,
+            "PerMode": self.per_mode,
+        }
+
+        if self.league_id is not None:
+            result["LeagueID"] = self.league_id
+
+        return result

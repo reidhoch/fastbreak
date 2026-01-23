@@ -37,3 +37,6 @@ htmlcov/
 
 # Claude
 .claude/
+
+# Complexipy
+.complexipy_cache/

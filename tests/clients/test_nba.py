@@ -420,3 +420,132 @@ class TestNBAClientRetry:
         # Verify the retry config was built with correct stop condition
         # stop_after_attempt(6) since max_retries=5 means 6 total attempts
         assert client._retry.stop.max_attempt_number == 6
+
+
+class TestNBAClientGetMany:
+    """Tests for the get_many batch fetch method."""
+
+    @pytest.mark.asyncio
+    async def test_get_many_returns_ordered_results(self, mock_play_by_play_response):
+        """get_many returns results in same order as input."""
+        mock_response = AsyncMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json = AsyncMock(return_value=mock_play_by_play_response)
+        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_response.__aexit__ = AsyncMock(return_value=None)
+
+        mock_session = MagicMock(spec=ClientSession)
+        mock_session.get = MagicMock(return_value=mock_response)
+
+        client = NBAClient(session=mock_session)
+        endpoints = [PlayByPlay(f"002250057{i}") for i in range(3)]
+
+        results = await client.get_many(endpoints)
+
+        assert len(results) == 3
+        assert all(isinstance(r, PlayByPlayResponse) for r in results)
+
+    @pytest.mark.asyncio
+    async def test_get_many_empty_list(self):
+        """get_many with empty list returns empty list."""
+        client = NBAClient()
+        results = await client.get_many([])
+        assert results == []
+        await client.close()
+
+    @pytest.mark.asyncio
+    async def test_get_many_respects_concurrency_limit(
+        self, mock_play_by_play_response
+    ):
+        """get_many limits concurrent requests via semaphore."""
+        import asyncio
+
+        concurrent_count = 0
+        max_concurrent = 0
+        lock = asyncio.Lock()
+
+        async def mock_aenter(self):
+            nonlocal concurrent_count, max_concurrent
+            async with lock:
+                concurrent_count += 1
+                max_concurrent = max(max_concurrent, concurrent_count)
+            await asyncio.sleep(0.01)  # Simulate network delay
+            return self
+
+        async def mock_aexit(self, *args):
+            nonlocal concurrent_count
+            async with lock:
+                concurrent_count -= 1
+
+        def create_mock_response():
+            response = AsyncMock()
+            response.raise_for_status = MagicMock()
+            response.json = AsyncMock(return_value=mock_play_by_play_response)
+            response.__aenter__ = lambda s: mock_aenter(s)
+            response.__aexit__ = lambda s, *args: mock_aexit(s, *args)
+            return response
+
+        mock_session = MagicMock(spec=ClientSession)
+        mock_session.get = MagicMock(side_effect=lambda *a, **k: create_mock_response())
+
+        client = NBAClient(session=mock_session)
+        endpoints = [PlayByPlay(f"002250057{i}") for i in range(10)]
+
+        await client.get_many(endpoints, max_concurrency=3)
+
+        assert max_concurrent <= 3
+
+    @pytest.mark.asyncio
+    async def test_get_many_raises_exception_group_on_error(
+        self, mock_play_by_play_response
+    ):
+        """get_many raises ExceptionGroup when any request fails."""
+        from aiohttp import ClientResponseError, RequestInfo
+        from multidict import CIMultiDict
+        from yarl import URL
+
+        call_count = 0
+
+        def make_error():
+            request_info = RequestInfo(
+                url=URL("https://stats.nba.com/stats/test"),
+                method="GET",
+                headers=CIMultiDict(),
+                real_url=URL("https://stats.nba.com/stats/test"),
+            )
+            return ClientResponseError(
+                request_info=request_info,
+                history=(),
+                status=404,
+            )
+
+        def side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 2:
+                error_response = AsyncMock()
+                error_response.raise_for_status = MagicMock(side_effect=make_error())
+                error_response.__aenter__ = AsyncMock(return_value=error_response)
+                error_response.__aexit__ = AsyncMock(return_value=None)
+                return error_response
+            response = AsyncMock()
+            response.raise_for_status = MagicMock()
+            response.json = AsyncMock(return_value=mock_play_by_play_response)
+            response.__aenter__ = AsyncMock(return_value=response)
+            response.__aexit__ = AsyncMock(return_value=None)
+            return response
+
+        mock_session = MagicMock(spec=ClientSession)
+        mock_session.get = MagicMock(side_effect=side_effect)
+
+        client = NBAClient(session=mock_session)
+        endpoints = [PlayByPlay(f"002250057{i}") for i in range(3)]
+
+        with pytest.raises(ExceptionGroup) as exc_info:
+            await client.get_many(endpoints)
+
+        # TaskGroup wraps exceptions in ExceptionGroup
+        exceptions = exc_info.value.exceptions
+        assert len(exceptions) == 1
+        assert isinstance(exceptions[0], ClientResponseError)
+        assert exceptions[0].status == 404

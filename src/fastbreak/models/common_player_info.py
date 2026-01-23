@@ -81,7 +81,7 @@ class CommonPlayerInfoResponse(BaseModel):
             {
                 "player_info": ("CommonPlayerInfo", True),
                 "headline_stats": ("PlayerHeadlineStats", True),
-                "available_seasons": ("AvailableSeasons", False),
+                "available_seasons": "AvailableSeasons",
             }
         )
     )

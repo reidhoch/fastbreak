@@ -1,0 +1,49 @@
+"""Matchups rollup endpoint for NBA API."""
+
+from dataclasses import dataclass
+from typing import ClassVar
+
+from fastbreak.endpoints.base import Endpoint
+from fastbreak.models.matchups_rollup import MatchupsRollupResponse
+
+
+@dataclass(frozen=True)
+class MatchupsRollup(Endpoint[MatchupsRollupResponse]):
+    """Fetch matchup statistics rolled up by defender.
+
+    Args:
+        league_id: League identifier ("00" for NBA)
+        season: Season in YYYY-YY format (e.g., "2024-25")
+        season_type: Type of season ("Regular Season", "Playoffs")
+        per_mode: Stat aggregation mode ("PerGame", "Totals")
+        off_team_id: Offensive team ID
+        def_team_id: Defensive team ID
+        off_player_id: Optional offensive player ID filter (0 for all)
+        def_player_id: Optional defensive player ID filter (0 for all)
+
+    """
+
+    path: ClassVar[str] = "matchupsrollup"
+    response_model: ClassVar[type[MatchupsRollupResponse]] = MatchupsRollupResponse
+
+    league_id: str = "00"
+    season: str = "2024-25"
+    season_type: str = "Regular Season"
+    per_mode: str = "PerGame"
+    off_team_id: int = 0
+    def_team_id: int = 0
+    off_player_id: int = 0
+    def_player_id: int = 0
+
+    def params(self) -> dict[str, str]:
+        """Return the query parameters for this endpoint."""
+        return {
+            "LeagueID": self.league_id,
+            "Season": self.season,
+            "SeasonType": self.season_type,
+            "PerMode": self.per_mode,
+            "OffTeamID": str(self.off_team_id),
+            "DefTeamID": str(self.def_team_id),
+            "OffPlayerID": str(self.off_player_id),
+            "DefPlayerID": str(self.def_player_id),
+        }

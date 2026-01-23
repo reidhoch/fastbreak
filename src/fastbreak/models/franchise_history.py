@@ -43,8 +43,8 @@ class FranchiseHistoryResponse(BaseModel):
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(
             {
-                "franchise_history": ("FranchiseHistory", False),
-                "defunct_teams": ("DefunctTeams", False),
+                "franchise_history": "FranchiseHistory",
+                "defunct_teams": "DefunctTeams",
             }
         )
     )

@@ -50,8 +50,8 @@ class CommonTeamRosterResponse(BaseModel):
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(
             {
-                "players": ("CommonTeamRoster", False),
-                "coaches": ("Coaches", False),
+                "players": "CommonTeamRoster",
+                "coaches": "Coaches",
             }
         )
     )

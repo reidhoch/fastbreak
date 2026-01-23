@@ -29,4 +29,4 @@ class CommonPlayoffSeriesResponse(BaseModel):
         if not is_tabular_response(data):
             return data  # type: ignore[return-value]
 
-        return {"games": parse_result_set(data)}  # type: ignore[arg-type]
+        return {"games": parse_result_set(data)}

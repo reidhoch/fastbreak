@@ -22,5 +22,5 @@ class CumeStatsTeamGamesResponse(BaseModel):
     games: list[TeamGame] = Field(default_factory=list)
 
     from_result_sets = model_validator(mode="before")(
-        named_result_sets_validator({"games": ("CumeStatsTeamGames", False)})
+        named_result_sets_validator({"games": "CumeStatsTeamGames"})
     )

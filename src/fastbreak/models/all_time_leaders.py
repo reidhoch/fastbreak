@@ -72,7 +72,7 @@ class AllTimeLeadersResponse(BaseModel):
         result: dict[str, list[dict[str, Any]]] = {}
 
         for rs_name, (field_name, stat_col, rank_col) in categories.items():
-            rows = parse_result_set_by_name(data, rs_name)  # type: ignore[arg-type]
+            rows = parse_result_set_by_name(data, rs_name)
             result[field_name] = [
                 {
                     "PLAYER_ID": row["PLAYER_ID"],

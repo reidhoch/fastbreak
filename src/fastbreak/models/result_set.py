@@ -35,13 +35,13 @@ Usage in a Pydantic model:
 """
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, TypeGuard
 
 # Type alias for validator functions compatible with Pydantic model_validator(mode="before")
 ValidatorFunc = Callable[[object], dict[str, Any]]
 
 
-def is_tabular_response(data: object) -> bool:
+def is_tabular_response(data: object) -> TypeGuard[dict[str, Any]]:
     """Check if data is in NBA's tabular resultSets format."""
     return isinstance(data, dict) and "resultSets" in data
 
@@ -105,6 +105,30 @@ def parse_result_set_by_name(
     raise ValueError(msg)
 
 
+def parse_single_result_set(
+    data: dict[str, Any],
+    name: str,
+) -> dict[str, Any] | None:
+    """Parse a single-row result set, returning the first row or None.
+
+    This is a convenience wrapper around parse_result_set_by_name for
+    result sets that are expected to contain at most one row.
+
+    Args:
+        data: Raw API response containing resultSets
+        name: The "name" field of the resultSet to parse
+
+    Returns:
+        The first row as a dictionary, or None if the result set is empty
+
+    Raises:
+        ValueError: If no resultSet with the given name is found
+
+    """
+    rows = parse_result_set_by_name(data, name)
+    return rows[0] if rows else None
+
+
 def tabular_validator(
     field_name: str,
     index: int = 0,
@@ -134,13 +158,13 @@ def tabular_validator(
     def validator(data: object) -> dict[str, Any]:
         if not is_tabular_response(data):
             return data  # type: ignore[return-value]
-        return {field_name: parse_result_set(data, index)}  # type: ignore[arg-type]
+        return {field_name: parse_result_set(data, index)}
 
     return validator
 
 
 def named_result_sets_validator(
-    mappings: dict[str, tuple[str, bool]],
+    mappings: dict[str, tuple[str, bool] | str],
 ) -> ValidatorFunc:
     """Create a model_validator that parses multiple named result sets.
 
@@ -148,10 +172,10 @@ def named_result_sets_validator(
     different named resultSets.
 
     Args:
-        mappings: Dict mapping field names to (result_set_name, is_single).
+        mappings: Dict mapping field names to result set configuration.
             - field_name: The model field name to populate
-            - result_set_name: The "name" of the resultSet in the API response
-            - is_single: If True, takes first row (or None). If False, returns list.
+            - value: Either a result_set_name string (returns list), or a tuple of
+              (result_set_name, is_single) where is_single=True takes first row or None.
 
     Returns:
         A function suitable for use with @model_validator(mode="before")
@@ -163,7 +187,7 @@ def named_result_sets_validator(
 
             from_result_sets = model_validator(mode="before")(
                 named_result_sets_validator({
-                    "game_by_game_stats": ("GameByGameStats", False),
+                    "game_by_game_stats": "GameByGameStats",
                     "total_player_stats": ("TotalPlayerStats", True),
                 })
             )
@@ -175,12 +199,12 @@ def named_result_sets_validator(
             return data  # type: ignore[return-value]
 
         result: dict[str, Any] = {}
-        for field_name, (result_set_name, is_single) in mappings.items():
-            rows = parse_result_set_by_name(data, result_set_name)  # type: ignore[arg-type]
-            if is_single:
-                result[field_name] = rows[0] if rows else None
-            else:
-                result[field_name] = rows
+        for field_name, mapping in mappings.items():
+            result_set_name, is_single = (
+                (mapping, False) if isinstance(mapping, str) else mapping
+            )
+            rows = parse_result_set_by_name(data, result_set_name)
+            result[field_name] = (rows[0] if rows else None) if is_single else rows
         return result
 
     return validator

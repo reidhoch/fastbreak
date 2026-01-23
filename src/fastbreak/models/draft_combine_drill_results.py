@@ -51,6 +51,6 @@ class DraftCombineDrillResultsResponse(BaseModel):
         if not is_tabular_response(data):
             return data  # type: ignore[return-value]
 
-        rows = parse_result_set(data)  # type: ignore[arg-type]
+        rows = parse_result_set(data)
 
         return {"players": rows}

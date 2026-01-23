@@ -38,6 +38,6 @@ class GameRotationResponse(BaseModel):
             return data  # type: ignore[return-value]
 
         return {
-            "away_team": parse_result_set_by_name(data, "AwayTeam"),  # type: ignore[arg-type]
-            "home_team": parse_result_set_by_name(data, "HomeTeam"),  # type: ignore[arg-type]
+            "away_team": parse_result_set_by_name(data, "AwayTeam"),
+            "home_team": parse_result_set_by_name(data, "HomeTeam"),
         }
