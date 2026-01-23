@@ -25,8 +25,8 @@ class FranchisePlayer(BaseModel):
     fgm: float = Field(alias="FGM")
     fga: float = Field(alias="FGA")
     fg_pct: float | None = Field(default=None, alias="FG_PCT")
-    fg3m: float = Field(alias="FG3M")
-    fg3a: float = Field(alias="FG3A")
+    fg3m: float | None = Field(default=None, alias="FG3M")
+    fg3a: float | None = Field(default=None, alias="FG3A")
     fg3_pct: float | None = Field(default=None, alias="FG3_PCT")
     ftm: float = Field(alias="FTM")
     fta: float = Field(alias="FTA")
@@ -41,7 +41,7 @@ class FranchisePlayer(BaseModel):
     ast: float = Field(alias="AST")
     pf: float = Field(alias="PF")
     stl: float = Field(alias="STL")
-    tov: float = Field(alias="TOV")
+    tov: float | None = Field(default=None, alias="TOV")
     blk: float = Field(alias="BLK")
     pts: float = Field(alias="PTS")
 
@@ -58,6 +58,6 @@ class FranchisePlayersResponse(BaseModel):
         if not is_tabular_response(data):
             return data  # type: ignore[return-value]
 
-        rows = parse_result_set(data)  # type: ignore[arg-type]
+        rows = parse_result_set(data)
 
         return {"players": rows}

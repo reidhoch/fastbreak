@@ -105,7 +105,7 @@ class CumeStatsPlayerResponse(BaseModel):
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(
             {
-                "game_by_game_stats": ("GameByGameStats", False),
+                "game_by_game_stats": "GameByGameStats",
                 "total_player_stats": ("TotalPlayerStats", True),
             }
         )

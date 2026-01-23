@@ -1,4 +1,6 @@
-from asyncio import Lock
+import asyncio
+from asyncio import Lock, Semaphore
+from collections.abc import Sequence
 from types import TracebackType
 from typing import ClassVar, Self, TypeVar
 
@@ -121,3 +123,46 @@ class NBAClient:
         # This line is unreachable due to reraise=True, but satisfies the type checker
         msg = "Retry loop exited unexpectedly"
         raise RuntimeError(msg)
+
+    async def get_many(
+        self,
+        endpoints: Sequence[Endpoint[T]],
+        *,
+        max_concurrency: int | None = None,
+    ) -> list[T]:
+        """Fetch data from multiple endpoints concurrently.
+
+        Uses asyncio.TaskGroup for structured concurrency. If any request fails,
+        all other requests are cancelled and an ExceptionGroup is raised.
+
+        Args:
+            endpoints: A sequence of Endpoint instances to fetch
+            max_concurrency: Maximum concurrent requests (defaults to 10)
+
+        Returns:
+            A list of parsed responses in the same order as the input endpoints.
+
+        Raises:
+            ExceptionGroup: If any request fails, contains all exceptions.
+
+        Example:
+            endpoints = [BoxScoreTraditional(gid) for gid in game_ids]
+            results = await client.get_many(endpoints)
+
+        """
+        if not endpoints:
+            return []
+
+        concurrency = max_concurrency or 10
+        semaphore = Semaphore(concurrency)
+        results: list[T] = [None] * len(endpoints)  # type: ignore[list-item]
+
+        async def _fetch_with_semaphore(index: int, endpoint: Endpoint[T]) -> None:
+            async with semaphore:
+                results[index] = await self.get(endpoint)
+
+        async with asyncio.TaskGroup() as tg:
+            for i, endpoint in enumerate(endpoints):
+                tg.create_task(_fetch_with_semaphore(i, endpoint))
+
+        return results

@@ -99,10 +99,174 @@ if TYPE_CHECKING:
     )
     from fastbreak.endpoints.game_rotation import GameRotation as GameRotation
     from fastbreak.endpoints.gravity_leaders import GravityLeaders as GravityLeaders
+    from fastbreak.endpoints.hustle_stats_boxscore import (
+        HustleStatsBoxscore as HustleStatsBoxscore,
+    )
+    from fastbreak.endpoints.infographic_fanduel_player import (
+        InfographicFanDuelPlayer as InfographicFanDuelPlayer,
+    )
+    from fastbreak.endpoints.ist_standings import IstStandings as IstStandings
+    from fastbreak.endpoints.league_game_finder import (
+        LeagueGameFinder as LeagueGameFinder,
+    )
+    from fastbreak.endpoints.league_game_log import LeagueGameLog as LeagueGameLog
+    from fastbreak.endpoints.league_hustle_stats_player import (
+        LeagueHustleStatsPlayer as LeagueHustleStatsPlayer,
+    )
+    from fastbreak.endpoints.league_hustle_stats_team import (
+        LeagueHustleStatsTeam as LeagueHustleStatsTeam,
+    )
+    from fastbreak.endpoints.league_leaders import LeagueLeaders as LeagueLeaders
+    from fastbreak.endpoints.league_lineup_viz import (
+        LeagueLineupViz as LeagueLineupViz,
+    )
+    from fastbreak.endpoints.league_player_on_details import (
+        LeaguePlayerOnDetails as LeaguePlayerOnDetails,
+    )
+    from fastbreak.endpoints.league_season_matchups import (
+        LeagueSeasonMatchups as LeagueSeasonMatchups,
+    )
     from fastbreak.endpoints.league_standings import (
         LeagueStandings as LeagueStandings,
     )
+    from fastbreak.endpoints.matchups_rollup import MatchupsRollup as MatchupsRollup
     from fastbreak.endpoints.play_by_play import PlayByPlay as PlayByPlay
+    from fastbreak.endpoints.player_awards import PlayerAwards as PlayerAwards
+    from fastbreak.endpoints.player_career_by_college import (
+        PlayerCareerByCollege as PlayerCareerByCollege,
+    )
+    from fastbreak.endpoints.player_career_by_college_rollup import (
+        PlayerCareerByCollegeRollup as PlayerCareerByCollegeRollup,
+    )
+    from fastbreak.endpoints.player_career_stats import (
+        PlayerCareerStats as PlayerCareerStats,
+    )
+    from fastbreak.endpoints.player_compare import PlayerCompare as PlayerCompare
+    from fastbreak.endpoints.player_dash_pt_pass import (
+        PlayerDashPtPass as PlayerDashPtPass,
+    )
+    from fastbreak.endpoints.player_dash_pt_reb import (
+        PlayerDashPtReb as PlayerDashPtReb,
+    )
+    from fastbreak.endpoints.player_dash_pt_shot_defend import (
+        PlayerDashPtShotDefend as PlayerDashPtShotDefend,
+    )
+    from fastbreak.endpoints.player_dash_pt_shots import (
+        PlayerDashPtShots as PlayerDashPtShots,
+    )
+    from fastbreak.endpoints.player_dashboard_by_clutch import (
+        PlayerDashboardByClutch as PlayerDashboardByClutch,
+    )
+    from fastbreak.endpoints.player_dashboard_by_game_splits import (
+        PlayerDashboardByGameSplits as PlayerDashboardByGameSplits,
+    )
+    from fastbreak.endpoints.player_dashboard_by_general_splits import (
+        PlayerDashboardByGeneralSplits as PlayerDashboardByGeneralSplits,
+    )
+    from fastbreak.endpoints.player_dashboard_by_last_n_games import (
+        PlayerDashboardByLastNGames as PlayerDashboardByLastNGames,
+    )
+    from fastbreak.endpoints.player_dashboard_by_shooting_splits import (
+        PlayerDashboardByShootingSplits as PlayerDashboardByShootingSplits,
+    )
+    from fastbreak.endpoints.player_dashboard_by_team_performance import (
+        PlayerDashboardByTeamPerformance as PlayerDashboardByTeamPerformance,
+    )
+    from fastbreak.endpoints.player_dashboard_by_year_over_year import (
+        PlayerDashboardByYearOverYear as PlayerDashboardByYearOverYear,
+    )
+    from fastbreak.endpoints.player_estimated_metrics import (
+        PlayerEstimatedMetrics as PlayerEstimatedMetrics,
+    )
+    from fastbreak.endpoints.player_fantasy_profile_bar_graph import (
+        PlayerFantasyProfileBarGraph as PlayerFantasyProfileBarGraph,
+    )
+    from fastbreak.endpoints.player_game_log import (
+        PlayerGameLog as PlayerGameLog,
+    )
+    from fastbreak.endpoints.player_game_logs import (
+        PlayerGameLogs as PlayerGameLogs,
+    )
+    from fastbreak.endpoints.player_game_streak_finder import (
+        PlayerGameStreakFinder as PlayerGameStreakFinder,
+    )
+    from fastbreak.endpoints.player_index import (
+        PlayerIndex as PlayerIndex,
+    )
+    from fastbreak.endpoints.player_next_n_games import (
+        PlayerNextNGames as PlayerNextNGames,
+    )
+    from fastbreak.endpoints.player_profile_v2 import (
+        PlayerProfileV2 as PlayerProfileV2,
+    )
+    from fastbreak.endpoints.player_vs_player import (
+        PlayerVsPlayer as PlayerVsPlayer,
+    )
+    from fastbreak.endpoints.playoff_picture import (
+        PlayoffPicture as PlayoffPicture,
+    )
+    from fastbreak.endpoints.schedule_league_v2 import (
+        ScheduleLeagueV2 as ScheduleLeagueV2,
+    )
+    from fastbreak.endpoints.schedule_league_v2_int import (
+        ScheduleLeagueV2Int as ScheduleLeagueV2Int,
+    )
+    from fastbreak.endpoints.scoreboard_v3 import (
+        ScoreboardV3 as ScoreboardV3,
+    )
+    from fastbreak.endpoints.shot_chart_detail import (
+        ShotChartDetail as ShotChartDetail,
+    )
+    from fastbreak.endpoints.shot_chart_leaguewide import (
+        ShotChartLeaguewide as ShotChartLeaguewide,
+    )
+    from fastbreak.endpoints.shot_chart_lineup_detail import (
+        ShotChartLineupDetail as ShotChartLineupDetail,
+    )
+    from fastbreak.endpoints.synergy_playtypes import (
+        SynergyPlaytypes as SynergyPlaytypes,
+    )
+    from fastbreak.endpoints.team_and_players_vs_players import (
+        TeamAndPlayersVsPlayers as TeamAndPlayersVsPlayers,
+    )
+    from fastbreak.endpoints.team_dash_lineups import (
+        TeamDashLineups as TeamDashLineups,
+    )
+    from fastbreak.endpoints.team_dash_pt_pass import (
+        TeamDashPtPass as TeamDashPtPass,
+    )
+    from fastbreak.endpoints.team_dash_pt_reb import (
+        TeamDashPtReb as TeamDashPtReb,
+    )
+    from fastbreak.endpoints.team_dash_pt_shots import (
+        TeamDashPtShots as TeamDashPtShots,
+    )
+    from fastbreak.endpoints.team_dashboard_by_general_splits import (
+        TeamDashboardByGeneralSplits as TeamDashboardByGeneralSplits,
+    )
+    from fastbreak.endpoints.team_dashboard_by_shooting_splits import (
+        TeamDashboardByShootingSplits as TeamDashboardByShootingSplits,
+    )
+    from fastbreak.endpoints.team_details import TeamDetails as TeamDetails
+    from fastbreak.endpoints.team_estimated_metrics import (
+        TeamEstimatedMetrics as TeamEstimatedMetrics,
+    )
+    from fastbreak.endpoints.team_game_log import TeamGameLog as TeamGameLog
+    from fastbreak.endpoints.team_game_logs import TeamGameLogs as TeamGameLogs
+    from fastbreak.endpoints.team_info_common import TeamInfoCommon as TeamInfoCommon
+    from fastbreak.endpoints.team_player_dashboard import (
+        TeamPlayerDashboard as TeamPlayerDashboard,
+    )
+    from fastbreak.endpoints.team_player_on_off_details import (
+        TeamPlayerOnOffDetails as TeamPlayerOnOffDetails,
+    )
+    from fastbreak.endpoints.team_player_on_off_summary import (
+        TeamPlayerOnOffSummary as TeamPlayerOnOffSummary,
+    )
+    from fastbreak.endpoints.team_vs_player import TeamVsPlayer as TeamVsPlayer
+    from fastbreak.endpoints.team_year_by_year_stats import (
+        TeamYearByYearStats as TeamYearByYearStats,
+    )
 
 # Auto-discover and import all submodules at runtime
 _package_dir = Path(__file__).parent
