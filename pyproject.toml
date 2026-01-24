@@ -38,6 +38,9 @@ exclude = ["tests/**/*", "src/fastbreak/_version.py"]
 select = ["ALL"]
 ignore = ["COM812", "D", "E501", "N815"]
 
+[tool.ruff.lint.per-file-ignores]
+"example.py" = ["T201"]  # Allow print in example file
+
 [tool.ruff.lint.isort]
 known-first-party = ["fastbreak"]
 force-single-line = false
