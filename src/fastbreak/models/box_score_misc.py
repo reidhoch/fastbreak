@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from fastbreak.models.meta import Meta
-from fastbreak.models.misc_statistics import MiscStatistics
+from fastbreak.models.common.meta import Meta
+from fastbreak.models.common.misc_statistics import MiscStatistics
 
 
 class MiscPlayer(BaseModel):

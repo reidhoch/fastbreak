@@ -11,35 +11,42 @@ class TestPlayerDashboardByGameSplits:
         """PlayerDashboardByGameSplits uses sensible defaults."""
         endpoint = PlayerDashboardByGameSplits()
 
-        assert endpoint.player_id == ""
+        assert endpoint.player_id == 0
         assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "PerGame"
         assert endpoint.measure_type == "Base"
+        # Always-sent params have default 0
+        assert endpoint.po_round == 0
+        assert endpoint.month == 0
+        assert endpoint.opponent_team_id == 0
+        assert endpoint.period == 0
+        assert endpoint.last_n_games == 0
+        assert endpoint.ist_round == ""
 
     def test_init_with_player_id(self):
         """PlayerDashboardByGameSplits accepts player_id."""
-        endpoint = PlayerDashboardByGameSplits(player_id="203999")
+        endpoint = PlayerDashboardByGameSplits(player_id=203999)
 
-        assert endpoint.player_id == "203999"
+        assert endpoint.player_id == 203999
 
     def test_init_with_optional_filters(self):
         """PlayerDashboardByGameSplits accepts optional filters."""
         endpoint = PlayerDashboardByGameSplits(
-            player_id="203999",
+            player_id=203999,
             season="2023-24",
-            last_n_games="10",
+            last_n_games=10,
             outcome="W",
         )
 
         assert endpoint.season == "2023-24"
-        assert endpoint.last_n_games == "10"
+        assert endpoint.last_n_games == 10
         assert endpoint.outcome == "W"
 
     def test_params_with_required_only(self):
-        """params() returns required parameters."""
-        endpoint = PlayerDashboardByGameSplits(player_id="203999")
+        """params() returns required and always-sent parameters."""
+        endpoint = PlayerDashboardByGameSplits(player_id=203999)
 
         params = endpoint.params()
 
@@ -53,13 +60,19 @@ class TestPlayerDashboardByGameSplits:
             "PaceAdjust": "N",
             "PlusMinus": "N",
             "Rank": "N",
+            "PORound": "0",
+            "Month": "0",
+            "OpponentTeamID": "0",
+            "Period": "0",
+            "LastNGames": "0",
+            "ISTRound": "",
         }
 
     def test_params_with_filters(self):
         """params() includes optional filters when set."""
         endpoint = PlayerDashboardByGameSplits(
-            player_id="203999",
-            last_n_games="10",
+            player_id=203999,
+            last_n_games=10,
             outcome="W",
             location="Home",
         )

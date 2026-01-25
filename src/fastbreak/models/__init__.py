@@ -14,15 +14,12 @@ type JSON = dict[str, JSON] | list[JSON] | str | int | float | bool | None
 # Explicit imports for type checkers (mypy, pyright, etc.)
 # These are redundant at runtime but needed for static analysis
 if TYPE_CHECKING:
-    from fastbreak.models.advanced_statistics import (
-        AdvancedStatistics as AdvancedStatistics,
-        AdvancedTeamStatistics as AdvancedTeamStatistics,
-    )
+    # Common/shared models
+    # Endpoint-specific response models
     from fastbreak.models.all_time_leaders import (
         AllTimeLeadersResponse as AllTimeLeadersResponse,
         LeaderEntry as LeaderEntry,
     )
-    from fastbreak.models.arena import Arena as Arena
     from fastbreak.models.assist_leaders import (
         AssistLeadersResponse as AssistLeadersResponse,
         PlayerAssistLeader as PlayerAssistLeader,
@@ -84,11 +81,67 @@ if TYPE_CHECKING:
         UsagePlayer as UsagePlayer,
         UsageTeam as UsageTeam,
     )
-    from fastbreak.models.broadcaster import (
+    from fastbreak.models.common.advanced_statistics import (
+        AdvancedStatistics as AdvancedStatistics,
+        AdvancedTeamStatistics as AdvancedTeamStatistics,
+    )
+    from fastbreak.models.common.arena import Arena as Arena
+    from fastbreak.models.common.broadcaster import (
         Broadcaster as Broadcaster,
         Broadcasters as Broadcasters,
     )
-    from fastbreak.models.chart import Charts as Charts, ChartTeam as ChartTeam
+    from fastbreak.models.common.chart import Charts as Charts, ChartTeam as ChartTeam
+    from fastbreak.models.common.dataframe import (
+        PandasMixin as PandasMixin,
+        PolarsMixin as PolarsMixin,
+    )
+    from fastbreak.models.common.four_factors_statistics import (
+        FourFactorsStatistics as FourFactorsStatistics,
+    )
+    from fastbreak.models.common.matchup_statistics import (
+        MatchupStatistics as MatchupStatistics,
+    )
+    from fastbreak.models.common.meeting import (
+        LastFiveMeetings as LastFiveMeetings,
+        Meeting as Meeting,
+        MeetingTeam as MeetingTeam,
+    )
+    from fastbreak.models.common.meta import Meta as Meta
+    from fastbreak.models.common.misc_statistics import (
+        MiscStatistics as MiscStatistics,
+    )
+    from fastbreak.models.common.official import Official as Official
+    from fastbreak.models.common.period import Period as Period
+    from fastbreak.models.common.player import Player as Player
+    from fastbreak.models.common.player_track_statistics import (
+        PlayerTrackStatistics as PlayerTrackStatistics,
+        TeamPlayerTrackStatistics as TeamPlayerTrackStatistics,
+    )
+    from fastbreak.models.common.result_set import (
+        ValidatorFunc as ValidatorFunc,
+        is_tabular_response as is_tabular_response,
+        named_result_sets_validator as named_result_sets_validator,
+        parse_result_set as parse_result_set,
+        parse_result_set_by_name as parse_result_set_by_name,
+        parse_single_result_set as parse_single_result_set,
+        tabular_validator as tabular_validator,
+    )
+    from fastbreak.models.common.scoring_statistics import (
+        ScoringStatistics as ScoringStatistics,
+    )
+    from fastbreak.models.common.summary_player import (
+        InactivePlayer as InactivePlayer,
+        SummaryPlayer as SummaryPlayer,
+    )
+    from fastbreak.models.common.summary_team import SummaryTeam as SummaryTeam
+    from fastbreak.models.common.team import Team as Team
+    from fastbreak.models.common.traditional_statistics import (
+        TraditionalGroupStatistics as TraditionalGroupStatistics,
+        TraditionalStatistics as TraditionalStatistics,
+    )
+    from fastbreak.models.common.usage_statistics import (
+        UsageStatistics as UsageStatistics,
+    )
     from fastbreak.models.common_all_players import (
         CommonAllPlayersResponse as CommonAllPlayersResponse,
         CommonPlayer as CommonPlayer,
@@ -130,10 +183,6 @@ if TYPE_CHECKING:
         CumeStatsTeamGamesResponse as CumeStatsTeamGamesResponse,
         TeamGame as TeamGame,
     )
-    from fastbreak.models.dataframe import (
-        PandasMixin as PandasMixin,
-        PolarsMixin as PolarsMixin,
-    )
     from fastbreak.models.draft_combine_drill_results import (
         DraftCombineDrillResultsResponse as DraftCombineDrillResultsResponse,
         DrillResultsPlayer as DrillResultsPlayer,
@@ -161,9 +210,6 @@ if TYPE_CHECKING:
     from fastbreak.models.dunk_score_leaders import (
         Dunk as Dunk,
         DunkScoreLeadersResponse as DunkScoreLeadersResponse,
-    )
-    from fastbreak.models.four_factors_statistics import (
-        FourFactorsStatistics as FourFactorsStatistics,
     )
     from fastbreak.models.franchise_history import (
         Franchise as Franchise,
@@ -201,6 +247,20 @@ if TYPE_CHECKING:
         IstStandingsResponse as IstStandingsResponse,
         IstTeamStanding as IstTeamStanding,
     )
+    from fastbreak.models.league_dash_lineups import (
+        LeagueDashLineupsResponse as LeagueDashLineupsResponse,
+        LeagueLineup as LeagueLineup,
+    )
+    from fastbreak.models.league_dash_pt_stats import (
+        LeagueDashPtStatsResponse as LeagueDashPtStatsResponse,
+        PlayerPtStats as PlayerPtStats,
+        TeamPtStats as TeamPtStats,
+    )
+    from fastbreak.models.league_dash_team_shot_locations import (
+        LeagueDashTeamShotLocationsResponse as LeagueDashTeamShotLocationsResponse,
+        ShotRange as ShotRange,
+        TeamShotLocations as TeamShotLocations,
+    )
     from fastbreak.models.league_game_finder import (
         GameFinderResult as GameFinderResult,
         LeagueGameFinderResponse as LeagueGameFinderResponse,
@@ -237,28 +297,19 @@ if TYPE_CHECKING:
         LeagueStandingsResponse as LeagueStandingsResponse,
         TeamStanding as TeamStanding,
     )
-    from fastbreak.models.matchup_statistics import (
-        MatchupStatistics as MatchupStatistics,
+    from fastbreak.models.leverage_leaders import (
+        LeverageLeader as LeverageLeader,
+        LeverageLeadersResponse as LeverageLeadersResponse,
     )
     from fastbreak.models.matchups_rollup import (
         MatchupRollupEntry as MatchupRollupEntry,
         MatchupsRollupResponse as MatchupsRollupResponse,
     )
-    from fastbreak.models.meeting import (
-        LastFiveMeetings as LastFiveMeetings,
-        Meeting as Meeting,
-        MeetingTeam as MeetingTeam,
-    )
-    from fastbreak.models.meta import Meta as Meta
-    from fastbreak.models.misc_statistics import MiscStatistics as MiscStatistics
-    from fastbreak.models.official import Official as Official
-    from fastbreak.models.period import Period as Period
     from fastbreak.models.play_by_play import (
         PlayByPlayAction as PlayByPlayAction,
         PlayByPlayGame as PlayByPlayGame,
         PlayByPlayResponse as PlayByPlayResponse,
     )
-    from fastbreak.models.player import Player as Player
     from fastbreak.models.player_awards import (
         PlayerAward as PlayerAward,
         PlayerAwardsResponse as PlayerAwardsResponse,
@@ -375,10 +426,6 @@ if TYPE_CHECKING:
         ProfileSeasonTotals as ProfileSeasonTotals,
         ProfileStatHigh as ProfileStatHigh,
     )
-    from fastbreak.models.player_track_statistics import (
-        PlayerTrackStatistics as PlayerTrackStatistics,
-        TeamPlayerTrackStatistics as TeamPlayerTrackStatistics,
-    )
     from fastbreak.models.player_vs_player import (
         PlayerVsPlayerOnOffCourtStats as PlayerVsPlayerOnOffCourtStats,
         PlayerVsPlayerOverallStats as PlayerVsPlayerOverallStats,
@@ -394,15 +441,6 @@ if TYPE_CHECKING:
         PlayoffPictureResponse as PlayoffPictureResponse,
         PlayoffStanding as PlayoffStanding,
         RemainingGames as RemainingGames,
-    )
-    from fastbreak.models.result_set import (
-        ValidatorFunc as ValidatorFunc,
-        is_tabular_response as is_tabular_response,
-        named_result_sets_validator as named_result_sets_validator,
-        parse_result_set as parse_result_set,
-        parse_result_set_by_name as parse_result_set_by_name,
-        parse_single_result_set as parse_single_result_set,
-        tabular_validator as tabular_validator,
     )
     from fastbreak.models.schedule_league_v2 import (
         GameBroadcasters as GameBroadcasters,
@@ -440,9 +478,6 @@ if TYPE_CHECKING:
         TeamLeader as TeamLeader,
         TeamLeaders as TeamLeaders,
     )
-    from fastbreak.models.scoring_statistics import (
-        ScoringStatistics as ScoringStatistics,
-    )
     from fastbreak.models.shot_chart_detail import (
         LeagueAverage as LeagueAverage,
         Shot as Shot,
@@ -457,17 +492,15 @@ if TYPE_CHECKING:
         LineupShot as LineupShot,
         ShotChartLineupDetailResponse as ShotChartLineupDetailResponse,
     )
-    from fastbreak.models.summary_player import (
-        InactivePlayer as InactivePlayer,
-        SummaryPlayer as SummaryPlayer,
+    from fastbreak.models.shot_quality_leaders import (
+        ShotQualityLeader as ShotQualityLeader,
+        ShotQualityLeadersResponse as ShotQualityLeadersResponse,
     )
-    from fastbreak.models.summary_team import SummaryTeam as SummaryTeam
     from fastbreak.models.synergy_playtypes import (
         PlayerSynergyPlaytype as PlayerSynergyPlaytype,
         SynergyPlaytypesResponse as SynergyPlaytypesResponse,
         TeamSynergyPlaytype as TeamSynergyPlaytype,
     )
-    from fastbreak.models.team import Team as Team
     from fastbreak.models.team_and_players_vs_players import (
         PlayerVsPlayersStats as PlayerVsPlayersStats,
         TeamAndPlayersVsPlayersResponse as TeamAndPlayersVsPlayersResponse,
@@ -559,18 +592,29 @@ if TYPE_CHECKING:
         TeamYearByYearStatsResponse as TeamYearByYearStatsResponse,
         TeamYearStats as TeamYearStats,
     )
-    from fastbreak.models.traditional_statistics import (
-        TraditionalGroupStatistics as TraditionalGroupStatistics,
-        TraditionalStatistics as TraditionalStatistics,
+    from fastbreak.models.video_status import (
+        GameVideoStatus as GameVideoStatus,
+        VideoStatusResponse as VideoStatusResponse,
     )
-    from fastbreak.models.usage_statistics import UsageStatistics as UsageStatistics
 
 # Auto-discover and import all submodules at runtime
 _package_dir = Path(__file__).parent
 _public_names: list[str] = ["JSON"]
 
+# Import from common/ subpackage first
+_common_module = importlib.import_module(".common", __package__)
+if hasattr(_common_module, "__all__"):
+    _common_names = _common_module.__all__
+else:
+    _common_names = [n for n in dir(_common_module) if not n.startswith("_")]
+for _name in _common_names:
+    if hasattr(_common_module, _name):
+        globals()[_name] = getattr(_common_module, _name)
+        _public_names.append(_name)
+
+# Then import from other submodules
 for _module_info in pkgutil.iter_modules([str(_package_dir)]):
-    if _module_info.name.startswith("_"):
+    if _module_info.name.startswith("_") or _module_info.name == "common":
         continue
 
     _module = importlib.import_module(f".{_module_info.name}", __package__)
@@ -591,4 +635,5 @@ __all__ = sorted(set(_public_names))  # noqa: PLE0605
 
 # Clean up module-level temporaries
 del importlib, pkgutil, Path
-del _package_dir, _module_info, _module, _names, _name, _public_names
+del _package_dir, _common_module, _common_names, _module_info, _module, _names, _name
+del _public_names

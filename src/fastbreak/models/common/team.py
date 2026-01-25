@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from fastbreak.models.player import Player
-from fastbreak.models.usage_statistics import UsageStatistics
+from fastbreak.models.common.player import Player
+from fastbreak.models.common.usage_statistics import UsageStatistics
 
 
 class Team(BaseModel):

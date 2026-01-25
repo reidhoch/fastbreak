@@ -1,9 +1,10 @@
 from pydantic import BaseModel
 
-from fastbreak.models.meta import Meta
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.meta import Meta
 
 
-class PlayByPlayAction(BaseModel):
+class PlayByPlayAction(PandasMixin, PolarsMixin, BaseModel):
     """A single play-by-play action in a game.
 
     Represents events like shots, turnovers, fouls, substitutions, etc.

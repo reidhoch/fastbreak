@@ -11,25 +11,70 @@ class TestPlayerDashPtReb:
         """PlayerDashPtReb uses sensible defaults."""
         endpoint = PlayerDashPtReb()
 
-        assert endpoint.player_id == ""
+        assert endpoint.player_id == 0
         assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
         assert endpoint.per_mode == "PerGame"
+        # Always-sent params have default 0
+        assert endpoint.team_id == 0
+        assert endpoint.month == 0
+        assert endpoint.opponent_team_id == 0
+        assert endpoint.period == 0
+        assert endpoint.last_n_games == 0
 
     def test_init_with_player_id(self):
         """PlayerDashPtReb accepts player_id."""
-        endpoint = PlayerDashPtReb(player_id="203999")
+        endpoint = PlayerDashPtReb(player_id=203999)
 
-        assert endpoint.player_id == "203999"
+        assert endpoint.player_id == 203999
+
+    def test_init_with_optional_filters(self):
+        """PlayerDashPtReb accepts optional filters."""
+        endpoint = PlayerDashPtReb(
+            player_id=203999,
+            season="2023-24",
+            outcome="W",
+            ist_round="Finals",
+        )
+
+        assert endpoint.season == "2023-24"
+        assert endpoint.outcome == "W"
+        assert endpoint.ist_round == "Finals"
 
     def test_params_with_required_only(self):
-        """params() returns required parameters."""
-        endpoint = PlayerDashPtReb(player_id="203999")
+        """params() returns required and always-sent parameters."""
+        endpoint = PlayerDashPtReb(player_id=203999)
+
+        params = endpoint.params()
+
+        assert params == {
+            "PlayerID": "203999",
+            "LeagueID": "00",
+            "Season": "2024-25",
+            "SeasonType": "Regular Season",
+            "PerMode": "PerGame",
+            "TeamID": "0",
+            "Month": "0",
+            "OpponentTeamID": "0",
+            "Period": "0",
+            "LastNGames": "0",
+        }
+
+    def test_params_with_filters(self):
+        """params() includes optional filters when set."""
+        endpoint = PlayerDashPtReb(
+            player_id=203999,
+            outcome="W",
+            location="Home",
+            ist_round="Finals",
+        )
 
         params = endpoint.params()
 
         assert params["PlayerID"] == "203999"
-        assert params["LeagueID"] == "00"
+        assert params["Outcome"] == "W"
+        assert params["Location"] == "Home"
+        assert params["ISTRound"] == "Finals"
 
     def test_path_is_correct(self):
         """PlayerDashPtReb has correct API path."""

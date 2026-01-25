@@ -4,10 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from fastbreak.models.result_set import is_tabular_response, parse_result_set_by_name
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.result_set import (
+    is_tabular_response,
+    parse_result_set_by_name,
+)
 
 
-class RotationEntry(BaseModel):
+class RotationEntry(PandasMixin, PolarsMixin, BaseModel):
     """A single rotation entry (player stint)."""
 
     game_id: str = Field(alias="GAME_ID")

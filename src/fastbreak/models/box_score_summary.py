@@ -1,12 +1,12 @@
 from pydantic import BaseModel
 
-from fastbreak.models.arena import Arena
-from fastbreak.models.broadcaster import Broadcasters
-from fastbreak.models.chart import Charts
-from fastbreak.models.meeting import LastFiveMeetings
-from fastbreak.models.meta import Meta
-from fastbreak.models.official import Official
-from fastbreak.models.summary_team import SummaryTeam
+from fastbreak.models.common.arena import Arena
+from fastbreak.models.common.broadcaster import Broadcasters
+from fastbreak.models.common.chart import Charts
+from fastbreak.models.common.meeting import LastFiveMeetings
+from fastbreak.models.common.meta import Meta
+from fastbreak.models.common.official import Official
+from fastbreak.models.common.summary_team import SummaryTeam
 
 
 class BoxScoreSummaryData(BaseModel):

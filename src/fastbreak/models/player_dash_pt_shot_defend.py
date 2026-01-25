@@ -4,7 +4,10 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from fastbreak.models.result_set import is_tabular_response, parse_result_set_by_name
+from fastbreak.models.common.result_set import (
+    is_tabular_response,
+    parse_result_set_by_name,
+)
 
 
 class DefendingShots(BaseModel):
@@ -18,9 +21,9 @@ class DefendingShots(BaseModel):
     gp: int = Field(alias="GP")
     games: int = Field(alias="G")
     defense_category: str = Field(alias="DEFENSE_CATEGORY")
-    freq: float = Field(alias="FREQ")
-    d_fgm: float = Field(alias="D_FGM")
-    d_fga: float = Field(alias="D_FGA")
+    freq: float | None = Field(alias="FREQ")
+    d_fgm: float | None = Field(alias="D_FGM")
+    d_fga: float | None = Field(alias="D_FGA")
     d_fg_pct: float | None = Field(alias="D_FG_PCT")
     normal_fg_pct: float | None = Field(alias="NORMAL_FG_PCT")
     pct_plusminus: float | None = Field(alias="PCT_PLUSMINUS")

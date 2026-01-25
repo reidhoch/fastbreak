@@ -11,25 +11,76 @@ class TestPlayerDashboardByYearOverYear:
         """PlayerDashboardByYearOverYear uses sensible defaults."""
         endpoint = PlayerDashboardByYearOverYear()
 
-        assert endpoint.player_id == ""
+        assert endpoint.player_id == 0
         assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
+        assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "PerGame"
+        assert endpoint.measure_type == "Base"
+        # Always-sent params have default 0
+        assert endpoint.po_round == 0
+        assert endpoint.month == 0
+        assert endpoint.opponent_team_id == 0
+        assert endpoint.period == 0
+        assert endpoint.last_n_games == 0
 
     def test_init_with_player_id(self):
         """PlayerDashboardByYearOverYear accepts player_id."""
-        endpoint = PlayerDashboardByYearOverYear(player_id="203999")
+        endpoint = PlayerDashboardByYearOverYear(player_id=203999)
 
-        assert endpoint.player_id == "203999"
+        assert endpoint.player_id == 203999
+
+    def test_init_with_optional_filters(self):
+        """PlayerDashboardByYearOverYear accepts optional filters."""
+        endpoint = PlayerDashboardByYearOverYear(
+            player_id=203999,
+            season="2023-24",
+            last_n_games=10,
+            outcome="W",
+        )
+
+        assert endpoint.season == "2023-24"
+        assert endpoint.last_n_games == 10
+        assert endpoint.outcome == "W"
 
     def test_params_with_required_only(self):
-        """params() returns required parameters."""
-        endpoint = PlayerDashboardByYearOverYear(player_id="203999")
+        """params() returns required and always-sent parameters."""
+        endpoint = PlayerDashboardByYearOverYear(player_id=203999)
+
+        params = endpoint.params()
+
+        assert params == {
+            "PlayerID": "203999",
+            "LeagueID": "00",
+            "Season": "2024-25",
+            "SeasonType": "Regular Season",
+            "PerMode": "PerGame",
+            "MeasureType": "Base",
+            "PaceAdjust": "N",
+            "PlusMinus": "N",
+            "Rank": "N",
+            "PORound": "0",
+            "Month": "0",
+            "OpponentTeamID": "0",
+            "Period": "0",
+            "LastNGames": "0",
+        }
+
+    def test_params_with_filters(self):
+        """params() includes optional filters when set."""
+        endpoint = PlayerDashboardByYearOverYear(
+            player_id=203999,
+            last_n_games=10,
+            outcome="W",
+            location="Home",
+        )
 
         params = endpoint.params()
 
         assert params["PlayerID"] == "203999"
-        assert params["LeagueID"] == "00"
+        assert params["LastNGames"] == "10"
+        assert params["Outcome"] == "W"
+        assert params["Location"] == "Home"
 
     def test_path_is_correct(self):
         """PlayerDashboardByYearOverYear has correct API path."""
@@ -61,7 +112,7 @@ class TestPlayerDashboardByYearOverYearResponse:
 
     @staticmethod
     def _make_headers() -> list[str]:
-        """Return headers for year over year result sets (66 columns)."""
+        """Return headers for year over year result sets (65 columns)."""
         return [
             "GROUP_SET",
             "GROUP_VALUE",
@@ -128,7 +179,6 @@ class TestPlayerDashboardByYearOverYearResponse:
             "DD2_RANK",
             "TD3_RANK",
             "WNBA_FANTASY_PTS_RANK",
-            "TEAM_COUNT",
         ]
 
     @staticmethod
@@ -141,7 +191,7 @@ class TestPlayerDashboardByYearOverYearResponse:
         wins: int,
         losses: int,
     ) -> list:
-        """Create a test row for year over year stats (66 values)."""
+        """Create a test row for year over year stats (65 values)."""
         return [
             group_set,
             group_value,
@@ -178,7 +228,7 @@ class TestPlayerDashboardByYearOverYearResponse:
             5,
             2,
             50.0,  # fantasy
-            *[1] * 31,  # rank columns + team_count
+            *[1] * 30,  # rank columns
         ]
 
     def test_parse_tabular_response(self):
@@ -255,3 +305,30 @@ class TestPlayerDashboardByYearOverYearResponse:
 
         assert response.overall is None
         assert response.by_year == []
+
+    def test_parse_nullable_blka(self):
+        """Response handles nullable BLKA field."""
+        headers = self._make_headers()
+        row = self._make_row("By Year", "2004-05", 1610612743, "DEN", 10, 6, 4)
+        # Set BLKA (index 26) to None
+        row[26] = None
+
+        raw_response = {
+            "resultSets": [
+                {
+                    "name": "OverallPlayerDashboard",
+                    "headers": headers,
+                    "rowSet": [],
+                },
+                {
+                    "name": "ByYearPlayerDashboard",
+                    "headers": headers,
+                    "rowSet": [row],
+                },
+            ]
+        }
+
+        response = PlayerDashboardByYearOverYearResponse.model_validate(raw_response)
+
+        assert len(response.by_year) == 1
+        assert response.by_year[0].blka is None

@@ -17,7 +17,13 @@ class PlayByPlay(Endpoint[PlayByPlayResponse]):
     response_model: ClassVar[type[PlayByPlayResponse]] = PlayByPlayResponse
 
     game_id: str
+    end_period: int = 0
+    start_period: int = 0
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""
-        return {"GameID": self.game_id}
+        return {
+            "GameID": self.game_id,
+            "EndPeriod": str(self.end_period),
+            "StartPeriod": str(self.start_period),
+        }

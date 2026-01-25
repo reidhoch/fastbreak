@@ -24,7 +24,7 @@ class CumeStatsTeam(Endpoint[CumeStatsTeamResponse]):
     response_model: ClassVar[type[CumeStatsTeamResponse]] = CumeStatsTeamResponse
 
     league_id: str = "00"
-    season: str = "2024-25"
+    season: str = "2025"
     season_type: str = "Regular Season"
     team_id: int = 0
     game_ids: str = ""

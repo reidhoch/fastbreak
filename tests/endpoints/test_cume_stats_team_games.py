@@ -12,17 +12,17 @@ class TestCumeStatsTeamGames:
         endpoint = CumeStatsTeamGames()
 
         assert endpoint.league_id == "00"
-        assert endpoint.season_id == "2024-25"
+        assert endpoint.season == "2025"
         assert endpoint.season_type == "Regular Season"
         assert endpoint.team_id == 0
 
-    def test_init_optional_params_default_to_none(self):
-        """CumeStatsTeamGames optional params default to None."""
+    def test_init_optional_params_default_to_none_or_zero(self):
+        """CumeStatsTeamGames optional params default appropriately."""
         endpoint = CumeStatsTeamGames()
 
         assert endpoint.location is None
         assert endpoint.outcome is None
-        assert endpoint.vs_team_id is None
+        assert endpoint.vs_team_id == 0  # vs_team_id defaults to 0
         assert endpoint.vs_division is None
         assert endpoint.vs_conference is None
 
@@ -30,13 +30,13 @@ class TestCumeStatsTeamGames:
         """CumeStatsTeamGames accepts custom required parameters."""
         endpoint = CumeStatsTeamGames(
             league_id="10",
-            season_id="2025-26",
+            season="2026",
             season_type="Playoffs",
             team_id=1610612745,
         )
 
         assert endpoint.league_id == "10"
-        assert endpoint.season_id == "2025-26"
+        assert endpoint.season == "2026"
         assert endpoint.season_type == "Playoffs"
         assert endpoint.team_id == 1610612745
 
@@ -57,31 +57,31 @@ class TestCumeStatsTeamGames:
         assert endpoint.vs_division == "Pacific"
         assert endpoint.vs_conference == "West"
 
-    def test_params_returns_required_only_when_no_optionals(self):
-        """params() returns only required params when no optionals set."""
+    def test_params_returns_required_and_vs_team_id(self):
+        """params() returns required params plus VsTeamID (always included)."""
         endpoint = CumeStatsTeamGames(team_id=1610612745)
 
         params = endpoint.params()
 
         assert params == {
             "LeagueID": "00",
-            "SeasonID": "2024-25",
+            "Season": "2025",
             "SeasonType": "Regular Season",
             "TeamID": "1610612745",
+            "VsTeamID": "0",
         }
         assert "Location" not in params
         assert "Outcome" not in params
-        assert "VsTeamID" not in params
 
-    def test_params_uses_season_id_not_season(self):
-        """params() uses SeasonID parameter (not Season)."""
-        endpoint = CumeStatsTeamGames(season_id="2025-26")
+    def test_params_uses_season_not_season_id(self):
+        """params() uses Season parameter (not SeasonID)."""
+        endpoint = CumeStatsTeamGames(season="2026")
 
         params = endpoint.params()
 
-        assert "SeasonID" in params
-        assert "Season" not in params
-        assert params["SeasonID"] == "2025-26"
+        assert "Season" in params
+        assert "SeasonID" not in params
+        assert params["Season"] == "2026"
 
     def test_params_includes_optional_when_set(self):
         """params() includes optional params when they are set."""
@@ -146,7 +146,7 @@ class TestCumeStatsTeamGames:
         endpoint = CumeStatsTeamGames()
 
         try:
-            endpoint.season_id = "2023-24"  # type: ignore[misc]
+            endpoint.season = "2023"  # type: ignore[misc]
             frozen = False
         except AttributeError:
             frozen = True

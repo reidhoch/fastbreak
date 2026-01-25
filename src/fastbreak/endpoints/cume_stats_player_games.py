@@ -31,7 +31,7 @@ class CumeStatsPlayerGames(Endpoint[CumeStatsPlayerGamesResponse]):
 
     # Required parameters
     league_id: str = "00"
-    season: str = "2024-25"
+    season: str = "2025"
     season_type: str = "Regular Season"
     player_id: int = 0
 

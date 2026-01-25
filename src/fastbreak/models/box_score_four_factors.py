@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from fastbreak.models.four_factors_statistics import FourFactorsStatistics
-from fastbreak.models.meta import Meta
+from fastbreak.models.common.four_factors_statistics import FourFactorsStatistics
+from fastbreak.models.common.meta import Meta
 
 
 class FourFactorsPlayer(BaseModel):

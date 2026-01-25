@@ -2,8 +2,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from fastbreak.models.period import Period
-from fastbreak.models.summary_player import InactivePlayer, SummaryPlayer
+from fastbreak.models.common.period import Period
+from fastbreak.models.common.summary_player import InactivePlayer, SummaryPlayer
 
 
 class SummaryTeam(BaseModel):

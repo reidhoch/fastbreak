@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
-from fastbreak.models.dataframe import PandasMixin, PolarsMixin
-from fastbreak.models.meta import Meta
-from fastbreak.models.traditional_statistics import (
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.meta import Meta
+from fastbreak.models.common.traditional_statistics import (
     TraditionalGroupStatistics,
     TraditionalStatistics,
 )

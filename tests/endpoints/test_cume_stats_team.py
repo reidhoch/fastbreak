@@ -12,7 +12,7 @@ class TestCumeStatsTeam:
         endpoint = CumeStatsTeam()
 
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == "2025"
         assert endpoint.season_type == "Regular Season"
         assert endpoint.team_id == 0
         assert endpoint.game_ids == ""
@@ -21,14 +21,14 @@ class TestCumeStatsTeam:
         """CumeStatsTeam accepts custom parameters."""
         endpoint = CumeStatsTeam(
             league_id="10",
-            season="2025-26",
+            season="2026",
             season_type="Playoffs",
             team_id=1610612745,
             game_ids="0022500617,0022500618",
         )
 
         assert endpoint.league_id == "10"
-        assert endpoint.season == "2025-26"
+        assert endpoint.season == "2026"
         assert endpoint.season_type == "Playoffs"
         assert endpoint.team_id == 1610612745
         assert endpoint.game_ids == "0022500617,0022500618"
@@ -47,7 +47,7 @@ class TestCumeStatsTeam:
         """params() returns all parameters with correct API names."""
         endpoint = CumeStatsTeam(
             league_id="00",
-            season="2025-26",
+            season="2026",
             season_type="Regular Season",
             team_id=1610612745,
             game_ids="0022500617",
@@ -57,7 +57,7 @@ class TestCumeStatsTeam:
 
         assert params == {
             "LeagueID": "00",
-            "Season": "2025-26",
+            "Season": "2026",
             "SeasonType": "Regular Season",
             "TeamID": "1610612745",
             "GameIDs": "0022500617",
@@ -89,7 +89,7 @@ class TestCumeStatsTeam:
         endpoint = CumeStatsTeam()
 
         try:
-            endpoint.season = "2023-24"  # type: ignore[misc]
+            endpoint.season = "2023"  # type: ignore[misc]
             frozen = False
         except AttributeError:
             frozen = True

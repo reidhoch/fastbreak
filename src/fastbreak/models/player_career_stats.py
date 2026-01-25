@@ -4,10 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from fastbreak.models.result_set import is_tabular_response, parse_result_set_by_name
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.result_set import (
+    is_tabular_response,
+    parse_result_set_by_name,
+)
 
 
-class SeasonTotals(BaseModel):
+class SeasonTotals(PandasMixin, PolarsMixin, BaseModel):
     """Season totals for a player (regular season, playoffs, all-star)."""
 
     player_id: int = Field(alias="PLAYER_ID")
@@ -39,7 +43,7 @@ class SeasonTotals(BaseModel):
     pts: float = Field(alias="PTS")
 
 
-class CareerTotals(BaseModel):
+class CareerTotals(PandasMixin, PolarsMixin, BaseModel):
     """Career totals for a player."""
 
     player_id: int = Field(alias="PLAYER_ID")

@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from fastbreak.models.meta import Meta
-from fastbreak.models.scoring_statistics import ScoringStatistics
+from fastbreak.models.common.meta import Meta
+from fastbreak.models.common.scoring_statistics import ScoringStatistics
 
 
 class ScoringPlayer(BaseModel):

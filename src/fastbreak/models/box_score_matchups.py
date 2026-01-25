@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from fastbreak.models.matchup_statistics import MatchupStatistics
-from fastbreak.models.meta import Meta
+from fastbreak.models.common.matchup_statistics import MatchupStatistics
+from fastbreak.models.common.meta import Meta
 
 
 class MatchupOpponent(BaseModel):

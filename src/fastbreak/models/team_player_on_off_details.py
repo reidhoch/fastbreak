@@ -4,7 +4,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from fastbreak.models.result_set import is_tabular_response, parse_result_set_by_name
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.result_set import (
+    is_tabular_response,
+    parse_result_set_by_name,
+)
 
 
 class TeamOnOffOverall(BaseModel):
@@ -78,7 +82,7 @@ class TeamOnOffOverall(BaseModel):
     plus_minus_rank: int = Field(alias="PLUS_MINUS_RANK")
 
 
-class PlayerOnOffDetails(BaseModel):
+class PlayerOnOffDetails(PandasMixin, PolarsMixin, BaseModel):
     """Team statistics when a specific player is on or off the court.
 
     Shows how the team performs with and without each player.

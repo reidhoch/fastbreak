@@ -4,6 +4,8 @@ from typing import Any, TypeGuard
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+
 
 def _is_singular_result_set(data: object) -> TypeGuard[dict[str, Any]]:
     """Check if data uses the singular resultSet format."""
@@ -18,7 +20,7 @@ def _parse_singular_result_set(data: dict[str, Any]) -> list[dict[str, Any]]:
     return [dict(zip(headers, row, strict=True)) for row in rows]
 
 
-class LeagueLeader(BaseModel):
+class LeagueLeader(PandasMixin, PolarsMixin, BaseModel):
     """A player's league leader statistics."""
 
     player_id: int = Field(alias="PLAYER_ID")

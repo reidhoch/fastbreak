@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from fastbreak.models.meta import Meta
-from fastbreak.models.player_track_statistics import (
+from fastbreak.models.common.meta import Meta
+from fastbreak.models.common.player_track_statistics import (
     PlayerTrackStatistics,
     TeamPlayerTrackStatistics,
 )

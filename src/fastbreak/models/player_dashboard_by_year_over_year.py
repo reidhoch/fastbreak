@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from fastbreak.models.result_set import (
+from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
     parse_single_result_set,
@@ -53,7 +53,7 @@ class YearOverYearStats(BaseModel):
     tov: float = Field(alias="TOV")
     stl: float = Field(alias="STL")
     blk: float = Field(alias="BLK")
-    blka: float = Field(alias="BLKA")
+    blka: float | None = Field(alias="BLKA")
     pf: float = Field(alias="PF")
     pfd: float = Field(alias="PFD")
     pts: float = Field(alias="PTS")
@@ -96,7 +96,7 @@ class YearOverYearStats(BaseModel):
     dd2_rank: int = Field(alias="DD2_RANK")
     td3_rank: int = Field(alias="TD3_RANK")
     wnba_fantasy_pts_rank: int = Field(alias="WNBA_FANTASY_PTS_RANK")
-    team_count: int = Field(alias="TEAM_COUNT")
+    team_count: int | None = Field(default=None, alias="TEAM_COUNT")
 
 
 class PlayerDashboardByYearOverYearResponse(BaseModel):
