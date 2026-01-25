@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, Field, model_validator
 
-from fastbreak.models.result_set import tabular_validator
+from fastbreak.models.common.result_set import tabular_validator
 
 
 class TeamYear(BaseModel):

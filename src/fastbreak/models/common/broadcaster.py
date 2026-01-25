@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Broadcaster(BaseModel):
@@ -8,13 +8,14 @@ class Broadcaster(BaseModel):
     broadcasterVideoLink: str
     broadcasterDescription: str
     broadcasterTeamId: int
-    regionId: int
+    regionId: int | None = None  # Not present in older game data
 
 
 class Broadcasters(BaseModel):
-    internationalBroadcasters: list[Broadcaster]
-    internationalRadioBroadcasters: list[Broadcaster]
-    internationalOttBroadcasters: list[Broadcaster]
+    # International fields may not exist in older game data
+    internationalBroadcasters: list[Broadcaster] = Field(default_factory=list)
+    internationalRadioBroadcasters: list[Broadcaster] = Field(default_factory=list)
+    internationalOttBroadcasters: list[Broadcaster] = Field(default_factory=list)
     nationalBroadcasters: list[Broadcaster]
     nationalRadioBroadcasters: list[Broadcaster]
     nationalOttBroadcasters: list[Broadcaster]

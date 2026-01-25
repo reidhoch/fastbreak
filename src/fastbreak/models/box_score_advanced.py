@@ -1,13 +1,14 @@
 from pydantic import BaseModel
 
-from fastbreak.models.advanced_statistics import (
+from fastbreak.models.common.advanced_statistics import (
     AdvancedStatistics,
     AdvancedTeamStatistics,
 )
-from fastbreak.models.meta import Meta
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.meta import Meta
 
 
-class AdvancedPlayer(BaseModel):
+class AdvancedPlayer(PandasMixin, PolarsMixin, BaseModel):
     """Player with advanced statistics."""
 
     personId: int

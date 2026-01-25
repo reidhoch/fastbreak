@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from fastbreak.models.result_set import (
+from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
     parse_single_result_set,
@@ -40,7 +40,7 @@ class ShotTypeRebounding(BaseModel):
 
     player_id: int = Field(alias="PLAYER_ID")
     player_name_last_first: str = Field(alias="PLAYER_NAME_LAST_FIRST")
-    sort_order: int = Field(alias="SORT_ORDER")
+    sort_order: int | None = Field(alias="SORT_ORDER")
     games: int = Field(alias="G")
     shot_type_range: str = Field(alias="SHOT_TYPE_RANGE")
     reb_frequency: float = Field(alias="REB_FREQUENCY")
@@ -62,7 +62,7 @@ class NumContestedRebounding(BaseModel):
 
     player_id: int = Field(alias="PLAYER_ID")
     player_name_last_first: str = Field(alias="PLAYER_NAME_LAST_FIRST")
-    sort_order: int = Field(alias="SORT_ORDER")
+    sort_order: int | None = Field(alias="SORT_ORDER")
     games: int = Field(alias="G")
     reb_num_contesting_range: str = Field(alias="REB_NUM_CONTESTING_RANGE")
     reb_frequency: float = Field(alias="REB_FREQUENCY")
@@ -84,7 +84,7 @@ class ShotDistanceRebounding(BaseModel):
 
     player_id: int = Field(alias="PLAYER_ID")
     player_name_last_first: str = Field(alias="PLAYER_NAME_LAST_FIRST")
-    sort_order: int = Field(alias="SORT_ORDER")
+    sort_order: int | None = Field(alias="SORT_ORDER")
     games: int = Field(alias="G")
     shot_dist_range: str = Field(alias="SHOT_DIST_RANGE")
     reb_frequency: float = Field(alias="REB_FREQUENCY")
@@ -106,9 +106,9 @@ class RebDistanceRebounding(BaseModel):
 
     player_id: int = Field(alias="PLAYER_ID")
     player_name_last_first: str = Field(alias="PLAYER_NAME_LAST_FIRST")
-    sort_order: int = Field(alias="SORT_ORDER")
+    sort_order: int | None = Field(alias="SORT_ORDER")
     games: int = Field(alias="G")
-    reb_dist_range: str = Field(alias="REB_DIST_RANGE")
+    reb_dist_range: str | None = Field(alias="REB_DIST_RANGE")
     reb_frequency: float = Field(alias="REB_FREQUENCY")
     oreb: float = Field(alias="OREB")
     dreb: float = Field(alias="DREB")

@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from fastbreak.models.result_set import is_tabular_response, parse_result_set
+from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
 class FranchisePlayer(BaseModel):
@@ -32,17 +32,17 @@ class FranchisePlayer(BaseModel):
     fta: float = Field(alias="FTA")
     ft_pct: float | None = Field(default=None, alias="FT_PCT")
 
-    # Rebounds
-    oreb: float = Field(alias="OREB")
-    dreb: float = Field(alias="DREB")
-    reb: float = Field(alias="REB")
+    # Rebounds (OREB/DREB not tracked before 1973, REB missing for some early seasons)
+    oreb: float | None = Field(default=None, alias="OREB")
+    dreb: float | None = Field(default=None, alias="DREB")
+    reb: float | None = Field(default=None, alias="REB")
 
-    # Other stats
+    # Other stats (STL/BLK not tracked before 1973, TOV not tracked before 1977)
     ast: float = Field(alias="AST")
     pf: float = Field(alias="PF")
-    stl: float = Field(alias="STL")
+    stl: float | None = Field(default=None, alias="STL")
     tov: float | None = Field(default=None, alias="TOV")
-    blk: float = Field(alias="BLK")
+    blk: float | None = Field(default=None, alias="BLK")
     pts: float = Field(alias="PTS")
 
 

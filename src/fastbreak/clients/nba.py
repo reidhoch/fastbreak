@@ -5,7 +5,7 @@ from types import TracebackType
 from typing import ClassVar, Self, TypeVar
 
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, TCPConnector
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from tenacity import (
     AsyncRetrying,
     retry_if_exception,
@@ -14,11 +14,13 @@ from tenacity import (
 )
 
 from fastbreak.endpoints.base import Endpoint
+from fastbreak.logging import logger
 
 T = TypeVar("T", bound=BaseModel)
 
 HTTP_TOO_MANY_REQUESTS = 429
 HTTP_SERVER_ERROR_MIN = 500
+BATCH_PROGRESS_THRESHOLD = 10
 
 
 def _is_retryable_error(exc: BaseException) -> bool:
@@ -38,15 +40,20 @@ class NBAClient:
     DEFAULT_HEADERS: ClassVar[dict[str, str]] = {
         "Accept": "*/*",
         "Accept-Encoding": "gzip, deflate, br",
-        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Language": "en-US,en;q=0.9",
         "Connection": "keep-alive",
-        "Referer": "https://stats.nba.com/",
+        "DNT": "1",
+        "Origin": "https://www.nba.com",
+        "Referer": "https://www.nba.com/",
         "Pragma": "no-cache",
         "Cache-Control": "no-cache",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0",
-        "Sec-Ch-Ua": '"Not.A/Brand";v="8", "Chromium";v="114", "Firefox";v="114"',
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
+        "Sec-Ch-Ua": '"Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"',
         "Sec-Ch-Ua-Mobile": "?0",
+        "Sec-Ch-Ua-Platform": '"macOS"',
         "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-site",
     }
 
     def __init__(
@@ -112,13 +119,45 @@ class NBAClient:
         """
         session = await self._get_session()
         url = f"{self.BASE_URL}/{endpoint.path}"
+        log = logger.bind(endpoint=endpoint.path)
 
         async for attempt in self._retry:
             with attempt:
+                attempt_num = attempt.retry_state.attempt_number
+                await log.adebug(
+                    "request_attempt",
+                    attempt=attempt_num,
+                    url=url,
+                    params=endpoint.params(),
+                )
+
                 async with session.get(url, params=endpoint.params()) as resp:
+                    if resp.status == HTTP_TOO_MANY_REQUESTS:
+                        retry_after = resp.headers.get("Retry-After")
+                        await log.adebug(
+                            "rate_limited",
+                            status=resp.status,
+                            retry_after=retry_after,
+                            attempt=attempt_num,
+                        )
                     resp.raise_for_status()
                     data = await resp.json()
-                    return endpoint.parse_response(data)
+
+                    try:
+                        result = endpoint.parse_response(data)
+                    except ValidationError as e:
+                        await log.adebug(
+                            "validation_failed",
+                            error=str(e),
+                            endpoint=endpoint.path,
+                            response_keys=list(data.keys())
+                            if isinstance(data, dict)
+                            else None,
+                        )
+                        raise
+                    else:
+                        await log.adebug("request_success", attempt=attempt_num)
+                        return result
 
         # This line is unreachable due to reraise=True, but satisfies the type checker
         msg = "Retry loop exited unexpectedly"
@@ -153,16 +192,29 @@ class NBAClient:
         if not endpoints:
             return []
 
+        total = len(endpoints)
         concurrency = max_concurrency or 10
         semaphore = Semaphore(concurrency)
-        results: list[T] = [None] * len(endpoints)  # type: ignore[list-item]
+        results: list[T] = [None] * total  # type: ignore[list-item]
+        completed = 0
+
+        log = logger.bind(total=total, concurrency=concurrency)
+        await log.adebug("batch_start")
 
         async def _fetch_with_semaphore(index: int, endpoint: Endpoint[T]) -> None:
+            nonlocal completed
             async with semaphore:
                 results[index] = await self.get(endpoint)
+                completed += 1
+                if (
+                    total >= BATCH_PROGRESS_THRESHOLD
+                    and completed % max(1, total // BATCH_PROGRESS_THRESHOLD) == 0
+                ):
+                    await log.adebug("batch_progress", completed=completed, total=total)
 
         async with asyncio.TaskGroup() as tg:
             for i, endpoint in enumerate(endpoints):
                 tg.create_task(_fetch_with_semaphore(i, endpoint))
 
+        await log.adebug("batch_complete", total=total)
         return results

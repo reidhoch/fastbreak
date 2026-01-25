@@ -151,7 +151,11 @@ class TestNBAClientGet:
 
         call_args = mock_session.get.call_args
         assert call_args[0][0] == "https://stats.nba.com/stats/playbyplayv3"
-        assert call_args[1]["params"] == {"GameID": "0022500571"}
+        assert call_args[1]["params"] == {
+            "GameID": "0022500571",
+            "EndPeriod": "0",
+            "StartPeriod": "0",
+        }
 
 
 class TestNBAClientSession:

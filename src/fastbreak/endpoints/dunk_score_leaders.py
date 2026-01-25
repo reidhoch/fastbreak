@@ -18,7 +18,7 @@ class DunkScoreLeaders(Endpoint[DunkScoreLeadersResponse]):
     path: ClassVar[str] = "dunkscoreleaders"
     response_model: ClassVar[type[DunkScoreLeadersResponse]] = DunkScoreLeadersResponse
 
-    season: str = "2024-25"
+    season: str = "2025-26"
     season_type: str = "Regular Season"
     league_id: str = "00"
     player_id: int | None = None
@@ -29,7 +29,7 @@ class DunkScoreLeaders(Endpoint[DunkScoreLeadersResponse]):
         """Return the query parameters for this endpoint."""
         result = {
             "LeagueID": self.league_id,
-            "SeasonYear": self.season,
+            "Season": self.season,
             "SeasonType": self.season_type,
         }
         if self.player_id is not None:

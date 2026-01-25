@@ -45,16 +45,16 @@ class TestPlayerCompare:
             player_id_list="2544",
             vs_player_id_list="203999",
             season="2023-24",
-            last_n_games="10",
+            last_n_games=10,
             outcome="W",
         )
 
         assert endpoint.season == "2023-24"
-        assert endpoint.last_n_games == "10"
+        assert endpoint.last_n_games == 10
         assert endpoint.outcome == "W"
 
     def test_params_with_required_only(self):
-        """params() returns required parameters."""
+        """params() returns required and always-sent parameters."""
         endpoint = PlayerCompare()
 
         params = endpoint.params()
@@ -70,6 +70,10 @@ class TestPlayerCompare:
             "PaceAdjust": "N",
             "PlusMinus": "N",
             "Rank": "N",
+            "Month": "0",
+            "OpponentTeamID": "0",
+            "Period": "0",
+            "LastNGames": "0",
         }
 
     def test_params_with_filters(self):
@@ -77,7 +81,7 @@ class TestPlayerCompare:
         endpoint = PlayerCompare(
             player_id_list="2544",
             vs_player_id_list="203999",
-            last_n_games="10",
+            last_n_games=10,
             outcome="W",
             location="Home",
         )

@@ -4,7 +4,10 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from fastbreak.models.result_set import is_tabular_response, parse_result_set_by_name
+from fastbreak.models.common.result_set import (
+    is_tabular_response,
+    parse_result_set_by_name,
+)
 
 
 class _TeamBaseShotStats(BaseModel):
@@ -12,7 +15,7 @@ class _TeamBaseShotStats(BaseModel):
 
     team_id: int = Field(alias="TEAM_ID")
     team_name: str = Field(alias="TEAM_NAME")
-    sort_order: int = Field(alias="SORT_ORDER")
+    sort_order: int | None = Field(alias="SORT_ORDER")
     games: int = Field(alias="G")
     fga_frequency: float = Field(alias="FGA_FREQUENCY")
     fgm: float = Field(alias="FGM")
@@ -50,7 +53,7 @@ class TeamDribbleStats(_TeamBaseShotStats):
 class TeamClosestDefenderStats(_TeamBaseShotStats):
     """Shot stats broken down by closest defender distance."""
 
-    close_def_dist_range: str = Field(alias="CLOSE_DEF_DIST_RANGE")
+    close_def_dist_range: str | None = Field(alias="CLOSE_DEF_DIST_RANGE")
 
 
 class TeamTouchTimeStats(_TeamBaseShotStats):

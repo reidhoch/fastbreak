@@ -20,17 +20,18 @@ class PlayerDashPtPass(Endpoint[PlayerDashPtPassResponse]):
         season: Season in YYYY-YY format (e.g., "2024-25")
         season_type: Type of season ("Regular Season", "Playoffs", "Pre Season")
         per_mode: Stat mode ("Totals", "PerGame")
-        team_id: Team ID filter
+        team_id: Team ID filter (0 for all)
         outcome: Filter by game outcome ("W", "L")
         location: Filter by game location ("Home", "Road")
-        month: Filter by month (1-12)
+        month: Filter by month (1-12, 0 for all)
         season_segment: Filter by season segment ("Pre All-Star", "Post All-Star")
         date_from: Filter games from date (MM/DD/YYYY)
         date_to: Filter games to date (MM/DD/YYYY)
-        opponent_team_id: Filter by opponent team ID
+        opponent_team_id: Filter by opponent team ID (0 for all)
         vs_conference: Filter by opponent conference ("East", "West")
         vs_division: Filter by opponent division
-        last_n_games: Filter to last N games
+        last_n_games: Filter to last N games (0 for all)
+        ist_round: In-Season Tournament round filter
 
     """
 
@@ -38,47 +39,51 @@ class PlayerDashPtPass(Endpoint[PlayerDashPtPassResponse]):
     response_model: ClassVar[type[PlayerDashPtPassResponse]] = PlayerDashPtPassResponse
 
     # Required parameters
-    player_id: str = ""
+    player_id: int = 0
     league_id: str = "00"
     season: str = "2024-25"
     season_type: str = "Regular Season"
     per_mode: str = "PerGame"
 
+    # Always-sent filters with defaults
+    team_id: int = 0
+    month: int = 0
+    opponent_team_id: int = 0
+    last_n_games: int = 0
+
     # Optional filters
-    team_id: str | None = None
     outcome: str | None = None
     location: str | None = None
-    month: str | None = None
     season_segment: str | None = None
     date_from: str | None = None
     date_to: str | None = None
-    opponent_team_id: str | None = None
     vs_conference: str | None = None
     vs_division: str | None = None
-    last_n_games: str | None = None
+    ist_round: str | None = None
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""
         result: dict[str, str] = {
-            "PlayerID": self.player_id,
+            "PlayerID": str(self.player_id),
             "LeagueID": self.league_id,
             "Season": self.season,
             "SeasonType": self.season_type,
             "PerMode": self.per_mode,
+            "TeamID": str(self.team_id),
+            "Month": str(self.month),
+            "OpponentTeamID": str(self.opponent_team_id),
+            "LastNGames": str(self.last_n_games),
         }
 
         optional_params = {
-            "team_id": "TeamID",
             "outcome": "Outcome",
             "location": "Location",
-            "month": "Month",
             "season_segment": "SeasonSegment",
             "date_from": "DateFrom",
             "date_to": "DateTo",
-            "opponent_team_id": "OpponentTeamID",
             "vs_conference": "VsConference",
             "vs_division": "VsDivision",
-            "last_n_games": "LastNGames",
+            "ist_round": "ISTRound",
         }
 
         for attr, param_name in optional_params.items():

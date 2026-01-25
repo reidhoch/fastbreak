@@ -22,16 +22,15 @@ class PlayerCompare(Endpoint[PlayerCompareResponse]):
         pace_adjust: Whether to pace adjust ("Y", "N")
         plus_minus: Whether to include plus/minus ("Y", "N")
         rank: Whether to include rank ("Y", "N")
+        month: Filter by month (0 for all)
+        opponent_team_id: Filter by opponent team ID (0 for all)
+        period: Filter by period (0 for all)
+        last_n_games: Filter to last N games (0 for all)
         conference: Filter by conference ("East", "West")
         division: Filter by division
         game_segment: Filter by game segment ("First Half", "Second Half", "Overtime")
-        last_n_games: Filter to last N games
         location: Filter by game location ("Home", "Road")
-        month: Filter by month (1-12)
-        opponent_team_id: Filter by opponent team ID
         outcome: Filter by game outcome ("W", "L")
-        period: Filter by period (0 for all)
-        po_round: Playoff round filter
         season_segment: Filter by season segment ("Pre All-Star", "Post All-Star")
         shot_clock_range: Filter by shot clock range
         date_from: Filter games from date (MM/DD/YYYY)
@@ -56,17 +55,18 @@ class PlayerCompare(Endpoint[PlayerCompareResponse]):
     plus_minus: str = "N"
     rank: str = "N"
 
+    # Always-sent filters with defaults
+    month: int = 0
+    opponent_team_id: int = 0
+    period: int = 0
+    last_n_games: int = 0
+
     # Optional filters
     conference: str | None = None
     division: str | None = None
     game_segment: str | None = None
-    last_n_games: str | None = None
     location: str | None = None
-    month: str | None = None
-    opponent_team_id: str | None = None
     outcome: str | None = None
-    period: str | None = None
-    po_round: str | None = None
     season_segment: str | None = None
     shot_clock_range: str | None = None
     date_from: str | None = None
@@ -87,6 +87,10 @@ class PlayerCompare(Endpoint[PlayerCompareResponse]):
             "PaceAdjust": self.pace_adjust,
             "PlusMinus": self.plus_minus,
             "Rank": self.rank,
+            "Month": str(self.month),
+            "OpponentTeamID": str(self.opponent_team_id),
+            "Period": str(self.period),
+            "LastNGames": str(self.last_n_games),
         }
 
         # Map of optional attributes to API parameter names
@@ -94,13 +98,8 @@ class PlayerCompare(Endpoint[PlayerCompareResponse]):
             "conference": "Conference",
             "division": "Division",
             "game_segment": "GameSegment",
-            "last_n_games": "LastNGames",
             "location": "Location",
-            "month": "Month",
-            "opponent_team_id": "OpponentTeamID",
             "outcome": "Outcome",
-            "period": "Period",
-            "po_round": "PORound",
             "season_segment": "SeasonSegment",
             "shot_clock_range": "ShotClockRange",
             "date_from": "DateFrom",

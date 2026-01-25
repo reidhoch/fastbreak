@@ -3,7 +3,7 @@
 import pytest
 from pydantic import BaseModel
 
-from fastbreak.models.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
 
 class SimpleModel(PandasMixin, PolarsMixin):
@@ -46,10 +46,22 @@ class DeeplyNestedModel(PandasMixin, PolarsMixin):
     outer: DeeplyNestedMiddle
 
 
+@pytest.fixture
+def pandas_available():
+    """Skip test if pandas is not available."""
+    return pytest.importorskip("pandas")
+
+
+@pytest.fixture
+def polars_available():
+    """Skip test if polars is not available."""
+    return pytest.importorskip("polars")
+
+
 class TestPandasMixin:
     """Tests for PandasMixin.to_dataframe()."""
 
-    def test_to_dataframe_basic(self):
+    def test_to_dataframe_basic(self, pandas_available):
         """Convert list of models to pandas DataFrame."""
         models = [
             SimpleModel(name="alice", value=10),
@@ -62,13 +74,13 @@ class TestPandasMixin:
         assert df["name"].tolist() == ["alice", "bob"]
         assert df["value"].tolist() == [10, 20]
 
-    def test_to_dataframe_empty_list(self):
+    def test_to_dataframe_empty_list(self, pandas_available):
         """Empty list returns empty DataFrame."""
         df = SimpleModel.to_dataframe([])
 
         assert len(df) == 0
 
-    def test_to_dataframe_single_item(self):
+    def test_to_dataframe_single_item(self, pandas_available):
         """Single item list works correctly."""
         models = [SimpleModel(name="single", value=42)]
         df = SimpleModel.to_dataframe(models)
@@ -77,7 +89,7 @@ class TestPandasMixin:
         assert df["name"].iloc[0] == "single"
         assert df["value"].iloc[0] == 42
 
-    def test_to_dataframe_flatten_nested(self):
+    def test_to_dataframe_flatten_nested(self, pandas_available):
         """Nested models are flattened with dot separator by default."""
         models = [
             NestedModel(player_id=1, stats=NestedStats(points=30, assists=10)),
@@ -90,7 +102,7 @@ class TestPandasMixin:
         assert df["stats.points"].tolist() == [30, 25]
         assert df["stats.assists"].tolist() == [10, 15]
 
-    def test_to_dataframe_no_flatten(self):
+    def test_to_dataframe_no_flatten(self, pandas_available):
         """With flatten=False, nested models become dict columns."""
         models = [
             NestedModel(player_id=1, stats=NestedStats(points=30, assists=10)),
@@ -101,7 +113,7 @@ class TestPandasMixin:
         assert isinstance(df["stats"].iloc[0], dict)
         assert df["stats"].iloc[0]["points"] == 30
 
-    def test_to_dataframe_custom_separator(self):
+    def test_to_dataframe_custom_separator(self, pandas_available):
         """Custom separator for flattened column names."""
         models = [
             NestedModel(player_id=1, stats=NestedStats(points=30, assists=10)),
@@ -111,7 +123,7 @@ class TestPandasMixin:
         assert "stats_points" in df.columns
         assert "stats_assists" in df.columns
 
-    def test_to_dataframe_deeply_nested(self):
+    def test_to_dataframe_deeply_nested(self, pandas_available):
         """Deeply nested structures are fully flattened."""
         models = [
             DeeplyNestedModel(
@@ -127,7 +139,7 @@ class TestPandasMixin:
 class TestPolarsMixin:
     """Tests for PolarsMixin.to_polars()."""
 
-    def test_to_polars_basic(self):
+    def test_to_polars_basic(self, polars_available):
         """Convert list of models to Polars DataFrame."""
         models = [
             SimpleModel(name="alice", value=10),
@@ -139,13 +151,13 @@ class TestPolarsMixin:
         assert df["name"].to_list() == ["alice", "bob"]
         assert df["value"].to_list() == [10, 20]
 
-    def test_to_polars_empty_list(self):
+    def test_to_polars_empty_list(self, polars_available):
         """Empty list returns empty DataFrame."""
         df = SimpleModel.to_polars([])
 
         assert len(df) == 0
 
-    def test_to_polars_single_item(self):
+    def test_to_polars_single_item(self, polars_available):
         """Single item list works correctly."""
         models = [SimpleModel(name="single", value=42)]
         df = SimpleModel.to_polars(models)
@@ -154,7 +166,7 @@ class TestPolarsMixin:
         assert df["name"][0] == "single"
         assert df["value"][0] == 42
 
-    def test_to_polars_flatten_structs(self):
+    def test_to_polars_flatten_structs(self, polars_available):
         """Nested structs are flattened with dot separator by default."""
         models = [
             NestedModel(player_id=1, stats=NestedStats(points=30, assists=10)),
@@ -167,7 +179,7 @@ class TestPolarsMixin:
         assert df["stats.points"].to_list() == [30, 25]
         assert df["stats.assists"].to_list() == [10, 15]
 
-    def test_to_polars_no_flatten(self):
+    def test_to_polars_no_flatten(self, polars_available):
         """With flatten=False, structs remain as Struct type."""
         import polars as pl
 
@@ -179,7 +191,7 @@ class TestPolarsMixin:
         assert "stats" in df.columns
         assert df["stats"].dtype == pl.Struct
 
-    def test_to_polars_custom_separator(self):
+    def test_to_polars_custom_separator(self, polars_available):
         """Custom separator for flattened column names."""
         models = [
             NestedModel(player_id=1, stats=NestedStats(points=30, assists=10)),
@@ -189,7 +201,7 @@ class TestPolarsMixin:
         assert "stats_points" in df.columns
         assert "stats_assists" in df.columns
 
-    def test_to_polars_deeply_nested(self):
+    def test_to_polars_deeply_nested(self, polars_available):
         """Deeply nested structures are fully flattened recursively."""
         models = [
             DeeplyNestedModel(
@@ -205,7 +217,7 @@ class TestPolarsMixin:
 class TestIntegrationWithRealModels:
     """Integration tests using actual fastbreak models."""
 
-    def test_team_standing_to_pandas(self):
+    def test_team_standing_to_pandas(self, pandas_available):
         """TeamStanding model converts to pandas DataFrame."""
         from fastbreak.models import TeamStanding
 
@@ -305,7 +317,7 @@ class TestIntegrationWithRealModels:
         assert df["team_name"].iloc[0] == "Thunder"
         assert df["wins"].iloc[0] == 36
 
-    def test_team_standing_to_polars(self):
+    def test_team_standing_to_polars(self, polars_available):
         """TeamStanding model converts to Polars DataFrame."""
         from fastbreak.models import TeamStanding
 

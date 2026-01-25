@@ -22,9 +22,15 @@ class TestShotChartDetailEndpoint:
         assert params["PlayerID"] == "2544"
         assert params["TeamID"] == "0"
         assert params["LeagueID"] == "00"
-        assert params["Season"] == "2024-25"
         assert params["SeasonType"] == "Regular Season"
         assert params["ContextMeasure"] == "FGA"
+        # Season is optional - not included when None
+        assert "Season" not in params
+        # These are always sent with defaults
+        assert params["OpponentTeamID"] == "0"
+        assert params["Period"] == "0"
+        assert params["LastNGames"] == "0"
+        assert params["Month"] == "0"
 
     def test_custom_params(self):
         """Custom parameters are included in params dict."""
@@ -46,14 +52,16 @@ class TestShotChartDetailEndpoint:
         assert params["Period"] == "4"
 
     def test_optional_params_excluded_when_none(self):
-        """Optional params are excluded when None."""
+        """Optional string params are excluded when None."""
         endpoint = ShotChartDetail(player_id=2544)
         params = endpoint.params()
 
+        # String params excluded when None
         assert "GameID" not in params
-        assert "OpponentTeamID" not in params
-        assert "Period" not in params
-        assert "LastNGames" not in params
+        assert "Location" not in params
+        assert "Outcome" not in params
+        assert "ISTRound" not in params
+        assert "ClutchTime" not in params
 
 
 class TestShotChartDetailResponse:

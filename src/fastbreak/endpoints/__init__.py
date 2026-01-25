@@ -106,6 +106,15 @@ if TYPE_CHECKING:
         InfographicFanDuelPlayer as InfographicFanDuelPlayer,
     )
     from fastbreak.endpoints.ist_standings import IstStandings as IstStandings
+    from fastbreak.endpoints.league_dash_lineups import (
+        LeagueDashLineups as LeagueDashLineups,
+    )
+    from fastbreak.endpoints.league_dash_pt_stats import (
+        LeagueDashPtStats as LeagueDashPtStats,
+    )
+    from fastbreak.endpoints.league_dash_team_shot_locations import (
+        LeagueDashTeamShotLocations as LeagueDashTeamShotLocations,
+    )
     from fastbreak.endpoints.league_game_finder import (
         LeagueGameFinder as LeagueGameFinder,
     )
@@ -128,6 +137,9 @@ if TYPE_CHECKING:
     )
     from fastbreak.endpoints.league_standings import (
         LeagueStandings as LeagueStandings,
+    )
+    from fastbreak.endpoints.leverage_leaders import (
+        LeverageLeaders as LeverageLeaders,
     )
     from fastbreak.endpoints.matchups_rollup import MatchupsRollup as MatchupsRollup
     from fastbreak.endpoints.play_by_play import PlayByPlay as PlayByPlay
@@ -223,6 +235,9 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.shot_chart_lineup_detail import (
         ShotChartLineupDetail as ShotChartLineupDetail,
     )
+    from fastbreak.endpoints.shot_quality_leaders import (
+        ShotQualityLeaders as ShotQualityLeaders,
+    )
     from fastbreak.endpoints.synergy_playtypes import (
         SynergyPlaytypes as SynergyPlaytypes,
     )
@@ -267,6 +282,7 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.team_year_by_year_stats import (
         TeamYearByYearStats as TeamYearByYearStats,
     )
+    from fastbreak.endpoints.video_status import VideoStatus as VideoStatus
 
 # Auto-discover and import all submodules at runtime
 _package_dir = Path(__file__).parent

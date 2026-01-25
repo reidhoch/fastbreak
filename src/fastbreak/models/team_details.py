@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from fastbreak.models.result_set import (
+from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
     parse_single_result_set,
@@ -65,7 +65,8 @@ class TeamHofPlayer(BaseModel):
 class TeamRetiredJersey(BaseModel):
     """Retired jersey entry."""
 
-    player_id: int = Field(alias="PLAYERID")
+    # player_id can be None for non-players (broadcasters, coaches, owners)
+    player_id: int | None = Field(default=None, alias="PLAYERID")
     player: str = Field(alias="PLAYER")
     position: str | None = Field(alias="POSITION")
     jersey: str | None = Field(alias="JERSEY")

@@ -4,10 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from fastbreak.models.result_set import is_tabular_response, parse_result_set_by_name
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.result_set import (
+    is_tabular_response,
+    parse_result_set_by_name,
+)
 
 
-class TeamYearStats(BaseModel):
+class TeamYearStats(PandasMixin, PolarsMixin, BaseModel):
     """A single season's statistics for a team.
 
     Contains traditional stats plus playoff and ranking info.
@@ -31,8 +35,9 @@ class TeamYearStats(BaseModel):
     # Playoff info
     po_wins: int = Field(alias="PO_WINS")
     po_losses: int = Field(alias="PO_LOSSES")
-    conf_count: int = Field(alias="CONF_COUNT")
-    div_count: int = Field(alias="DIV_COUNT")
+    # Conference/division counts (not tracked for all historical seasons)
+    conf_count: int | None = Field(default=None, alias="CONF_COUNT")
+    div_count: int | None = Field(default=None, alias="DIV_COUNT")
     nba_finals_appearance: str = Field(alias="NBA_FINALS_APPEARANCE")
 
     # Traditional stats

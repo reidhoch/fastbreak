@@ -4,7 +4,10 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from fastbreak.models.result_set import is_tabular_response, parse_single_result_set
+from fastbreak.models.common.result_set import (
+    is_tabular_response,
+    parse_single_result_set,
+)
 
 
 class ClutchStats(BaseModel):
