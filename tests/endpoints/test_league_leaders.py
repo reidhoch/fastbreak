@@ -2,6 +2,10 @@
 
 from fastbreak.endpoints import LeagueLeaders
 from fastbreak.models import LeagueLeadersResponse
+from fastbreak.models.league_leaders import (
+    _is_singular_result_set,
+    _parse_singular_result_set,
+)
 
 
 class TestLeagueLeaders:
@@ -195,3 +199,109 @@ class TestLeagueLeadersResponse:
         response = LeagueLeadersResponse.model_validate(raw_response)
 
         assert response.leaders == []
+
+
+class TestIsSingularResultSet:
+    """Tests for _is_singular_result_set TypeGuard."""
+
+    def test_returns_true_for_singular_format(self):
+        """Returns True when data has 'resultSet' key (singular)."""
+        data = {"resultSet": {"headers": [], "rowSet": []}}
+        assert _is_singular_result_set(data) is True
+
+    def test_returns_false_for_plural_format(self):
+        """Returns False for 'resultSets' (plural) format."""
+        data = {"resultSets": [{"headers": [], "rowSet": []}]}
+        assert _is_singular_result_set(data) is False
+
+    def test_returns_false_for_non_dict(self):
+        """Returns False for non-dict types."""
+        assert _is_singular_result_set([1, 2, 3]) is False
+        assert _is_singular_result_set("string") is False
+        assert _is_singular_result_set(None) is False
+        assert _is_singular_result_set(123) is False
+
+    def test_returns_false_for_empty_dict(self):
+        """Returns False for empty dict."""
+        assert _is_singular_result_set({}) is False
+
+    def test_returns_false_for_other_keys(self):
+        """Returns False when dict has other keys but not resultSet."""
+        data = {"other_key": "value", "another": 123}
+        assert _is_singular_result_set(data) is False
+
+
+class TestParseSingularResultSet:
+    """Tests for _parse_singular_result_set function."""
+
+    def test_parses_headers_and_rows(self):
+        """Parses headers and rows into list of dicts."""
+        data = {
+            "resultSet": {
+                "headers": ["ID", "NAME", "VALUE"],
+                "rowSet": [
+                    [1, "Alice", 100],
+                    [2, "Bob", 200],
+                ],
+            }
+        }
+
+        result = _parse_singular_result_set(data)
+
+        assert len(result) == 2
+        assert result[0] == {"ID": 1, "NAME": "Alice", "VALUE": 100}
+        assert result[1] == {"ID": 2, "NAME": "Bob", "VALUE": 200}
+
+    def test_returns_empty_list_for_empty_rowset(self):
+        """Returns empty list when rowSet is empty."""
+        data = {
+            "resultSet": {
+                "headers": ["ID", "NAME"],
+                "rowSet": [],
+            }
+        }
+
+        result = _parse_singular_result_set(data)
+
+        assert result == []
+
+    def test_handles_single_row(self):
+        """Correctly parses single row."""
+        data = {
+            "resultSet": {
+                "headers": ["ID"],
+                "rowSet": [[42]],
+            }
+        }
+
+        result = _parse_singular_result_set(data)
+
+        assert result == [{"ID": 42}]
+
+    def test_handles_null_values(self):
+        """Preserves null values in rows."""
+        data = {
+            "resultSet": {
+                "headers": ["ID", "NULLABLE"],
+                "rowSet": [[1, None]],
+            }
+        }
+
+        result = _parse_singular_result_set(data)
+
+        assert result[0]["NULLABLE"] is None
+
+    def test_uses_correct_header_for_each_column(self):
+        """Each column value is mapped to correct header."""
+        data = {
+            "resultSet": {
+                "headers": ["A", "B", "C"],
+                "rowSet": [[10, 20, 30]],
+            }
+        }
+
+        result = _parse_singular_result_set(data)
+
+        assert result[0]["A"] == 10
+        assert result[0]["B"] == 20
+        assert result[0]["C"] == 30
