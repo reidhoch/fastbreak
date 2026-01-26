@@ -1,9 +1,11 @@
 import asyncio
+import ssl
 from asyncio import Lock, Semaphore
 from collections.abc import Sequence
 from types import TracebackType
 from typing import ClassVar, Self, TypeVar
 
+import certifi
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, TCPConnector
 from pydantic import BaseModel, ValidationError
 from tenacity import (
@@ -78,8 +80,10 @@ class NBAClient:
     async def _get_session(self) -> ClientSession:
         async with self._session_lock:
             if self._session is None:
+                ssl_context = ssl.create_default_context(cafile=certifi.where())
                 connector = TCPConnector(
                     limit_per_host=10,
+                    ssl=ssl_context,
                     ttl_dns_cache=300,
                 )
                 self._session = ClientSession(
