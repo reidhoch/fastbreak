@@ -3,7 +3,7 @@
 import pytest
 from pydantic import BaseModel
 
-from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin, _unnest_all
 
 
 class SimpleModel(PandasMixin, PolarsMixin):
@@ -415,3 +415,145 @@ class TestIntegrationWithRealModels:
         assert len(df) == 1
         assert df["team_name"][0] == "Thunder"
         assert df["wins"][0] == 36
+
+
+class TestUnnestAll:
+    """Tests for _unnest_all helper function."""
+
+    def test_returns_unchanged_when_no_struct_columns(self, polars_available):
+        """DataFrame without struct columns is returned unchanged."""
+        import polars as pl
+
+        df = pl.DataFrame({"a": [1, 2], "b": ["x", "y"]})
+        result = _unnest_all(df)
+
+        assert result.columns == ["a", "b"]
+        assert result["a"].to_list() == [1, 2]
+        assert result["b"].to_list() == ["x", "y"]
+
+    def test_unnests_single_struct_column(self, polars_available):
+        """Single struct column is unnested with proper prefix."""
+        import polars as pl
+
+        df = pl.DataFrame(
+            {
+                "id": [1, 2],
+                "data": [{"x": 10, "y": 20}, {"x": 30, "y": 40}],
+            }
+        )
+        result = _unnest_all(df)
+
+        assert "id" in result.columns
+        assert "data.x" in result.columns
+        assert "data.y" in result.columns
+        assert result["data.x"].to_list() == [10, 30]
+        assert result["data.y"].to_list() == [20, 40]
+
+    def test_unnests_multiple_struct_columns(self, polars_available):
+        """Multiple struct columns are all unnested."""
+        import polars as pl
+
+        df = pl.DataFrame(
+            {
+                "id": [1],
+                "stats1": [{"a": 10}],
+                "stats2": [{"b": 20}],
+            }
+        )
+        result = _unnest_all(df)
+
+        assert "stats1.a" in result.columns
+        assert "stats2.b" in result.columns
+        assert result["stats1.a"][0] == 10
+        assert result["stats2.b"][0] == 20
+
+    def test_uses_custom_separator(self, polars_available):
+        """Custom separator is used for column names."""
+        import polars as pl
+
+        df = pl.DataFrame(
+            {
+                "id": [1],
+                "data": [{"x": 10}],
+            }
+        )
+        result = _unnest_all(df, sep="_")
+
+        assert "data_x" in result.columns
+        assert result["data_x"][0] == 10
+
+    def test_unnests_nested_structs_recursively(self, polars_available):
+        """Nested structs are recursively unnested."""
+        import polars as pl
+
+        df = pl.DataFrame(
+            {
+                "id": [1],
+                "outer": [{"inner": {"value": 100}}],
+            }
+        )
+        result = _unnest_all(df)
+
+        assert "outer.inner.value" in result.columns
+        assert result["outer.inner.value"][0] == 100
+
+    def test_preserves_prefix_through_recursion(self, polars_available):
+        """Prefix is properly accumulated through recursive calls."""
+        import polars as pl
+
+        # Create deeply nested structure
+        df = pl.DataFrame(
+            {
+                "id": [1],
+                "a": [{"b": {"c": 42}}],
+            }
+        )
+        result = _unnest_all(df)
+
+        # The column should have full path
+        assert "a.b.c" in result.columns
+        assert result["a.b.c"][0] == 42
+
+    def test_handles_empty_dataframe(self, polars_available):
+        """Empty DataFrame is handled correctly."""
+        import polars as pl
+
+        df = pl.DataFrame()
+        result = _unnest_all(df)
+
+        assert len(result) == 0
+
+    def test_drops_original_struct_column(self, polars_available):
+        """Original struct column is dropped after unnesting."""
+        import polars as pl
+
+        df = pl.DataFrame(
+            {
+                "id": [1],
+                "nested": [{"x": 10}],
+            }
+        )
+        result = _unnest_all(df)
+
+        assert "nested" not in result.columns
+        assert "nested.x" in result.columns
+
+    def test_combines_unnested_columns_with_hstack(self, polars_available):
+        """Unnested columns are added alongside original columns."""
+        import polars as pl
+
+        df = pl.DataFrame(
+            {
+                "first": [1],
+                "middle": [{"val": 50}],
+                "last": [3],
+            }
+        )
+        result = _unnest_all(df)
+
+        assert "first" in result.columns
+        assert "middle.val" in result.columns
+        assert "last" in result.columns
+        assert result["first"][0] == 1
+        assert result["middle.val"][0] == 50
+        assert result["last"][0] == 3
