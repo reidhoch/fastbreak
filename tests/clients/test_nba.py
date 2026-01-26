@@ -1,12 +1,9 @@
 import asyncio
-import ssl
-from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import certifi
 import pytest
-import structlog
-from aiohttp import ClientSession, ClientTimeout, TCPConnector
-from structlog.testing import capture_logs
+from aiohttp import ClientSession, ClientTimeout
 from tenacity import wait_exponential_jitter
 
 from fastbreak.clients.nba import (
