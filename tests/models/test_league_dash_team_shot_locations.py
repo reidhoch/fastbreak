@@ -1,7 +1,5 @@
 """Tests for league_dash_team_shot_locations model and parsing functions."""
 
-import pytest
-
 from fastbreak.models.league_dash_team_shot_locations import (
     LeagueDashTeamShotLocationsResponse,
     ShotRange,
