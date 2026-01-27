@@ -6,7 +6,7 @@ from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import tabular_validator
 
 
-class CommonPlayer(PandasMixin, PolarsMixin):
+class CommonPlayer(PandasMixin, PolarsMixin, BaseModel):
     """A player entry from the CommonAllPlayers endpoint."""
 
     person_id: int = Field(alias="PERSON_ID")

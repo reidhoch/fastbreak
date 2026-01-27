@@ -2,8 +2,10 @@
 
 from pydantic import BaseModel, Field
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class IstGame(BaseModel):
+
+class IstGame(PandasMixin, PolarsMixin, BaseModel):
     """Individual IST game result for a team."""
 
     game_id: str = Field(alias="gameId")
@@ -15,7 +17,7 @@ class IstGame(BaseModel):
     outcome: str = Field(alias="outcome")
 
 
-class IstTeamStanding(BaseModel):
+class IstTeamStanding(PandasMixin, PolarsMixin, BaseModel):
     """Team standing in the IST (In-Season Tournament / NBA Cup)."""
 
     team_id: int = Field(alias="teamId")

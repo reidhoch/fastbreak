@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class Dunk(BaseModel):
+
+class Dunk(PandasMixin, PolarsMixin, BaseModel):
     """Individual dunk with scores and biomechanical data."""
 
     # Game context

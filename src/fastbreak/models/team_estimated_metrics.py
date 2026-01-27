@@ -4,8 +4,10 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class TeamEstimatedMetric(BaseModel):
+
+class TeamEstimatedMetric(PandasMixin, PolarsMixin, BaseModel):
     """Estimated advanced metrics for a team.
 
     Contains estimated offensive/defensive ratings, efficiency percentages,

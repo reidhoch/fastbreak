@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class PlayerTrackStatistics(BaseModel):
+
+class PlayerTrackStatistics(PandasMixin, PolarsMixin, BaseModel):
     """Player tracking statistics for an individual player."""
 
     minutes: str
@@ -27,7 +29,7 @@ class PlayerTrackStatistics(BaseModel):
     defendedAtRimFieldGoalPercentage: float
 
 
-class TeamPlayerTrackStatistics(BaseModel):
+class TeamPlayerTrackStatistics(PandasMixin, PolarsMixin, BaseModel):
     """Player tracking statistics aggregated at team level."""
 
     minutes: str

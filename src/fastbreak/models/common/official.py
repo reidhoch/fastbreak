@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class Official(BaseModel):
+
+class Official(PandasMixin, PolarsMixin, BaseModel):
     personId: int
     name: str
     nameI: str

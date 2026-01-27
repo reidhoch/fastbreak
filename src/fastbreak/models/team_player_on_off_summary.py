@@ -4,13 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
 )
 
 
-class TeamOnOffSummaryOverall(BaseModel):
+class TeamOnOffSummaryOverall(PandasMixin, PolarsMixin, BaseModel):
     """Team's overall statistics for the season.
 
     Contains aggregate stats with league-wide rankings.
@@ -81,7 +82,7 @@ class TeamOnOffSummaryOverall(BaseModel):
     plus_minus_rank: int = Field(alias="PLUS_MINUS_RANK")
 
 
-class PlayerOnOffSummary(BaseModel):
+class PlayerOnOffSummary(PandasMixin, PolarsMixin, BaseModel):
     """Summarized on/off court statistics for a player.
 
     Contains key impact metrics: ratings and plus/minus.

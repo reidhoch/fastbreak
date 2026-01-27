@@ -2,10 +2,11 @@
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import tabular_validator
 
 
-class TeamYear(BaseModel):
+class TeamYear(PandasMixin, PolarsMixin, BaseModel):
     """A team's years of existence in the league."""
 
     league_id: str = Field(alias="LEAGUE_ID")

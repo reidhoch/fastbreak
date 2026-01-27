@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class FourFactorsStatistics(BaseModel):
+
+class FourFactorsStatistics(PandasMixin, PolarsMixin, BaseModel):
     """Four factors statistics for a player or team.
 
     The four factors are: effective FG%, free throw rate,

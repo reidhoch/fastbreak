@@ -36,7 +36,7 @@ class PlayByPlayAction(PandasMixin, PolarsMixin, BaseModel):
     actionId: int
 
 
-class PlayByPlayGame(BaseModel):
+class PlayByPlayGame(PandasMixin, PolarsMixin, BaseModel):
     """Play-by-play data for a single game."""
 
     gameId: str

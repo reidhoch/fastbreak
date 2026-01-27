@@ -12,7 +12,7 @@ from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import is_tabular_response
 
 
-class ShotRange(BaseModel):
+class ShotRange(PandasMixin, PolarsMixin, BaseModel):
     """Shot statistics for a specific distance range."""
 
     fgm: float = 0.0

@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class MatchupStatistics(BaseModel):
+
+class MatchupStatistics(PandasMixin, PolarsMixin, BaseModel):
     """Statistics for a specific player-vs-player defensive matchup."""
 
     matchupMinutes: str

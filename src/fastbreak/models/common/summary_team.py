@@ -2,11 +2,12 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.period import Period
 from fastbreak.models.common.summary_player import InactivePlayer, SummaryPlayer
 
 
-class SummaryTeam(BaseModel):
+class SummaryTeam(PandasMixin, PolarsMixin, BaseModel):
     """Team info as it appears in box score summary."""
 
     teamId: int

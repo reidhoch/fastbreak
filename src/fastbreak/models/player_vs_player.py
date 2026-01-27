@@ -4,13 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
 )
 
 
-class PlayerVsPlayerOverallStats(BaseModel):
+class PlayerVsPlayerOverallStats(PandasMixin, PolarsMixin, BaseModel):
     """Overall stats for a player in a player vs player comparison."""
 
     group_set: str | None = Field(default=None, alias="GROUP_SET")
@@ -46,7 +47,7 @@ class PlayerVsPlayerOverallStats(BaseModel):
     nba_fantasy_pts: float | None = Field(default=None, alias="NBA_FANTASY_PTS")
 
 
-class PlayerVsPlayerOnOffCourtStats(BaseModel):
+class PlayerVsPlayerOnOffCourtStats(PandasMixin, PolarsMixin, BaseModel):
     """Stats for a player when vs player is on/off court."""
 
     group_set: str | None = Field(default=None, alias="GROUP_SET")
@@ -84,7 +85,7 @@ class PlayerVsPlayerOnOffCourtStats(BaseModel):
     nba_fantasy_pts: float | None = Field(default=None, alias="NBA_FANTASY_PTS")
 
 
-class PlayerVsPlayerShotDistanceStats(BaseModel):
+class PlayerVsPlayerShotDistanceStats(PandasMixin, PolarsMixin, BaseModel):
     """Shot distance stats for a player overall."""
 
     group_set: str | None = Field(default=None, alias="GROUP_SET")
@@ -96,7 +97,7 @@ class PlayerVsPlayerShotDistanceStats(BaseModel):
     fg_pct: float | None = Field(default=None, alias="FG_PCT")
 
 
-class PlayerVsPlayerShotDistanceOnOffStats(BaseModel):
+class PlayerVsPlayerShotDistanceOnOffStats(PandasMixin, PolarsMixin, BaseModel):
     """Shot distance stats for a player when vs player is on/off court."""
 
     group_set: str | None = Field(default=None, alias="GROUP_SET")
@@ -111,7 +112,7 @@ class PlayerVsPlayerShotDistanceOnOffStats(BaseModel):
     fg_pct: float | None = Field(default=None, alias="FG_PCT")
 
 
-class PlayerVsPlayerShotAreaStats(BaseModel):
+class PlayerVsPlayerShotAreaStats(PandasMixin, PolarsMixin, BaseModel):
     """Shot area stats for a player overall."""
 
     group_set: str | None = Field(default=None, alias="GROUP_SET")
@@ -123,7 +124,7 @@ class PlayerVsPlayerShotAreaStats(BaseModel):
     fg_pct: float | None = Field(default=None, alias="FG_PCT")
 
 
-class PlayerVsPlayerShotAreaOnOffStats(BaseModel):
+class PlayerVsPlayerShotAreaOnOffStats(PandasMixin, PolarsMixin, BaseModel):
     """Shot area stats for a player when vs player is on/off court."""
 
     group_set: str | None = Field(default=None, alias="GROUP_SET")
@@ -138,7 +139,7 @@ class PlayerVsPlayerShotAreaOnOffStats(BaseModel):
     fg_pct: float | None = Field(default=None, alias="FG_PCT")
 
 
-class PlayerVsPlayerPlayerInfo(BaseModel):
+class PlayerVsPlayerPlayerInfo(PandasMixin, PolarsMixin, BaseModel):
     """Player info from player vs player endpoint."""
 
     person_id: int | None = Field(default=None, alias="PERSON_ID")

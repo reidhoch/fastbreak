@@ -8,7 +8,7 @@ from fastbreak.models.common.traditional_statistics import (
 )
 
 
-class TraditionalPlayer(PandasMixin, PolarsMixin):
+class TraditionalPlayer(PandasMixin, PolarsMixin, BaseModel):
     """Player with traditional statistics."""
 
     personId: int
@@ -22,7 +22,7 @@ class TraditionalPlayer(PandasMixin, PolarsMixin):
     statistics: TraditionalStatistics
 
 
-class TraditionalTeam(BaseModel):
+class TraditionalTeam(PandasMixin, PolarsMixin, BaseModel):
     """Team with players and traditional statistics."""
 
     teamId: int
@@ -36,7 +36,7 @@ class TraditionalTeam(BaseModel):
     bench: TraditionalGroupStatistics
 
 
-class BoxScoreTraditionalData(BaseModel):
+class BoxScoreTraditionalData(PandasMixin, PolarsMixin, BaseModel):
     """Box score traditional data for a game."""
 
     gameId: str

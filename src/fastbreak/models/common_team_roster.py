@@ -2,10 +2,11 @@
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import named_result_sets_validator
 
 
-class RosterPlayer(BaseModel):
+class RosterPlayer(PandasMixin, PolarsMixin, BaseModel):
     """A player on a team roster."""
 
     team_id: int = Field(alias="TeamID")
@@ -26,7 +27,7 @@ class RosterPlayer(BaseModel):
     how_acquired: str | None = Field(alias="HOW_ACQUIRED")
 
 
-class Coach(BaseModel):
+class Coach(PandasMixin, PolarsMixin, BaseModel):
     """A coach on a team."""
 
     team_id: int = Field(alias="TEAM_ID")

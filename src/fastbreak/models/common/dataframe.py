@@ -16,12 +16,12 @@ class PandasMixin(BaseModel):
 
     Example:
         >>> players = response.boxScoreTraditional.homeTeam.players
-        >>> df = TraditionalPlayer.to_dataframe(players)
+        >>> df = TraditionalPlayer.to_pandas(players)
 
     """
 
     @classmethod
-    def to_dataframe(
+    def to_pandas(
         cls,
         models: list[Self],
         *,

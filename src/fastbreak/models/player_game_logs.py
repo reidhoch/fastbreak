@@ -4,13 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
 )
 
 
-class PlayerGameLogsEntry(BaseModel):
+class PlayerGameLogsEntry(PandasMixin, PolarsMixin, BaseModel):
     """A single game entry in a player's game logs (extended format).
 
     Contains traditional box score statistics plus rankings and fantasy points.

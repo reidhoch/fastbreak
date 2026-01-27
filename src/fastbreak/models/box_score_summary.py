@@ -3,13 +3,14 @@ from pydantic import BaseModel
 from fastbreak.models.common.arena import Arena
 from fastbreak.models.common.broadcaster import Broadcasters
 from fastbreak.models.common.chart import Charts
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.meeting import LastFiveMeetings
 from fastbreak.models.common.meta import Meta
 from fastbreak.models.common.official import Official
 from fastbreak.models.common.summary_team import SummaryTeam
 
 
-class BoxScoreSummaryData(BaseModel):
+class BoxScoreSummaryData(PandasMixin, PolarsMixin, BaseModel):
     """The main box score summary data."""
 
     gameId: str

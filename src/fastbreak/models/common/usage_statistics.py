@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class UsageStatistics(BaseModel):
+
+class UsageStatistics(PandasMixin, PolarsMixin, BaseModel):
     minutes: str
     usagePercentage: float
     percentageFieldGoalsMade: float

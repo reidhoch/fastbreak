@@ -4,6 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -11,7 +12,7 @@ from fastbreak.models.common.result_set import (
 )
 
 
-class ShootingSplitStats(BaseModel):
+class ShootingSplitStats(PandasMixin, PolarsMixin, BaseModel):
     """Shooting statistics for a shot category.
 
     Contains field goal attempts/makes by distance, area, or shot type.
@@ -58,7 +59,7 @@ class ShootingSplitStatsWithRank(ShootingSplitStats):
     pct_uast_fgm_rank: int = Field(alias="PCT_UAST_FGM_RANK")
 
 
-class AssistedByStats(BaseModel):
+class AssistedByStats(PandasMixin, PolarsMixin, BaseModel):
     """Stats for shots assisted by a specific player."""
 
     group_set: str = Field(alias="GROUP_SET")

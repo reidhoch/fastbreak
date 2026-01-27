@@ -397,19 +397,15 @@ dev = [
     { name = "complexipy" },
     { name = "mutmut" },
     { name = "mypy" },
+    { name = "pandas" },
+    { name = "pandas-stubs" },
+    { name = "polars" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
     { name = "ruff" },
-]
-pandas = [
-    { name = "pandas" },
-    { name = "pandas-stubs" },
-]
-polars = [
-    { name = "polars" },
 ]
 
 [package.metadata]
@@ -427,6 +423,9 @@ dev = [
     { name = "complexipy", specifier = ">=5.1.0" },
     { name = "mutmut", specifier = ">=3.3" },
     { name = "mypy", specifier = ">=1.19.1" },
+    { name = "pandas", specifier = "==2.3.3" },
+    { name = "pandas-stubs", specifier = "==2.3.3.260113" },
+    { name = "polars", specifier = ">=1.37.1" },
     { name = "pre-commit", specifier = ">=4.5" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-asyncio", specifier = ">=0.24" },
@@ -434,11 +433,6 @@ dev = [
     { name = "pytest-xdist", specifier = ">=3.8.0" },
     { name = "ruff", specifier = ">=0.14" },
 ]
-pandas = [
-    { name = "pandas", specifier = "==2.3.3" },
-    { name = "pandas-stubs", specifier = ">=2.3.3.260113" },
-]
-polars = [{ name = "polars", specifier = ">=1.37.1" }]
 
 [[package]]
 name = "filelock"

@@ -72,7 +72,7 @@ class CareerTotals(PandasMixin, PolarsMixin, BaseModel):
     pts: float = Field(alias="PTS")
 
 
-class CollegeSeasonTotals(BaseModel):
+class CollegeSeasonTotals(PandasMixin, PolarsMixin, BaseModel):
     """College season totals for a player."""
 
     player_id: int = Field(alias="PLAYER_ID")
@@ -104,7 +104,7 @@ class CollegeSeasonTotals(BaseModel):
     pts: float = Field(alias="PTS")
 
 
-class CollegeCareerTotals(BaseModel):
+class CollegeCareerTotals(PandasMixin, PolarsMixin, BaseModel):
     """College career totals for a player."""
 
     player_id: int = Field(alias="PLAYER_ID")
@@ -133,7 +133,7 @@ class CollegeCareerTotals(BaseModel):
     pts: float = Field(alias="PTS")
 
 
-class SeasonRankings(BaseModel):
+class SeasonRankings(PandasMixin, PolarsMixin, BaseModel):
     """Season rankings for a player's stats.
 
     Note: The NBA API returns "NR" (Not Ranked) for player_age, gp, and gs
@@ -177,7 +177,7 @@ class SeasonRankings(BaseModel):
         return v  # type: ignore[return-value]
 
 
-class StatHigh(BaseModel):
+class StatHigh(PandasMixin, PolarsMixin, BaseModel):
     """A single stat high (season or career)."""
 
     player_id: int = Field(alias="PLAYER_ID")

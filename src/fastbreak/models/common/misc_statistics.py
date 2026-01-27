@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class MiscStatistics(BaseModel):
+
+class MiscStatistics(PandasMixin, PolarsMixin, BaseModel):
     """Miscellaneous statistics for a player or team in a game."""
 
     minutes: str

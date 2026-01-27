@@ -2,8 +2,10 @@
 
 from pydantic import BaseModel, Field
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class LeverageLeader(BaseModel):
+
+class LeverageLeader(PandasMixin, PolarsMixin, BaseModel):
     """
     Leverage Score measures the impact each play has on a team's chance to win the
     game and distributes the credit for those plays to the offensive and defensive

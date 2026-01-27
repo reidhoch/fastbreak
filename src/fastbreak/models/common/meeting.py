@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class MeetingTeam(BaseModel):
+
+class MeetingTeam(PandasMixin, PolarsMixin, BaseModel):
     """Simplified team info for past meetings."""
 
     teamId: int
@@ -14,7 +16,7 @@ class MeetingTeam(BaseModel):
     losses: int
 
 
-class Meeting(BaseModel):
+class Meeting(PandasMixin, PolarsMixin, BaseModel):
     """A single past meeting between two teams."""
 
     recencyOrder: int
@@ -29,7 +31,7 @@ class Meeting(BaseModel):
     homeTeam: MeetingTeam
 
 
-class LastFiveMeetings(BaseModel):
+class LastFiveMeetings(PandasMixin, PolarsMixin, BaseModel):
     """Container for the last five meetings between teams."""
 
     meetings: list[Meeting]

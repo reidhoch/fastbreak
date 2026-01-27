@@ -4,13 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
 )
 
 
-class LineupShot(BaseModel):
+class LineupShot(PandasMixin, PolarsMixin, BaseModel):
     """An individual shot with lineup context."""
 
     grid_type: str = Field(alias="GRID_TYPE")
@@ -41,7 +42,7 @@ class LineupShot(BaseModel):
     vtm: str = Field(alias="VTM")
 
 
-class LineupLeagueAverage(BaseModel):
+class LineupLeagueAverage(PandasMixin, PolarsMixin, BaseModel):
     """League average shooting percentages by zone."""
 
     grid_type: str = Field(alias="GRID_TYPE")

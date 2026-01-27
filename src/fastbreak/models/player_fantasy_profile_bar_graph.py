@@ -4,13 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_single_result_set,
 )
 
 
-class FantasyStats(BaseModel):
+class FantasyStats(PandasMixin, PolarsMixin, BaseModel):
     """Fantasy statistics for a player.
 
     Contains fantasy points for FanDuel and NBA Fantasy leagues,

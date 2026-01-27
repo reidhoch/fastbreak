@@ -4,13 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
 )
 
 
-class TeamOverall(BaseModel):
+class TeamOverall(PandasMixin, PolarsMixin, BaseModel):
     """Team's aggregate statistics for the season.
 
     Contains traditional box score stats with league-wide rankings.
@@ -80,7 +81,7 @@ class TeamOverall(BaseModel):
     plus_minus_rank: int = Field(alias="PLUS_MINUS_RANK")
 
 
-class PlayerSeasonTotals(BaseModel):
+class PlayerSeasonTotals(PandasMixin, PolarsMixin, BaseModel):
     """Individual player statistics on the team.
 
     Contains traditional stats, fantasy points, and league-wide rankings.

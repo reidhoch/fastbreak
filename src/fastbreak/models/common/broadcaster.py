@@ -1,7 +1,9 @@
 from pydantic import BaseModel, Field
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class Broadcaster(BaseModel):
+
+class Broadcaster(PandasMixin, PolarsMixin, BaseModel):
     broadcasterId: int
     broadcastDisplay: str
     broadcasterDisplay: str
@@ -11,7 +13,7 @@ class Broadcaster(BaseModel):
     regionId: int | None = None  # Not present in older game data
 
 
-class Broadcasters(BaseModel):
+class Broadcasters(PandasMixin, PolarsMixin, BaseModel):
     # International fields may not exist in older game data
     internationalBroadcasters: list[Broadcaster] = Field(default_factory=list)
     internationalRadioBroadcasters: list[Broadcaster] = Field(default_factory=list)

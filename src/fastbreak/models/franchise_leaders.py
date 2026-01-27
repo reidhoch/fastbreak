@@ -4,10 +4,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
-class StatLeader(BaseModel):
+class StatLeader(PandasMixin, PolarsMixin, BaseModel):
     """A single statistical category leader."""
 
     value: int
@@ -15,7 +16,7 @@ class StatLeader(BaseModel):
     player: str
 
 
-class FranchiseLeader(BaseModel):
+class FranchiseLeader(PandasMixin, PolarsMixin, BaseModel):
     """Franchise all-time leaders for a single team."""
 
     team_id: int = Field(alias="TEAM_ID")

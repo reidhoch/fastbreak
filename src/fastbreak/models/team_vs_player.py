@@ -4,13 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
 )
 
 
-class TeamVsPlayerTeamStats(BaseModel):
+class TeamVsPlayerTeamStats(PandasMixin, PolarsMixin, BaseModel):
     """A team's overall statistics."""
 
     group_set: str = Field(alias="GROUP_SET")
@@ -77,7 +78,7 @@ class TeamVsPlayerTeamStats(BaseModel):
     plus_minus_rank: int = Field(alias="PLUS_MINUS_RANK")
 
 
-class VsPlayerStats(BaseModel):
+class VsPlayerStats(PandasMixin, PolarsMixin, BaseModel):
     """The target player's statistics."""
 
     group_set: str = Field(alias="GROUP_SET")
@@ -154,7 +155,7 @@ class VsPlayerStats(BaseModel):
     team_count: int = Field(alias="TEAM_COUNT")
 
 
-class TeamVsPlayerOnOff(BaseModel):
+class TeamVsPlayerOnOff(PandasMixin, PolarsMixin, BaseModel):
     """Team stats when the target player is on or off the court."""
 
     group_set: str = Field(alias="GROUP_SET")
@@ -224,7 +225,7 @@ class TeamVsPlayerOnOff(BaseModel):
     plus_minus_rank: int = Field(alias="PLUS_MINUS_RANK")
 
 
-class ShotDistanceStats(BaseModel):
+class ShotDistanceStats(PandasMixin, PolarsMixin, BaseModel):
     """Shot distance breakdown stats."""
 
     group_set: str = Field(alias="GROUP_SET")
@@ -237,7 +238,7 @@ class ShotDistanceStats(BaseModel):
     fg_pct: float | None = Field(alias="FG_PCT")
 
 
-class ShotAreaStats(BaseModel):
+class ShotAreaStats(PandasMixin, PolarsMixin, BaseModel):
     """Shot area breakdown stats."""
 
     group_set: str = Field(alias="GROUP_SET")

@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class AdvancedStatistics(BaseModel):
+
+class AdvancedStatistics(PandasMixin, PolarsMixin, BaseModel):
     """Advanced statistics for a player in a box score."""
 
     minutes: str
@@ -29,7 +31,7 @@ class AdvancedStatistics(BaseModel):
     PIE: float
 
 
-class AdvancedTeamStatistics(AdvancedStatistics):
+class AdvancedTeamStatistics(PandasMixin, PolarsMixin, BaseModel):
     """Advanced statistics for a team in a box score."""
 
     estimatedTeamTurnoverPercentage: float

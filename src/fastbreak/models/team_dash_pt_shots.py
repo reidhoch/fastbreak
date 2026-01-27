@@ -4,13 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
 )
 
 
-class _TeamBaseShotStats(BaseModel):
+class _TeamBaseShotStats(PandasMixin, PolarsMixin, BaseModel):
     """Base shooting statistics shared across all shot breakdown types."""
 
     team_id: int = Field(alias="TEAM_ID")

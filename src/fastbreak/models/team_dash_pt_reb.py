@@ -4,6 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -11,7 +12,7 @@ from fastbreak.models.common.result_set import (
 )
 
 
-class TeamOverallRebounding(BaseModel):
+class TeamOverallRebounding(PandasMixin, PolarsMixin, BaseModel):
     """Overall rebounding statistics for a team.
 
     Contains total rebounding stats including contested/uncontested breakdown.
@@ -35,7 +36,7 @@ class TeamOverallRebounding(BaseModel):
     uc_reb_pct: float = Field(alias="UC_REB_PCT")
 
 
-class TeamShotTypeRebounding(BaseModel):
+class TeamShotTypeRebounding(PandasMixin, PolarsMixin, BaseModel):
     """Rebounding statistics by shot type (2FG miss vs 3FG miss)."""
 
     team_id: int = Field(alias="TEAM_ID")
@@ -57,7 +58,7 @@ class TeamShotTypeRebounding(BaseModel):
     uc_reb_pct: float = Field(alias="UC_REB_PCT")
 
 
-class TeamNumContestedRebounding(BaseModel):
+class TeamNumContestedRebounding(PandasMixin, PolarsMixin, BaseModel):
     """Rebounding statistics by number of players contesting."""
 
     team_id: int = Field(alias="TEAM_ID")
@@ -79,7 +80,7 @@ class TeamNumContestedRebounding(BaseModel):
     uc_reb_pct: float = Field(alias="UC_REB_PCT")
 
 
-class TeamShotDistanceRebounding(BaseModel):
+class TeamShotDistanceRebounding(PandasMixin, PolarsMixin, BaseModel):
     """Rebounding statistics by shot distance."""
 
     team_id: int = Field(alias="TEAM_ID")
@@ -101,7 +102,7 @@ class TeamShotDistanceRebounding(BaseModel):
     uc_reb_pct: float = Field(alias="UC_REB_PCT")
 
 
-class TeamRebDistanceRebounding(BaseModel):
+class TeamRebDistanceRebounding(PandasMixin, PolarsMixin, BaseModel):
     """Rebounding statistics by rebound distance from basket."""
 
     team_id: int = Field(alias="TEAM_ID")

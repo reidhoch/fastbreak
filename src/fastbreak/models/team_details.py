@@ -4,6 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -11,7 +12,7 @@ from fastbreak.models.common.result_set import (
 )
 
 
-class TeamBackground(BaseModel):
+class TeamBackground(PandasMixin, PolarsMixin, BaseModel):
     """Basic team background information."""
 
     team_id: int = Field(alias="TEAM_ID")
@@ -27,7 +28,7 @@ class TeamBackground(BaseModel):
     d_league_affiliation: str | None = Field(alias="DLEAGUEAFFILIATION")
 
 
-class TeamHistory(BaseModel):
+class TeamHistory(PandasMixin, PolarsMixin, BaseModel):
     """Team history entry for franchise moves/name changes."""
 
     team_id: int = Field(alias="TEAM_ID")
@@ -37,21 +38,21 @@ class TeamHistory(BaseModel):
     year_active_till: int = Field(alias="YEARACTIVETILL")
 
 
-class TeamSocialSite(BaseModel):
+class TeamSocialSite(PandasMixin, PolarsMixin, BaseModel):
     """Team social media link."""
 
     account_type: str = Field(alias="ACCOUNTTYPE")
     website_link: str = Field(alias="WEBSITE_LINK")
 
 
-class TeamAward(BaseModel):
+class TeamAward(PandasMixin, PolarsMixin, BaseModel):
     """Team championship/award entry."""
 
     year_awarded: int = Field(alias="YEARAWARDED")
     opposite_team: str | None = Field(alias="OPPOSITETEAM")
 
 
-class TeamHofPlayer(BaseModel):
+class TeamHofPlayer(PandasMixin, PolarsMixin, BaseModel):
     """Hall of Fame player associated with the team."""
 
     player_id: int = Field(alias="PLAYERID")
@@ -62,7 +63,7 @@ class TeamHofPlayer(BaseModel):
     year: int = Field(alias="YEAR")
 
 
-class TeamRetiredJersey(BaseModel):
+class TeamRetiredJersey(PandasMixin, PolarsMixin, BaseModel):
     """Retired jersey entry."""
 
     # player_id can be None for non-players (broadcasters, coaches, owners)

@@ -59,78 +59,78 @@ def polars_available():
 
 
 class TestPandasMixin:
-    """Tests for PandasMixin.to_dataframe()."""
+    """Tests for PandasMixin.to_pandas()."""
 
-    def test_to_dataframe_basic(self, pandas_available):
+    def test_to_pandas_basic(self, pandas_available):
         """Convert list of models to pandas DataFrame."""
         models = [
             SimpleModel(name="alice", value=10),
             SimpleModel(name="bob", value=20),
         ]
-        df = SimpleModel.to_dataframe(models)
+        df = SimpleModel.to_pandas(models)
 
         assert len(df) == 2
         assert list(df.columns) == ["name", "value"]
         assert df["name"].tolist() == ["alice", "bob"]
         assert df["value"].tolist() == [10, 20]
 
-    def test_to_dataframe_empty_list(self, pandas_available):
+    def test_to_pandas_empty_list(self, pandas_available):
         """Empty list returns empty DataFrame."""
-        df = SimpleModel.to_dataframe([])
+        df = SimpleModel.to_pandas([])
 
         assert len(df) == 0
 
-    def test_to_dataframe_single_item(self, pandas_available):
+    def test_to_pandas_single_item(self, pandas_available):
         """Single item list works correctly."""
         models = [SimpleModel(name="single", value=42)]
-        df = SimpleModel.to_dataframe(models)
+        df = SimpleModel.to_pandas(models)
 
         assert len(df) == 1
         assert df["name"].iloc[0] == "single"
         assert df["value"].iloc[0] == 42
 
-    def test_to_dataframe_flatten_nested(self, pandas_available):
+    def test_to_pandas_flatten_nested(self, pandas_available):
         """Nested models are flattened with dot separator by default."""
         models = [
             NestedModel(player_id=1, stats=NestedStats(points=30, assists=10)),
             NestedModel(player_id=2, stats=NestedStats(points=25, assists=15)),
         ]
-        df = NestedModel.to_dataframe(models)
+        df = NestedModel.to_pandas(models)
 
         assert "stats.points" in df.columns
         assert "stats.assists" in df.columns
         assert df["stats.points"].tolist() == [30, 25]
         assert df["stats.assists"].tolist() == [10, 15]
 
-    def test_to_dataframe_no_flatten(self, pandas_available):
+    def test_to_pandas_no_flatten(self, pandas_available):
         """With flatten=False, nested models become dict columns."""
         models = [
             NestedModel(player_id=1, stats=NestedStats(points=30, assists=10)),
         ]
-        df = NestedModel.to_dataframe(models, flatten=False)
+        df = NestedModel.to_pandas(models, flatten=False)
 
         assert "stats" in df.columns
         assert isinstance(df["stats"].iloc[0], dict)
         assert df["stats"].iloc[0]["points"] == 30
 
-    def test_to_dataframe_custom_separator(self, pandas_available):
+    def test_to_pandas_custom_separator(self, pandas_available):
         """Custom separator for flattened column names."""
         models = [
             NestedModel(player_id=1, stats=NestedStats(points=30, assists=10)),
         ]
-        df = NestedModel.to_dataframe(models, flatten=True, sep="_")
+        df = NestedModel.to_pandas(models, flatten=True, sep="_")
 
         assert "stats_points" in df.columns
         assert "stats_assists" in df.columns
 
-    def test_to_dataframe_deeply_nested(self, pandas_available):
+    def test_to_pandas_deeply_nested(self, pandas_available):
         """Deeply nested structures are fully flattened."""
         models = [
             DeeplyNestedModel(
                 id=1, outer=DeeplyNestedMiddle(inner=DeeplyNestedInner(score=100))
             ),
         ]
-        df = DeeplyNestedModel.to_dataframe(models)
+        df = DeeplyNestedModel.to_pandas(models)
 
         assert "outer.inner.score" in df.columns
         assert df["outer.inner.score"].iloc[0] == 100
@@ -311,7 +311,7 @@ class TestIntegrationWithRealModels:
         }
 
         standing = TeamStanding.model_validate(data)
-        df = TeamStanding.to_dataframe([standing])
+        df = TeamStanding.to_pandas([standing])
 
         assert len(df) == 1
         assert df["team_name"].iloc[0] == "Thunder"

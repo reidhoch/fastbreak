@@ -4,13 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
 )
 
 
-class PassMade(BaseModel):
+class PassMade(PandasMixin, PolarsMixin, BaseModel):
     """Statistics for passes made by a player to a teammate.
 
     Contains passing and shooting efficiency data for passes to a specific teammate.
@@ -39,7 +40,7 @@ class PassMade(BaseModel):
     fg3_pct: float | None = Field(alias="FG3_PCT")
 
 
-class PassReceived(BaseModel):
+class PassReceived(PandasMixin, PolarsMixin, BaseModel):
     """Statistics for passes received by a player from a teammate.
 
     Contains passing and shooting efficiency data for passes from a specific teammate.

@@ -4,10 +4,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
-class CollegePlayerCareer(BaseModel):
+class CollegePlayerCareer(PandasMixin, PolarsMixin, BaseModel):
     """Career statistics for a player who attended a specific college."""
 
     player_id: int = Field(alias="PLAYER_ID")
