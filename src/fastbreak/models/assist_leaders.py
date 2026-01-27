@@ -4,10 +4,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
-class TeamAssistLeader(BaseModel):
+class TeamAssistLeader(PandasMixin, PolarsMixin, BaseModel):
     """A team's assist leader entry (PlayerOrTeam=Team)."""
 
     rank: int = Field(alias="RANK")
@@ -17,7 +18,7 @@ class TeamAssistLeader(BaseModel):
     ast: float = Field(alias="AST")
 
 
-class PlayerAssistLeader(BaseModel):
+class PlayerAssistLeader(PandasMixin, PolarsMixin, BaseModel):
     """A player's assist leader entry (PlayerOrTeam=Player)."""
 
     rank: int = Field(alias="RANK")

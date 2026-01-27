@@ -4,13 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
 )
 
 
-class PlayoffMatchup(BaseModel):
+class PlayoffMatchup(PandasMixin, PolarsMixin, BaseModel):
     """A playoff series matchup between two teams."""
 
     conference: str | None = Field(default=None, alias="CONFERENCE")
@@ -33,7 +34,7 @@ class PlayoffMatchup(BaseModel):
     )
 
 
-class PlayoffStanding(BaseModel):
+class PlayoffStanding(PandasMixin, PolarsMixin, BaseModel):
     """Team standing in playoff picture context."""
 
     conference: str | None = Field(default=None, alias="CONFERENCE")
@@ -63,7 +64,7 @@ class PlayoffStanding(BaseModel):
     sosa_remaining: int | None = Field(default=None, alias="SOSA_REMAINING")
 
 
-class RemainingGames(BaseModel):
+class RemainingGames(PandasMixin, PolarsMixin, BaseModel):
     """Remaining games for a team."""
 
     team: str | None = Field(default=None, alias="TEAM")

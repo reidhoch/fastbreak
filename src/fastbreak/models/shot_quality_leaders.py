@@ -2,8 +2,10 @@
 
 from pydantic import BaseModel, Field
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class ShotQualityLeader(BaseModel):
+
+class ShotQualityLeader(PandasMixin, PolarsMixin, BaseModel):
     """
     Shot Quality measures the expected field goal percentage of a shot based on
     factors like defender distance, shot clock, shooter speed, and shot location.

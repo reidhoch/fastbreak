@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class Arena(BaseModel):
+
+class Arena(PandasMixin, PolarsMixin, BaseModel):
     arenaId: int
     arenaName: str
     arenaCity: str

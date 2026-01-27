@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.meta import Meta
 from fastbreak.models.common.player_track_statistics import (
     PlayerTrackStatistics,
@@ -7,7 +8,7 @@ from fastbreak.models.common.player_track_statistics import (
 )
 
 
-class PlayerTrackPlayer(BaseModel):
+class PlayerTrackPlayer(PandasMixin, PolarsMixin, BaseModel):
     """Player with tracking statistics."""
 
     personId: int
@@ -21,7 +22,7 @@ class PlayerTrackPlayer(BaseModel):
     statistics: PlayerTrackStatistics
 
 
-class PlayerTrackTeam(BaseModel):
+class PlayerTrackTeam(PandasMixin, PolarsMixin, BaseModel):
     """Team with players and tracking statistics."""
 
     teamId: int
@@ -33,7 +34,7 @@ class PlayerTrackTeam(BaseModel):
     statistics: TeamPlayerTrackStatistics
 
 
-class BoxScorePlayerTrackData(BaseModel):
+class BoxScorePlayerTrackData(PandasMixin, PolarsMixin, BaseModel):
     """Box score player tracking data for a game."""
 
     gameId: str

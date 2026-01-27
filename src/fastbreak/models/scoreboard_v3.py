@@ -2,8 +2,10 @@
 
 from pydantic import BaseModel, Field
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class ScoreboardBroadcaster(BaseModel):
+
+class ScoreboardBroadcaster(PandasMixin, PolarsMixin, BaseModel):
     """A broadcaster for a game."""
 
     broadcaster_id: int | None = Field(default=None, alias="broadcasterId")
@@ -14,7 +16,7 @@ class ScoreboardBroadcaster(BaseModel):
     )
 
 
-class ScoreboardBroadcasters(BaseModel):
+class ScoreboardBroadcasters(PandasMixin, PolarsMixin, BaseModel):
     """All broadcasters for a game."""
 
     national_broadcasters: list[ScoreboardBroadcaster] = Field(
@@ -46,7 +48,7 @@ class ScoreboardBroadcasters(BaseModel):
     )
 
 
-class GameLeader(BaseModel):
+class GameLeader(PandasMixin, PolarsMixin, BaseModel):
     """A game leader (top performer in the game)."""
 
     person_id: int | None = Field(default=None, alias="personId")
@@ -60,14 +62,14 @@ class GameLeader(BaseModel):
     assists: int | None = Field(default=None, alias="assists")
 
 
-class GameLeaders(BaseModel):
+class GameLeaders(PandasMixin, PolarsMixin, BaseModel):
     """Game leaders for both teams."""
 
     home_leaders: GameLeader | None = Field(default=None, alias="homeLeaders")
     away_leaders: GameLeader | None = Field(default=None, alias="awayLeaders")
 
 
-class TeamLeader(BaseModel):
+class TeamLeader(PandasMixin, PolarsMixin, BaseModel):
     """A team's season statistical leader."""
 
     person_id: int | None = Field(default=None, alias="personId")
@@ -81,7 +83,7 @@ class TeamLeader(BaseModel):
     assists: float | None = Field(default=None, alias="assists")
 
 
-class TeamLeaders(BaseModel):
+class TeamLeaders(PandasMixin, PolarsMixin, BaseModel):
     """Season leaders for both teams."""
 
     home_leaders: TeamLeader | None = Field(default=None, alias="homeLeaders")
@@ -89,7 +91,7 @@ class TeamLeaders(BaseModel):
     season_leaders_flag: int | None = Field(default=None, alias="seasonLeadersFlag")
 
 
-class PeriodScore(BaseModel):
+class PeriodScore(PandasMixin, PolarsMixin, BaseModel):
     """Score for a single period."""
 
     period: int | None = Field(default=None, alias="period")
@@ -97,7 +99,7 @@ class PeriodScore(BaseModel):
     score: int | None = Field(default=None, alias="score")
 
 
-class ScoreboardTeam(BaseModel):
+class ScoreboardTeam(PandasMixin, PolarsMixin, BaseModel):
     """Team info in scoreboard."""
 
     team_id: int | None = Field(default=None, alias="teamId")
@@ -114,7 +116,7 @@ class ScoreboardTeam(BaseModel):
     periods: list[PeriodScore] = Field(default_factory=list, alias="periods")
 
 
-class ScoreboardGame(BaseModel):
+class ScoreboardGame(PandasMixin, PolarsMixin, BaseModel):
     """A single game in the scoreboard."""
 
     game_id: str | None = Field(default=None, alias="gameId")
@@ -144,7 +146,7 @@ class ScoreboardGame(BaseModel):
     away_team: ScoreboardTeam | None = Field(default=None, alias="awayTeam")
 
 
-class Scoreboard(BaseModel):
+class Scoreboard(PandasMixin, PolarsMixin, BaseModel):
     """The main scoreboard data."""
 
     game_date: str | None = Field(default=None, alias="gameDate")

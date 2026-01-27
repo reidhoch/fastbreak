@@ -1,10 +1,11 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.four_factors_statistics import FourFactorsStatistics
 from fastbreak.models.common.meta import Meta
 
 
-class FourFactorsPlayer(BaseModel):
+class FourFactorsPlayer(PandasMixin, PolarsMixin, BaseModel):
     """Player with four factors statistics."""
 
     personId: int
@@ -18,7 +19,7 @@ class FourFactorsPlayer(BaseModel):
     statistics: FourFactorsStatistics
 
 
-class FourFactorsTeam(BaseModel):
+class FourFactorsTeam(PandasMixin, PolarsMixin, BaseModel):
     """Team with four factors statistics."""
 
     teamId: int
@@ -30,7 +31,7 @@ class FourFactorsTeam(BaseModel):
     statistics: FourFactorsStatistics
 
 
-class BoxScoreFourFactorsData(BaseModel):
+class BoxScoreFourFactorsData(PandasMixin, PolarsMixin, BaseModel):
     """Box score four factors data for a game."""
 
     gameId: str

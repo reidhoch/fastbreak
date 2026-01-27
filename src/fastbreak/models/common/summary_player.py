@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class SummaryPlayer(BaseModel):
+
+class SummaryPlayer(PandasMixin, PolarsMixin, BaseModel):
     """Player info as it appears in box score summary (minimal stats)."""
 
     personId: int
@@ -12,7 +14,7 @@ class SummaryPlayer(BaseModel):
     jerseyNum: str
 
 
-class InactivePlayer(BaseModel):
+class InactivePlayer(PandasMixin, PolarsMixin, BaseModel):
     """Inactive player info in box score summary."""
 
     personId: int

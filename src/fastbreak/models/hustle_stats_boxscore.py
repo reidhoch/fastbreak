@@ -4,20 +4,21 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
 )
 
 
-class HustleStatsAvailable(BaseModel):
+class HustleStatsAvailable(PandasMixin, PolarsMixin, BaseModel):
     """Availability status for hustle stats."""
 
     game_id: str = Field(alias="GAME_ID")
     hustle_status: int = Field(alias="HUSTLE_STATUS")
 
 
-class HustleStatsPlayer(BaseModel):
+class HustleStatsPlayer(PandasMixin, PolarsMixin, BaseModel):
     """Player-level hustle statistics from a box score."""
 
     game_id: str = Field(alias="GAME_ID")
@@ -47,7 +48,7 @@ class HustleStatsPlayer(BaseModel):
     box_outs: float = Field(alias="BOX_OUTS")
 
 
-class HustleStatsTeam(BaseModel):
+class HustleStatsTeam(PandasMixin, PolarsMixin, BaseModel):
     """Team-level hustle statistics from a box score."""
 
     game_id: str = Field(alias="GAME_ID")

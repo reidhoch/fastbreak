@@ -4,13 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
 )
 
 
-class TeamLineupOverall(BaseModel):
+class TeamLineupOverall(PandasMixin, PolarsMixin, BaseModel):
     """Overall team stats for the lineup dashboard."""
 
     group_set: str = Field(alias="GROUP_SET")
@@ -82,7 +83,7 @@ class TeamLineupOverall(BaseModel):
     plus_minus_rank: int = Field(alias="PLUS_MINUS_RANK")
 
 
-class LineupStats(BaseModel):
+class LineupStats(PandasMixin, PolarsMixin, BaseModel):
     """Stats for a specific lineup combination."""
 
     group_set: str = Field(alias="GROUP_SET")

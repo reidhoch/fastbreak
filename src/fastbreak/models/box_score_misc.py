@@ -1,10 +1,11 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.meta import Meta
 from fastbreak.models.common.misc_statistics import MiscStatistics
 
 
-class MiscPlayer(BaseModel):
+class MiscPlayer(PandasMixin, PolarsMixin, BaseModel):
     """Player with miscellaneous statistics."""
 
     personId: int
@@ -18,7 +19,7 @@ class MiscPlayer(BaseModel):
     statistics: MiscStatistics
 
 
-class MiscTeam(BaseModel):
+class MiscTeam(PandasMixin, PolarsMixin, BaseModel):
     """Team with players and miscellaneous statistics."""
 
     teamId: int
@@ -30,7 +31,7 @@ class MiscTeam(BaseModel):
     statistics: MiscStatistics
 
 
-class BoxScoreMiscData(BaseModel):
+class BoxScoreMiscData(PandasMixin, PolarsMixin, BaseModel):
     """Box score miscellaneous data for a game."""
 
     gameId: str

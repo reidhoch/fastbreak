@@ -4,6 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -11,7 +12,7 @@ from fastbreak.models.common.result_set import (
 )
 
 
-class _ProfileBaseStats(BaseModel):
+class _ProfileBaseStats(PandasMixin, PolarsMixin, BaseModel):
     """Base statistics shared across season and career totals."""
 
     player_id: int = Field(alias="PLAYER_ID")
@@ -52,7 +53,7 @@ class ProfileCareerTotals(_ProfileBaseStats):
     """Career total statistics for a player."""
 
 
-class ProfileCollegeSeasonTotals(BaseModel):
+class ProfileCollegeSeasonTotals(PandasMixin, PolarsMixin, BaseModel):
     """Season-by-season college statistics for a player."""
 
     player_id: int = Field(alias="PLAYER_ID")
@@ -84,7 +85,7 @@ class ProfileCollegeSeasonTotals(BaseModel):
     pts: float = Field(alias="PTS")
 
 
-class ProfileCollegeCareerTotals(BaseModel):
+class ProfileCollegeCareerTotals(PandasMixin, PolarsMixin, BaseModel):
     """Career college total statistics for a player."""
 
     player_id: int = Field(alias="PLAYER_ID")
@@ -113,7 +114,7 @@ class ProfileCollegeCareerTotals(BaseModel):
     pts: float = Field(alias="PTS")
 
 
-class ProfileSeasonRankings(BaseModel):
+class ProfileSeasonRankings(PandasMixin, PolarsMixin, BaseModel):
     """Season rankings for a player's statistics."""
 
     player_id: int = Field(alias="PLAYER_ID")
@@ -145,7 +146,7 @@ class ProfileSeasonRankings(BaseModel):
     rank_pg_eff: int | None = Field(alias="RANK_PG_EFF")
 
 
-class ProfileStatHigh(BaseModel):
+class ProfileStatHigh(PandasMixin, PolarsMixin, BaseModel):
     """A single statistical high (season or career)."""
 
     player_id: int = Field(alias="PLAYER_ID")
@@ -161,7 +162,7 @@ class ProfileStatHigh(BaseModel):
     date_est: str = Field(alias="DATE_EST")
 
 
-class ProfileNextGame(BaseModel):
+class ProfileNextGame(PandasMixin, PolarsMixin, BaseModel):
     """Information about the player's next scheduled game."""
 
     game_id: str = Field(alias="GAME_ID")

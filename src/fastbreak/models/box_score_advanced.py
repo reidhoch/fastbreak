@@ -22,7 +22,7 @@ class AdvancedPlayer(PandasMixin, PolarsMixin, BaseModel):
     statistics: AdvancedStatistics
 
 
-class AdvancedTeam(BaseModel):
+class AdvancedTeam(PandasMixin, PolarsMixin, BaseModel):
     """Team with advanced statistics."""
 
     teamId: int
@@ -34,7 +34,7 @@ class AdvancedTeam(BaseModel):
     statistics: AdvancedTeamStatistics
 
 
-class BoxScoreAdvancedData(BaseModel):
+class BoxScoreAdvancedData(PandasMixin, PolarsMixin, BaseModel):
     """Box score advanced data for a game."""
 
     gameId: str

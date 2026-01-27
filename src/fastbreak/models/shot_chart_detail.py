@@ -11,7 +11,7 @@ from fastbreak.models.common.result_set import (
 )
 
 
-class LeagueAverage(BaseModel):
+class LeagueAverage(PandasMixin, PolarsMixin, BaseModel):
     """League average shooting stats by zone."""
 
     model_config = {"populate_by_name": True}

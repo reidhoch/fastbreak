@@ -2,10 +2,11 @@
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import named_result_sets_validator
 
 
-class TeamPlayerStat(BaseModel):
+class TeamPlayerStat(PandasMixin, PolarsMixin, BaseModel):
     """Per-player stats for a team across specified games."""
 
     jersey_num: str = Field(alias="JERSEY_NUM")
@@ -59,7 +60,7 @@ class TeamPlayerStat(BaseModel):
     per_min_pts: float = Field(alias="PER_MIN_PTS")
 
 
-class TotalTeamStat(BaseModel):
+class TotalTeamStat(PandasMixin, PolarsMixin, BaseModel):
     """Aggregate team stats across specified games."""
 
     city: str = Field(alias="CITY")

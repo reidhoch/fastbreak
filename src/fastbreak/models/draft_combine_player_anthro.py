@@ -4,10 +4,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
-class AnthroPlayer(BaseModel):
+class AnthroPlayer(PandasMixin, PolarsMixin, BaseModel):
     """A player's draft combine anthropometric measurements."""
 
     # Basic info

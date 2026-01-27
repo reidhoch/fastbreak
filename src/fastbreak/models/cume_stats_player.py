@@ -2,10 +2,11 @@
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import named_result_sets_validator
 
 
-class GameByGameStat(BaseModel):
+class GameByGameStat(PandasMixin, PolarsMixin, BaseModel):
     """Single game stats for a player."""
 
     date_est: str = Field(alias="DATE_EST")
@@ -38,7 +39,7 @@ class GameByGameStat(BaseModel):
     avg_pts: float = Field(alias="AVG_PTS")
 
 
-class TotalPlayerStat(BaseModel):
+class TotalPlayerStat(PandasMixin, PolarsMixin, BaseModel):
     """Cumulative stats for a player across games."""
 
     display_fi_last: str = Field(alias="DISPLAY_FI_LAST")

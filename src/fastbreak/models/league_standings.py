@@ -6,7 +6,7 @@ from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import tabular_validator
 
 
-class TeamStanding(PandasMixin, PolarsMixin):
+class TeamStanding(PandasMixin, PolarsMixin, BaseModel):
     """A single team's standings entry."""
 
     # Team identification

@@ -2,10 +2,11 @@
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import named_result_sets_validator
 
 
-class Franchise(BaseModel):
+class Franchise(PandasMixin, PolarsMixin, BaseModel):
     """A franchise history entry.
 
     Represents either an active franchise or a defunct team,

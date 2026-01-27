@@ -2,10 +2,11 @@
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import named_result_sets_validator
 
 
-class PlayerInfo(BaseModel):
+class PlayerInfo(PandasMixin, PolarsMixin, BaseModel):
     """Detailed player information from CommonPlayerInfo result set."""
 
     person_id: int = Field(alias="PERSON_ID")
@@ -45,7 +46,7 @@ class PlayerInfo(BaseModel):
     greatest_75_flag: str = Field(alias="GREATEST_75_FLAG")
 
 
-class PlayerHeadlineStats(BaseModel):
+class PlayerHeadlineStats(PandasMixin, PolarsMixin, BaseModel):
     """Headline stats from PlayerHeadlineStats result set."""
 
     player_id: int = Field(alias="PLAYER_ID")
@@ -57,7 +58,7 @@ class PlayerHeadlineStats(BaseModel):
     pie: float = Field(alias="PIE")
 
 
-class AvailableSeason(BaseModel):
+class AvailableSeason(PandasMixin, PolarsMixin, BaseModel):
     """A season available for a player from AvailableSeasons result set."""
 
     season_id: str = Field(alias="SEASON_ID")

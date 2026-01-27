@@ -4,13 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
 )
 
 
-class TeamInfoCommon(BaseModel):
+class TeamInfoCommon(PandasMixin, PolarsMixin, BaseModel):
     """Basic team information including current standings.
 
     Contains team identity, conference/division, and win-loss record.
@@ -34,7 +35,7 @@ class TeamInfoCommon(BaseModel):
     max_year: str = Field(alias="MAX_YEAR")
 
 
-class TeamSeasonRanks(BaseModel):
+class TeamSeasonRanks(PandasMixin, PolarsMixin, BaseModel):
     """Team's current season rankings in key statistics.
 
     Contains per-game averages and league rankings for points, rebounds, and assists.
@@ -53,7 +54,7 @@ class TeamSeasonRanks(BaseModel):
     opp_pts_pg: float = Field(alias="OPP_PTS_PG")
 
 
-class AvailableSeason(BaseModel):
+class AvailableSeason(PandasMixin, PolarsMixin, BaseModel):
     """A season available for the team's history."""
 
     season_id: str = Field(alias="SEASON_ID")

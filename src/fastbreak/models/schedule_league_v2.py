@@ -2,8 +2,10 @@
 
 from pydantic import BaseModel, Field
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class ScheduleBroadcaster(BaseModel):
+
+class ScheduleBroadcaster(PandasMixin, PolarsMixin, BaseModel):
     """A single broadcaster for a game."""
 
     broadcaster_scope: str | None = Field(default=None, alias="broadcasterScope")
@@ -24,7 +26,7 @@ class ScheduleBroadcaster(BaseModel):
     broadcaster_ranking: int | None = Field(default=None, alias="broadcasterRanking")
 
 
-class GameBroadcasters(BaseModel):
+class GameBroadcasters(PandasMixin, PolarsMixin, BaseModel):
     """All broadcasters for a game."""
 
     national_broadcasters: list[ScheduleBroadcaster] = Field(
@@ -56,7 +58,7 @@ class GameBroadcasters(BaseModel):
     )
 
 
-class ScheduleTeam(BaseModel):
+class ScheduleTeam(PandasMixin, PolarsMixin, BaseModel):
     """Team info in a scheduled game."""
 
     team_id: int | None = Field(default=None, alias="teamId")
@@ -70,7 +72,7 @@ class ScheduleTeam(BaseModel):
     seed: int | None = Field(default=None, alias="seed")
 
 
-class PointsLeader(BaseModel):
+class PointsLeader(PandasMixin, PolarsMixin, BaseModel):
     """Points leader for a game."""
 
     person_id: int | None = Field(default=None, alias="personId")
@@ -83,7 +85,7 @@ class PointsLeader(BaseModel):
     points: float | None = Field(default=None, alias="points")
 
 
-class ScheduledGame(BaseModel):
+class ScheduledGame(PandasMixin, PolarsMixin, BaseModel):
     """A single game in the schedule."""
 
     game_id: str | None = Field(default=None, alias="gameId")
@@ -123,14 +125,14 @@ class ScheduledGame(BaseModel):
     )
 
 
-class GameDate(BaseModel):
+class GameDate(PandasMixin, PolarsMixin, BaseModel):
     """A single date with its games."""
 
     game_date: str | None = Field(default=None, alias="gameDate")
     games: list[ScheduledGame] = Field(default_factory=list, alias="games")
 
 
-class ScheduleWeek(BaseModel):
+class ScheduleWeek(PandasMixin, PolarsMixin, BaseModel):
     """A week in the schedule."""
 
     week_number: int | None = Field(default=None, alias="weekNumber")
@@ -139,7 +141,7 @@ class ScheduleWeek(BaseModel):
     end_date: str | None = Field(default=None, alias="endDate")
 
 
-class LeagueSchedule(BaseModel):
+class LeagueSchedule(PandasMixin, PolarsMixin, BaseModel):
     """The main schedule data."""
 
     season_year: str | None = Field(default=None, alias="seasonYear")

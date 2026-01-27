@@ -1,7 +1,9 @@
 from pydantic import BaseModel, ConfigDict
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class GravityLeader(BaseModel):
+
+class GravityLeader(PandasMixin, PolarsMixin, BaseModel):
     model_config = ConfigDict(alias_generator=str.upper, populate_by_name=True)
 
     PlayerID: int

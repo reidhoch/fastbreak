@@ -4,13 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
 )
 
 
-class PlayerGameStreak(BaseModel):
+class PlayerGameStreak(PandasMixin, PolarsMixin, BaseModel):
     """A player's consecutive game streak information.
 
     Contains details about the longest or current game streak.

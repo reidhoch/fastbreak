@@ -1,10 +1,11 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.matchup_statistics import MatchupStatistics
 from fastbreak.models.common.meta import Meta
 
 
-class MatchupOpponent(BaseModel):
+class MatchupOpponent(PandasMixin, PolarsMixin, BaseModel):
     """Opponent player in a matchup with their statistics."""
 
     personId: int
@@ -16,7 +17,7 @@ class MatchupOpponent(BaseModel):
     statistics: MatchupStatistics
 
 
-class MatchupsPlayer(BaseModel):
+class MatchupsPlayer(PandasMixin, PolarsMixin, BaseModel):
     """Player with their defensive matchups."""
 
     personId: int
@@ -30,7 +31,7 @@ class MatchupsPlayer(BaseModel):
     matchups: list[MatchupOpponent]
 
 
-class MatchupsTeam(BaseModel):
+class MatchupsTeam(PandasMixin, PolarsMixin, BaseModel):
     """Team with players and their matchups."""
 
     teamId: int
@@ -41,7 +42,7 @@ class MatchupsTeam(BaseModel):
     players: list[MatchupsPlayer]
 
 
-class BoxScoreMatchupsData(BaseModel):
+class BoxScoreMatchupsData(PandasMixin, PolarsMixin, BaseModel):
     """Box score matchups data for a game."""
 
     gameId: str

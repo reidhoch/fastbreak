@@ -2,10 +2,11 @@
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import named_result_sets_validator
 
 
-class PlayerGame(BaseModel):
+class PlayerGame(PandasMixin, PolarsMixin, BaseModel):
     """A game entry for a player."""
 
     matchup: str = Field(alias="MATCHUP")

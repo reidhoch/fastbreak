@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
-class TraditionalGroupStatistics(BaseModel):
+
+class TraditionalGroupStatistics(PandasMixin, PolarsMixin, BaseModel):
     """Traditional statistics for a group (starters or bench)."""
 
     minutes: str
@@ -25,7 +27,7 @@ class TraditionalGroupStatistics(BaseModel):
     points: int
 
 
-class TraditionalStatistics(TraditionalGroupStatistics):
+class TraditionalStatistics(PandasMixin, PolarsMixin, BaseModel):
     """Traditional box score statistics for a player or team."""
 
     plusMinusPoints: float

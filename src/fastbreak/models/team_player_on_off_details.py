@@ -11,7 +11,7 @@ from fastbreak.models.common.result_set import (
 )
 
 
-class TeamOnOffOverall(BaseModel):
+class TeamOnOffOverall(PandasMixin, PolarsMixin, BaseModel):
     """Team's overall statistics for the season.
 
     Contains aggregate stats with league-wide rankings.

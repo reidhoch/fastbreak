@@ -4,13 +4,14 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
 )
 
 
-class GameLogEntry(BaseModel):
+class GameLogEntry(PandasMixin, PolarsMixin, BaseModel):
     """A single game log entry from the league game log."""
 
     season_id: str = Field(alias="SEASON_ID")
