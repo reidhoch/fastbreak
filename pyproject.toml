@@ -5,10 +5,34 @@ build-backend = "hatchling.build"
 [project]
 name = "fastbreak"
 dynamic = ["version"]
-description = "Add your description here"
+description = "Async NBA statistics API client"
 readme = "README.md"
 authors = [{ name = "Reid Hochstedler", email = "reidhoch@gmail.com" }]
+maintainers = [{ name = "Reid Hochstedler", email = "reidhoch@gmail.com" }]
 requires-python = ">=3.12"
+keywords = [
+    "analytics",
+    "api",
+    "basketball",
+    "nba",
+    "sports",
+    "stats",
+    "statistics",
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development",
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+
 dependencies = [
     "aiodns>=4.0",
     "aiohttp>=3.13",
@@ -17,6 +41,12 @@ dependencies = [
     "structlog>=25.0",
     "tenacity>=8.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/reidhoch/fastbreak"
+Repository = "https://github.com/reidhoch/fastbreak"
+Issues = "https://github.com/reidhoch/fastbreak/issues"
+Changelog = "https://github.com/reidhoch/fastbreak/blob/main/CHANGELOG.md"
 
 [tool.hatch.version]
 source = "vcs"
