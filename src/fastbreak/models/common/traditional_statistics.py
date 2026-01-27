@@ -27,7 +27,7 @@ class TraditionalGroupStatistics(PandasMixin, PolarsMixin, BaseModel):
     points: int
 
 
-class TraditionalStatistics(PandasMixin, PolarsMixin, BaseModel):
+class TraditionalStatistics(TraditionalGroupStatistics):
     """Traditional box score statistics for a player or team."""
 
     plusMinusPoints: float

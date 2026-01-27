@@ -31,7 +31,7 @@ class AdvancedStatistics(PandasMixin, PolarsMixin, BaseModel):
     PIE: float
 
 
-class AdvancedTeamStatistics(PandasMixin, PolarsMixin, BaseModel):
+class AdvancedTeamStatistics(AdvancedStatistics):
     """Advanced statistics for a team in a box score."""
 
     estimatedTeamTurnoverPercentage: float
