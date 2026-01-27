@@ -79,3 +79,7 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for developmen
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
+
+## Stargazers
+
+[![Stargazers](https://api.star-history.com/svg?repos=reidhoch/fastbreak&type=date&legend=top-left)](https://www.star-history.com/#reidhoch/fastbreak&type=date&legend=top-left)
