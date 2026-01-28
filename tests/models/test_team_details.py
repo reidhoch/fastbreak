@@ -4,8 +4,8 @@ import pytest
 
 from fastbreak.models import (
     TeamBackground,
-    TeamRetiredJersey,
     TeamDetailsResponse,
+    TeamRetiredJersey,
 )
 
 

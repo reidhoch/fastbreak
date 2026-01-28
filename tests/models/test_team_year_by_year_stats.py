@@ -2,7 +2,7 @@
 
 import pytest
 
-from fastbreak.models import TeamYearStats, TeamYearByYearStatsResponse
+from fastbreak.models import TeamYearByYearStatsResponse, TeamYearStats
 
 
 class TestTeamYearStats:
