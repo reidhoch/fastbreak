@@ -58,18 +58,20 @@ class NBAClient:
         "Sec-Fetch-Site": "same-site",
     }
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         session: ClientSession | None = None,
         timeout: ClientTimeout | None = None,
         max_retries: int = 3,
         retry_wait_min: float = 1.0,
         retry_wait_max: float = 10.0,
+        request_delay: float = 0.0,
     ) -> None:
         self._session = session
         self._owns_session = session is None
         self._timeout = timeout or ClientTimeout(total=30)
         self._session_lock = Lock()
+        self._request_delay = request_delay
         self._retry = AsyncRetrying(
             stop=stop_after_attempt(max_retries + 1),
             wait=wait_exponential_jitter(initial=retry_wait_min, max=retry_wait_max),
@@ -208,6 +210,8 @@ class NBAClient:
         async def _fetch_with_semaphore(index: int, endpoint: Endpoint[T]) -> None:
             nonlocal completed
             async with semaphore:
+                if self._request_delay > 0:
+                    await asyncio.sleep(self._request_delay)
                 results[index] = await self.get(endpoint)
                 completed += 1
                 if (
