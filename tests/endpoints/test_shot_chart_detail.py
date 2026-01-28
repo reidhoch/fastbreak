@@ -3,7 +3,7 @@
 import pytest
 
 from fastbreak.endpoints import ShotChartDetail
-from fastbreak.models import Shot, LeagueAverage, ShotChartDetailResponse
+from fastbreak.models import LeagueAverage, Shot, ShotChartDetailResponse
 
 
 class TestShotChartDetailEndpoint:
