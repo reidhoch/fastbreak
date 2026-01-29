@@ -13,23 +13,17 @@ async def get_box_scores() -> None:
         if not scoreboard:
             print("No games found for yesterday.")
             return
-        game_ids = [
-            BoxScoreTraditional(game.game_id)
-            for game in scoreboard.games
-            if game.game_id
-        ]
         # Retrieve multiple box scores in a single request
+        game_ids = [BoxScoreTraditional(game.game_id) for game in scoreboard.games if game.game_id]
         scores = await client.get_many(game_ids)
         if not scores:
             print("No box scores found.")
             return
         for score in scores:
             boxscore = score.boxScoreTraditional
-            away_team = boxscore.awayTeam.teamTricode
-            home_team = boxscore.homeTeam.teamTricode
-            away_points = boxscore.awayTeam.statistics.points
-            home_points = boxscore.homeTeam.statistics.points
-            print(f"{away_team} @ {home_team}: {away_points} - {home_points}")
+            away = boxscore.awayTeam
+            home = boxscore.homeTeam
+            print(f"{away.teamTricode} @ {home.teamTricode}: {away.statistics.points} - {home.statistics.points}")
 
 
 asyncio.run(get_box_scores())
