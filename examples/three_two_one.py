@@ -24,7 +24,7 @@ def rank(df: pl.DataFrame) -> pl.DataFrame:
 
     # Split OT record "W-L" into separate wins/losses columns
     return (
-        df.with_columns(pl.col("ot").str.split("-").alias("ot_parts"),)
+        df.with_columns(pl.col("ot").str.split("-").alias("ot_parts"))
         .with_columns(
             pl.col("ot_parts").list.get(0).cast(pl.Int64).alias("ot_wins"),
             pl.col("ot_parts").list.get(1).cast(pl.Int64).alias("ot_losses"),
@@ -41,20 +41,7 @@ def rank(df: pl.DataFrame) -> pl.DataFrame:
         .sort("rank")
         # Format ties with "T-" prefix
         .with_columns(format_rank_with_ties("rank"))
-        .select(
-            [
-                "team_name",
-                "wins",
-                "losses",
-                "ot",
-                "reg_wins",
-                "reg_losses",
-                "ot_wins",
-                "ot_losses",
-                "pts",
-                "rank",
-            ]
-        )
+        .select(["team_name", "wins", "losses", "ot", "reg_wins", "reg_losses", "ot_wins", "ot_losses", "pts", "rank"])
     )
 
 

@@ -44,15 +44,12 @@ async def analyze_player_trends(start_date: date, end_date: date, min_games: int
 
         while current <= end_date:
             response = await client.get(ScoreboardV3(game_date=current.isoformat()))
-            game_ids.extend(
-                [
+            if response.scoreboard:
+                game_ids.extend(
                     game.game_id
-                    for game in (
-                        response.scoreboard.games if response.scoreboard else []
-                    )
+                    for game in response.scoreboard.games
                     if game.game_status == 3 and game.game_id is not None
-                ]
-            )
+                )
             current += timedelta(days=1)
 
         print(f"Found {len(game_ids)} completed games")
@@ -76,20 +73,22 @@ async def analyze_player_trends(start_date: date, end_date: date, min_games: int
                 box_score.boxScoreTraditional.awayTeam,
             ]:
                 for player in team.players:
-                    if player.statistics.minutes and ":" in player.statistics.minutes:
-                        mins = int(player.statistics.minutes.split(":")[0])
-                        if mins >= 10:  # Only players with 10+ minutes
-                            player_games[player.personId].append(
-                                PlayerGame(
-                                    name=player.firstName + " " + player.familyName,
-                                    team=team.teamTricode,
-                                    date=game_date,
-                                    pts=player.statistics.points,
-                                    reb=player.statistics.reboundsTotal,
-                                    ast=player.statistics.assists,
-                                    min=mins,
-                                )
-                            )
+                    if not player.statistics.minutes or ":" not in player.statistics.minutes:
+                        continue
+                    mins = int(player.statistics.minutes.split(":")[0])
+                    if mins < 10:  # Only players with 10+ minutes
+                        continue
+                    player_games[player.personId].append(
+                        PlayerGame(
+                            name=f"{player.firstName} {player.familyName}",
+                            team=team.teamTricode,
+                            date=game_date,
+                            pts=player.statistics.points,
+                            reb=player.statistics.reboundsTotal,
+                            ast=player.statistics.assists,
+                            min=mins,
+                        )
+                    )
 
         # Step 4: Calculate trends for players with enough games
         trends: list[PlayerTrend] = []
@@ -119,9 +118,7 @@ async def analyze_player_trends(start_date: date, end_date: date, min_games: int
                     ppg_early=round(avg_first, 1),
                     ppg_recent=round(avg_second, 1),
                     trend=round(trend, 1),
-                    total_ppg=round(
-                        sum(g.pts for g in sorted_games) / len(sorted_games), 1
-                    ),
+                    total_ppg=round(sum(g.pts for g in sorted_games) / len(sorted_games), 1),
                 )
             )
 
@@ -141,27 +138,21 @@ async def main() -> None:
         print("No data found")
         return
 
-    # Print hottest players
-    print("\n🔥 HEATING UP (Biggest Scoring Increase)")
-    print("-" * 60)
-    print(f"{'Player':<25} {'Team':<5} {'GP':<4} {'Early':<7} {'Recent':<7} {'Trend':<7}")
-    print("-" * 60)
-    for p in trends[:10]:
-        trend_str = f"+{p.trend}" if p.trend >= 0 else str(p.trend)
-        print(
-            f"{p.name:<25} {p.team:<5} {p.games:<4} "
-            f"{p.ppg_early:<7} {p.ppg_recent:<7} {trend_str:<7}"
-        )
+    def print_players(title: str, players: list[PlayerTrend]) -> None:
+        print(f"\n{title}")
+        print("-" * 60)
+        print(f"{'Player':<25} {'Team':<5} {'GP':<4} {'Early':<7} {'Recent':<7} {'Trend':<7}")
+        print("-" * 60)
+        for p in players:
+            trend_str = f"+{p.trend}" if p.trend >= 0 else str(p.trend)
+            print(
+                f"{p.name:<25} {p.team:<5} {p.games:<4} "
+                f"{p.ppg_early:<7} {p.ppg_recent:<7} {trend_str:<7}"
+            )
 
-    # Print cooling players
-    print("\n❄️ COOLING DOWN (Biggest Scoring Decrease)")
-    print("-" * 60)
-    for p in trends[-10:]:
-        trend_str = f"+{p.trend}" if p.trend >= 0 else str(p.trend)
-        print(
-            f"{p.name:<25} {p.team:<5} {p.games:<4} "
-            f"{p.ppg_early:<7} {p.ppg_recent:<7} {trend_str:<7}"
-        )
+    # Print hottest and cooling players
+    print_players("🔥 HEATING UP (Biggest Scoring Increase)", trends[:10])
+    print_players("❄️ COOLING DOWN (Biggest Scoring Decrease)", trends[-10:])
 
 
 if __name__ == "__main__":
