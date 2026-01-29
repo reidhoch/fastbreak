@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
@@ -12,11 +12,11 @@ class FourFactorsStatistics(PandasMixin, PolarsMixin, BaseModel):
     """
 
     minutes: str
-    effectiveFieldGoalPercentage: float
-    freeThrowAttemptRate: float
-    teamTurnoverPercentage: float
-    offensiveReboundPercentage: float
-    oppEffectiveFieldGoalPercentage: float
-    oppFreeThrowAttemptRate: float
-    oppTeamTurnoverPercentage: float
-    oppOffensiveReboundPercentage: float
+    effectiveFieldGoalPercentage: float = Field(ge=0.0, le=1.0)
+    freeThrowAttemptRate: float = Field(ge=0.0)
+    teamTurnoverPercentage: float = Field(ge=0.0, le=1.0)
+    offensiveReboundPercentage: float = Field(ge=0.0, le=1.0)
+    oppEffectiveFieldGoalPercentage: float = Field(ge=0.0, le=1.0)
+    oppFreeThrowAttemptRate: float = Field(ge=0.0)
+    oppTeamTurnoverPercentage: float = Field(ge=0.0, le=1.0)
+    oppOffensiveReboundPercentage: float = Field(ge=0.0, le=1.0)
