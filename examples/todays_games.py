@@ -13,8 +13,8 @@ async def get_games() -> None:
             scoreboard = response.scoreboard
             for game in scoreboard.games:
                 if not game.game_time_utc:
-                    print("No game times available.")
-                    return
+                    print("Game time not available.")
+                    continue
                 utc_time = game.game_time_utc
                 local_time = datetime.fromisoformat(utc_time).astimezone(tz=None)
                 away_team = game.away_team.team_tricode if game.away_team else "N/A"
