@@ -24,9 +24,7 @@ def rank(df: pl.DataFrame) -> pl.DataFrame:
 
     # Split OT record "W-L" into separate wins/losses columns
     return (
-        df.with_columns(
-            pl.col("ot").str.split("-").alias("ot_parts"),
-        )
+        df.with_columns(pl.col("ot").str.split("-").alias("ot_parts"),)
         .with_columns(
             pl.col("ot_parts").list.get(0).cast(pl.Int64).alias("ot_wins"),
             pl.col("ot_parts").list.get(1).cast(pl.Int64).alias("ot_losses"),
@@ -37,11 +35,7 @@ def rank(df: pl.DataFrame) -> pl.DataFrame:
             (pl.col("losses") - pl.col("ot_losses")).alias("reg_losses"),
         )
         # Apply 3-2-1 point system: 3 for reg win, 2 for OT win, 1 for OT loss
-        .with_columns(
-            (
-                3 * pl.col("reg_wins") + 2 * pl.col("ot_wins") + pl.col("ot_losses")
-            ).alias("pts")
-        )
+        .with_columns((3 * pl.col("reg_wins") + 2 * pl.col("ot_wins") + pl.col("ot_losses")).alias("pts"))
         # Rank by points (descending, ties get same rank)
         .with_columns(pl.col("pts").rank(method="min", descending=True).alias("rank"))
         .sort("rank")

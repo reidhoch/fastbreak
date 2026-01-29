@@ -25,26 +25,10 @@ async def get_box_scores() -> None:
             return
         for score in scores:
             boxscore = score.boxScoreTraditional
-            away_team = (
-                boxscore.awayTeam.teamTricode
-                if boxscore and boxscore.awayTeam
-                else "N/A"
-            )
-            home_team = (
-                boxscore.homeTeam.teamTricode
-                if boxscore and boxscore.homeTeam
-                else "N/A"
-            )
-            away_points = (
-                boxscore.awayTeam.statistics.points
-                if boxscore and boxscore.awayTeam
-                else 0
-            )
-            home_points = (
-                boxscore.homeTeam.statistics.points
-                if boxscore and boxscore.homeTeam
-                else 0
-            )
+            away_team = boxscore.awayTeam.teamTricode
+            home_team = boxscore.homeTeam.teamTricode
+            away_points = boxscore.awayTeam.statistics.points
+            home_points = boxscore.homeTeam.statistics.points
             print(f"{away_team} @ {home_team}: {away_points} - {home_points}")
 
 
