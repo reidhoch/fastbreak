@@ -1,5 +1,7 @@
 """Tests for PlayerGameStreakFinder endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints import PlayerGameStreakFinder
 from fastbreak.models import PlayerGameStreakFinderResponse
 
@@ -9,9 +11,9 @@ class TestPlayerGameStreakFinder:
 
     def test_init_with_defaults(self):
         """PlayerGameStreakFinder uses sensible defaults."""
-        endpoint = PlayerGameStreakFinder()
+        endpoint = PlayerGameStreakFinder(player_id="2544")
 
-        assert endpoint.player_id == ""
+        assert endpoint.player_id == "2544"
         assert endpoint.league_id == "00"
 
     def test_init_with_player_id(self):
@@ -31,24 +33,24 @@ class TestPlayerGameStreakFinder:
 
     def test_path_is_correct(self):
         """PlayerGameStreakFinder has correct API path."""
-        endpoint = PlayerGameStreakFinder()
+        endpoint = PlayerGameStreakFinder(player_id="2544")
 
         assert endpoint.path == "playergamestreakfinder"
 
     def test_response_model_is_correct(self):
         """PlayerGameStreakFinder uses correct response model."""
-        endpoint = PlayerGameStreakFinder()
+        endpoint = PlayerGameStreakFinder(player_id="2544")
 
         assert endpoint.response_model is PlayerGameStreakFinderResponse
 
     def test_endpoint_is_frozen(self):
         """PlayerGameStreakFinder is immutable (frozen dataclass)."""
-        endpoint = PlayerGameStreakFinder()
+        endpoint = PlayerGameStreakFinder(player_id="2544")
 
         try:
             endpoint.player_id = "203999"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen

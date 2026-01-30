@@ -1,13 +1,26 @@
 """Assist tracker endpoint."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.assist_tracker import AssistTrackerResponse
+from fastbreak.types import (
+    Conference,
+    Date,
+    Division,
+    LeagueID,
+    Location,
+    Outcome,
+    PerMode,
+    PlayerExperience,
+    PlayerPosition,
+    Season,
+    SeasonSegment,
+    SeasonType,
+    StarterBench,
+)
 
 
-@dataclass(frozen=True)
 class AssistTracker(Endpoint[AssistTrackerResponse]):
     """Fetch aggregate assist count with optional filters.
 
@@ -47,30 +60,30 @@ class AssistTracker(Endpoint[AssistTrackerResponse]):
     response_model: ClassVar[type[AssistTrackerResponse]] = AssistTrackerResponse
 
     # Required parameters
-    league_id: str = "00"
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
-    per_mode: str = "Totals"
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    per_mode: PerMode = "Totals"
 
     # Optional filters
     po_round: str | None = None
-    outcome: str | None = None
-    location: str | None = None
+    outcome: Outcome | None = None
+    location: Location | None = None
     month: str | None = None
-    season_segment: str | None = None
-    date_from: str | None = None
-    date_to: str | None = None
+    season_segment: SeasonSegment | None = None
+    date_from: Date | None = None
+    date_to: Date | None = None
     opponent_team_id: str | None = None
-    vs_conference: str | None = None
-    vs_division: str | None = None
+    vs_conference: Conference | None = None
+    vs_division: Division | None = None
     team_id: str | None = None
-    conference: str | None = None
-    division: str | None = None
+    conference: Conference | None = None
+    division: Division | None = None
     last_n_games: str | None = None
     game_scope: str | None = None
-    player_experience: str | None = None
-    player_position: str | None = None
-    starter_bench: str | None = None
+    player_experience: PlayerExperience | None = None
+    player_position: PlayerPosition | None = None
+    starter_bench: StarterBench | None = None
     draft_year: str | None = None
     draft_pick: str | None = None
     college: str | None = None

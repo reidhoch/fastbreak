@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import FranchiseLeaders
 from fastbreak.models import FranchiseLeadersResponse
 
@@ -7,14 +9,14 @@ class TestFranchiseLeaders:
 
     def test_init_with_defaults(self):
         """FranchiseLeaders uses sensible defaults."""
-        endpoint = FranchiseLeaders()
+        endpoint = FranchiseLeaders(team_id="1610612747")
 
         assert endpoint.league_id == "00"
         assert endpoint.team_id == "1610612747"
 
     def test_init_with_custom_league_id(self):
         """FranchiseLeaders accepts custom league_id."""
-        endpoint = FranchiseLeaders(league_id="10")
+        endpoint = FranchiseLeaders(team_id="1610612747", league_id="10")
 
         assert endpoint.league_id == "10"
 
@@ -50,24 +52,24 @@ class TestFranchiseLeaders:
 
     def test_path_is_correct(self):
         """FranchiseLeaders has correct API path."""
-        endpoint = FranchiseLeaders()
+        endpoint = FranchiseLeaders(team_id="1610612747")
 
         assert endpoint.path == "franchiseleaders"
 
     def test_response_model_is_correct(self):
         """FranchiseLeaders uses FranchiseLeadersResponse model."""
-        endpoint = FranchiseLeaders()
+        endpoint = FranchiseLeaders(team_id="1610612747")
 
         assert endpoint.response_model is FranchiseLeadersResponse
 
     def test_endpoint_is_frozen(self):
         """FranchiseLeaders is immutable (frozen dataclass)."""
-        endpoint = FranchiseLeaders()
+        endpoint = FranchiseLeaders(team_id="1610612747")
 
         try:
             endpoint.team_id = "1610612744"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

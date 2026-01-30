@@ -414,7 +414,7 @@ class TestNBAClientGet:
         mock_session.get = MagicMock(return_value=mock_response)
 
         client = NBAClient(session=mock_session)
-        endpoint = PlayByPlay("0022500571")
+        endpoint = PlayByPlay(game_id="0022500571")
 
         result = await client.get(endpoint)
 
@@ -437,7 +437,7 @@ class TestNBAClientGet:
         mock_session.get = MagicMock(return_value=mock_response)
 
         client = NBAClient(session=mock_session)
-        endpoint = PlayByPlay("0022500571")
+        endpoint = PlayByPlay(game_id="0022500571")
 
         await client.get(endpoint)
 
@@ -463,7 +463,7 @@ class TestNBAClientGet:
         mock_session.get = MagicMock(return_value=mock_response)
 
         client = NBAClient(session=mock_session)
-        endpoint = PlayByPlay("0022500571")
+        endpoint = PlayByPlay(game_id="0022500571")
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
             mock_bound = MagicMock()
@@ -501,7 +501,7 @@ class TestNBAClientGet:
         mock_session.get = MagicMock(return_value=mock_response)
 
         client = NBAClient(session=mock_session)
-        endpoint = PlayByPlay("0022500571")
+        endpoint = PlayByPlay(game_id="0022500571")
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
             mock_bound = MagicMock()
@@ -545,7 +545,7 @@ class TestNBAClientGet:
         mock_session.get = MagicMock(return_value=mock_response)
 
         client = NBAClient(session=mock_session, max_retries=0, retry_wait_min=0.01)
-        endpoint = PlayByPlay("0022500571")
+        endpoint = PlayByPlay(game_id="0022500571")
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
             mock_bound = MagicMock()
@@ -581,20 +581,21 @@ class TestNBAClientGet:
         mock_session.get = MagicMock(return_value=mock_response)
 
         client = NBAClient(session=mock_session)
-        endpoint = PlayByPlay("0022500571")
+        endpoint = PlayByPlay(game_id="0022500571")
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
             mock_bound = MagicMock()
             mock_bound.adebug = AsyncMock()
+            mock_bound.awarning = AsyncMock()
             mock_logger.bind.return_value = mock_bound
 
             with pytest.raises(Exception):  # ValidationError
                 await client.get(endpoint)
 
-            # Verify validation_failed log was called
+            # Verify validation_failed log was called at WARNING level
             validation_calls = [
                 c
-                for c in mock_bound.adebug.call_args_list
+                for c in mock_bound.awarning.call_args_list
                 if c[0][0] == "validation_failed"
             ]
             assert len(validation_calls) == 1
@@ -620,7 +621,7 @@ class TestNBAClientGet:
         mock_session.get = MagicMock(return_value=mock_response)
 
         client = NBAClient(session=mock_session)
-        endpoint = PlayByPlay("0022500571")
+        endpoint = PlayByPlay(game_id="0022500571")
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
             mock_bound = MagicMock()
@@ -702,7 +703,7 @@ class TestNBAClientRetry:
         client = NBAClient(
             session=mock_session, retry_wait_min=0.01, retry_wait_max=0.02
         )
-        endpoint = PlayByPlay("0022500571")
+        endpoint = PlayByPlay(game_id="0022500571")
 
         result = await client.get(endpoint)
 
@@ -736,7 +737,7 @@ class TestNBAClientRetry:
         client = NBAClient(
             session=mock_session, retry_wait_min=0.01, retry_wait_max=0.02
         )
-        endpoint = PlayByPlay("0022500571")
+        endpoint = PlayByPlay(game_id="0022500571")
 
         result = await client.get(endpoint)
 
@@ -768,7 +769,7 @@ class TestNBAClientRetry:
         client = NBAClient(
             session=mock_session, retry_wait_min=0.01, retry_wait_max=0.02
         )
-        endpoint = PlayByPlay("0022500571")
+        endpoint = PlayByPlay(game_id="0022500571")
 
         result = await client.get(endpoint)
 
@@ -794,7 +795,7 @@ class TestNBAClientRetry:
         client = NBAClient(
             session=mock_session, retry_wait_min=0.01, retry_wait_max=0.02
         )
-        endpoint = PlayByPlay("0022500571")
+        endpoint = PlayByPlay(game_id="0022500571")
 
         with pytest.raises(ClientResponseError) as exc_info:
             await client.get(endpoint)
@@ -821,7 +822,7 @@ class TestNBAClientRetry:
         client = NBAClient(
             session=mock_session, retry_wait_min=0.01, retry_wait_max=0.02
         )
-        endpoint = PlayByPlay("0022500571")
+        endpoint = PlayByPlay(game_id="0022500571")
 
         with pytest.raises(ClientResponseError) as exc_info:
             await client.get(endpoint)
@@ -854,7 +855,7 @@ class TestNBAClientRetry:
             retry_wait_min=0.01,
             retry_wait_max=0.02,
         )
-        endpoint = PlayByPlay("0022500571")
+        endpoint = PlayByPlay(game_id="0022500571")
 
         with pytest.raises(ClientResponseError) as exc_info:
             await client.get(endpoint)
@@ -888,7 +889,7 @@ class TestNBAClientGetMany:
         mock_session.get = MagicMock(return_value=mock_response)
 
         client = NBAClient(session=mock_session)
-        endpoints = [PlayByPlay(f"002250057{i}") for i in range(3)]
+        endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
 
         results = await client.get_many(endpoints)
 
@@ -917,7 +918,7 @@ class TestNBAClientGetMany:
         mock_session.get = MagicMock(return_value=mock_response)
 
         client = NBAClient(session=mock_session)
-        endpoints = [PlayByPlay("0022500571")]
+        endpoints = [PlayByPlay(game_id="0022500571")]
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
             mock_bound = MagicMock()
@@ -926,12 +927,12 @@ class TestNBAClientGetMany:
 
             await client.get_many(endpoints)
 
-            # Verify logger.bind was called with concurrency=10
+            # Verify logger.bind was called with concurrency=3 (the default)
             bind_calls = [
                 c for c in mock_logger.bind.call_args_list if "concurrency" in c[1]
             ]
             assert len(bind_calls) == 1
-            assert bind_calls[0][1]["concurrency"] == 10
+            assert bind_calls[0][1]["concurrency"] == 3
 
     @pytest.mark.asyncio
     async def test_get_many_custom_concurrency(self, mock_play_by_play_response):
@@ -947,7 +948,7 @@ class TestNBAClientGetMany:
         mock_session.get = MagicMock(return_value=mock_response)
 
         client = NBAClient(session=mock_session)
-        endpoints = [PlayByPlay("0022500571")]
+        endpoints = [PlayByPlay(game_id="0022500571")]
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
             mock_bound = MagicMock()
@@ -977,7 +978,7 @@ class TestNBAClientGetMany:
         mock_session.get = MagicMock(return_value=mock_response)
 
         client = NBAClient(session=mock_session)
-        endpoints = [PlayByPlay(f"002250057{i}") for i in range(3)]
+        endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
             mock_bound = MagicMock()
@@ -1010,7 +1011,7 @@ class TestNBAClientGetMany:
         mock_session.get = MagicMock(return_value=mock_response)
 
         client = NBAClient(session=mock_session)
-        endpoints = [PlayByPlay(f"002250057{i}") for i in range(3)]
+        endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
             mock_bound = MagicMock()
@@ -1046,7 +1047,8 @@ class TestNBAClientGetMany:
         client = NBAClient(session=mock_session)
         # Create enough endpoints to trigger progress logging
         endpoints = [
-            PlayByPlay(f"00225005{i:02d}") for i in range(BATCH_PROGRESS_THRESHOLD)
+            PlayByPlay(game_id=f"00225005{i:02d}")
+            for i in range(BATCH_PROGRESS_THRESHOLD)
         ]
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
@@ -1085,7 +1087,7 @@ class TestNBAClientGetMany:
 
         client = NBAClient(session=mock_session)
         # Create fewer endpoints than threshold
-        endpoints = [PlayByPlay(f"002250057{i}") for i in range(3)]
+        endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
             mock_bound = MagicMock()
@@ -1137,7 +1139,7 @@ class TestNBAClientGetMany:
         mock_session.get = MagicMock(side_effect=lambda *a, **k: create_mock_response())
 
         client = NBAClient(session=mock_session)
-        endpoints = [PlayByPlay(f"002250057{i}") for i in range(10)]
+        endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(10)]
 
         await client.get_many(endpoints, max_concurrency=3)
 
@@ -1189,7 +1191,7 @@ class TestNBAClientGetMany:
         mock_session.get = MagicMock(side_effect=side_effect)
 
         client = NBAClient(session=mock_session)
-        endpoints = [PlayByPlay(f"002250057{i}") for i in range(3)]
+        endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
 
         with pytest.raises(ExceptionGroup) as exc_info:
             await client.get_many(endpoints)

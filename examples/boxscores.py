@@ -14,7 +14,7 @@ async def get_box_scores() -> None:
             print("No games found for yesterday.")
             return
         # Retrieve multiple box scores concurrently using get_many()
-        game_ids = [BoxScoreTraditional(game.game_id) for game in scoreboard.games if game.game_id]
+        game_ids = [BoxScoreTraditional(game_id=game.game_id) for game in scoreboard.games if game.game_id]
         scores = await client.get_many(game_ids)
         if not scores:
             print("No box scores found.")

@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import CommonTeamYears
 from fastbreak.models import CommonTeamYearsResponse
 
@@ -44,7 +46,7 @@ class TestCommonTeamYears:
         try:
             endpoint.league_id = "10"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

@@ -1,13 +1,26 @@
 """Endpoint for comparing a player's stats against another player."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.player_vs_player import PlayerVsPlayerResponse
+from fastbreak.types import (
+    Conference,
+    Date,
+    Division,
+    GameSegment,
+    LeagueID,
+    Location,
+    MeasureType,
+    Outcome,
+    PerMode,
+    Season,
+    SeasonSegment,
+    SeasonType,
+    YesNo,
+)
 
 
-@dataclass(frozen=True)
 class PlayerVsPlayer(Endpoint[PlayerVsPlayerResponse]):
     """Compare a player's stats when playing against another player.
 
@@ -46,32 +59,32 @@ class PlayerVsPlayer(Endpoint[PlayerVsPlayerResponse]):
     response_model: ClassVar[type[PlayerVsPlayerResponse]] = PlayerVsPlayerResponse
 
     # Required parameters
-    league_id: str = "00"
-    player_id: str = ""
-    vs_player_id: str = ""
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
-    per_mode: str = "PerGame"
-    measure_type: str = "Base"
-    pace_adjust: str = "N"
-    plus_minus: str = "N"
-    rank: str = "N"
+    player_id: str
+    vs_player_id: str
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    per_mode: PerMode = "PerGame"
+    measure_type: MeasureType = "Base"
+    pace_adjust: YesNo = "N"
+    plus_minus: YesNo = "N"
+    rank: YesNo = "N"
 
     # Optional filters
-    conference: str | None = None
-    division: str | None = None
-    game_segment: str | None = None
+    conference: Conference | None = None
+    division: Division | None = None
+    game_segment: GameSegment | None = None
     last_n_games: str = "0"
-    location: str | None = None
+    location: Location | None = None
     month: str = "0"
     opponent_team_id: str = "0"
-    outcome: str | None = None
+    outcome: Outcome | None = None
     period: str = "0"
-    season_segment: str | None = None
-    date_from: str | None = None
-    date_to: str | None = None
-    vs_conference: str | None = None
-    vs_division: str | None = None
+    season_segment: SeasonSegment | None = None
+    date_from: Date | None = None
+    date_to: Date | None = None
+    vs_conference: Conference | None = None
+    vs_division: Division | None = None
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

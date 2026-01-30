@@ -1,13 +1,22 @@
 """Endpoint for fetching team player dashboard statistics."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.team_player_dashboard import TeamPlayerDashboardResponse
+from fastbreak.types import (
+    Date,
+    LeagueID,
+    MeasureType,
+    Period,
+    PerMode,
+    Season,
+    SeasonType,
+    ShotClockRange,
+    YesNo,
+)
 
 
-@dataclass(frozen=True)
 class TeamPlayerDashboard(Endpoint[TeamPlayerDashboardResponse]):
     """Fetch team and individual player statistics.
 
@@ -33,26 +42,26 @@ class TeamPlayerDashboard(Endpoint[TeamPlayerDashboardResponse]):
         TeamPlayerDashboardResponse
     )
 
-    team_id: int = 0
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
-    per_mode: str = "PerGame"
-    measure_type: str = "Base"
-    league_id: str = "00"
+    team_id: int
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    per_mode: PerMode = "PerGame"
+    measure_type: MeasureType = "Base"
+    league_id: LeagueID = "00"
     month: int = 0
     opponent_team_id: int = 0
-    period: int = 0
+    period: Period = 0
     last_n_games: int = 0
-    date_from: str = ""
-    date_to: str = ""
+    date_from: Date | None = None
+    date_to: Date | None = None
     game_segment: str = ""
     location: str = ""
     outcome: str = ""
-    pace_adjust: str = "N"
-    plus_minus: str = "N"
-    rank: str = "N"
+    pace_adjust: YesNo = "N"
+    plus_minus: YesNo = "N"
+    rank: YesNo = "N"
     season_segment: str = ""
-    shot_clock_range: str = ""
+    shot_clock_range: ShotClockRange | None = None
     vs_conference: str = ""
     vs_division: str = ""
 
@@ -69,8 +78,8 @@ class TeamPlayerDashboard(Endpoint[TeamPlayerDashboardResponse]):
             "OpponentTeamID": str(self.opponent_team_id),
             "Period": str(self.period),
             "LastNGames": str(self.last_n_games),
-            "DateFrom": self.date_from,
-            "DateTo": self.date_to,
+            "DateFrom": self.date_from or "",
+            "DateTo": self.date_to or "",
             "GameSegment": self.game_segment,
             "Location": self.location,
             "Outcome": self.outcome,
@@ -78,7 +87,7 @@ class TeamPlayerDashboard(Endpoint[TeamPlayerDashboardResponse]):
             "PlusMinus": self.plus_minus,
             "Rank": self.rank,
             "SeasonSegment": self.season_segment,
-            "ShotClockRange": self.shot_clock_range,
+            "ShotClockRange": self.shot_clock_range or "",
             "VsConference": self.vs_conference,
             "VsDivision": self.vs_division,
         }

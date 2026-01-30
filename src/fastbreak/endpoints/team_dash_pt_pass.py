@@ -1,13 +1,23 @@
 """Endpoint for fetching team passing statistics."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.team_dash_pt_pass import TeamDashPtPassResponse
+from fastbreak.types import (
+    Conference,
+    Date,
+    Division,
+    LeagueID,
+    Location,
+    Outcome,
+    PerMode,
+    Season,
+    SeasonSegment,
+    SeasonType,
+)
 
 
-@dataclass(frozen=True)
 class TeamDashPtPass(Endpoint[TeamDashPtPassResponse]):
     """Fetch team passing statistics by player.
 
@@ -37,11 +47,11 @@ class TeamDashPtPass(Endpoint[TeamDashPtPassResponse]):
     response_model: ClassVar[type[TeamDashPtPassResponse]] = TeamDashPtPassResponse
 
     # Required parameters
-    team_id: int = 0
-    league_id: str = "00"
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
-    per_mode: str = "PerGame"
+    team_id: int
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    per_mode: PerMode = "PerGame"
 
     # Filters with defaults
     month: int = 0
@@ -49,13 +59,13 @@ class TeamDashPtPass(Endpoint[TeamDashPtPassResponse]):
     last_n_games: int = 0
 
     # Optional filters
-    outcome: str | None = None
-    location: str | None = None
-    season_segment: str | None = None
-    date_from: str | None = None
-    date_to: str | None = None
-    vs_conference: str | None = None
-    vs_division: str | None = None
+    outcome: Outcome | None = None
+    location: Location | None = None
+    season_segment: SeasonSegment | None = None
+    date_from: Date | None = None
+    date_to: Date | None = None
+    vs_conference: Conference | None = None
+    vs_division: Division | None = None
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

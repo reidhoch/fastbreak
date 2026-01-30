@@ -1,13 +1,12 @@
 """Endpoint for fetching common team information."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.team_info_common import TeamInfoCommonResponse
+from fastbreak.types import LeagueID
 
 
-@dataclass(frozen=True)
 class TeamInfoCommon(Endpoint[TeamInfoCommonResponse]):
     """Fetch basic team information and current season rankings.
 
@@ -23,8 +22,8 @@ class TeamInfoCommon(Endpoint[TeamInfoCommonResponse]):
     path: ClassVar[str] = "teaminfocommon"
     response_model: ClassVar[type[TeamInfoCommonResponse]] = TeamInfoCommonResponse
 
-    team_id: int = 0
-    league_id: str = "00"
+    team_id: int
+    league_id: LeagueID = "00"
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

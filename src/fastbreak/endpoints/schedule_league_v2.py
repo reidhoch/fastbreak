@@ -1,13 +1,12 @@
 """Endpoint for league schedule v2 data."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.schedule_league_v2 import ScheduleLeagueV2Response
+from fastbreak.types import LeagueID, Season
 
 
-@dataclass(frozen=True)
 class ScheduleLeagueV2(Endpoint[ScheduleLeagueV2Response]):
     """Get the full league schedule for a season.
 
@@ -24,8 +23,8 @@ class ScheduleLeagueV2(Endpoint[ScheduleLeagueV2Response]):
     path: ClassVar[str] = "scheduleleaguev2"
     response_model: ClassVar[type[ScheduleLeagueV2Response]] = ScheduleLeagueV2Response
 
-    league_id: str = "00"
-    season: str = "2024-25"
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

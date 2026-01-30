@@ -1,20 +1,28 @@
 """Endpoint for fetching league-wide player tracking statistics."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
-from fastbreak.enums import (
-    LeagueID,
-    PerMode,
-    PlayerOrTeam,
-    PtMeasureType,
-    SeasonType,
-)
 from fastbreak.models.league_dash_pt_stats import LeagueDashPtStatsResponse
+from fastbreak.types import (
+    Conference,
+    Date,
+    Division,
+    LeagueID,
+    Location,
+    Outcome,
+    Period,
+    PerMode,
+    PlayerExperience,
+    PlayerOrTeam,
+    PlayerPosition,
+    PtMeasureType,
+    Season,
+    SeasonType,
+    StarterBench,
+)
 
 
-@dataclass(frozen=True)
 class LeagueDashPtStats(Endpoint[LeagueDashPtStatsResponse]):
     """Fetch league-wide player tracking statistics.
 
@@ -67,34 +75,34 @@ class LeagueDashPtStats(Endpoint[LeagueDashPtStatsResponse]):
     )
 
     # Core parameters
-    pt_measure_type: str | PtMeasureType = PtMeasureType.DRIVES
-    player_or_team: str | PlayerOrTeam = PlayerOrTeam.TEAM
-    season: str = "2024-25"
-    season_type: str | SeasonType = SeasonType.REGULAR_SEASON
-    per_mode: str | PerMode = PerMode.PER_GAME
-    league_id: str | LeagueID = LeagueID.NBA
-    team_id: int = 0
+    team_id: int
+    pt_measure_type: PtMeasureType = "Drives"
+    player_or_team: PlayerOrTeam = "Team"
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    per_mode: PerMode = "PerGame"
+    league_id: LeagueID = "00"
 
     # Numeric filters with defaults
     month: int = 0
-    period: int = 0
+    period: Period = 0
     opponent_team_id: int = 0
     last_n_games: int = 0
     po_round: int = 0
 
     # Optional filters
-    outcome: str | None = None
-    location: str | None = None
-    date_from: str | None = None
-    date_to: str | None = None
-    vs_conference: str | None = None
-    vs_division: str | None = None
+    outcome: Outcome | None = None
+    location: Location | None = None
+    date_from: Date | None = None
+    date_to: Date | None = None
+    vs_conference: Conference | None = None
+    vs_division: Division | None = None
     game_scope: str | None = None
-    player_experience: str | None = None
-    player_position: str | None = None
-    starter_bench: str | None = None
-    conference: str | None = None
-    division: str | None = None
+    player_experience: PlayerExperience | None = None
+    player_position: PlayerPosition | None = None
+    starter_bench: StarterBench | None = None
+    conference: Conference | None = None
+    division: Division | None = None
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

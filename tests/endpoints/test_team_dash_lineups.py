@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import TeamDashLineups
 from fastbreak.models import TeamDashLineupsResponse
 
@@ -7,9 +9,9 @@ class TestTeamDashLineups:
 
     def test_init_with_defaults(self):
         """TeamDashLineups uses sensible defaults."""
-        endpoint = TeamDashLineups()
+        endpoint = TeamDashLineups(team_id=1610612747)
 
-        assert endpoint.team_id == 0
+        assert endpoint.team_id == 1610612747
         assert endpoint.group_quantity == 5
         assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
@@ -25,43 +27,44 @@ class TestTeamDashLineups:
 
     def test_init_with_group_quantity(self):
         """TeamDashLineups accepts group_quantity."""
-        endpoint = TeamDashLineups(group_quantity=2)
+        endpoint = TeamDashLineups(team_id=1610612747, group_quantity=2)
 
         assert endpoint.group_quantity == 2
 
     def test_init_with_custom_season(self):
         """TeamDashLineups accepts custom season."""
-        endpoint = TeamDashLineups(season="2023-24")
+        endpoint = TeamDashLineups(team_id=1610612747, season="2023-24")
 
         assert endpoint.season == "2023-24"
 
     def test_init_with_custom_season_type(self):
         """TeamDashLineups accepts custom season_type."""
-        endpoint = TeamDashLineups(season_type="Playoffs")
+        endpoint = TeamDashLineups(team_id=1610612747, season_type="Playoffs")
 
         assert endpoint.season_type == "Playoffs"
 
     def test_init_with_custom_per_mode(self):
         """TeamDashLineups accepts custom per_mode."""
-        endpoint = TeamDashLineups(per_mode="Totals")
+        endpoint = TeamDashLineups(team_id=1610612747, per_mode="Totals")
 
         assert endpoint.per_mode == "Totals"
 
     def test_init_with_custom_measure_type(self):
         """TeamDashLineups accepts custom measure_type."""
-        endpoint = TeamDashLineups(measure_type="Advanced")
+        endpoint = TeamDashLineups(team_id=1610612747, measure_type="Advanced")
 
         assert endpoint.measure_type == "Advanced"
 
     def test_init_with_last_n_games(self):
         """TeamDashLineups accepts last_n_games filter."""
-        endpoint = TeamDashLineups(last_n_games=10)
+        endpoint = TeamDashLineups(team_id=1610612747, last_n_games=10)
 
         assert endpoint.last_n_games == 10
 
     def test_init_with_pace_plus_rank(self):
         """TeamDashLineups accepts pace/plus/rank settings."""
         endpoint = TeamDashLineups(
+            team_id=1610612747,
             pace_adjust="Y",
             plus_minus="Y",
             rank="Y",
@@ -74,6 +77,7 @@ class TestTeamDashLineups:
     def test_init_with_all_optional_params(self):
         """TeamDashLineups accepts all optional parameters."""
         endpoint = TeamDashLineups(
+            team_id=1610612747,
             outcome="W",
             location="Home",
             season_segment="Post All-Star",
@@ -129,6 +133,7 @@ class TestTeamDashLineups:
     def test_params_includes_optional_params(self):
         """params() includes optional parameters when set."""
         endpoint = TeamDashLineups(
+            team_id=1610612747,
             outcome="W",
             location="Home",
         )
@@ -140,7 +145,7 @@ class TestTeamDashLineups:
 
     def test_params_excludes_none_values(self):
         """params() excludes None optional parameters."""
-        endpoint = TeamDashLineups()
+        endpoint = TeamDashLineups(team_id=1610612747)
 
         params = endpoint.params()
 
@@ -150,24 +155,24 @@ class TestTeamDashLineups:
 
     def test_path_is_correct(self):
         """TeamDashLineups has correct API path."""
-        endpoint = TeamDashLineups()
+        endpoint = TeamDashLineups(team_id=1610612747)
 
         assert endpoint.path == "teamdashlineups"
 
     def test_response_model_is_correct(self):
         """TeamDashLineups uses TeamDashLineupsResponse model."""
-        endpoint = TeamDashLineups()
+        endpoint = TeamDashLineups(team_id=1610612747)
 
         assert endpoint.response_model is TeamDashLineupsResponse
 
     def test_endpoint_is_frozen(self):
         """TeamDashLineups is immutable (frozen dataclass)."""
-        endpoint = TeamDashLineups()
+        endpoint = TeamDashLineups(team_id=1610612747)
 
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

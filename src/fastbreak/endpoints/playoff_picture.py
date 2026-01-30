@@ -1,13 +1,12 @@
 """Endpoint for playoff picture data."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.playoff_picture import PlayoffPictureResponse
+from fastbreak.types import LeagueID
 
 
-@dataclass(frozen=True)
 class PlayoffPicture(Endpoint[PlayoffPictureResponse]):
     """Get playoff picture including matchups, standings, and remaining games.
 
@@ -25,7 +24,7 @@ class PlayoffPicture(Endpoint[PlayoffPictureResponse]):
     path: ClassVar[str] = "playoffpicture"
     response_model: ClassVar[type[PlayoffPictureResponse]] = PlayoffPictureResponse
 
-    league_id: str = "00"
+    league_id: LeagueID = "00"
     season_id: str = "22024"
 
     def params(self) -> dict[str, str]:

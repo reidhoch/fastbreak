@@ -1,5 +1,7 @@
 """Tests for PlayerDashboardByYearOverYear endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints import PlayerDashboardByYearOverYear
 from fastbreak.models import PlayerDashboardByYearOverYearResponse
 
@@ -9,9 +11,9 @@ class TestPlayerDashboardByYearOverYear:
 
     def test_init_with_defaults(self):
         """PlayerDashboardByYearOverYear uses sensible defaults."""
-        endpoint = PlayerDashboardByYearOverYear()
+        endpoint = PlayerDashboardByYearOverYear(player_id=2544)
 
-        assert endpoint.player_id == 0
+        assert endpoint.player_id == 2544
         assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
@@ -84,24 +86,24 @@ class TestPlayerDashboardByYearOverYear:
 
     def test_path_is_correct(self):
         """PlayerDashboardByYearOverYear has correct API path."""
-        endpoint = PlayerDashboardByYearOverYear()
+        endpoint = PlayerDashboardByYearOverYear(player_id=2544)
 
         assert endpoint.path == "playerdashboardbyyearoveryear"
 
     def test_response_model_is_correct(self):
         """PlayerDashboardByYearOverYear uses correct response model."""
-        endpoint = PlayerDashboardByYearOverYear()
+        endpoint = PlayerDashboardByYearOverYear(player_id=2544)
 
         assert endpoint.response_model is PlayerDashboardByYearOverYearResponse
 
     def test_endpoint_is_frozen(self):
         """PlayerDashboardByYearOverYear is immutable (frozen dataclass)."""
-        endpoint = PlayerDashboardByYearOverYear()
+        endpoint = PlayerDashboardByYearOverYear(player_id=2544)
 
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen

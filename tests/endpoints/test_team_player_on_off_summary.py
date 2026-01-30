@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import TeamPlayerOnOffSummary
 from fastbreak.models import TeamPlayerOnOffSummaryResponse
 
@@ -7,9 +9,9 @@ class TestTeamPlayerOnOffSummary:
 
     def test_init_with_defaults(self):
         """TeamPlayerOnOffSummary uses sensible defaults."""
-        endpoint = TeamPlayerOnOffSummary()
+        endpoint = TeamPlayerOnOffSummary(team_id=1610612747)
 
-        assert endpoint.team_id == 0
+        assert endpoint.team_id == 1610612747
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "PerGame"
@@ -24,13 +26,13 @@ class TestTeamPlayerOnOffSummary:
 
     def test_init_with_custom_season(self):
         """TeamPlayerOnOffSummary accepts custom season."""
-        endpoint = TeamPlayerOnOffSummary(season="2023-24")
+        endpoint = TeamPlayerOnOffSummary(team_id=1610612747, season="2023-24")
 
         assert endpoint.season == "2023-24"
 
     def test_init_with_custom_per_mode(self):
         """TeamPlayerOnOffSummary accepts custom per_mode."""
-        endpoint = TeamPlayerOnOffSummary(per_mode="Totals")
+        endpoint = TeamPlayerOnOffSummary(team_id=1610612747, per_mode="Totals")
 
         assert endpoint.per_mode == "Totals"
 
@@ -53,11 +55,11 @@ class TestTeamPlayerOnOffSummary:
 
     def test_params_with_defaults(self):
         """params() returns default parameters correctly."""
-        endpoint = TeamPlayerOnOffSummary()
+        endpoint = TeamPlayerOnOffSummary(team_id=1610612747)
 
         params = endpoint.params()
 
-        assert params["TeamID"] == "0"
+        assert params["TeamID"] == "1610612747"
         assert params["Season"] == "2024-25"
         assert params["SeasonType"] == "Regular Season"
         assert params["PerMode"] == "PerGame"
@@ -67,24 +69,24 @@ class TestTeamPlayerOnOffSummary:
 
     def test_path_is_correct(self):
         """TeamPlayerOnOffSummary has correct API path."""
-        endpoint = TeamPlayerOnOffSummary()
+        endpoint = TeamPlayerOnOffSummary(team_id=1610612747)
 
         assert endpoint.path == "teamplayeronoffsummary"
 
     def test_response_model_is_correct(self):
         """TeamPlayerOnOffSummary uses TeamPlayerOnOffSummaryResponse model."""
-        endpoint = TeamPlayerOnOffSummary()
+        endpoint = TeamPlayerOnOffSummary(team_id=1610612747)
 
         assert endpoint.response_model is TeamPlayerOnOffSummaryResponse
 
     def test_endpoint_is_frozen(self):
         """TeamPlayerOnOffSummary is immutable (frozen dataclass)."""
-        endpoint = TeamPlayerOnOffSummary()
+        endpoint = TeamPlayerOnOffSummary(team_id=1610612747)
 
         try:
             endpoint.team_id = 1610612743  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

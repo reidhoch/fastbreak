@@ -1,13 +1,19 @@
 """Endpoint for fetching league leaders."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.league_leaders import LeagueLeadersResponse
+from fastbreak.types import (
+    LeagueID,
+    PerMode,
+    Scope,
+    Season,
+    SeasonType,
+    StatCategoryAbbreviation,
+)
 
 
-@dataclass(frozen=True)
 class LeagueLeaders(Endpoint[LeagueLeadersResponse]):
     """Fetch league leaders for various statistical categories.
 
@@ -28,12 +34,12 @@ class LeagueLeaders(Endpoint[LeagueLeadersResponse]):
     path: ClassVar[str] = "leagueleaders"
     response_model: ClassVar[type[LeagueLeadersResponse]] = LeagueLeadersResponse
 
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
-    per_mode: str = "PerGame"
-    stat_category: str = "PTS"
-    scope: str = "S"
-    league_id: str = "00"
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    per_mode: PerMode = "PerGame"
+    stat_category: StatCategoryAbbreviation = "PTS"
+    scope: Scope = "S"
+    league_id: LeagueID = "00"
     active_flag: str | None = None
 
     def params(self) -> dict[str, str]:

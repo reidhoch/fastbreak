@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import AssistTracker
 from fastbreak.models import AssistTrackerResponse
 
@@ -91,7 +93,7 @@ class TestAssistTracker:
         """AssistTracker accepts player filter parameters."""
         endpoint = AssistTracker(
             player_experience="Rookie",
-            starter_bench="Starters",
+            starter_bench="Starter",
             draft_year="2024",
             draft_pick="1",
             college="Duke",
@@ -101,7 +103,7 @@ class TestAssistTracker:
         )
 
         assert endpoint.player_experience == "Rookie"
-        assert endpoint.starter_bench == "Starters"
+        assert endpoint.starter_bench == "Starter"
         assert endpoint.draft_year == "2024"
         assert endpoint.draft_pick == "1"
         assert endpoint.college == "Duke"
@@ -158,7 +160,7 @@ class TestAssistTracker:
             game_scope="Season",
             player_experience="Veteran",
             player_position="G",
-            starter_bench="Starters",
+            starter_bench="Starter",
             draft_year="2020",
             draft_pick="2",
             college="Kentucky",
@@ -186,7 +188,7 @@ class TestAssistTracker:
         assert params["GameScope"] == "Season"
         assert params["PlayerExperience"] == "Veteran"
         assert params["PlayerPosition"] == "G"
-        assert params["StarterBench"] == "Starters"
+        assert params["StarterBench"] == "Starter"
         assert params["DraftYear"] == "2020"
         assert params["DraftPick"] == "2"
         assert params["College"] == "Kentucky"
@@ -213,7 +215,7 @@ class TestAssistTracker:
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

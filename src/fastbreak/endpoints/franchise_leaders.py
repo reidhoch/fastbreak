@@ -1,13 +1,12 @@
 """Endpoint for fetching franchise all-time leaders."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.franchise_leaders import FranchiseLeadersResponse
+from fastbreak.types import LeagueID
 
 
-@dataclass(frozen=True)
 class FranchiseLeaders(Endpoint[FranchiseLeadersResponse]):
     """Fetch franchise all-time leaders for a team.
 
@@ -20,8 +19,8 @@ class FranchiseLeaders(Endpoint[FranchiseLeadersResponse]):
     path: ClassVar[str] = "franchiseleaders"
     response_model: ClassVar[type[FranchiseLeadersResponse]] = FranchiseLeadersResponse
 
-    league_id: str = "00"
-    team_id: str = "1610612747"
+    team_id: str
+    league_id: LeagueID = "00"
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

@@ -1,5 +1,7 @@
 """Tests for PlayerDashPtReb endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints import PlayerDashPtReb
 from fastbreak.models import PlayerDashPtRebResponse
 
@@ -9,9 +11,9 @@ class TestPlayerDashPtReb:
 
     def test_init_with_defaults(self):
         """PlayerDashPtReb uses sensible defaults."""
-        endpoint = PlayerDashPtReb()
+        endpoint = PlayerDashPtReb(player_id=2544)
 
-        assert endpoint.player_id == 0
+        assert endpoint.player_id == 2544
         assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
         assert endpoint.per_mode == "PerGame"
@@ -78,24 +80,24 @@ class TestPlayerDashPtReb:
 
     def test_path_is_correct(self):
         """PlayerDashPtReb has correct API path."""
-        endpoint = PlayerDashPtReb()
+        endpoint = PlayerDashPtReb(player_id=2544)
 
         assert endpoint.path == "playerdashptreb"
 
     def test_response_model_is_correct(self):
         """PlayerDashPtReb uses correct response model."""
-        endpoint = PlayerDashPtReb()
+        endpoint = PlayerDashPtReb(player_id=2544)
 
         assert endpoint.response_model is PlayerDashPtRebResponse
 
     def test_endpoint_is_frozen(self):
         """PlayerDashPtReb is immutable (frozen dataclass)."""
-        endpoint = PlayerDashPtReb()
+        endpoint = PlayerDashPtReb(player_id=2544)
 
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen

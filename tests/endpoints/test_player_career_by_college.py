@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import PlayerCareerByCollege
 from fastbreak.models import PlayerCareerByCollegeResponse
 
@@ -106,7 +108,7 @@ class TestPlayerCareerByCollege:
         try:
             endpoint.college = "Kentucky"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

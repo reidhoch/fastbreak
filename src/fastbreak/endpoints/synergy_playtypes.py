@@ -1,13 +1,19 @@
 """Endpoint for fetching Synergy play type statistics."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.synergy_playtypes import SynergyPlaytypesResponse
+from fastbreak.types import (
+    LeagueID,
+    PerMode,
+    PlayerOrTeamAbbreviation,
+    PlayType,
+    Season,
+    SeasonType,
+)
 
 
-@dataclass(frozen=True)
 class SynergyPlaytypes(Endpoint[SynergyPlaytypesResponse]):
     """Fetch Synergy play type statistics for players or teams.
 
@@ -30,14 +36,14 @@ class SynergyPlaytypes(Endpoint[SynergyPlaytypesResponse]):
     path: ClassVar[str] = "synergyplaytypes"
     response_model: ClassVar[type[SynergyPlaytypesResponse]] = SynergyPlaytypesResponse
 
-    league_id: str = "00"
-    season_year: str = "2024-25"
-    season_type: str = "Regular Season"
-    per_mode: str = "PerGame"
-    player_or_team: str = "P"
+    league_id: LeagueID = "00"
+    season_year: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    per_mode: PerMode = "PerGame"
+    player_or_team: PlayerOrTeamAbbreviation = "P"
 
     # Optional filters
-    play_type: str | None = None
+    play_type: PlayType | None = None
     type_grouping: str | None = None
 
     def params(self) -> dict[str, str]:

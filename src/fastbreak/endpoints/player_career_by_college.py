@@ -1,13 +1,12 @@
 """Player career by college endpoint for NBA API."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.player_career_by_college import PlayerCareerByCollegeResponse
+from fastbreak.types import LeagueID, PerMode, Season, SeasonType
 
 
-@dataclass(frozen=True)
 class PlayerCareerByCollege(Endpoint[PlayerCareerByCollegeResponse]):
     """Fetch career statistics for all NBA players from a specific college.
 
@@ -26,10 +25,10 @@ class PlayerCareerByCollege(Endpoint[PlayerCareerByCollegeResponse]):
     )
 
     college: str
-    league_id: str = "00"
-    per_mode: str = "Totals"
-    season_type: str = "Regular Season"
-    season: str | None = None
+    league_id: LeagueID = "00"
+    per_mode: PerMode = "Totals"
+    season_type: SeasonType = "Regular Season"
+    season: Season | None = None
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

@@ -1,22 +1,25 @@
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from inspect import isabstract
+from abc import abstractmethod
 from typing import Any, ClassVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from fastbreak.models import JSON
+from fastbreak.types import LeagueID
 
 
-class Endpoint[T: BaseModel](ABC):
+class Endpoint[T: BaseModel](BaseModel):
     """Base class for NBA API endpoints.
 
-    Subclasses should be decorated with @dataclass and define:
+    Subclasses should define:
     - path: ClassVar[str] - The URL path segment (e.g., "gravityleaders")
     - response_model: ClassVar - The Pydantic model to parse the response
     - Instance fields for query parameters
     - params(): Method returning the query parameters dict
+
+    All endpoints are frozen (immutable) and validate parameters at runtime.
     """
+
+    model_config = ConfigDict(frozen=True)
 
     path: ClassVar[str]
     response_model: ClassVar[type[T]]
@@ -25,8 +28,11 @@ class Endpoint[T: BaseModel](ABC):
     def __init_subclass__(cls, **kwargs: Any) -> None:  # noqa: ANN401
         """Validate that concrete subclasses define required ClassVars."""
         super().__init_subclass__(**kwargs)
-        # Skip validation for abstract or intermediate base classes
-        if isabstract(cls) or cls.__dict__.get("_is_base_endpoint", False):
+        # Skip validation for intermediate base classes
+        if cls.__dict__.get("_is_base_endpoint", False):
+            return
+        # Skip validation for Pydantic's internal generic submodels (names contain "[")
+        if "[" in cls.__name__:
             return
         # Check class hierarchy for actual values (not just annotations)
         has_path = any("path" in c.__dict__ for c in cls.__mro__ if c is not Endpoint)
@@ -50,7 +56,6 @@ class Endpoint[T: BaseModel](ABC):
         return self.response_model.model_validate(data)
 
 
-@dataclass(frozen=True)
 class GameIdEndpoint[T: BaseModel](Endpoint[T]):
     """Base class for endpoints that only require a game_id parameter.
 
@@ -67,7 +72,6 @@ class GameIdEndpoint[T: BaseModel](Endpoint[T]):
         return {"GameID": self.game_id}
 
 
-@dataclass(frozen=True)
 class DraftCombineEndpoint[T: BaseModel](Endpoint[T]):
     """Base class for draft combine endpoints with common parameters.
 
@@ -77,7 +81,7 @@ class DraftCombineEndpoint[T: BaseModel](Endpoint[T]):
 
     _is_base_endpoint: ClassVar[bool] = True
 
-    league_id: str = "00"
+    league_id: LeagueID = "00"
     season_year: str = "2024-25"
 
     def params(self) -> dict[str, str]:

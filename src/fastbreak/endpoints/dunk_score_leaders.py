@@ -1,13 +1,12 @@
 """Endpoint for fetching dunk score leaders."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models import DunkScoreLeadersResponse
+from fastbreak.types import LeagueID, Season, SeasonType
 
 
-@dataclass(frozen=True)
 class DunkScoreLeaders(Endpoint[DunkScoreLeadersResponse]):
     """Fetch dunk score data with optional filtering.
 
@@ -18,9 +17,9 @@ class DunkScoreLeaders(Endpoint[DunkScoreLeadersResponse]):
     path: ClassVar[str] = "dunkscoreleaders"
     response_model: ClassVar[type[DunkScoreLeadersResponse]] = DunkScoreLeadersResponse
 
-    season: str = "2025-26"
-    season_type: str = "Regular Season"
-    league_id: str = "00"
+    season: Season = "2025-26"
+    season_type: SeasonType = "Regular Season"
+    league_id: LeagueID = "00"
     player_id: int | None = None
     team_id: int | None = None
     game_id: str | None = None

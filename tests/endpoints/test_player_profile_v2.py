@@ -1,5 +1,7 @@
 """Tests for PlayerProfileV2 endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints import PlayerProfileV2
 from fastbreak.models import PlayerProfileV2Response
 
@@ -9,9 +11,9 @@ class TestPlayerProfileV2:
 
     def test_init_with_defaults(self):
         """PlayerProfileV2 uses sensible defaults."""
-        endpoint = PlayerProfileV2()
+        endpoint = PlayerProfileV2(player_id="2544")
 
-        assert endpoint.player_id == ""
+        assert endpoint.player_id == "2544"
         assert endpoint.league_id == "00"
         assert endpoint.per_mode == "PerGame"
 
@@ -33,24 +35,24 @@ class TestPlayerProfileV2:
 
     def test_path_is_correct(self):
         """PlayerProfileV2 has correct API path."""
-        endpoint = PlayerProfileV2()
+        endpoint = PlayerProfileV2(player_id="2544")
 
         assert endpoint.path == "playerprofilev2"
 
     def test_response_model_is_correct(self):
         """PlayerProfileV2 uses correct response model."""
-        endpoint = PlayerProfileV2()
+        endpoint = PlayerProfileV2(player_id="2544")
 
         assert endpoint.response_model is PlayerProfileV2Response
 
     def test_endpoint_is_frozen(self):
         """PlayerProfileV2 is immutable (frozen dataclass)."""
-        endpoint = PlayerProfileV2()
+        endpoint = PlayerProfileV2(player_id="2544")
 
         try:
-            endpoint.player_id = "2544"  # type: ignore[misc]
+            endpoint.player_id = "203999"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen

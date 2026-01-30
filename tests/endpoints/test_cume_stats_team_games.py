@@ -1,5 +1,7 @@
 """Tests for CumeStatsTeamGames endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints.cume_stats_team_games import CumeStatsTeamGames
 from fastbreak.models.cume_stats_team_games import CumeStatsTeamGamesResponse
 
@@ -9,16 +11,16 @@ class TestCumeStatsTeamGames:
 
     def test_init_with_defaults(self):
         """CumeStatsTeamGames uses sensible defaults."""
-        endpoint = CumeStatsTeamGames()
+        endpoint = CumeStatsTeamGames(team_id=1610612747)
 
         assert endpoint.league_id == "00"
         assert endpoint.season == "2025"
         assert endpoint.season_type == "Regular Season"
-        assert endpoint.team_id == 0
+        assert endpoint.team_id == 1610612747
 
     def test_init_optional_params_default_to_none_or_zero(self):
         """CumeStatsTeamGames optional params default appropriately."""
-        endpoint = CumeStatsTeamGames()
+        endpoint = CumeStatsTeamGames(team_id=1610612747)
 
         assert endpoint.location is None
         assert endpoint.outcome is None
@@ -75,7 +77,7 @@ class TestCumeStatsTeamGames:
 
     def test_params_uses_season_not_season_id(self):
         """params() uses Season parameter (not SeasonID)."""
-        endpoint = CumeStatsTeamGames(season="2026")
+        endpoint = CumeStatsTeamGames(team_id=1610612747, season="2026")
 
         params = endpoint.params()
 
@@ -131,24 +133,24 @@ class TestCumeStatsTeamGames:
 
     def test_path_is_correct(self):
         """CumeStatsTeamGames has correct API path."""
-        endpoint = CumeStatsTeamGames()
+        endpoint = CumeStatsTeamGames(team_id=1610612747)
 
         assert endpoint.path == "cumestatsteamgames"
 
     def test_response_model_is_correct(self):
         """CumeStatsTeamGames uses CumeStatsTeamGamesResponse model."""
-        endpoint = CumeStatsTeamGames()
+        endpoint = CumeStatsTeamGames(team_id=1610612747)
 
         assert endpoint.response_model is CumeStatsTeamGamesResponse
 
     def test_endpoint_is_frozen(self):
         """CumeStatsTeamGames is immutable (frozen dataclass)."""
-        endpoint = CumeStatsTeamGames()
+        endpoint = CumeStatsTeamGames(team_id=1610612747)
 
         try:
             endpoint.season = "2023"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

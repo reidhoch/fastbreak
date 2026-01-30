@@ -1,13 +1,12 @@
 """Common all players endpoint."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.common_all_players import CommonAllPlayersResponse
+from fastbreak.types import LeagueID, Season
 
 
-@dataclass(frozen=True)
 class CommonAllPlayers(Endpoint[CommonAllPlayersResponse]):
     """Fetch all players in the league.
 
@@ -21,8 +20,8 @@ class CommonAllPlayers(Endpoint[CommonAllPlayersResponse]):
     path: ClassVar[str] = "commonallplayers"
     response_model: ClassVar[type[CommonAllPlayersResponse]] = CommonAllPlayersResponse
 
-    league_id: str = "00"
-    season: str = "2024-25"
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
     is_only_current_season: int = 1
 
     def params(self) -> dict[str, str]:

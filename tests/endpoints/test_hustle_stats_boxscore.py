@@ -1,5 +1,7 @@
 """Tests for HustleStatsBoxscore endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints import HustleStatsBoxscore
 from fastbreak.models import HustleStatsBoxscoreResponse
 
@@ -40,7 +42,7 @@ class TestHustleStatsBoxscore:
         try:
             endpoint.game_id = "0022500000"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

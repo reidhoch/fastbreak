@@ -1,13 +1,12 @@
 """Player Dashboard PT Shots endpoint for player tracking shot statistics."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.player_dash_pt_shots import PlayerDashPtShotsResponse
+from fastbreak.types import Date, LeagueID, PerMode, Season, SeasonType
 
 
-@dataclass(frozen=True)
 class PlayerDashPtShots(Endpoint[PlayerDashPtShotsResponse]):
     """Fetch player shot statistics with tracking data breakdowns.
 
@@ -42,11 +41,11 @@ class PlayerDashPtShots(Endpoint[PlayerDashPtShotsResponse]):
     )
 
     # Required parameters
-    player_id: str = ""
-    league_id: str = "00"
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
-    per_mode: str = "PerGame"
+    player_id: str
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    per_mode: PerMode = "PerGame"
 
     # Optional filters with defaults that the API requires
     team_id: str = "0"
@@ -54,8 +53,8 @@ class PlayerDashPtShots(Endpoint[PlayerDashPtShotsResponse]):
     location: str = ""
     month: str = "0"
     season_segment: str = ""
-    date_from: str = ""
-    date_to: str = ""
+    date_from: Date | None = None
+    date_to: Date | None = None
     opponent_team_id: str = "0"
     vs_conference: str = ""
     vs_division: str = ""
@@ -76,8 +75,8 @@ class PlayerDashPtShots(Endpoint[PlayerDashPtShotsResponse]):
             "Location": self.location,
             "Month": self.month,
             "SeasonSegment": self.season_segment,
-            "DateFrom": self.date_from,
-            "DateTo": self.date_to,
+            "DateFrom": self.date_from or "",
+            "DateTo": self.date_to or "",
             "OpponentTeamID": self.opponent_team_id,
             "VsConference": self.vs_conference,
             "VsDivision": self.vs_division,

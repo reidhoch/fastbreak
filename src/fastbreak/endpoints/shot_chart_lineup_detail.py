@@ -1,13 +1,24 @@
 """Endpoint for fetching shot chart data with lineup context."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.shot_chart_lineup_detail import ShotChartLineupDetailResponse
+from fastbreak.types import (
+    Conference,
+    ContextMeasure,
+    Date,
+    Division,
+    GameSegment,
+    LeagueID,
+    Location,
+    Outcome,
+    Season,
+    SeasonSegment,
+    SeasonType,
+)
 
 
-@dataclass(frozen=True)
 class ShotChartLineupDetail(Endpoint[ShotChartLineupDetailResponse]):
     """Fetch shot chart data with lineup grouping information.
 
@@ -44,11 +55,11 @@ class ShotChartLineupDetail(Endpoint[ShotChartLineupDetailResponse]):
     )
 
     # Required parameters
-    league_id: str = "00"
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
-    team_id: int = 0
-    context_measure: str = "FGA"
+    team_id: int
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    context_measure: ContextMeasure = "FGA"
 
     # Optional filters
     game_id: str | None = None
@@ -57,14 +68,14 @@ class ShotChartLineupDetail(Endpoint[ShotChartLineupDetailResponse]):
     period: int | None = None
     last_n_games: int | None = None
     month: int | None = None
-    location: str | None = None
-    outcome: str | None = None
-    date_from: str | None = None
-    date_to: str | None = None
-    vs_conference: str | None = None
-    vs_division: str | None = None
-    game_segment: str | None = None
-    season_segment: str | None = None
+    location: Location | None = None
+    outcome: Outcome | None = None
+    date_from: Date | None = None
+    date_to: Date | None = None
+    vs_conference: Conference | None = None
+    vs_division: Division | None = None
+    game_segment: GameSegment | None = None
+    season_segment: SeasonSegment | None = None
     context_filter: str | None = None
 
     def params(self) -> dict[str, str]:

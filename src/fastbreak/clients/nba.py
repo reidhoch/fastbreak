@@ -152,7 +152,7 @@ class NBAClient:
                     try:
                         result = endpoint.parse_response(data)
                     except ValidationError as e:
-                        await log.adebug(
+                        await log.awarning(
                             "validation_failed",
                             error=str(e),
                             endpoint=endpoint.path,
@@ -182,7 +182,7 @@ class NBAClient:
 
         Args:
             endpoints: A sequence of Endpoint instances to fetch
-            max_concurrency: Maximum concurrent requests (defaults to 10)
+            max_concurrency: Maximum concurrent requests (defaults to 3)
 
         Returns:
             A list of parsed responses in the same order as the input endpoints.
@@ -199,7 +199,7 @@ class NBAClient:
             return []
 
         total = len(endpoints)
-        concurrency = max_concurrency or 10
+        concurrency = max_concurrency or 3
         semaphore = Semaphore(concurrency)
         results: list[T] = [None] * total  # type: ignore[list-item]
         completed = 0

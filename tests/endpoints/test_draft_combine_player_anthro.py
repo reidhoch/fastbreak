@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import DraftCombinePlayerAnthro
 from fastbreak.models import DraftCombinePlayerAnthroResponse
 
@@ -67,7 +69,7 @@ class TestDraftCombinePlayerAnthro:
         try:
             endpoint.season_year = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

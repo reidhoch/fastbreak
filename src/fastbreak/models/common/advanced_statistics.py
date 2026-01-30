@@ -28,10 +28,10 @@ class AdvancedStatistics(PandasMixin, PolarsMixin, BaseModel):
     pace: float = Field(ge=0.0)
     pacePer40: float = Field(ge=0.0)
     possessions: float = Field(ge=0.0)
-    PIE: float = Field(ge=0.0, le=1.0)
+    PIE: float  # Player Impact Estimate, can be negative
 
 
 class AdvancedTeamStatistics(AdvancedStatistics):
     """Advanced statistics for a team in a box score."""
 
-    estimatedTeamTurnoverPercentage: float = Field(ge=0.0, le=1.0)
+    estimatedTeamTurnoverPercentage: float = Field(ge=0.0, le=100.0)

@@ -1,13 +1,12 @@
 """Endpoint for scoreboard v3 data."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.scoreboard_v3 import ScoreboardV3Response
+from fastbreak.types import LeagueID
 
 
-@dataclass(frozen=True)
 class ScoreboardV3(Endpoint[ScoreboardV3Response]):
     """Get the daily scoreboard for a specific date.
 
@@ -24,7 +23,7 @@ class ScoreboardV3(Endpoint[ScoreboardV3Response]):
     path: ClassVar[str] = "scoreboardv3"
     response_model: ClassVar[type[ScoreboardV3Response]] = ScoreboardV3Response
 
-    league_id: str = "00"
+    league_id: LeagueID = "00"
     game_date: str = ""
 
     def params(self) -> dict[str, str]:

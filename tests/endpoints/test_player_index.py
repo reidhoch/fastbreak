@@ -1,5 +1,7 @@
 """Tests for PlayerIndex endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints import PlayerIndex
 from fastbreak.models import PlayerIndexResponse
 
@@ -48,7 +50,7 @@ class TestPlayerIndex:
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen

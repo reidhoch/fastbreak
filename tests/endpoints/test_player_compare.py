@@ -1,5 +1,7 @@
 """Tests for PlayerCompare endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints import PlayerCompare
 from fastbreak.models import PlayerCompareResponse
 
@@ -113,7 +115,7 @@ class TestPlayerCompare:
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

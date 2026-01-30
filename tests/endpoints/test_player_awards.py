@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import PlayerAwards
 from fastbreak.models import PlayerAwardsResponse
 
@@ -46,7 +48,7 @@ class TestPlayerAwards:
         try:
             endpoint.player_id = 201566  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

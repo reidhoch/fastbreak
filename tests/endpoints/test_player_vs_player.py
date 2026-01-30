@@ -1,5 +1,7 @@
 """Tests for the PlayerVsPlayer endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints.player_vs_player import PlayerVsPlayer
 from fastbreak.models.player_vs_player import PlayerVsPlayerResponse
 
@@ -9,11 +11,11 @@ class TestPlayerVsPlayer:
 
     def test_init_with_defaults(self):
         """PlayerVsPlayer uses sensible defaults."""
-        endpoint = PlayerVsPlayer()
+        endpoint = PlayerVsPlayer(player_id="2544", vs_player_id="201566")
 
         assert endpoint.league_id == "00"
-        assert endpoint.player_id == ""
-        assert endpoint.vs_player_id == ""
+        assert endpoint.player_id == "2544"
+        assert endpoint.vs_player_id == "201566"
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "PerGame"
@@ -45,14 +47,14 @@ class TestPlayerVsPlayer:
 
     def test_params_with_required_only(self):
         """params() returns required parameters."""
-        endpoint = PlayerVsPlayer()
+        endpoint = PlayerVsPlayer(player_id="2544", vs_player_id="201566")
 
         params = endpoint.params()
 
         assert params == {
             "LeagueID": "00",
-            "PlayerID": "",
-            "VsPlayerID": "",
+            "PlayerID": "2544",
+            "VsPlayerID": "201566",
             "Season": "2024-25",
             "SeasonType": "Regular Season",
             "PerMode": "PerGame",
@@ -86,24 +88,24 @@ class TestPlayerVsPlayer:
 
     def test_path_is_correct(self):
         """PlayerVsPlayer has correct API path."""
-        endpoint = PlayerVsPlayer()
+        endpoint = PlayerVsPlayer(player_id="2544", vs_player_id="201566")
 
         assert endpoint.path == "playervsplayer"
 
     def test_response_model_is_correct(self):
         """PlayerVsPlayer uses PlayerVsPlayerResponse model."""
-        endpoint = PlayerVsPlayer()
+        endpoint = PlayerVsPlayer(player_id="2544", vs_player_id="201566")
 
         assert endpoint.response_model is PlayerVsPlayerResponse
 
     def test_endpoint_is_frozen(self):
         """PlayerVsPlayer is immutable (frozen dataclass)."""
-        endpoint = PlayerVsPlayer()
+        endpoint = PlayerVsPlayer(player_id="2544", vs_player_id="201566")
 
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

@@ -1,13 +1,12 @@
 """Player Estimated Metrics endpoint for estimated advanced statistics."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.player_estimated_metrics import PlayerEstimatedMetricsResponse
+from fastbreak.types import LeagueID, Season, SeasonType
 
 
-@dataclass(frozen=True)
 class PlayerEstimatedMetrics(Endpoint[PlayerEstimatedMetricsResponse]):
     """Fetch estimated advanced metrics for all players in the league.
 
@@ -26,9 +25,9 @@ class PlayerEstimatedMetrics(Endpoint[PlayerEstimatedMetricsResponse]):
         PlayerEstimatedMetricsResponse
     )
 
-    league_id: str = "00"
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

@@ -1,6 +1,5 @@
 """Endpoint for fetching NBA draft combine player anthropometric data."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import DraftCombineEndpoint
@@ -9,7 +8,6 @@ from fastbreak.models.draft_combine_player_anthro import (
 )
 
 
-@dataclass(frozen=True)
 class DraftCombinePlayerAnthro(DraftCombineEndpoint[DraftCombinePlayerAnthroResponse]):
     """Fetch NBA draft combine player anthropometric measurements."""
 

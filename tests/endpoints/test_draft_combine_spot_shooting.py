@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import DraftCombineSpotShooting
 from fastbreak.models import DraftCombineSpotShootingResponse
 
@@ -67,7 +69,7 @@ class TestDraftCombineSpotShooting:
         try:
             endpoint.season_year = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import TeamDashPtShots
 from fastbreak.models import TeamDashPtShotsResponse
 
@@ -7,9 +9,9 @@ class TestTeamDashPtShots:
 
     def test_init_with_defaults(self):
         """TeamDashPtShots uses sensible defaults."""
-        endpoint = TeamDashPtShots()
+        endpoint = TeamDashPtShots(team_id=1610612747)
 
-        assert endpoint.team_id == 0
+        assert endpoint.team_id == 1610612747
         assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
@@ -27,37 +29,38 @@ class TestTeamDashPtShots:
 
     def test_init_with_custom_season(self):
         """TeamDashPtShots accepts custom season."""
-        endpoint = TeamDashPtShots(season="2023-24")
+        endpoint = TeamDashPtShots(team_id=1610612747, season="2023-24")
 
         assert endpoint.season == "2023-24"
 
     def test_init_with_custom_season_type(self):
         """TeamDashPtShots accepts custom season_type."""
-        endpoint = TeamDashPtShots(season_type="Playoffs")
+        endpoint = TeamDashPtShots(team_id=1610612747, season_type="Playoffs")
 
         assert endpoint.season_type == "Playoffs"
 
     def test_init_with_custom_per_mode(self):
         """TeamDashPtShots accepts custom per_mode."""
-        endpoint = TeamDashPtShots(per_mode="Totals")
+        endpoint = TeamDashPtShots(team_id=1610612747, per_mode="Totals")
 
         assert endpoint.per_mode == "Totals"
 
     def test_init_with_last_n_games(self):
         """TeamDashPtShots accepts last_n_games filter."""
-        endpoint = TeamDashPtShots(last_n_games=10)
+        endpoint = TeamDashPtShots(team_id=1610612747, last_n_games=10)
 
         assert endpoint.last_n_games == 10
 
     def test_init_with_period(self):
         """TeamDashPtShots accepts period filter."""
-        endpoint = TeamDashPtShots(period=4)
+        endpoint = TeamDashPtShots(team_id=1610612747, period=4)
 
         assert endpoint.period == 4
 
     def test_init_with_all_optional_params(self):
         """TeamDashPtShots accepts all optional parameters."""
         endpoint = TeamDashPtShots(
+            team_id=1610612747,
             outcome="W",
             location="Home",
             season_segment="Post All-Star",
@@ -100,6 +103,7 @@ class TestTeamDashPtShots:
     def test_params_includes_optional_params(self):
         """params() includes optional parameters when set."""
         endpoint = TeamDashPtShots(
+            team_id=1610612747,
             outcome="W",
             location="Home",
             game_segment="First Half",
@@ -113,7 +117,7 @@ class TestTeamDashPtShots:
 
     def test_params_includes_empty_strings_for_unset(self):
         """params() includes empty strings for certain params when not set."""
-        endpoint = TeamDashPtShots()
+        endpoint = TeamDashPtShots(team_id=1610612747)
 
         params = endpoint.params()
 
@@ -125,7 +129,7 @@ class TestTeamDashPtShots:
 
     def test_params_excludes_none_values(self):
         """params() excludes None optional parameters."""
-        endpoint = TeamDashPtShots()
+        endpoint = TeamDashPtShots(team_id=1610612747)
 
         params = endpoint.params()
 
@@ -135,24 +139,24 @@ class TestTeamDashPtShots:
 
     def test_path_is_correct(self):
         """TeamDashPtShots has correct API path."""
-        endpoint = TeamDashPtShots()
+        endpoint = TeamDashPtShots(team_id=1610612747)
 
         assert endpoint.path == "teamdashptshots"
 
     def test_response_model_is_correct(self):
         """TeamDashPtShots uses TeamDashPtShotsResponse model."""
-        endpoint = TeamDashPtShots()
+        endpoint = TeamDashPtShots(team_id=1610612747)
 
         assert endpoint.response_model is TeamDashPtShotsResponse
 
     def test_endpoint_is_frozen(self):
         """TeamDashPtShots is immutable (frozen dataclass)."""
-        endpoint = TeamDashPtShots()
+        endpoint = TeamDashPtShots(team_id=1610612747)
 
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

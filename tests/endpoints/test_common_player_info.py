@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import CommonPlayerInfo
 from fastbreak.models import CommonPlayerInfoResponse
 
@@ -69,7 +71,7 @@ class TestCommonPlayerInfo:
         try:
             endpoint.player_id = 2544  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

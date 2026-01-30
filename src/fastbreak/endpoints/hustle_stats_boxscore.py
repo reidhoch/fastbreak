@@ -1,13 +1,11 @@
 """Hustle stats box score endpoint."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import GameIdEndpoint
 from fastbreak.models.hustle_stats_boxscore import HustleStatsBoxscoreResponse
 
 
-@dataclass(frozen=True)
 class HustleStatsBoxscore(GameIdEndpoint[HustleStatsBoxscoreResponse]):
     """Fetch hustle statistics for a specific game.
 

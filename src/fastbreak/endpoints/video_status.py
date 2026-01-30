@@ -1,13 +1,12 @@
 """Endpoint for video availability status."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.video_status import VideoStatusResponse
+from fastbreak.types import LeagueID
 
 
-@dataclass(frozen=True)
 class VideoStatus(Endpoint[VideoStatusResponse]):
     """Fetch video availability status for games on a given date.
 
@@ -23,7 +22,7 @@ class VideoStatus(Endpoint[VideoStatusResponse]):
     path: ClassVar[str] = "videostatus"
     response_model: ClassVar[type[VideoStatusResponse]] = VideoStatusResponse
 
-    league_id: str = "00"
+    league_id: LeagueID = "00"
     game_date: str = ""
 
     def params(self) -> dict[str, str]:

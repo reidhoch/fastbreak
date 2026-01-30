@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import TeamPlayerDashboard
 from fastbreak.models import TeamPlayerDashboardResponse
 
@@ -7,9 +9,9 @@ class TestTeamPlayerDashboard:
 
     def test_init_with_defaults(self):
         """TeamPlayerDashboard uses sensible defaults."""
-        endpoint = TeamPlayerDashboard()
+        endpoint = TeamPlayerDashboard(team_id=1610612747)
 
-        assert endpoint.team_id == 0
+        assert endpoint.team_id == 1610612747
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "PerGame"
@@ -24,13 +26,13 @@ class TestTeamPlayerDashboard:
 
     def test_init_with_custom_season(self):
         """TeamPlayerDashboard accepts custom season."""
-        endpoint = TeamPlayerDashboard(season="2023-24")
+        endpoint = TeamPlayerDashboard(team_id=1610612747, season="2023-24")
 
         assert endpoint.season == "2023-24"
 
     def test_init_with_custom_per_mode(self):
         """TeamPlayerDashboard accepts custom per_mode."""
-        endpoint = TeamPlayerDashboard(per_mode="Totals")
+        endpoint = TeamPlayerDashboard(team_id=1610612747, per_mode="Totals")
 
         assert endpoint.per_mode == "Totals"
 
@@ -53,11 +55,11 @@ class TestTeamPlayerDashboard:
 
     def test_params_with_defaults(self):
         """params() returns default parameters correctly."""
-        endpoint = TeamPlayerDashboard()
+        endpoint = TeamPlayerDashboard(team_id=1610612747)
 
         params = endpoint.params()
 
-        assert params["TeamID"] == "0"
+        assert params["TeamID"] == "1610612747"
         assert params["Season"] == "2024-25"
         assert params["SeasonType"] == "Regular Season"
         assert params["PerMode"] == "PerGame"
@@ -69,24 +71,24 @@ class TestTeamPlayerDashboard:
 
     def test_path_is_correct(self):
         """TeamPlayerDashboard has correct API path."""
-        endpoint = TeamPlayerDashboard()
+        endpoint = TeamPlayerDashboard(team_id=1610612747)
 
         assert endpoint.path == "teamplayerdashboard"
 
     def test_response_model_is_correct(self):
         """TeamPlayerDashboard uses TeamPlayerDashboardResponse model."""
-        endpoint = TeamPlayerDashboard()
+        endpoint = TeamPlayerDashboard(team_id=1610612747)
 
         assert endpoint.response_model is TeamPlayerDashboardResponse
 
     def test_endpoint_is_frozen(self):
         """TeamPlayerDashboard is immutable (frozen dataclass)."""
-        endpoint = TeamPlayerDashboard()
+        endpoint = TeamPlayerDashboard(team_id=1610612747)
 
         try:
             endpoint.team_id = 1610612743  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

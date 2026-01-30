@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import TeamDashPtPass
 from fastbreak.models import TeamDashPtPassResponse
 
@@ -7,9 +9,9 @@ class TestTeamDashPtPass:
 
     def test_init_with_defaults(self):
         """TeamDashPtPass uses sensible defaults."""
-        endpoint = TeamDashPtPass()
+        endpoint = TeamDashPtPass(team_id=1610612747)
 
-        assert endpoint.team_id == 0
+        assert endpoint.team_id == 1610612747
         assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
@@ -26,31 +28,32 @@ class TestTeamDashPtPass:
 
     def test_init_with_custom_season(self):
         """TeamDashPtPass accepts custom season."""
-        endpoint = TeamDashPtPass(season="2023-24")
+        endpoint = TeamDashPtPass(team_id=1610612747, season="2023-24")
 
         assert endpoint.season == "2023-24"
 
     def test_init_with_custom_season_type(self):
         """TeamDashPtPass accepts custom season_type."""
-        endpoint = TeamDashPtPass(season_type="Playoffs")
+        endpoint = TeamDashPtPass(team_id=1610612747, season_type="Playoffs")
 
         assert endpoint.season_type == "Playoffs"
 
     def test_init_with_custom_per_mode(self):
         """TeamDashPtPass accepts custom per_mode."""
-        endpoint = TeamDashPtPass(per_mode="Totals")
+        endpoint = TeamDashPtPass(team_id=1610612747, per_mode="Totals")
 
         assert endpoint.per_mode == "Totals"
 
     def test_init_with_last_n_games(self):
         """TeamDashPtPass accepts last_n_games filter."""
-        endpoint = TeamDashPtPass(last_n_games=10)
+        endpoint = TeamDashPtPass(team_id=1610612747, last_n_games=10)
 
         assert endpoint.last_n_games == 10
 
     def test_init_with_all_optional_params(self):
         """TeamDashPtPass accepts all optional parameters."""
         endpoint = TeamDashPtPass(
+            team_id=1610612747,
             outcome="W",
             location="Home",
             season_segment="Post All-Star",
@@ -90,6 +93,7 @@ class TestTeamDashPtPass:
     def test_params_includes_optional_params(self):
         """params() includes optional parameters when set."""
         endpoint = TeamDashPtPass(
+            team_id=1610612747,
             outcome="W",
             location="Home",
         )
@@ -101,7 +105,7 @@ class TestTeamDashPtPass:
 
     def test_params_excludes_none_values(self):
         """params() excludes None optional parameters."""
-        endpoint = TeamDashPtPass()
+        endpoint = TeamDashPtPass(team_id=1610612747)
 
         params = endpoint.params()
 
@@ -111,7 +115,7 @@ class TestTeamDashPtPass:
 
     def test_params_includes_empty_date_strings(self):
         """params() includes empty strings for date params when not set."""
-        endpoint = TeamDashPtPass()
+        endpoint = TeamDashPtPass(team_id=1610612747)
 
         params = endpoint.params()
 
@@ -121,6 +125,7 @@ class TestTeamDashPtPass:
     def test_params_includes_date_values(self):
         """params() includes date values when set."""
         endpoint = TeamDashPtPass(
+            team_id=1610612747,
             date_from="01/01/2024",
             date_to="03/31/2024",
         )
@@ -132,24 +137,24 @@ class TestTeamDashPtPass:
 
     def test_path_is_correct(self):
         """TeamDashPtPass has correct API path."""
-        endpoint = TeamDashPtPass()
+        endpoint = TeamDashPtPass(team_id=1610612747)
 
         assert endpoint.path == "teamdashptpass"
 
     def test_response_model_is_correct(self):
         """TeamDashPtPass uses TeamDashPtPassResponse model."""
-        endpoint = TeamDashPtPass()
+        endpoint = TeamDashPtPass(team_id=1610612747)
 
         assert endpoint.response_model is TeamDashPtPassResponse
 
     def test_endpoint_is_frozen(self):
         """TeamDashPtPass is immutable (frozen dataclass)."""
-        endpoint = TeamDashPtPass()
+        endpoint = TeamDashPtPass(team_id=1610612747)
 
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

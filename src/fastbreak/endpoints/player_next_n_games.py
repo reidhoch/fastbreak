@@ -1,13 +1,12 @@
 """Player Next N Games endpoint for upcoming game schedule."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.player_next_n_games import PlayerNextNGamesResponse
+from fastbreak.types import LeagueID, Season, SeasonType
 
 
-@dataclass(frozen=True)
 class PlayerNextNGames(Endpoint[PlayerNextNGamesResponse]):
     """Fetch upcoming games for a player.
 
@@ -26,10 +25,10 @@ class PlayerNextNGames(Endpoint[PlayerNextNGamesResponse]):
     path: ClassVar[str] = "playernextngames"
     response_model: ClassVar[type[PlayerNextNGamesResponse]] = PlayerNextNGamesResponse
 
-    player_id: str = ""
-    league_id: str = "00"
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
+    player_id: str
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
     number_of_games: str = "10"
 
     def params(self) -> dict[str, str]:

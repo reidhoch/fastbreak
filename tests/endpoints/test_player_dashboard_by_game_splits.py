@@ -1,5 +1,7 @@
 """Tests for PlayerDashboardByGameSplits endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints import PlayerDashboardByGameSplits
 from fastbreak.models import PlayerDashboardByGameSplitsResponse
 
@@ -9,9 +11,9 @@ class TestPlayerDashboardByGameSplits:
 
     def test_init_with_defaults(self):
         """PlayerDashboardByGameSplits uses sensible defaults."""
-        endpoint = PlayerDashboardByGameSplits()
+        endpoint = PlayerDashboardByGameSplits(player_id=2544)
 
-        assert endpoint.player_id == 0
+        assert endpoint.player_id == 2544
         assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
@@ -86,24 +88,24 @@ class TestPlayerDashboardByGameSplits:
 
     def test_path_is_correct(self):
         """PlayerDashboardByGameSplits has correct API path."""
-        endpoint = PlayerDashboardByGameSplits()
+        endpoint = PlayerDashboardByGameSplits(player_id=2544)
 
         assert endpoint.path == "playerdashboardbygamesplits"
 
     def test_response_model_is_correct(self):
         """PlayerDashboardByGameSplits uses correct response model."""
-        endpoint = PlayerDashboardByGameSplits()
+        endpoint = PlayerDashboardByGameSplits(player_id=2544)
 
         assert endpoint.response_model is PlayerDashboardByGameSplitsResponse
 
     def test_endpoint_is_frozen(self):
         """PlayerDashboardByGameSplits is immutable (frozen dataclass)."""
-        endpoint = PlayerDashboardByGameSplits()
+        endpoint = PlayerDashboardByGameSplits(player_id=2544)
 
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import TeamGameLog
 from fastbreak.models import TeamGameLogResponse
 
@@ -7,9 +9,9 @@ class TestTeamGameLog:
 
     def test_init_with_defaults(self):
         """TeamGameLog uses sensible defaults."""
-        endpoint = TeamGameLog()
+        endpoint = TeamGameLog(team_id=1610612747)
 
-        assert endpoint.team_id == 0
+        assert endpoint.team_id == 1610612747
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
         assert endpoint.league_id == "00"
@@ -22,19 +24,19 @@ class TestTeamGameLog:
 
     def test_init_with_custom_season(self):
         """TeamGameLog accepts custom season."""
-        endpoint = TeamGameLog(season="2023-24")
+        endpoint = TeamGameLog(team_id=1610612747, season="2023-24")
 
         assert endpoint.season == "2023-24"
 
     def test_init_with_custom_season_type(self):
         """TeamGameLog accepts custom season_type."""
-        endpoint = TeamGameLog(season_type="Playoffs")
+        endpoint = TeamGameLog(team_id=1610612747, season_type="Playoffs")
 
         assert endpoint.season_type == "Playoffs"
 
     def test_init_with_custom_league_id(self):
         """TeamGameLog accepts custom league_id."""
-        endpoint = TeamGameLog(league_id="10")
+        endpoint = TeamGameLog(team_id=1610612747, league_id="10")
 
         assert endpoint.league_id == "10"
 
@@ -55,35 +57,35 @@ class TestTeamGameLog:
 
     def test_params_with_defaults(self):
         """params() returns default parameters correctly."""
-        endpoint = TeamGameLog()
+        endpoint = TeamGameLog(team_id=1610612747)
 
         params = endpoint.params()
 
-        assert params["TeamID"] == "0"
+        assert params["TeamID"] == "1610612747"
         assert params["Season"] == "2024-25"
         assert params["SeasonType"] == "Regular Season"
         assert params["LeagueID"] == "00"
 
     def test_path_is_correct(self):
         """TeamGameLog has correct API path."""
-        endpoint = TeamGameLog()
+        endpoint = TeamGameLog(team_id=1610612747)
 
         assert endpoint.path == "teamgamelog"
 
     def test_response_model_is_correct(self):
         """TeamGameLog uses TeamGameLogResponse model."""
-        endpoint = TeamGameLog()
+        endpoint = TeamGameLog(team_id=1610612747)
 
         assert endpoint.response_model is TeamGameLogResponse
 
     def test_endpoint_is_frozen(self):
         """TeamGameLog is immutable (frozen dataclass)."""
-        endpoint = TeamGameLog()
+        endpoint = TeamGameLog(team_id=1610612747)
 
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"
