@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import TeamAndPlayersVsPlayers
 from fastbreak.models import TeamAndPlayersVsPlayersResponse
 
@@ -7,11 +9,11 @@ class TestTeamAndPlayersVsPlayers:
 
     def test_init_with_defaults(self):
         """TeamAndPlayersVsPlayers uses sensible defaults."""
-        endpoint = TeamAndPlayersVsPlayers()
+        endpoint = TeamAndPlayersVsPlayers(team_id=1610612747, vs_team_id=1610612744)
 
         assert endpoint.league_id == "00"
-        assert endpoint.team_id == 0
-        assert endpoint.vs_team_id == 0
+        assert endpoint.team_id == 1610612747
+        assert endpoint.vs_team_id == 1610612744
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "PerGame"
@@ -29,31 +31,41 @@ class TestTeamAndPlayersVsPlayers:
 
     def test_init_with_custom_season(self):
         """TeamAndPlayersVsPlayers accepts custom season."""
-        endpoint = TeamAndPlayersVsPlayers(season="2023-24")
+        endpoint = TeamAndPlayersVsPlayers(
+            team_id=1610612747, vs_team_id=1610612744, season="2023-24"
+        )
 
         assert endpoint.season == "2023-24"
 
     def test_init_with_custom_season_type(self):
         """TeamAndPlayersVsPlayers accepts custom season_type."""
-        endpoint = TeamAndPlayersVsPlayers(season_type="Playoffs")
+        endpoint = TeamAndPlayersVsPlayers(
+            team_id=1610612747, vs_team_id=1610612744, season_type="Playoffs"
+        )
 
         assert endpoint.season_type == "Playoffs"
 
     def test_init_with_custom_per_mode(self):
         """TeamAndPlayersVsPlayers accepts custom per_mode."""
-        endpoint = TeamAndPlayersVsPlayers(per_mode="Totals")
+        endpoint = TeamAndPlayersVsPlayers(
+            team_id=1610612747, vs_team_id=1610612744, per_mode="Totals"
+        )
 
         assert endpoint.per_mode == "Totals"
 
     def test_init_with_custom_measure_type(self):
         """TeamAndPlayersVsPlayers accepts custom measure_type."""
-        endpoint = TeamAndPlayersVsPlayers(measure_type="Advanced")
+        endpoint = TeamAndPlayersVsPlayers(
+            team_id=1610612747, vs_team_id=1610612744, measure_type="Advanced"
+        )
 
         assert endpoint.measure_type == "Advanced"
 
     def test_init_with_player_ids(self):
         """TeamAndPlayersVsPlayers accepts player ID filters."""
         endpoint = TeamAndPlayersVsPlayers(
+            team_id=1610612747,
+            vs_team_id=1610612744,
             player_id1=203999,
             player_id2=1627750,
             vs_player_id1=2544,
@@ -68,6 +80,8 @@ class TestTeamAndPlayersVsPlayers:
     def test_init_with_pace_plus_rank(self):
         """TeamAndPlayersVsPlayers accepts pace/plus/rank settings."""
         endpoint = TeamAndPlayersVsPlayers(
+            team_id=1610612747,
+            vs_team_id=1610612744,
             pace_adjust="Y",
             plus_minus="Y",
             rank="Y",
@@ -80,6 +94,8 @@ class TestTeamAndPlayersVsPlayers:
     def test_init_with_all_optional_params(self):
         """TeamAndPlayersVsPlayers accepts all optional parameters."""
         endpoint = TeamAndPlayersVsPlayers(
+            team_id=1610612747,
+            vs_team_id=1610612744,
             conference="West",
             division="Pacific",
             game_segment="First Half",
@@ -129,6 +145,8 @@ class TestTeamAndPlayersVsPlayers:
     def test_params_includes_player_ids(self):
         """params() includes player ID parameters."""
         endpoint = TeamAndPlayersVsPlayers(
+            team_id=1610612747,
+            vs_team_id=1610612744,
             player_id1=203999,
             vs_player_id1=2544,
         )
@@ -143,6 +161,8 @@ class TestTeamAndPlayersVsPlayers:
     def test_params_includes_optional_filters(self):
         """params() includes optional filter parameters."""
         endpoint = TeamAndPlayersVsPlayers(
+            team_id=1610612747,
+            vs_team_id=1610612744,
             location="Home",
             outcome="W",
         )
@@ -154,24 +174,24 @@ class TestTeamAndPlayersVsPlayers:
 
     def test_path_is_correct(self):
         """TeamAndPlayersVsPlayers has correct API path."""
-        endpoint = TeamAndPlayersVsPlayers()
+        endpoint = TeamAndPlayersVsPlayers(team_id=1610612747, vs_team_id=1610612744)
 
         assert endpoint.path == "teamandplayersvsplayers"
 
     def test_response_model_is_correct(self):
         """TeamAndPlayersVsPlayers uses TeamAndPlayersVsPlayersResponse model."""
-        endpoint = TeamAndPlayersVsPlayers()
+        endpoint = TeamAndPlayersVsPlayers(team_id=1610612747, vs_team_id=1610612744)
 
         assert endpoint.response_model is TeamAndPlayersVsPlayersResponse
 
     def test_endpoint_is_frozen(self):
         """TeamAndPlayersVsPlayers is immutable (frozen dataclass)."""
-        endpoint = TeamAndPlayersVsPlayers()
+        endpoint = TeamAndPlayersVsPlayers(team_id=1610612747, vs_team_id=1610612744)
 
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

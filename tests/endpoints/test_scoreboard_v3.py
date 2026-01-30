@@ -1,5 +1,7 @@
 """Tests for the ScoreboardV3 endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints.scoreboard_v3 import ScoreboardV3
 from fastbreak.models.scoreboard_v3 import ScoreboardV3Response
 
@@ -56,7 +58,7 @@ class TestScoreboardV3:
         try:
             endpoint.game_date = "2024-01-01"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

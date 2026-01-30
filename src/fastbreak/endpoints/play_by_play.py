@@ -1,11 +1,10 @@
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.play_by_play import PlayByPlayResponse
+from fastbreak.types import Period
 
 
-@dataclass(frozen=True)
 class PlayByPlay(Endpoint[PlayByPlayResponse]):
     """Fetch play-by-play data for a game.
 
@@ -17,8 +16,8 @@ class PlayByPlay(Endpoint[PlayByPlayResponse]):
     response_model: ClassVar[type[PlayByPlayResponse]] = PlayByPlayResponse
 
     game_id: str
-    end_period: int = 0
-    start_period: int = 0
+    end_period: Period = 0
+    start_period: Period = 0
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

@@ -1,13 +1,12 @@
 """Endpoint for fetching league-wide shot chart data."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.shot_chart_leaguewide import ShotChartLeaguewideResponse
+from fastbreak.types import LeagueID, Season
 
 
-@dataclass(frozen=True)
 class ShotChartLeaguewide(Endpoint[ShotChartLeaguewideResponse]):
     """Fetch league-wide shot chart statistics by zone.
 
@@ -22,8 +21,8 @@ class ShotChartLeaguewide(Endpoint[ShotChartLeaguewideResponse]):
         ShotChartLeaguewideResponse
     )
 
-    league_id: str = "00"
-    season: str = "2024-25"
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

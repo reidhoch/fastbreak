@@ -1,13 +1,12 @@
 """League hustle stats player endpoint."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.league_hustle_stats_player import LeagueHustleStatsPlayerResponse
+from fastbreak.types import LeagueID, PerMode, Season, SeasonType
 
 
-@dataclass(frozen=True)
 class LeagueHustleStatsPlayer(Endpoint[LeagueHustleStatsPlayerResponse]):
     """Fetch season-aggregated hustle statistics for all players.
 
@@ -27,10 +26,10 @@ class LeagueHustleStatsPlayer(Endpoint[LeagueHustleStatsPlayerResponse]):
         LeagueHustleStatsPlayerResponse
     )
 
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
-    per_mode: str = "PerGame"
-    league_id: str | None = None
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    per_mode: PerMode = "PerGame"
+    league_id: LeagueID | None = None
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

@@ -1,15 +1,30 @@
 """Endpoint for fetching league-wide team shot location statistics."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.league_dash_team_shot_locations import (
     LeagueDashTeamShotLocationsResponse,
 )
+from fastbreak.types import (
+    Conference,
+    Date,
+    DistanceRange,
+    Division,
+    GameSegment,
+    LeagueID,
+    Location,
+    MeasureType,
+    Outcome,
+    Period,
+    PerMode,
+    Season,
+    SeasonSegment,
+    SeasonType,
+    YesNo,
+)
 
 
-@dataclass(frozen=True)
 class LeagueDashTeamShotLocations(Endpoint[LeagueDashTeamShotLocationsResponse]):
     """Fetch league-wide team shot statistics by distance/location.
 
@@ -51,35 +66,35 @@ class LeagueDashTeamShotLocations(Endpoint[LeagueDashTeamShotLocationsResponse])
     )
 
     # Core parameters
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
-    per_mode: str = "PerGame"
-    measure_type: str = "Base"
-    distance_range: str = "5ft Range"
-    league_id: str = "00"
-    team_id: int = 0
-    pace_adjust: str = "N"
-    plus_minus: str = "N"
-    rank: str = "N"
+    team_id: int
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    per_mode: PerMode = "PerGame"
+    measure_type: MeasureType = "Base"
+    distance_range: DistanceRange = "5ft Range"
+    league_id: LeagueID = "00"
+    pace_adjust: YesNo = "N"
+    plus_minus: YesNo = "N"
+    rank: YesNo = "N"
 
     # Numeric filters with defaults
     month: int = 0
-    period: int = 0
+    period: Period = 0
     opponent_team_id: int = 0
     last_n_games: int = 0
     po_round: int = 0
 
     # Optional filters
-    outcome: str | None = None
-    location: str | None = None
-    date_from: str | None = None
-    date_to: str | None = None
-    vs_conference: str | None = None
-    vs_division: str | None = None
-    game_segment: str | None = None
-    conference: str | None = None
-    division: str | None = None
-    season_segment: str | None = None
+    outcome: Outcome | None = None
+    location: Location | None = None
+    date_from: Date | None = None
+    date_to: Date | None = None
+    vs_conference: Conference | None = None
+    vs_division: Division | None = None
+    game_segment: GameSegment | None = None
+    conference: Conference | None = None
+    division: Division | None = None
+    season_segment: SeasonSegment | None = None
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

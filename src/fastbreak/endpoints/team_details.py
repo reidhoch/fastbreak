@@ -1,13 +1,11 @@
 """Endpoint for fetching team details and background information."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.team_details import TeamDetailsResponse
 
 
-@dataclass(frozen=True)
 class TeamDetails(Endpoint[TeamDetailsResponse]):
     """Fetch comprehensive team details and background information.
 
@@ -23,7 +21,7 @@ class TeamDetails(Endpoint[TeamDetailsResponse]):
     path: ClassVar[str] = "teamdetails"
     response_model: ClassVar[type[TeamDetailsResponse]] = TeamDetailsResponse
 
-    team_id: int = 0
+    team_id: int
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

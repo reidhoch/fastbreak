@@ -1,13 +1,12 @@
 """League season matchups endpoint."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.league_season_matchups import LeagueSeasonMatchupsResponse
+from fastbreak.types import LeagueID, PerMode, Season, SeasonType
 
 
-@dataclass(frozen=True)
 class LeagueSeasonMatchups(Endpoint[LeagueSeasonMatchupsResponse]):
     """Fetch player-vs-player matchup statistics for the season.
 
@@ -28,10 +27,10 @@ class LeagueSeasonMatchups(Endpoint[LeagueSeasonMatchupsResponse]):
         LeagueSeasonMatchupsResponse
     )
 
-    league_id: str = "00"
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
-    per_mode: str = "PerGame"
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    per_mode: PerMode = "PerGame"
     off_team_id: str | None = None
     def_team_id: str | None = None
     off_player_id: str | None = None

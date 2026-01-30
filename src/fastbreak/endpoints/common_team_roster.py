@@ -1,13 +1,12 @@
 """Common team roster endpoint."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.common_team_roster import CommonTeamRosterResponse
+from fastbreak.types import LeagueID, Season
 
 
-@dataclass(frozen=True)
 class CommonTeamRoster(Endpoint[CommonTeamRosterResponse]):
     """Fetch team roster and coaching staff for a season.
 
@@ -22,8 +21,8 @@ class CommonTeamRoster(Endpoint[CommonTeamRosterResponse]):
     response_model: ClassVar[type[CommonTeamRosterResponse]] = CommonTeamRosterResponse
 
     team_id: int
-    league_id: str = "00"
-    season: str = "2024-25"
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

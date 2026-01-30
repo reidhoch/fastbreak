@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import GameRotation
 from fastbreak.models import GameRotationResponse
 
@@ -49,7 +51,7 @@ class TestGameRotation:
         try:
             endpoint.game_id = "0022500572"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

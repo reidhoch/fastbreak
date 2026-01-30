@@ -1,5 +1,7 @@
 """Tests for CumeStatsPlayerGames endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints.cume_stats_player_games import CumeStatsPlayerGames
 from fastbreak.models.cume_stats_player_games import CumeStatsPlayerGamesResponse
 
@@ -9,16 +11,16 @@ class TestCumeStatsPlayerGames:
 
     def test_init_with_defaults(self):
         """CumeStatsPlayerGames uses sensible defaults."""
-        endpoint = CumeStatsPlayerGames()
+        endpoint = CumeStatsPlayerGames(player_id=2544)
 
         assert endpoint.league_id == "00"
         assert endpoint.season == "2025"
         assert endpoint.season_type == "Regular Season"
-        assert endpoint.player_id == 0
+        assert endpoint.player_id == 2544
 
     def test_init_optional_params_default_to_none(self):
         """CumeStatsPlayerGames optional params default to None."""
-        endpoint = CumeStatsPlayerGames()
+        endpoint = CumeStatsPlayerGames(player_id=2544)
 
         assert endpoint.location is None
         assert endpoint.outcome is None
@@ -121,24 +123,24 @@ class TestCumeStatsPlayerGames:
 
     def test_path_is_correct(self):
         """CumeStatsPlayerGames has correct API path."""
-        endpoint = CumeStatsPlayerGames()
+        endpoint = CumeStatsPlayerGames(player_id=2544)
 
         assert endpoint.path == "cumestatsplayergames"
 
     def test_response_model_is_correct(self):
         """CumeStatsPlayerGames uses CumeStatsPlayerGamesResponse model."""
-        endpoint = CumeStatsPlayerGames()
+        endpoint = CumeStatsPlayerGames(player_id=2544)
 
         assert endpoint.response_model is CumeStatsPlayerGamesResponse
 
     def test_endpoint_is_frozen(self):
         """CumeStatsPlayerGames is immutable (frozen dataclass)."""
-        endpoint = CumeStatsPlayerGames()
+        endpoint = CumeStatsPlayerGames(player_id=2544)
 
         try:
             endpoint.season = "2023"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

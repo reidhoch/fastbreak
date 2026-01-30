@@ -1,13 +1,12 @@
 """IST (In-Season Tournament) standings endpoint."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.ist_standings import IstStandingsResponse
+from fastbreak.types import LeagueID, Season, Section
 
 
-@dataclass(frozen=True)
 class IstStandings(Endpoint[IstStandingsResponse]):
     """Fetch In-Season Tournament (NBA Cup) standings.
 
@@ -24,9 +23,9 @@ class IstStandings(Endpoint[IstStandingsResponse]):
     path: ClassVar[str] = "iststandings"
     response_model: ClassVar[type[IstStandingsResponse]] = IstStandingsResponse
 
-    league_id: str = "00"
-    season: str = "2024-25"
-    section: str = "group"
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
+    section: Section = "group"
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

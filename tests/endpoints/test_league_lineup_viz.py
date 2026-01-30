@@ -1,5 +1,7 @@
 """Tests for LeagueLineupViz endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints import LeagueLineupViz
 from fastbreak.models import LeagueLineupVizResponse
 
@@ -9,7 +11,7 @@ class TestLeagueLineupViz:
 
     def test_init_with_defaults(self):
         """LeagueLineupViz uses sensible defaults."""
-        endpoint = LeagueLineupViz()
+        endpoint = LeagueLineupViz(team_id=1610612747)
 
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
@@ -18,23 +20,23 @@ class TestLeagueLineupViz:
         assert endpoint.group_quantity == 5
         assert endpoint.minutes_min == 10
         assert endpoint.league_id == "00"
-        assert endpoint.team_id == 0
+        assert endpoint.team_id == 1610612747
 
     def test_init_with_custom_season(self):
         """LeagueLineupViz accepts custom season."""
-        endpoint = LeagueLineupViz(season="2023-24")
+        endpoint = LeagueLineupViz(team_id=1610612747, season="2023-24")
 
         assert endpoint.season == "2023-24"
 
     def test_init_with_per_game_mode(self):
         """LeagueLineupViz accepts PerGame mode."""
-        endpoint = LeagueLineupViz(per_mode="PerGame")
+        endpoint = LeagueLineupViz(team_id=1610612747, per_mode="PerGame")
 
         assert endpoint.per_mode == "PerGame"
 
     def test_init_with_playoffs(self):
         """LeagueLineupViz accepts Playoffs season type."""
-        endpoint = LeagueLineupViz(season_type="Playoffs")
+        endpoint = LeagueLineupViz(team_id=1610612747, season_type="Playoffs")
 
         assert endpoint.season_type == "Playoffs"
 
@@ -46,13 +48,14 @@ class TestLeagueLineupViz:
 
     def test_init_with_group_quantity(self):
         """LeagueLineupViz accepts different group quantities."""
-        endpoint = LeagueLineupViz(group_quantity=3)
+        endpoint = LeagueLineupViz(team_id=1610612747, group_quantity=3)
 
         assert endpoint.group_quantity == 3
 
     def test_params_returns_correct_dict(self):
         """params() returns correctly formatted parameters."""
         endpoint = LeagueLineupViz(
+            team_id=1610612747,
             season="2024-25",
             season_type="Regular Season",
             per_mode="Totals",
@@ -72,7 +75,7 @@ class TestLeagueLineupViz:
 
     def test_params_includes_all_filters(self):
         """params() includes all filter parameters."""
-        endpoint = LeagueLineupViz()
+        endpoint = LeagueLineupViz(team_id=1610612747)
 
         params = endpoint.params()
 
@@ -86,24 +89,24 @@ class TestLeagueLineupViz:
 
     def test_path_is_correct(self):
         """LeagueLineupViz has correct API path."""
-        endpoint = LeagueLineupViz()
+        endpoint = LeagueLineupViz(team_id=1610612747)
 
         assert endpoint.path == "leaguelineupviz"
 
     def test_response_model_is_correct(self):
         """LeagueLineupViz uses LeagueLineupVizResponse model."""
-        endpoint = LeagueLineupViz()
+        endpoint = LeagueLineupViz(team_id=1610612747)
 
         assert endpoint.response_model is LeagueLineupVizResponse
 
     def test_endpoint_is_frozen(self):
         """LeagueLineupViz is immutable (frozen dataclass)."""
-        endpoint = LeagueLineupViz()
+        endpoint = LeagueLineupViz(team_id=1610612747)
 
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

@@ -34,13 +34,13 @@ class TestBoxScoreEndpoints:
     """Tests for all box score endpoints."""
 
     def test_init_stores_game_id(self, endpoint_class, expected_path):
-        endpoint = endpoint_class(GAME_ID)
+        endpoint = endpoint_class(game_id=GAME_ID)
         assert endpoint.game_id == GAME_ID
 
     def test_params_returns_game_id(self, endpoint_class, expected_path):
-        endpoint = endpoint_class(GAME_ID)
+        endpoint = endpoint_class(game_id=GAME_ID)
         assert endpoint.params() == {"GameID": GAME_ID}
 
     def test_path_is_correct(self, endpoint_class, expected_path):
-        endpoint = endpoint_class(GAME_ID)
+        endpoint = endpoint_class(game_id=GAME_ID)
         assert endpoint.path == expected_path

@@ -1,5 +1,7 @@
 """Tests for PlayerGameLog endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints import PlayerGameLog
 from fastbreak.models import PlayerGameLogResponse
 
@@ -9,9 +11,9 @@ class TestPlayerGameLog:
 
     def test_init_with_defaults(self):
         """PlayerGameLog uses sensible defaults."""
-        endpoint = PlayerGameLog()
+        endpoint = PlayerGameLog(player_id="2544")
 
-        assert endpoint.player_id == ""
+        assert endpoint.player_id == "2544"
         assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
@@ -35,24 +37,24 @@ class TestPlayerGameLog:
 
     def test_path_is_correct(self):
         """PlayerGameLog has correct API path."""
-        endpoint = PlayerGameLog()
+        endpoint = PlayerGameLog(player_id="2544")
 
         assert endpoint.path == "playergamelog"
 
     def test_response_model_is_correct(self):
         """PlayerGameLog uses correct response model."""
-        endpoint = PlayerGameLog()
+        endpoint = PlayerGameLog(player_id="2544")
 
         assert endpoint.response_model is PlayerGameLogResponse
 
     def test_endpoint_is_frozen(self):
         """PlayerGameLog is immutable (frozen dataclass)."""
-        endpoint = PlayerGameLog()
+        endpoint = PlayerGameLog(player_id="2544")
 
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen

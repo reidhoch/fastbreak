@@ -1,13 +1,25 @@
 """Shot chart detail endpoint for individual shot location data."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.shot_chart_detail import ShotChartDetailResponse
+from fastbreak.types import (
+    Conference,
+    ContextMeasure,
+    Date,
+    Division,
+    GameSegment,
+    LeagueID,
+    Location,
+    Outcome,
+    Period,
+    Season,
+    SeasonSegment,
+    SeasonType,
+)
 
 
-@dataclass(frozen=True)
 class ShotChartDetail(Endpoint[ShotChartDetailResponse]):
     """Fetch shot chart data with x/y coordinates for visualization.
 
@@ -53,27 +65,27 @@ class ShotChartDetail(Endpoint[ShotChartDetailResponse]):
     response_model: ClassVar[type[ShotChartDetailResponse]] = ShotChartDetailResponse
 
     # Required parameters
+    team_id: int
     player_id: int = 0
-    team_id: int = 0
-    league_id: str = "00"
-    season: str | None = None
-    season_type: str = "Regular Season"
-    context_measure: str = "FGA"
+    league_id: LeagueID = "00"
+    season: Season | None = None
+    season_type: SeasonType = "Regular Season"
+    context_measure: ContextMeasure = "FGA"
 
     # Optional filters
     game_id: str | None = None
     opponent_team_id: int = 0
-    period: int = 0
+    period: Period = 0
     last_n_games: int = 0
     month: int = 0
-    location: str | None = None
-    outcome: str | None = None
-    date_from: str | None = None
-    date_to: str | None = None
-    vs_conference: str | None = None
-    vs_division: str | None = None
-    game_segment: str | None = None
-    season_segment: str | None = None
+    location: Location | None = None
+    outcome: Outcome | None = None
+    date_from: Date | None = None
+    date_to: Date | None = None
+    vs_conference: Conference | None = None
+    vs_division: Division | None = None
+    game_segment: GameSegment | None = None
+    season_segment: SeasonSegment | None = None
     position: str | None = None
     rookie_year: str | None = None
 

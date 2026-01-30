@@ -1,13 +1,27 @@
 """Endpoint for fetching league player on/off court details."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.league_player_on_details import LeaguePlayerOnDetailsResponse
+from fastbreak.types import (
+    Conference,
+    Date,
+    Division,
+    GameSegment,
+    LeagueID,
+    Location,
+    MeasureType,
+    Outcome,
+    PerMode,
+    Season,
+    SeasonSegment,
+    SeasonType,
+    ShotClockRange,
+    YesNo,
+)
 
 
-@dataclass(frozen=True)
 class LeaguePlayerOnDetails(Endpoint[LeaguePlayerOnDetailsResponse]):
     """Fetch team statistics when specific players are on the court.
 
@@ -33,28 +47,28 @@ class LeaguePlayerOnDetails(Endpoint[LeaguePlayerOnDetailsResponse]):
     )
 
     team_id: int
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
-    per_mode: str = "Totals"
-    measure_type: str = "Base"
-    league_id: str = "00"
-    pace_adjust: str = "N"
-    plus_minus: str = "N"
-    rank: str = "N"
-    date_from: str | None = None
-    date_to: str | None = None
-    game_segment: str | None = None
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    per_mode: PerMode = "Totals"
+    measure_type: MeasureType = "Base"
+    league_id: LeagueID = "00"
+    pace_adjust: YesNo = "N"
+    plus_minus: YesNo = "N"
+    rank: YesNo = "N"
+    date_from: Date | None = None
+    date_to: Date | None = None
+    game_segment: GameSegment | None = None
     last_n_games: int = 0
-    location: str | None = None
+    location: Location | None = None
     month: int = 0
     opponent_team_id: int = 0
-    outcome: str | None = None
+    outcome: Outcome | None = None
     po_round: int = 0
     period: int = 0
-    season_segment: str | None = None
-    shot_clock_range: str | None = None
-    vs_conference: str | None = None
-    vs_division: str | None = None
+    season_segment: SeasonSegment | None = None
+    shot_clock_range: ShotClockRange | None = None
+    vs_conference: Conference | None = None
+    vs_division: Division | None = None
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

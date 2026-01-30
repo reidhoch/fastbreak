@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import AllTimeLeadersGrids
 from fastbreak.models import AllTimeLeadersResponse
 
@@ -98,7 +100,7 @@ class TestAllTimeLeadersGrids:
         try:
             endpoint.top_x = 50  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

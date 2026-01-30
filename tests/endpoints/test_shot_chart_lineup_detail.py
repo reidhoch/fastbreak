@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import ShotChartLineupDetail
 from fastbreak.models import ShotChartLineupDetailResponse
 
@@ -7,29 +9,29 @@ class TestShotChartLineupDetail:
 
     def test_init_with_defaults(self):
         """ShotChartLineupDetail uses sensible defaults."""
-        endpoint = ShotChartLineupDetail()
+        endpoint = ShotChartLineupDetail(team_id=1610612747)
 
         assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
-        assert endpoint.team_id == 0
+        assert endpoint.team_id == 1610612747
         assert endpoint.context_measure == "FGA"
 
     def test_init_with_custom_league_id(self):
         """ShotChartLineupDetail accepts custom league_id."""
-        endpoint = ShotChartLineupDetail(league_id="10")
+        endpoint = ShotChartLineupDetail(team_id=1610612747, league_id="10")
 
         assert endpoint.league_id == "10"
 
     def test_init_with_custom_season(self):
         """ShotChartLineupDetail accepts custom season."""
-        endpoint = ShotChartLineupDetail(season="2023-24")
+        endpoint = ShotChartLineupDetail(team_id=1610612747, season="2023-24")
 
         assert endpoint.season == "2023-24"
 
     def test_init_with_custom_season_type(self):
         """ShotChartLineupDetail accepts custom season_type."""
-        endpoint = ShotChartLineupDetail(season_type="Playoffs")
+        endpoint = ShotChartLineupDetail(team_id=1610612747, season_type="Playoffs")
 
         assert endpoint.season_type == "Playoffs"
 
@@ -41,25 +43,26 @@ class TestShotChartLineupDetail:
 
     def test_init_with_custom_context_measure(self):
         """ShotChartLineupDetail accepts custom context_measure."""
-        endpoint = ShotChartLineupDetail(context_measure="FG3A")
+        endpoint = ShotChartLineupDetail(team_id=1610612747, context_measure="FG3A")
 
         assert endpoint.context_measure == "FG3A"
 
     def test_init_with_game_id(self):
         """ShotChartLineupDetail accepts game_id filter."""
-        endpoint = ShotChartLineupDetail(game_id="0022400001")
+        endpoint = ShotChartLineupDetail(team_id=1610612747, game_id="0022400001")
 
         assert endpoint.game_id == "0022400001"
 
     def test_init_with_group_id(self):
         """ShotChartLineupDetail accepts group_id filter."""
-        endpoint = ShotChartLineupDetail(group_id="123-456-789")
+        endpoint = ShotChartLineupDetail(team_id=1610612747, group_id="123-456-789")
 
         assert endpoint.group_id == "123-456-789"
 
     def test_init_with_all_optional_params(self):
         """ShotChartLineupDetail accepts all optional parameters."""
         endpoint = ShotChartLineupDetail(
+            team_id=1610612747,
             game_id="0022400001",
             group_id="123-456-789",
             opponent_team_id=1610612744,
@@ -116,6 +119,7 @@ class TestShotChartLineupDetail:
     def test_params_includes_optional_params(self):
         """params() includes optional parameters when set."""
         endpoint = ShotChartLineupDetail(
+            team_id=1610612747,
             game_id="0022400001",
             group_id="123-456",
             period=2,
@@ -129,7 +133,7 @@ class TestShotChartLineupDetail:
 
     def test_params_excludes_none_values(self):
         """params() excludes None optional parameters."""
-        endpoint = ShotChartLineupDetail()
+        endpoint = ShotChartLineupDetail(team_id=1610612747)
 
         params = endpoint.params()
 
@@ -139,24 +143,24 @@ class TestShotChartLineupDetail:
 
     def test_path_is_correct(self):
         """ShotChartLineupDetail has correct API path."""
-        endpoint = ShotChartLineupDetail()
+        endpoint = ShotChartLineupDetail(team_id=1610612747)
 
         assert endpoint.path == "shotchartlineupdetail"
 
     def test_response_model_is_correct(self):
         """ShotChartLineupDetail uses ShotChartLineupDetailResponse model."""
-        endpoint = ShotChartLineupDetail()
+        endpoint = ShotChartLineupDetail(team_id=1610612747)
 
         assert endpoint.response_model is ShotChartLineupDetailResponse
 
     def test_endpoint_is_frozen(self):
         """ShotChartLineupDetail is immutable (frozen dataclass)."""
-        endpoint = ShotChartLineupDetail()
+        endpoint = ShotChartLineupDetail(team_id=1610612747)
 
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

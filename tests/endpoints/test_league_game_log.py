@@ -1,5 +1,7 @@
 """Tests for LeagueGameLog endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints import LeagueGameLog
 from fastbreak.models import LeagueGameLogResponse
 
@@ -107,7 +109,7 @@ class TestLeagueGameLog:
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

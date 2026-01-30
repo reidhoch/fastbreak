@@ -1,13 +1,12 @@
 """League game log endpoint."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.league_game_log import LeagueGameLogResponse
+from fastbreak.types import Date, LeagueID, PlayerOrTeamAbbreviation, Season, SeasonType
 
 
-@dataclass(frozen=True)
 class LeagueGameLog(Endpoint[LeagueGameLogResponse]):
     """Browse and sort game logs across the league.
 
@@ -31,10 +30,10 @@ class LeagueGameLog(Endpoint[LeagueGameLogResponse]):
     response_model: ClassVar[type[LeagueGameLogResponse]] = LeagueGameLogResponse
 
     # Required parameters
-    league_id: str = "00"
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
-    player_or_team: str = "T"
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    player_or_team: PlayerOrTeamAbbreviation = "T"
 
     # Sorting and pagination
     counter: int = 1000
@@ -42,8 +41,8 @@ class LeagueGameLog(Endpoint[LeagueGameLogResponse]):
     direction: str = "DESC"
 
     # Optional date filters
-    date_from: str | None = None
-    date_to: str | None = None
+    date_from: Date | None = None
+    date_to: Date | None = None
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

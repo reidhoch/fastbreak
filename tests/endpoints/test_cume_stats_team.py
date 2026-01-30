@@ -1,5 +1,7 @@
 """Tests for CumeStatsTeam endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints.cume_stats_team import CumeStatsTeam
 from fastbreak.models.cume_stats_team import CumeStatsTeamResponse
 
@@ -9,12 +11,12 @@ class TestCumeStatsTeam:
 
     def test_init_with_defaults(self):
         """CumeStatsTeam uses sensible defaults."""
-        endpoint = CumeStatsTeam()
+        endpoint = CumeStatsTeam(team_id=1610612747)
 
         assert endpoint.league_id == "00"
         assert endpoint.season == "2025"
         assert endpoint.season_type == "Regular Season"
-        assert endpoint.team_id == 0
+        assert endpoint.team_id == 1610612747
         assert endpoint.game_ids == ""
 
     def test_init_with_custom_params(self):
@@ -74,24 +76,24 @@ class TestCumeStatsTeam:
 
     def test_path_is_correct(self):
         """CumeStatsTeam has correct API path."""
-        endpoint = CumeStatsTeam()
+        endpoint = CumeStatsTeam(team_id=1610612747)
 
         assert endpoint.path == "cumestatsteam"
 
     def test_response_model_is_correct(self):
         """CumeStatsTeam uses CumeStatsTeamResponse model."""
-        endpoint = CumeStatsTeam()
+        endpoint = CumeStatsTeam(team_id=1610612747)
 
         assert endpoint.response_model is CumeStatsTeamResponse
 
     def test_endpoint_is_frozen(self):
         """CumeStatsTeam is immutable (frozen dataclass)."""
-        endpoint = CumeStatsTeam()
+        endpoint = CumeStatsTeam(team_id=1610612747)
 
         try:
             endpoint.season = "2023"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

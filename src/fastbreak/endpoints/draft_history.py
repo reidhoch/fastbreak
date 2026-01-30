@@ -1,19 +1,18 @@
 """Endpoint for fetching NBA draft history."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.draft_history import DraftHistoryResponse
+from fastbreak.types import LeagueID
 
 
-@dataclass(frozen=True)
 class DraftHistory(Endpoint[DraftHistoryResponse]):
     """Fetch NBA draft history.
 
     Args:
         league_id: League identifier ("00" for NBA)
-        season: Season year to filter by (e.g., "2024" for 2024 draft)
+        season: Draft year to filter by (e.g., "2024" for 2024 draft)
         team_id: Team identifier to filter by (optional)
         round_num: Round number to filter by (optional)
         round_pick: Pick within round to filter by (optional)
@@ -25,7 +24,7 @@ class DraftHistory(Endpoint[DraftHistoryResponse]):
     path: ClassVar[str] = "drafthistory"
     response_model: ClassVar[type[DraftHistoryResponse]] = DraftHistoryResponse
 
-    league_id: str = "00"
+    league_id: LeagueID = "00"
     season: str | None = None
     team_id: str | None = None
     round_num: str | None = None

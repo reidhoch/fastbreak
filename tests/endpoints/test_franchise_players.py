@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import FranchisePlayers
 from fastbreak.models import FranchisePlayersResponse
 
@@ -7,7 +9,7 @@ class TestFranchisePlayers:
 
     def test_init_with_defaults(self):
         """FranchisePlayers uses sensible defaults."""
-        endpoint = FranchisePlayers()
+        endpoint = FranchisePlayers(team_id="1610612747")
 
         assert endpoint.league_id == "00"
         assert endpoint.team_id == "1610612747"
@@ -16,7 +18,7 @@ class TestFranchisePlayers:
 
     def test_init_with_custom_league_id(self):
         """FranchisePlayers accepts custom league_id."""
-        endpoint = FranchisePlayers(league_id="10")
+        endpoint = FranchisePlayers(team_id="1610612747", league_id="10")
 
         assert endpoint.league_id == "10"
 
@@ -28,13 +30,13 @@ class TestFranchisePlayers:
 
     def test_init_with_custom_season_type(self):
         """FranchisePlayers accepts custom season_type."""
-        endpoint = FranchisePlayers(season_type="Playoffs")
+        endpoint = FranchisePlayers(team_id="1610612747", season_type="Playoffs")
 
         assert endpoint.season_type == "Playoffs"
 
     def test_init_with_custom_per_mode(self):
         """FranchisePlayers accepts custom per_mode."""
-        endpoint = FranchisePlayers(per_mode="Totals")
+        endpoint = FranchisePlayers(team_id="1610612747", per_mode="Totals")
 
         assert endpoint.per_mode == "Totals"
 
@@ -72,24 +74,24 @@ class TestFranchisePlayers:
 
     def test_path_is_correct(self):
         """FranchisePlayers has correct API path."""
-        endpoint = FranchisePlayers()
+        endpoint = FranchisePlayers(team_id="1610612747")
 
         assert endpoint.path == "franchiseplayers"
 
     def test_response_model_is_correct(self):
         """FranchisePlayers uses FranchisePlayersResponse model."""
-        endpoint = FranchisePlayers()
+        endpoint = FranchisePlayers(team_id="1610612747")
 
         assert endpoint.response_model is FranchisePlayersResponse
 
     def test_endpoint_is_frozen(self):
         """FranchisePlayers is immutable (frozen dataclass)."""
-        endpoint = FranchisePlayers()
+        endpoint = FranchisePlayers(team_id="1610612747")
 
         try:
             endpoint.team_id = "1610612745"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

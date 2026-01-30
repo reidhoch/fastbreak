@@ -1,13 +1,12 @@
 """Common playoff series endpoint."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.common_playoff_series import CommonPlayoffSeriesResponse
+from fastbreak.types import LeagueID, Season
 
 
-@dataclass(frozen=True)
 class CommonPlayoffSeries(Endpoint[CommonPlayoffSeriesResponse]):
     """Fetch playoff series games for a season.
 
@@ -23,8 +22,8 @@ class CommonPlayoffSeries(Endpoint[CommonPlayoffSeriesResponse]):
         CommonPlayoffSeriesResponse
     )
 
-    league_id: str = "00"
-    season: str = "2024-25"
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
     series_id: str | None = None
 
     def params(self) -> dict[str, str]:

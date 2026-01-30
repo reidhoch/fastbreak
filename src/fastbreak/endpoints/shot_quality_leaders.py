@@ -1,13 +1,12 @@
 """Shot quality leaders endpoint."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.shot_quality_leaders import ShotQualityLeadersResponse
+from fastbreak.types import LeagueID, Season, SeasonType
 
 
-@dataclass(frozen=True)
 class ShotQualityLeaders(Endpoint[ShotQualityLeadersResponse]):
     """Fetch shot quality leaders - players ranked by shot quality metrics.
 
@@ -28,9 +27,9 @@ class ShotQualityLeaders(Endpoint[ShotQualityLeadersResponse]):
         ShotQualityLeadersResponse
     )
 
-    league_id: str = "00"
-    season_type: str = "Regular Season"
-    season_year: str = "2025-26"
+    league_id: LeagueID = "00"
+    season_type: SeasonType = "Regular Season"
+    season_year: Season = "2025-26"
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

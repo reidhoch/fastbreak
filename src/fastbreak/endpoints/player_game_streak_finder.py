@@ -1,13 +1,12 @@
 """Player Game Streak Finder endpoint for consecutive game streaks."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.player_game_streak_finder import PlayerGameStreakFinderResponse
+from fastbreak.types import LeagueID
 
 
-@dataclass(frozen=True)
 class PlayerGameStreakFinder(Endpoint[PlayerGameStreakFinderResponse]):
     """Fetch consecutive game streak information for a player.
 
@@ -25,8 +24,8 @@ class PlayerGameStreakFinder(Endpoint[PlayerGameStreakFinderResponse]):
         PlayerGameStreakFinderResponse
     )
 
-    player_id: str = ""
-    league_id: str = "00"
+    player_id: str
+    league_id: LeagueID = "00"
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

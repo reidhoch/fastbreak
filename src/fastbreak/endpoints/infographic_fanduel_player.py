@@ -1,13 +1,11 @@
 """Infographic FanDuel player endpoint."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import GameIdEndpoint
 from fastbreak.models.infographic_fanduel_player import InfographicFanDuelPlayerResponse
 
 
-@dataclass(frozen=True)
 class InfographicFanDuelPlayer(GameIdEndpoint[InfographicFanDuelPlayerResponse]):
     """Fetch FanDuel fantasy player statistics for a specific game.
 

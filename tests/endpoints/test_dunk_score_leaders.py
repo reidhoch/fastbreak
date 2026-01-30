@@ -1,6 +1,7 @@
 """Tests for DunkScoreLeaders endpoint."""
 
 import pytest
+from pydantic import ValidationError
 
 from fastbreak.endpoints import DunkScoreLeaders
 
@@ -127,7 +128,7 @@ class TestDunkScoreLeaders:
         assert endpoint.path == "dunkscoreleaders"
 
     def test_endpoint_is_frozen(self):
-        """Endpoint is immutable (frozen dataclass)."""
+        """Endpoint is immutable (frozen Pydantic model)."""
         endpoint = DunkScoreLeaders()
-        with pytest.raises(AttributeError):
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.season = "2023-24"

@@ -1,13 +1,12 @@
 """Endpoint for fetching team game logs with extended stats."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.team_game_logs import TeamGameLogsResponse
+from fastbreak.types import LeagueID, Season, SeasonType
 
 
-@dataclass(frozen=True)
 class TeamGameLogs(Endpoint[TeamGameLogsResponse]):
     """Fetch extended game-by-game stats for a team's season.
 
@@ -25,10 +24,10 @@ class TeamGameLogs(Endpoint[TeamGameLogsResponse]):
     path: ClassVar[str] = "teamgamelogs"
     response_model: ClassVar[type[TeamGameLogsResponse]] = TeamGameLogsResponse
 
-    team_id: int = 0
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
-    league_id: str = "00"
+    team_id: int
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    league_id: LeagueID = "00"
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

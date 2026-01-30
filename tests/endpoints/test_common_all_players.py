@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import CommonAllPlayers
 from fastbreak.models import CommonAllPlayersResponse
 
@@ -87,7 +89,7 @@ class TestCommonAllPlayers:
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

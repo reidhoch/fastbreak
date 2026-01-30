@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import SynergyPlaytypes
 from fastbreak.models import SynergyPlaytypesResponse
 
@@ -137,7 +139,7 @@ class TestSynergyPlaytypes:
         try:
             endpoint.season_year = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

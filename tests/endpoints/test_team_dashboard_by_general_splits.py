@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import TeamDashboardByGeneralSplits
 from fastbreak.models import TeamDashboardByGeneralSplitsResponse
 
@@ -7,9 +9,9 @@ class TestTeamDashboardByGeneralSplits:
 
     def test_init_with_defaults(self):
         """TeamDashboardByGeneralSplits uses sensible defaults."""
-        endpoint = TeamDashboardByGeneralSplits()
+        endpoint = TeamDashboardByGeneralSplits(team_id=1610612747)
 
-        assert endpoint.team_id == 0
+        assert endpoint.team_id == 1610612747
         assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
@@ -24,37 +26,42 @@ class TestTeamDashboardByGeneralSplits:
 
     def test_init_with_custom_season(self):
         """TeamDashboardByGeneralSplits accepts custom season."""
-        endpoint = TeamDashboardByGeneralSplits(season="2023-24")
+        endpoint = TeamDashboardByGeneralSplits(team_id=1610612747, season="2023-24")
 
         assert endpoint.season == "2023-24"
 
     def test_init_with_custom_season_type(self):
         """TeamDashboardByGeneralSplits accepts custom season_type."""
-        endpoint = TeamDashboardByGeneralSplits(season_type="Playoffs")
+        endpoint = TeamDashboardByGeneralSplits(
+            team_id=1610612747, season_type="Playoffs"
+        )
 
         assert endpoint.season_type == "Playoffs"
 
     def test_init_with_custom_per_mode(self):
         """TeamDashboardByGeneralSplits accepts custom per_mode."""
-        endpoint = TeamDashboardByGeneralSplits(per_mode="Totals")
+        endpoint = TeamDashboardByGeneralSplits(team_id=1610612747, per_mode="Totals")
 
         assert endpoint.per_mode == "Totals"
 
     def test_init_with_custom_measure_type(self):
         """TeamDashboardByGeneralSplits accepts custom measure_type."""
-        endpoint = TeamDashboardByGeneralSplits(measure_type="Advanced")
+        endpoint = TeamDashboardByGeneralSplits(
+            team_id=1610612747, measure_type="Advanced"
+        )
 
         assert endpoint.measure_type == "Advanced"
 
     def test_init_with_last_n_games(self):
         """TeamDashboardByGeneralSplits accepts last_n_games filter."""
-        endpoint = TeamDashboardByGeneralSplits(last_n_games=10)
+        endpoint = TeamDashboardByGeneralSplits(team_id=1610612747, last_n_games=10)
 
         assert endpoint.last_n_games == 10
 
     def test_init_with_pace_plus_rank(self):
         """TeamDashboardByGeneralSplits accepts pace/plus/rank settings."""
         endpoint = TeamDashboardByGeneralSplits(
+            team_id=1610612747,
             pace_adjust="Y",
             plus_minus="Y",
             rank="Y",
@@ -67,6 +74,7 @@ class TestTeamDashboardByGeneralSplits:
     def test_init_with_all_optional_params(self):
         """TeamDashboardByGeneralSplits accepts all optional parameters."""
         endpoint = TeamDashboardByGeneralSplits(
+            team_id=1610612747,
             outcome="W",
             location="Home",
             season_segment="Post All-Star",
@@ -109,6 +117,7 @@ class TestTeamDashboardByGeneralSplits:
     def test_params_includes_optional_params(self):
         """params() includes optional parameters when set."""
         endpoint = TeamDashboardByGeneralSplits(
+            team_id=1610612747,
             outcome="W",
             location="Home",
         )
@@ -120,7 +129,7 @@ class TestTeamDashboardByGeneralSplits:
 
     def test_params_excludes_none_values(self):
         """params() excludes None optional parameters."""
-        endpoint = TeamDashboardByGeneralSplits()
+        endpoint = TeamDashboardByGeneralSplits(team_id=1610612747)
 
         params = endpoint.params()
 
@@ -130,24 +139,24 @@ class TestTeamDashboardByGeneralSplits:
 
     def test_path_is_correct(self):
         """TeamDashboardByGeneralSplits has correct API path."""
-        endpoint = TeamDashboardByGeneralSplits()
+        endpoint = TeamDashboardByGeneralSplits(team_id=1610612747)
 
         assert endpoint.path == "teamdashboardbygeneralsplits"
 
     def test_response_model_is_correct(self):
         """TeamDashboardByGeneralSplits uses TeamDashboardByGeneralSplitsResponse model."""
-        endpoint = TeamDashboardByGeneralSplits()
+        endpoint = TeamDashboardByGeneralSplits(team_id=1610612747)
 
         assert endpoint.response_model is TeamDashboardByGeneralSplitsResponse
 
     def test_endpoint_is_frozen(self):
         """TeamDashboardByGeneralSplits is immutable (frozen dataclass)."""
-        endpoint = TeamDashboardByGeneralSplits()
+        endpoint = TeamDashboardByGeneralSplits(team_id=1610612747)
 
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

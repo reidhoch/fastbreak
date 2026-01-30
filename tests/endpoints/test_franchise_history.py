@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import FranchiseHistory
 from fastbreak.models import FranchiseHistoryResponse
 
@@ -46,7 +48,7 @@ class TestFranchiseHistory:
         try:
             endpoint.league_id = "10"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

@@ -11,16 +11,16 @@ class TestShotChartDetailEndpoint:
 
     def test_path(self):
         """Endpoint has correct path."""
-        endpoint = ShotChartDetail(player_id=2544)
+        endpoint = ShotChartDetail(team_id=1610612747, player_id=2544)
         assert endpoint.path == "shotchartdetail"
 
     def test_default_params(self):
         """Default parameters are set correctly."""
-        endpoint = ShotChartDetail(player_id=2544)
+        endpoint = ShotChartDetail(team_id=1610612747, player_id=2544)
         params = endpoint.params()
 
         assert params["PlayerID"] == "2544"
-        assert params["TeamID"] == "0"
+        assert params["TeamID"] == "1610612747"
         assert params["LeagueID"] == "00"
         assert params["SeasonType"] == "Regular Season"
         assert params["ContextMeasure"] == "FGA"
@@ -53,7 +53,7 @@ class TestShotChartDetailEndpoint:
 
     def test_optional_params_excluded_when_none(self):
         """Optional string params are excluded when None."""
-        endpoint = ShotChartDetail(player_id=2544)
+        endpoint = ShotChartDetail(team_id=1610612747, player_id=2544)
         params = endpoint.params()
 
         # String params excluded when None

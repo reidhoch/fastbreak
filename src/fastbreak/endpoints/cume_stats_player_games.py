@@ -1,19 +1,25 @@
 """Endpoint for fetching games a player has participated in."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.cume_stats_player_games import CumeStatsPlayerGamesResponse
+from fastbreak.types import (
+    Conference,
+    Division,
+    LeagueID,
+    Location,
+    Outcome,
+    SeasonType,
+)
 
 
-@dataclass(frozen=True)
 class CumeStatsPlayerGames(Endpoint[CumeStatsPlayerGamesResponse]):
     """Fetch list of games a player has participated in.
 
     Args:
         league_id: League identifier ("00" for NBA)
-        season: Season in YYYY-YY format (e.g., "2025-26")
+        season: Season in YYYY format (e.g., "2025")
         season_type: Type of season ("Regular Season", "Playoffs", "Pre Season")
         player_id: The player's unique identifier
         location: Filter by game location ("Home", "Road")
@@ -30,17 +36,17 @@ class CumeStatsPlayerGames(Endpoint[CumeStatsPlayerGamesResponse]):
     )
 
     # Required parameters
-    league_id: str = "00"
+    player_id: int
+    league_id: LeagueID = "00"
     season: str = "2025"
-    season_type: str = "Regular Season"
-    player_id: int = 0
+    season_type: SeasonType = "Regular Season"
 
     # Optional filters
-    location: str | None = None
-    outcome: str | None = None
+    location: Location | None = None
+    outcome: Outcome | None = None
     vs_team_id: int | None = None
-    vs_division: str | None = None
-    vs_conference: str | None = None
+    vs_division: Division | None = None
+    vs_conference: Conference | None = None
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

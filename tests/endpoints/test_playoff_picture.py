@@ -1,5 +1,7 @@
 """Tests for the PlayoffPicture endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints.playoff_picture import PlayoffPicture
 from fastbreak.models.playoff_picture import PlayoffPictureResponse
 
@@ -50,7 +52,7 @@ class TestPlayoffPicture:
         try:
             endpoint.season_id = "22023"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

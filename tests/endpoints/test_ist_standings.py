@@ -1,5 +1,7 @@
 """Tests for IstStandings endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints import IstStandings
 from fastbreak.models import IstStandingsResponse
 
@@ -62,7 +64,7 @@ class TestIstStandings:
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

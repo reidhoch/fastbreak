@@ -1,5 +1,7 @@
 """Tests for the ScheduleLeagueV2 endpoint."""
 
+from pydantic import ValidationError
+
 from fastbreak.endpoints.schedule_league_v2 import ScheduleLeagueV2
 from fastbreak.models.schedule_league_v2 import ScheduleLeagueV2Response
 
@@ -56,7 +58,7 @@ class TestScheduleLeagueV2:
         try:
             endpoint.season = "2023-24"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

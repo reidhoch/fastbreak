@@ -1,13 +1,12 @@
 """All-time leaders grids endpoint."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.all_time_leaders import AllTimeLeadersResponse
+from fastbreak.types import LeagueID, PerMode, SeasonType
 
 
-@dataclass(frozen=True)
 class AllTimeLeadersGrids(Endpoint[AllTimeLeadersResponse]):
     """Fetch all-time NBA statistical leaders.
 
@@ -22,9 +21,9 @@ class AllTimeLeadersGrids(Endpoint[AllTimeLeadersResponse]):
     path: ClassVar[str] = "alltimeleadersgrids"
     response_model: ClassVar[type[AllTimeLeadersResponse]] = AllTimeLeadersResponse
 
-    league_id: str = "00"
-    season_type: str = "Regular Season"
-    per_mode: str = "PerGame"
+    league_id: LeagueID = "00"
+    season_type: SeasonType = "Regular Season"
+    per_mode: PerMode = "PerGame"
     top_x: int = 10
 
     def params(self) -> dict[str, str]:

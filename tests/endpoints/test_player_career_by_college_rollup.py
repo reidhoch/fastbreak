@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import PlayerCareerByCollegeRollup
 from fastbreak.models import PlayerCareerByCollegeRollupResponse
 
@@ -96,7 +98,7 @@ class TestPlayerCareerByCollegeRollup:
         try:
             endpoint.per_mode = "Totals"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

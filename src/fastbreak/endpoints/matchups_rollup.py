@@ -1,13 +1,12 @@
 """Matchups rollup endpoint for NBA API."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.matchups_rollup import MatchupsRollupResponse
+from fastbreak.types import LeagueID, PerMode, Season, SeasonType
 
 
-@dataclass(frozen=True)
 class MatchupsRollup(Endpoint[MatchupsRollupResponse]):
     """Fetch matchup statistics rolled up by defender.
 
@@ -26,10 +25,10 @@ class MatchupsRollup(Endpoint[MatchupsRollupResponse]):
     path: ClassVar[str] = "matchupsrollup"
     response_model: ClassVar[type[MatchupsRollupResponse]] = MatchupsRollupResponse
 
-    league_id: str = "00"
-    season: str = "2024-25"
-    season_type: str = "Regular Season"
-    per_mode: str = "PerGame"
+    league_id: LeagueID = "00"
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    per_mode: PerMode = "PerGame"
     off_team_id: int = 0
     def_team_id: int = 0
     off_player_id: int = 0

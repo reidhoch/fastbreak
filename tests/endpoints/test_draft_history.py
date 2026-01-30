@@ -1,3 +1,5 @@
+from pydantic import ValidationError
+
 from fastbreak.endpoints import DraftHistory
 from fastbreak.models import DraftHistoryResponse
 
@@ -113,7 +115,7 @@ class TestDraftHistory:
         try:
             endpoint.season = "2024"  # type: ignore[misc]
             frozen = False
-        except AttributeError:
+        except (AttributeError, ValidationError):
             frozen = True
 
         assert frozen, "Endpoint should be frozen (immutable)"

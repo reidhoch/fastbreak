@@ -1,13 +1,11 @@
 """Player awards endpoint for NBA API."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.player_awards import PlayerAwardsResponse
 
 
-@dataclass(frozen=True)
 class PlayerAwards(Endpoint[PlayerAwardsResponse]):
     """Fetch all awards for a specific player.
 

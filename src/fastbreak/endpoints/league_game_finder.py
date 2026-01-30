@@ -1,13 +1,20 @@
 """League game finder endpoint."""
 
-from dataclasses import dataclass
 from typing import ClassVar
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.league_game_finder import LeagueGameFinderResponse
+from fastbreak.types import (
+    Date,
+    LeagueID,
+    Location,
+    Outcome,
+    PlayerOrTeamAbbreviation,
+    Season,
+    SeasonType,
+)
 
 
-@dataclass(frozen=True)
 class LeagueGameFinder(Endpoint[LeagueGameFinderResponse]):
     """Search for games by team, player, date range, or stat thresholds.
 
@@ -36,19 +43,19 @@ class LeagueGameFinder(Endpoint[LeagueGameFinderResponse]):
     response_model: ClassVar[type[LeagueGameFinderResponse]] = LeagueGameFinderResponse
 
     # Required parameter
-    player_or_team: str = "T"
+    player_or_team: PlayerOrTeamAbbreviation = "T"
 
     # Common filters
-    league_id: str | None = None
-    season: str | None = None
-    season_type: str | None = None
+    league_id: LeagueID | None = None
+    season: Season | None = None
+    season_type: SeasonType | None = None
     team_id: str | None = None
     player_id: str | None = None
     vs_team_id: str | None = None
-    date_from: str | None = None
-    date_to: str | None = None
-    outcome: str | None = None
-    location: str | None = None
+    date_from: Date | None = None
+    date_to: Date | None = None
+    outcome: Outcome | None = None
+    location: Location | None = None
 
     # Stat threshold filters (greater than)
     gt_pts: str | None = None
