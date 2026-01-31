@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import certifi
 import pytest
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout
+from pydantic import ValidationError
 from tenacity import wait_exponential_jitter
 
 from fastbreak.clients.nba import (
@@ -372,13 +373,11 @@ class TestNBAClientGet:
     """Tests for the get method."""
 
     @pytest.mark.asyncio
-    async def test_get_returns_parsed_response(self, mock_play_by_play_response):
+    async def test_get_returns_parsed_response(
+        self, mock_play_by_play_response, make_mock_client
+    ):
         """get() fetches data and returns parsed model."""
-        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        client = NBAClient(session=mock_session)
+        client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoint = PlayByPlay(game_id="0022500571")
 
         result = await client.get(endpoint)
@@ -389,13 +388,11 @@ class TestNBAClientGet:
         mock_session.get.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_constructs_correct_url(self, mock_play_by_play_response):
+    async def test_get_constructs_correct_url(
+        self, mock_play_by_play_response, make_mock_client
+    ):
         """get() builds URL from BASE_URL and endpoint path."""
-        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        client = NBAClient(session=mock_session)
+        client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoint = PlayByPlay(game_id="0022500571")
 
         await client.get(endpoint)
@@ -409,13 +406,11 @@ class TestNBAClientGet:
         }
 
     @pytest.mark.asyncio
-    async def test_get_logs_request_attempt(self, mock_play_by_play_response):
+    async def test_get_logs_request_attempt(
+        self, mock_play_by_play_response, make_mock_client
+    ):
         """get() logs request attempt with correct parameters."""
-        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        client = NBAClient(session=mock_session)
+        client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoint = PlayByPlay(game_id="0022500571")
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
@@ -441,13 +436,9 @@ class TestNBAClientGet:
             assert call_kwargs["params"] == endpoint.params()
 
     @pytest.mark.asyncio
-    async def test_get_logs_success(self, mock_play_by_play_response):
+    async def test_get_logs_success(self, mock_play_by_play_response, make_mock_client):
         """get() logs success with attempt number."""
-        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        client = NBAClient(session=mock_session)
+        client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoint = PlayByPlay(game_id="0022500571")
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
@@ -467,16 +458,18 @@ class TestNBAClientGet:
             assert success_calls[0][1]["attempt"] == 1
 
     @pytest.mark.asyncio
-    async def test_get_logs_rate_limited_on_429(self, make_client_response_error):
+    async def test_get_logs_rate_limited_on_429(
+        self, make_client_response_error, make_mock_client
+    ):
         """get() logs rate_limited when receiving 429 status."""
         error = make_client_response_error(429, "https://stats.nba.com/stats/test")
-        mock_response = _make_mock_response(
-            status=429, raise_error=error, headers={"Retry-After": "30"}
+        client, mock_session = make_mock_client(
+            status=429,
+            raise_error=error,
+            headers={"Retry-After": "30"},
+            max_retries=0,
+            retry_wait_min=0.01,
         )
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        client = NBAClient(session=mock_session, max_retries=0, retry_wait_min=0.01)
         endpoint = PlayByPlay(game_id="0022500571")
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
@@ -498,13 +491,9 @@ class TestNBAClientGet:
             assert call_kwargs["attempt"] == 1
 
     @pytest.mark.asyncio
-    async def test_get_logs_validation_failed(self):
-        """get() logs validation_failed when parsing fails."""
-        mock_response = _make_mock_response(json_data={"invalid": "data"})
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        client = NBAClient(session=mock_session)
+    async def test_get_logs_validation_failed(self, make_mock_client):
+        """get() logs validation_failed and re-raises ValidationError with context."""
+        client, mock_session = make_mock_client(json_data={"invalid": "data"})
         endpoint = PlayByPlay(game_id="0022500571")
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
@@ -513,8 +502,16 @@ class TestNBAClientGet:
             mock_bound.awarning = AsyncMock()
             mock_logger.bind.return_value = mock_bound
 
-            with pytest.raises(Exception):  # ValidationError
+            # Specifically catch ValidationError, not generic Exception
+            with pytest.raises(ValidationError) as exc_info:
                 await client.get(endpoint)
+
+            # Verify the ValidationError contains useful field information
+            error = exc_info.value
+            assert error.error_count() > 0  # At least one validation error
+            # The error should mention missing required fields
+            error_str = str(error)
+            assert "game" in error_str.lower() or "validation" in error_str.lower()
 
             # Verify validation_failed log was called at WARNING level
             validation_calls = [
@@ -530,15 +527,82 @@ class TestNBAClientGet:
             assert call_kwargs["response_keys"] == ["invalid"]
 
     @pytest.mark.asyncio
+    async def test_get_validation_error_contains_field_info(self, make_mock_client):
+        """ValidationError should contain specific field information."""
+        # Response missing required 'game' field
+        client, mock_session = make_mock_client(json_data={"meta": {}, "other": "data"})
+        endpoint = PlayByPlay(game_id="0022500571")
+
+        with pytest.raises(ValidationError) as exc_info:
+            await client.get(endpoint)
+
+        # Verify the error provides useful debugging information
+        error = exc_info.value
+        errors = error.errors()
+        assert len(errors) > 0
+
+        # Check that error locations are provided (field paths)
+        error_locs = [e.get("loc") for e in errors]
+        assert all(loc is not None for loc in error_locs)
+
+        # Check that error types are provided
+        error_types = [e.get("type") for e in errors]
+        assert all(t is not None for t in error_types)
+
+    @pytest.mark.asyncio
+    async def test_get_validation_error_is_not_wrapped(self, make_mock_client):
+        """ValidationError should be re-raised directly, not wrapped."""
+        client, mock_session = make_mock_client(json_data={"wrong": "structure"})
+        endpoint = PlayByPlay(game_id="0022500571")
+
+        with pytest.raises(ValidationError) as exc_info:
+            await client.get(endpoint)
+
+        # Verify it's a direct ValidationError, not wrapped in another exception
+        assert type(exc_info.value) is ValidationError
+        # Verify __cause__ is not set (not chained from another exception)
+        assert exc_info.value.__cause__ is None
+
+    @pytest.mark.asyncio
+    async def test_get_validation_error_log_includes_response_keys(
+        self, make_mock_client
+    ):
+        """Logged validation error should include response keys for debugging."""
+        # Response with unexpected structure
+        client, mock_session = make_mock_client(
+            json_data={"unexpected_key1": "value1", "unexpected_key2": "value2"}
+        )
+        endpoint = PlayByPlay(game_id="0022500571")
+
+        with patch("fastbreak.clients.nba.logger") as mock_logger:
+            mock_bound = MagicMock()
+            mock_bound.adebug = AsyncMock()
+            mock_bound.awarning = AsyncMock()
+            mock_logger.bind.return_value = mock_bound
+
+            with pytest.raises(ValidationError):
+                await client.get(endpoint)
+
+            # Find the validation_failed log call
+            validation_calls = [
+                c
+                for c in mock_bound.awarning.call_args_list
+                if c[0][0] == "validation_failed"
+            ]
+            assert len(validation_calls) == 1
+
+            # Verify response_keys are logged to help debug what was received
+            call_kwargs = validation_calls[0][1]
+            response_keys = call_kwargs["response_keys"]
+            assert "unexpected_key1" in response_keys
+            assert "unexpected_key2" in response_keys
+
+    @pytest.mark.asyncio
     async def test_get_rate_limited_not_logged_for_non_429(
-        self, mock_play_by_play_response
+        self, mock_play_by_play_response, make_mock_client
     ):
         """get() only logs rate_limited for 429 status, not other statuses."""
-        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        client = NBAClient(session=mock_session)
+        client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoint = PlayByPlay(game_id="0022500571")
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
@@ -720,13 +784,11 @@ class TestNBAClientGetMany:
     """Tests for the get_many batch fetch method."""
 
     @pytest.mark.asyncio
-    async def test_get_many_returns_ordered_results(self, mock_play_by_play_response):
+    async def test_get_many_returns_ordered_results(
+        self, mock_play_by_play_response, make_mock_client
+    ):
         """get_many returns results in same order as input."""
-        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        client = NBAClient(session=mock_session)
+        client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
 
         results = await client.get_many(endpoints)
@@ -743,13 +805,11 @@ class TestNBAClientGetMany:
         await client.close()
 
     @pytest.mark.asyncio
-    async def test_get_many_default_concurrency(self, mock_play_by_play_response):
+    async def test_get_many_default_concurrency(
+        self, mock_play_by_play_response, make_mock_client
+    ):
         """get_many defaults to concurrency of 3."""
-        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        client = NBAClient(session=mock_session)
+        client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoints = [PlayByPlay(game_id="0022500571")]
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
@@ -767,13 +827,11 @@ class TestNBAClientGetMany:
             assert bind_calls[0][1]["concurrency"] == 3
 
     @pytest.mark.asyncio
-    async def test_get_many_custom_concurrency(self, mock_play_by_play_response):
+    async def test_get_many_custom_concurrency(
+        self, mock_play_by_play_response, make_mock_client
+    ):
         """get_many respects custom max_concurrency."""
-        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        client = NBAClient(session=mock_session)
+        client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoints = [PlayByPlay(game_id="0022500571")]
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
@@ -791,13 +849,11 @@ class TestNBAClientGetMany:
             assert bind_calls[0][1]["concurrency"] == 5
 
     @pytest.mark.asyncio
-    async def test_get_many_logs_batch_start(self, mock_play_by_play_response):
+    async def test_get_many_logs_batch_start(
+        self, mock_play_by_play_response, make_mock_client
+    ):
         """get_many logs batch_start with total count."""
-        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        client = NBAClient(session=mock_session)
+        client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
@@ -818,13 +874,11 @@ class TestNBAClientGetMany:
             assert bind_calls[0][1]["total"] == 3
 
     @pytest.mark.asyncio
-    async def test_get_many_logs_batch_complete(self, mock_play_by_play_response):
+    async def test_get_many_logs_batch_complete(
+        self, mock_play_by_play_response, make_mock_client
+    ):
         """get_many logs batch_complete with total count."""
-        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        client = NBAClient(session=mock_session)
+        client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
 
         with patch("fastbreak.clients.nba.logger") as mock_logger:
@@ -845,14 +899,10 @@ class TestNBAClientGetMany:
 
     @pytest.mark.asyncio
     async def test_get_many_logs_batch_progress_for_large_batches(
-        self, mock_play_by_play_response
+        self, mock_play_by_play_response, make_mock_client
     ):
         """get_many logs batch_progress for batches >= BATCH_PROGRESS_THRESHOLD."""
-        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        client = NBAClient(session=mock_session)
+        client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         # Create enough endpoints to trigger progress logging
         endpoints = [
             PlayByPlay(game_id=f"00225005{i:02d}")
@@ -880,14 +930,10 @@ class TestNBAClientGetMany:
 
     @pytest.mark.asyncio
     async def test_get_many_no_progress_for_small_batches(
-        self, mock_play_by_play_response
+        self, mock_play_by_play_response, make_mock_client
     ):
         """get_many doesn't log batch_progress for batches < BATCH_PROGRESS_THRESHOLD."""
-        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=mock_response)
-
-        client = NBAClient(session=mock_session)
+        client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         # Create fewer endpoints than threshold
         endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
 
@@ -976,3 +1022,134 @@ class TestNBAClientGetMany:
         assert len(exceptions) == 1
         assert isinstance(exceptions[0], ClientResponseError)
         assert exceptions[0].status == 404
+
+
+class TestNBAClientRequestDelay:
+    """Tests for the request_delay parameter."""
+
+    def test_request_delay_default_is_zero(self):
+        """request_delay defaults to 0.0."""
+        client = NBAClient()
+        assert client._request_delay == 0.0
+
+    def test_request_delay_stored_correctly(self):
+        """request_delay parameter is stored correctly."""
+        client = NBAClient(request_delay=0.5)
+        assert client._request_delay == 0.5
+
+    def test_request_delay_accepts_float(self):
+        """request_delay accepts float values."""
+        client = NBAClient(request_delay=0.123)
+        assert client._request_delay == 0.123
+
+    def test_request_delay_accepts_integer(self):
+        """request_delay accepts integer values (converted to float semantics)."""
+        client = NBAClient(request_delay=1)
+        assert client._request_delay == 1
+
+    @pytest.mark.asyncio
+    async def test_get_many_no_delay_when_zero(
+        self, mock_play_by_play_response, make_mock_client
+    ):
+        """get_many does not sleep when request_delay is 0."""
+        client, mock_session = make_mock_client(
+            json_data=mock_play_by_play_response, request_delay=0.0
+        )
+        endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
+
+        with patch(
+            "fastbreak.clients.nba.asyncio.sleep", new_callable=AsyncMock
+        ) as mock_sleep:
+            await client.get_many(endpoints)
+            # Should not have called sleep since delay is 0
+            mock_sleep.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_get_many_applies_request_delay(
+        self, mock_play_by_play_response, make_mock_client
+    ):
+        """get_many sleeps between requests when request_delay > 0."""
+        client, mock_session = make_mock_client(
+            json_data=mock_play_by_play_response, request_delay=0.1
+        )
+        endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
+
+        with patch(
+            "fastbreak.clients.nba.asyncio.sleep", new_callable=AsyncMock
+        ) as mock_sleep:
+            await client.get_many(endpoints, max_concurrency=1)
+
+            # Should have called sleep once per request
+            assert mock_sleep.call_count == 3
+            # Each call should use the configured delay
+            mock_sleep.assert_called_with(0.1)
+
+    @pytest.mark.asyncio
+    async def test_get_many_delay_called_per_request(
+        self, mock_play_by_play_response, make_mock_client
+    ):
+        """get_many calls sleep before each request, not just between them."""
+        client, mock_session = make_mock_client(
+            json_data=mock_play_by_play_response, request_delay=0.05
+        )
+        endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(5)]
+
+        with patch(
+            "fastbreak.clients.nba.asyncio.sleep", new_callable=AsyncMock
+        ) as mock_sleep:
+            await client.get_many(endpoints, max_concurrency=1)
+
+            # One sleep call per endpoint
+            assert mock_sleep.call_count == 5
+            # All calls should use the same delay
+            for call in mock_sleep.call_args_list:
+                assert call[0][0] == 0.05
+
+    @pytest.mark.asyncio
+    async def test_get_many_delay_with_concurrency(
+        self, mock_play_by_play_response, make_mock_client
+    ):
+        """get_many applies delay even with concurrent requests."""
+        client, mock_session = make_mock_client(
+            json_data=mock_play_by_play_response, request_delay=0.02
+        )
+        endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(6)]
+
+        with patch(
+            "fastbreak.clients.nba.asyncio.sleep", new_callable=AsyncMock
+        ) as mock_sleep:
+            await client.get_many(endpoints, max_concurrency=3)
+
+            # Each of the 6 requests should trigger a delay
+            assert mock_sleep.call_count == 6
+
+    @pytest.mark.asyncio
+    async def test_get_single_does_not_use_delay(
+        self, mock_play_by_play_response, make_mock_client
+    ):
+        """Single get() calls do not use request_delay (only get_many does)."""
+        client, mock_session = make_mock_client(
+            json_data=mock_play_by_play_response, request_delay=0.5
+        )
+        endpoint = PlayByPlay(game_id="0022500571")
+
+        with patch(
+            "fastbreak.clients.nba.asyncio.sleep", new_callable=AsyncMock
+        ) as mock_sleep:
+            await client.get(endpoint)
+            # Single get() should not use the delay
+            mock_sleep.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_get_many_empty_list_no_delay(self):
+        """get_many with empty list does not call sleep."""
+        client = NBAClient(request_delay=0.5)
+
+        with patch(
+            "fastbreak.clients.nba.asyncio.sleep", new_callable=AsyncMock
+        ) as mock_sleep:
+            results = await client.get_many([])
+            assert results == []
+            mock_sleep.assert_not_called()
+
+        await client.close()

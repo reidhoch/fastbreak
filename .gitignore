@@ -16,6 +16,7 @@ src/fastbreak/_version.py
 .coverage
 htmlcov/
 .pytest_cache/
+.hypothesis/
 
 # Type checking and linting caches
 .mypy_cache/

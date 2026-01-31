@@ -1,3 +1,4 @@
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import TeamDetails
@@ -51,10 +52,5 @@ class TestTeamDetails:
         """TeamDetails is immutable (frozen dataclass)."""
         endpoint = TeamDetails(team_id=1610612747)
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.team_id = 123  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen, "Endpoint should be frozen (immutable)"

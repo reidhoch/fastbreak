@@ -1,7 +1,12 @@
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from aiohttp import ClientResponseError, RequestInfo
-from multidict import CIMultiDict
+from aiohttp import ClientResponseError, ClientSession, RequestInfo
+from multidict import CIMultiDict, CIMultiDictProxy
 from yarl import URL
+
+from fastbreak.clients.nba import NBAClient
 
 
 @pytest.fixture
@@ -113,3 +118,54 @@ def sample_response_data(sample_meta_data, sample_game_data):
         "meta": sample_meta_data,
         "game": sample_game_data,
     }
+
+
+@pytest.fixture
+def make_mock_client():
+    """Factory fixture for creating NBAClient with mocked session.
+
+    Returns a tuple of (client, mock_session) for tests that need to inspect calls.
+
+    Usage:
+        def test_something(make_mock_client):
+            client, mock_session = make_mock_client(json_data={"resultSets": []})
+            result = await client.get(endpoint)
+            mock_session.get.assert_called_once()
+
+        # With error simulation:
+        def test_error(make_mock_client, make_client_response_error):
+            error = make_client_response_error(429)
+            client, _ = make_mock_client(raise_error=error)
+    """
+
+    def _make(
+        json_data: dict[str, Any] | None = None,
+        status: int = 200,
+        raise_error: Exception | None = None,
+        headers: dict[str, str] | None = None,
+        **client_kwargs: Any,
+    ) -> tuple[NBAClient, MagicMock]:
+        # Create mock response
+        response = AsyncMock()
+        response.status = status
+        response.headers = CIMultiDictProxy(CIMultiDict(headers or {}))
+
+        if raise_error:
+            response.raise_for_status = MagicMock(side_effect=raise_error)
+        else:
+            response.raise_for_status = MagicMock()
+
+        response.json = AsyncMock(return_value=json_data)
+        response.__aenter__ = AsyncMock(return_value=response)
+        response.__aexit__ = AsyncMock(return_value=None)
+
+        # Create mock session
+        mock_session = MagicMock(spec=ClientSession)
+        mock_session.get = MagicMock(return_value=response)
+
+        # Create client with mock session
+        client = NBAClient(session=mock_session, **client_kwargs)
+
+        return client, mock_session
+
+    return _make

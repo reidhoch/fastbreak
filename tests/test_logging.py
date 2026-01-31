@@ -1,7 +1,13 @@
-"""Tests for the logging module."""
+"""Tests for the logging module.
 
-import os
-from unittest import mock
+The logging module configures structlog at import time based on environment
+variables. To test different configurations, we use subprocess to run
+Python code with different environment settings.
+"""
+
+import logging
+import subprocess
+import sys
 
 import pytest
 
@@ -18,8 +24,397 @@ class TestLogging:
         bound = logger.bind(request_id="123")
         bound.info("bound event")
 
-    def test_debug_env_var_controls_output(self) -> None:
-        """FASTBREAK_DEBUG env var should control logging output."""
-        # This test verifies the module reads the env var
-        # We can't easily test the actual output without more complex mocking
-        assert os.environ.get("FASTBREAK_DEBUG", "") in ("", "1", "true", "yes")
+    def test_logger_bind_returns_bound_logger(self) -> None:
+        """Logger.bind() should return a bound logger with context."""
+        from fastbreak.logging import logger
+
+        bound = logger.bind(user_id="123", action="test")
+        # Bound logger should be usable
+        bound.debug("bound debug event")
+        bound.info("bound info event")
+        bound.warning("bound warning event")
+
+    def test_logger_methods_exist(self) -> None:
+        """Logger should have standard logging methods."""
+        from fastbreak.logging import logger
+
+        assert hasattr(logger, "debug")
+        assert hasattr(logger, "info")
+        assert hasattr(logger, "warning")
+        assert hasattr(logger, "error")
+        assert hasattr(logger, "bind")
+
+
+class TestLoggingLevelMap:
+    """Tests for the log level mapping."""
+
+    def test_level_map_contains_standard_levels(self) -> None:
+        """Level map should contain all standard log levels."""
+        from fastbreak.logging import _LEVEL_MAP
+
+        assert "DEBUG" in _LEVEL_MAP
+        assert "INFO" in _LEVEL_MAP
+        assert "WARNING" in _LEVEL_MAP
+        assert "WARN" in _LEVEL_MAP  # Alias
+        assert "ERROR" in _LEVEL_MAP
+        assert "CRITICAL" in _LEVEL_MAP
+        assert "SILENT" in _LEVEL_MAP
+
+    def test_level_map_values_are_correct(self) -> None:
+        """Level map values should match logging constants."""
+        from fastbreak.logging import _LEVEL_MAP
+
+        assert _LEVEL_MAP["DEBUG"] == logging.DEBUG
+        assert _LEVEL_MAP["INFO"] == logging.INFO
+        assert _LEVEL_MAP["WARNING"] == logging.WARNING
+        assert _LEVEL_MAP["WARN"] == logging.WARNING
+        assert _LEVEL_MAP["ERROR"] == logging.ERROR
+        assert _LEVEL_MAP["CRITICAL"] == logging.CRITICAL
+
+    def test_silent_level_is_above_critical(self) -> None:
+        """SILENT level should be above CRITICAL to suppress all output."""
+        from fastbreak.logging import _LEVEL_MAP
+
+        assert _LEVEL_MAP["SILENT"] > logging.CRITICAL
+
+
+class TestLoggingEnvironmentVariables:
+    """Tests for environment variable configuration.
+
+    These tests use subprocess to test different environment configurations
+    since the logging module configures itself at import time.
+    """
+
+    def _run_logging_test(
+        self, env_vars: dict, code: str
+    ) -> subprocess.CompletedProcess:
+        """Run Python code with specific environment variables."""
+        import os
+
+        env = os.environ.copy()
+        # Clear any existing fastbreak logging vars
+        env.pop("FASTBREAK_LOG_LEVEL", None)
+        env.pop("FASTBREAK_DEBUG", None)
+        # Set the test vars
+        env.update(env_vars)
+
+        return subprocess.run(
+            [sys.executable, "-c", code],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+
+    def test_default_level_is_warning(self) -> None:
+        """Default log level should be WARNING when no env vars are set."""
+        code = """
+import logging
+from fastbreak.logging import _log_level
+assert _log_level == logging.WARNING, f"Expected WARNING, got {_log_level}"
+print("OK")
+"""
+        result = self._run_logging_test({}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+    def test_fastbreak_debug_enables_debug_level(self) -> None:
+        """FASTBREAK_DEBUG=1 should enable DEBUG level."""
+        code = """
+import logging
+from fastbreak.logging import _log_level
+assert _log_level == logging.DEBUG, f"Expected DEBUG, got {_log_level}"
+print("OK")
+"""
+        result = self._run_logging_test({"FASTBREAK_DEBUG": "1"}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+    def test_fastbreak_debug_true_enables_debug_level(self) -> None:
+        """FASTBREAK_DEBUG=true should enable DEBUG level."""
+        code = """
+import logging
+from fastbreak.logging import _log_level
+assert _log_level == logging.DEBUG, f"Expected DEBUG, got {_log_level}"
+print("OK")
+"""
+        result = self._run_logging_test({"FASTBREAK_DEBUG": "true"}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+    def test_fastbreak_debug_yes_enables_debug_level(self) -> None:
+        """FASTBREAK_DEBUG=yes should enable DEBUG level."""
+        code = """
+import logging
+from fastbreak.logging import _log_level
+assert _log_level == logging.DEBUG, f"Expected DEBUG, got {_log_level}"
+print("OK")
+"""
+        result = self._run_logging_test({"FASTBREAK_DEBUG": "yes"}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+    def test_log_level_debug(self) -> None:
+        """FASTBREAK_LOG_LEVEL=DEBUG should set DEBUG level."""
+        code = """
+import logging
+from fastbreak.logging import _log_level
+assert _log_level == logging.DEBUG, f"Expected DEBUG, got {_log_level}"
+print("OK")
+"""
+        result = self._run_logging_test({"FASTBREAK_LOG_LEVEL": "DEBUG"}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+    def test_log_level_info(self) -> None:
+        """FASTBREAK_LOG_LEVEL=INFO should set INFO level."""
+        code = """
+import logging
+from fastbreak.logging import _log_level
+assert _log_level == logging.INFO, f"Expected INFO, got {_log_level}"
+print("OK")
+"""
+        result = self._run_logging_test({"FASTBREAK_LOG_LEVEL": "INFO"}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+    def test_log_level_warning(self) -> None:
+        """FASTBREAK_LOG_LEVEL=WARNING should set WARNING level."""
+        code = """
+import logging
+from fastbreak.logging import _log_level
+assert _log_level == logging.WARNING, f"Expected WARNING, got {_log_level}"
+print("OK")
+"""
+        result = self._run_logging_test({"FASTBREAK_LOG_LEVEL": "WARNING"}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+    def test_log_level_error(self) -> None:
+        """FASTBREAK_LOG_LEVEL=ERROR should set ERROR level."""
+        code = """
+import logging
+from fastbreak.logging import _log_level
+assert _log_level == logging.ERROR, f"Expected ERROR, got {_log_level}"
+print("OK")
+"""
+        result = self._run_logging_test({"FASTBREAK_LOG_LEVEL": "ERROR"}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+    def test_log_level_silent(self) -> None:
+        """FASTBREAK_LOG_LEVEL=SILENT should suppress all output."""
+        code = """
+import logging
+from fastbreak.logging import _log_level, _LEVEL_MAP
+assert _log_level == _LEVEL_MAP["SILENT"], f"Expected SILENT level, got {_log_level}"
+assert _log_level > logging.CRITICAL, "SILENT should be above CRITICAL"
+print("OK")
+"""
+        result = self._run_logging_test({"FASTBREAK_LOG_LEVEL": "SILENT"}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+    def test_log_level_case_insensitive(self) -> None:
+        """Log level should be case insensitive."""
+        code = """
+import logging
+from fastbreak.logging import _log_level
+assert _log_level == logging.DEBUG, f"Expected DEBUG, got {_log_level}"
+print("OK")
+"""
+        # Test lowercase
+        result = self._run_logging_test({"FASTBREAK_LOG_LEVEL": "debug"}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+    def test_invalid_log_level_defaults_to_warning(self) -> None:
+        """Invalid log level should default to WARNING."""
+        code = """
+import logging
+from fastbreak.logging import _log_level
+assert _log_level == logging.WARNING, f"Expected WARNING (default), got {_log_level}"
+print("OK")
+"""
+        result = self._run_logging_test({"FASTBREAK_LOG_LEVEL": "INVALID"}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+    def test_warn_alias_works(self) -> None:
+        """WARN should work as alias for WARNING."""
+        code = """
+import logging
+from fastbreak.logging import _log_level
+assert _log_level == logging.WARNING, f"Expected WARNING, got {_log_level}"
+print("OK")
+"""
+        result = self._run_logging_test({"FASTBREAK_LOG_LEVEL": "WARN"}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+
+class TestLoggingOutput:
+    """Tests for actual logging output behavior."""
+
+    def _run_logging_output_test(
+        self, env_vars: dict, log_level: str
+    ) -> subprocess.CompletedProcess:
+        """Run code that produces log output and capture it."""
+        code = f"""
+from fastbreak.logging import logger
+logger.{log_level}("test_message", key="value")
+"""
+        import os
+
+        env = os.environ.copy()
+        env.pop("FASTBREAK_LOG_LEVEL", None)
+        env.pop("FASTBREAK_DEBUG", None)
+        env.update(env_vars)
+
+        return subprocess.run(
+            [sys.executable, "-c", code],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+
+    def test_debug_message_shown_at_debug_level(self) -> None:
+        """Debug messages should be shown when level is DEBUG."""
+        result = self._run_logging_output_test(
+            {"FASTBREAK_LOG_LEVEL": "DEBUG"}, "debug"
+        )
+        assert result.returncode == 0
+        # Debug message should appear in stderr (structlog output)
+        assert "test_message" in result.stderr or "test_message" in result.stdout
+
+    def test_debug_message_hidden_at_warning_level(self) -> None:
+        """Debug messages should be hidden when level is WARNING."""
+        result = self._run_logging_output_test(
+            {"FASTBREAK_LOG_LEVEL": "WARNING"}, "debug"
+        )
+        assert result.returncode == 0
+        # Debug message should NOT appear
+        assert "test_message" not in result.stderr
+        assert "test_message" not in result.stdout
+
+    def test_warning_message_shown_at_warning_level(self) -> None:
+        """Warning messages should be shown when level is WARNING."""
+        result = self._run_logging_output_test(
+            {"FASTBREAK_LOG_LEVEL": "WARNING"}, "warning"
+        )
+        assert result.returncode == 0
+        # Warning message should appear
+        assert "test_message" in result.stderr or "test_message" in result.stdout
+
+    def test_warning_message_hidden_at_error_level(self) -> None:
+        """Warning messages should be hidden when level is ERROR."""
+        result = self._run_logging_output_test(
+            {"FASTBREAK_LOG_LEVEL": "ERROR"}, "warning"
+        )
+        assert result.returncode == 0
+        # Warning message should NOT appear
+        assert "test_message" not in result.stderr
+        assert "test_message" not in result.stdout
+
+    def test_error_message_shown_at_error_level(self) -> None:
+        """Error messages should be shown when level is ERROR."""
+        result = self._run_logging_output_test(
+            {"FASTBREAK_LOG_LEVEL": "ERROR"}, "error"
+        )
+        assert result.returncode == 0
+        # Error message should appear
+        assert "test_message" in result.stderr or "test_message" in result.stdout
+
+    def test_silent_suppresses_all_messages(self) -> None:
+        """SILENT level should suppress all messages including errors."""
+        result = self._run_logging_output_test(
+            {"FASTBREAK_LOG_LEVEL": "SILENT"}, "error"
+        )
+        assert result.returncode == 0
+        # No messages should appear
+        assert "test_message" not in result.stderr
+        assert "test_message" not in result.stdout
+
+    def test_info_message_shown_at_info_level(self) -> None:
+        """Info messages should be shown when level is INFO."""
+        result = self._run_logging_output_test({"FASTBREAK_LOG_LEVEL": "INFO"}, "info")
+        assert result.returncode == 0
+        # Info message should appear
+        assert "test_message" in result.stderr or "test_message" in result.stdout
+
+    def test_info_message_hidden_at_warning_level(self) -> None:
+        """Info messages should be hidden when level is WARNING."""
+        result = self._run_logging_output_test(
+            {"FASTBREAK_LOG_LEVEL": "WARNING"}, "info"
+        )
+        assert result.returncode == 0
+        # Info message should NOT appear
+        assert "test_message" not in result.stderr
+        assert "test_message" not in result.stdout
+
+
+class TestLoggingLegacySupport:
+    """Tests for legacy FASTBREAK_DEBUG support."""
+
+    def _run_logging_test(
+        self, env_vars: dict, code: str
+    ) -> subprocess.CompletedProcess:
+        """Run Python code with specific environment variables."""
+        import os
+
+        env = os.environ.copy()
+        env.pop("FASTBREAK_LOG_LEVEL", None)
+        env.pop("FASTBREAK_DEBUG", None)
+        env.update(env_vars)
+
+        return subprocess.run(
+            [sys.executable, "-c", code],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+
+    def test_fastbreak_debug_takes_precedence(self) -> None:
+        """FASTBREAK_DEBUG=1 should take precedence over FASTBREAK_LOG_LEVEL."""
+        code = """
+import logging
+from fastbreak.logging import _log_level
+# When FASTBREAK_DEBUG=1, should be DEBUG regardless of LOG_LEVEL
+assert _log_level == logging.DEBUG, f"Expected DEBUG, got {_log_level}"
+print("OK")
+"""
+        result = self._run_logging_test(
+            {"FASTBREAK_DEBUG": "1", "FASTBREAK_LOG_LEVEL": "ERROR"}, code
+        )
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+    def test_fastbreak_debug_false_values_ignored(self) -> None:
+        """FASTBREAK_DEBUG with false-like values should be ignored."""
+        code = """
+import logging
+from fastbreak.logging import _log_level
+# With FASTBREAK_DEBUG=0 and LOG_LEVEL=ERROR, should be ERROR
+assert _log_level == logging.ERROR, f"Expected ERROR, got {_log_level}"
+print("OK")
+"""
+        # "0" is not in ("1", "true", "yes"), so should be ignored
+        result = self._run_logging_test(
+            {"FASTBREAK_DEBUG": "0", "FASTBREAK_LOG_LEVEL": "ERROR"}, code
+        )
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+    def test_empty_fastbreak_debug_ignored(self) -> None:
+        """Empty FASTBREAK_DEBUG should be ignored."""
+        code = """
+import logging
+from fastbreak.logging import _log_level
+assert _log_level == logging.WARNING, f"Expected WARNING (default), got {_log_level}"
+print("OK")
+"""
+        result = self._run_logging_test({"FASTBREAK_DEBUG": ""}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout

@@ -1,5 +1,6 @@
 """Tests for CumeStatsTeamGames endpoint."""
 
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints.cume_stats_team_games import CumeStatsTeamGames
@@ -147,10 +148,5 @@ class TestCumeStatsTeamGames:
         """CumeStatsTeamGames is immutable (frozen dataclass)."""
         endpoint = CumeStatsTeamGames(team_id=1610612747)
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.season = "2023"  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen, "Endpoint should be frozen (immutable)"

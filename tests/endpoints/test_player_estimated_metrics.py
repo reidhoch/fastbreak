@@ -1,5 +1,6 @@
 """Tests for PlayerEstimatedMetrics endpoint."""
 
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import PlayerEstimatedMetrics
@@ -49,13 +50,8 @@ class TestPlayerEstimatedMetrics:
         """PlayerEstimatedMetrics is immutable (frozen dataclass)."""
         endpoint = PlayerEstimatedMetrics()
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.season = "2023-24"  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen
 
 
 class TestPlayerEstimatedMetricsResponse:

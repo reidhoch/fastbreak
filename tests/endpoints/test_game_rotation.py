@@ -1,3 +1,4 @@
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import GameRotation
@@ -48,10 +49,5 @@ class TestGameRotation:
         """GameRotation is immutable (frozen dataclass)."""
         endpoint = GameRotation(game_id="0022500571")
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.game_id = "0022500572"  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen, "Endpoint should be frozen (immutable)"

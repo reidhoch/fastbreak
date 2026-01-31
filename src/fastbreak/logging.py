@@ -55,9 +55,10 @@ if _log_level <= logging.CRITICAL:
         logger_factory=structlog.PrintLoggerFactory(),
     )
 else:
-    # Silent mode - discard all log messages
+    # Silent mode - discard all log messages by using highest standard level
+    # and a logger factory that discards output
     structlog.configure(
-        wrapper_class=structlog.make_filtering_bound_logger(_log_level),
+        wrapper_class=structlog.make_filtering_bound_logger(logging.CRITICAL),
         logger_factory=structlog.ReturnLoggerFactory(),
     )
 

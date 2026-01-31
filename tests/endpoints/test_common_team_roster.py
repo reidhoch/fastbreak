@@ -1,3 +1,4 @@
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import CommonTeamRoster
@@ -71,10 +72,5 @@ class TestCommonTeamRoster:
         """CommonTeamRoster is immutable (frozen dataclass)."""
         endpoint = CommonTeamRoster(team_id=1610612745)
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.season = "2023-24"  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen, "Endpoint should be frozen (immutable)"
