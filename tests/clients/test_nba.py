@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import certifi
 import pytest
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientResponseError, ClientSession, ClientTimeout
 from tenacity import wait_exponential_jitter
 
 from fastbreak.clients.nba import (
@@ -63,80 +63,26 @@ def mock_play_by_play_response():
 class TestIsRetryableError:
     """Tests for the _is_retryable_error helper function."""
 
-    def test_retries_on_429(self):
-        """429 Too Many Requests triggers retry."""
-        from aiohttp import ClientResponseError, RequestInfo
-        from multidict import CIMultiDict
-        from yarl import URL
-
-        request_info = RequestInfo(
-            url=URL("https://test.com"),
-            method="GET",
-            headers=CIMultiDict(),
-            real_url=URL("https://test.com"),
-        )
-        exc = ClientResponseError(request_info=request_info, history=(), status=429)
-        assert _is_retryable_error(exc) is True
-
-    def test_retries_on_500(self):
-        """500 Server Error triggers retry."""
-        from aiohttp import ClientResponseError, RequestInfo
-        from multidict import CIMultiDict
-        from yarl import URL
-
-        request_info = RequestInfo(
-            url=URL("https://test.com"),
-            method="GET",
-            headers=CIMultiDict(),
-            real_url=URL("https://test.com"),
-        )
-        exc = ClientResponseError(request_info=request_info, history=(), status=500)
-        assert _is_retryable_error(exc) is True
-
-    def test_retries_on_503(self):
-        """503 Service Unavailable triggers retry."""
-        from aiohttp import ClientResponseError, RequestInfo
-        from multidict import CIMultiDict
-        from yarl import URL
-
-        request_info = RequestInfo(
-            url=URL("https://test.com"),
-            method="GET",
-            headers=CIMultiDict(),
-            real_url=URL("https://test.com"),
-        )
-        exc = ClientResponseError(request_info=request_info, history=(), status=503)
-        assert _is_retryable_error(exc) is True
-
-    def test_no_retry_on_404(self):
-        """404 Not Found does not trigger retry."""
-        from aiohttp import ClientResponseError, RequestInfo
-        from multidict import CIMultiDict
-        from yarl import URL
-
-        request_info = RequestInfo(
-            url=URL("https://test.com"),
-            method="GET",
-            headers=CIMultiDict(),
-            real_url=URL("https://test.com"),
-        )
-        exc = ClientResponseError(request_info=request_info, history=(), status=404)
-        assert _is_retryable_error(exc) is False
-
-    def test_no_retry_on_400(self):
-        """400 Bad Request does not trigger retry."""
-        from aiohttp import ClientResponseError, RequestInfo
-        from multidict import CIMultiDict
-        from yarl import URL
-
-        request_info = RequestInfo(
-            url=URL("https://test.com"),
-            method="GET",
-            headers=CIMultiDict(),
-            real_url=URL("https://test.com"),
-        )
-        exc = ClientResponseError(request_info=request_info, history=(), status=400)
-        assert _is_retryable_error(exc) is False
+    @pytest.mark.parametrize(
+        "status,should_retry",
+        [
+            pytest.param(429, True, id="429_too_many_requests"),
+            pytest.param(500, True, id="500_server_error"),
+            pytest.param(502, True, id="502_bad_gateway"),
+            pytest.param(503, True, id="503_service_unavailable"),
+            pytest.param(504, True, id="504_gateway_timeout"),
+            pytest.param(400, False, id="400_bad_request"),
+            pytest.param(401, False, id="401_unauthorized"),
+            pytest.param(403, False, id="403_forbidden"),
+            pytest.param(404, False, id="404_not_found"),
+        ],
+    )
+    def test_http_status_retry_behavior(
+        self, make_client_response_error, status, should_retry
+    ):
+        """HTTP status codes trigger appropriate retry behavior."""
+        exc = make_client_response_error(status)
+        assert _is_retryable_error(exc) is should_retry
 
     def test_retries_on_timeout_error(self):
         """TimeoutError triggers retry."""
@@ -397,19 +343,38 @@ class TestNBAClientClose:
         external_session.close.assert_not_called()
 
 
+# Helper to create mock HTTP responses
+def _make_mock_response(
+    status: int = 200,
+    json_data: dict | None = None,
+    raise_error: Exception | None = None,
+    headers: dict | None = None,
+):
+    """Create a mock aiohttp response for testing."""
+    from multidict import CIMultiDict, CIMultiDictProxy
+
+    response = AsyncMock()
+    response.status = status
+    response.headers = CIMultiDictProxy(CIMultiDict(headers or {}))
+
+    if raise_error:
+        response.raise_for_status = MagicMock(side_effect=raise_error)
+    else:
+        response.raise_for_status = MagicMock()
+
+    response.json = AsyncMock(return_value=json_data)
+    response.__aenter__ = AsyncMock(return_value=response)
+    response.__aexit__ = AsyncMock(return_value=None)
+    return response
+
+
 class TestNBAClientGet:
     """Tests for the get method."""
 
     @pytest.mark.asyncio
     async def test_get_returns_parsed_response(self, mock_play_by_play_response):
         """get() fetches data and returns parsed model."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json = AsyncMock(return_value=mock_play_by_play_response)
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
+        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
         mock_session = MagicMock(spec=ClientSession)
         mock_session.get = MagicMock(return_value=mock_response)
 
@@ -426,13 +391,7 @@ class TestNBAClientGet:
     @pytest.mark.asyncio
     async def test_get_constructs_correct_url(self, mock_play_by_play_response):
         """get() builds URL from BASE_URL and endpoint path."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json = AsyncMock(return_value=mock_play_by_play_response)
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
+        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
         mock_session = MagicMock(spec=ClientSession)
         mock_session.get = MagicMock(return_value=mock_response)
 
@@ -452,13 +411,7 @@ class TestNBAClientGet:
     @pytest.mark.asyncio
     async def test_get_logs_request_attempt(self, mock_play_by_play_response):
         """get() logs request attempt with correct parameters."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json = AsyncMock(return_value=mock_play_by_play_response)
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
+        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
         mock_session = MagicMock(spec=ClientSession)
         mock_session.get = MagicMock(return_value=mock_response)
 
@@ -490,13 +443,7 @@ class TestNBAClientGet:
     @pytest.mark.asyncio
     async def test_get_logs_success(self, mock_play_by_play_response):
         """get() logs success with attempt number."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json = AsyncMock(return_value=mock_play_by_play_response)
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
+        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
         mock_session = MagicMock(spec=ClientSession)
         mock_session.get = MagicMock(return_value=mock_response)
 
@@ -520,27 +467,12 @@ class TestNBAClientGet:
             assert success_calls[0][1]["attempt"] == 1
 
     @pytest.mark.asyncio
-    async def test_get_logs_rate_limited_on_429(self):
+    async def test_get_logs_rate_limited_on_429(self, make_client_response_error):
         """get() logs rate_limited when receiving 429 status."""
-        from aiohttp import ClientResponseError, RequestInfo
-        from multidict import CIMultiDict, CIMultiDictProxy
-        from yarl import URL
-
-        mock_response = AsyncMock()
-        mock_response.status = HTTP_TOO_MANY_REQUESTS
-        mock_response.headers = CIMultiDictProxy(CIMultiDict({"Retry-After": "30"}))
-
-        request_info = RequestInfo(
-            url=URL("https://stats.nba.com/stats/test"),
-            method="GET",
-            headers=CIMultiDict(),
-            real_url=URL("https://stats.nba.com/stats/test"),
+        error = make_client_response_error(429, "https://stats.nba.com/stats/test")
+        mock_response = _make_mock_response(
+            status=429, raise_error=error, headers={"Retry-After": "30"}
         )
-        error = ClientResponseError(request_info=request_info, history=(), status=429)
-        mock_response.raise_for_status = MagicMock(side_effect=error)
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
         mock_session = MagicMock(spec=ClientSession)
         mock_session.get = MagicMock(return_value=mock_response)
 
@@ -568,15 +500,7 @@ class TestNBAClientGet:
     @pytest.mark.asyncio
     async def test_get_logs_validation_failed(self):
         """get() logs validation_failed when parsing fails."""
-        invalid_response = {"invalid": "data"}
-
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json = AsyncMock(return_value=invalid_response)
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
+        mock_response = _make_mock_response(json_data={"invalid": "data"})
         mock_session = MagicMock(spec=ClientSession)
         mock_session.get = MagicMock(return_value=mock_response)
 
@@ -610,13 +534,7 @@ class TestNBAClientGet:
         self, mock_play_by_play_response
     ):
         """get() only logs rate_limited for 429 status, not other statuses."""
-        mock_response = AsyncMock()
-        mock_response.status = 200  # Not 429
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json = AsyncMock(return_value=mock_play_by_play_response)
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
+        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
         mock_session = MagicMock(spec=ClientSession)
         mock_session.get = MagicMock(return_value=mock_response)
 
@@ -643,58 +561,24 @@ class TestNBAClientRetry:
     @pytest.fixture
     def mock_success_response(self, mock_play_by_play_response):
         """Create a successful mock response."""
-        response = AsyncMock()
-        response.status = 200
-        response.raise_for_status = MagicMock()
-        response.json = AsyncMock(return_value=mock_play_by_play_response)
-        response.__aenter__ = AsyncMock(return_value=response)
-        response.__aexit__ = AsyncMock(return_value=None)
-        return response
-
-    @pytest.fixture
-    def mock_error_response(self):
-        """Create a factory for error responses."""
-        from aiohttp import ClientResponseError, RequestInfo
-        from multidict import CIMultiDict
-        from yarl import URL
-
-        def _make_error(status: int):
-            request_info = RequestInfo(
-                url=URL("https://stats.nba.com/stats/test"),
-                method="GET",
-                headers=CIMultiDict(),
-                real_url=URL("https://stats.nba.com/stats/test"),
-            )
-            return ClientResponseError(
-                request_info=request_info,
-                history=(),
-                status=status,
-            )
-
-        return _make_error
+        return _make_mock_response(json_data=mock_play_by_play_response)
 
     @pytest.mark.asyncio
     async def test_retries_on_429(
-        self, mock_success_response, mock_error_response, mock_play_by_play_response
+        self,
+        mock_success_response,
+        make_client_response_error,
+        mock_play_by_play_response,
     ):
         """Retry on 429 rate limit error."""
-        from multidict import CIMultiDict, CIMultiDictProxy
-
         call_count = 0
 
         def side_effect(*args, **kwargs):
             nonlocal call_count
             call_count += 1
             if call_count < 3:
-                error_response = AsyncMock()
-                error_response.status = 429
-                error_response.headers = CIMultiDictProxy(CIMultiDict())
-                error_response.raise_for_status = MagicMock(
-                    side_effect=mock_error_response(429)
-                )
-                error_response.__aenter__ = AsyncMock(return_value=error_response)
-                error_response.__aexit__ = AsyncMock(return_value=None)
-                return error_response
+                error = make_client_response_error(429)
+                return _make_mock_response(status=429, raise_error=error)
             return mock_success_response
 
         mock_session = MagicMock(spec=ClientSession)
@@ -712,7 +596,10 @@ class TestNBAClientRetry:
 
     @pytest.mark.asyncio
     async def test_retries_on_500(
-        self, mock_success_response, mock_error_response, mock_play_by_play_response
+        self,
+        mock_success_response,
+        make_client_response_error,
+        mock_play_by_play_response,
     ):
         """Retry on 500 server error."""
         call_count = 0
@@ -721,14 +608,8 @@ class TestNBAClientRetry:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
-                error_response = AsyncMock()
-                error_response.status = 500
-                error_response.raise_for_status = MagicMock(
-                    side_effect=mock_error_response(500)
-                )
-                error_response.__aenter__ = AsyncMock(return_value=error_response)
-                error_response.__aexit__ = AsyncMock(return_value=None)
-                return error_response
+                error = make_client_response_error(500)
+                return _make_mock_response(status=500, raise_error=error)
             return mock_success_response
 
         mock_session = MagicMock(spec=ClientSession)
@@ -777,20 +658,20 @@ class TestNBAClientRetry:
         assert isinstance(result, PlayByPlayResponse)
 
     @pytest.mark.asyncio
-    async def test_no_retry_on_404(self, mock_error_response):
-        """No retry on 404 client error."""
-        from aiohttp import ClientResponseError
-
-        error_response = AsyncMock()
-        error_response.status = 404
-        error_response.raise_for_status = MagicMock(
-            side_effect=mock_error_response(404)
-        )
-        error_response.__aenter__ = AsyncMock(return_value=error_response)
-        error_response.__aexit__ = AsyncMock(return_value=None)
-
+    @pytest.mark.parametrize(
+        "status",
+        [
+            pytest.param(401, id="401_unauthorized"),
+            pytest.param(403, id="403_forbidden"),
+            pytest.param(404, id="404_not_found"),
+        ],
+    )
+    async def test_no_retry_on_client_errors(self, make_client_response_error, status):
+        """Client errors (4xx except 429) do not trigger retry."""
+        error = make_client_response_error(status)
+        mock_response = _make_mock_response(status=status, raise_error=error)
         mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=error_response)
+        mock_session.get = MagicMock(return_value=mock_response)
 
         client = NBAClient(
             session=mock_session, retry_wait_min=0.01, retry_wait_max=0.02
@@ -800,53 +681,16 @@ class TestNBAClientRetry:
         with pytest.raises(ClientResponseError) as exc_info:
             await client.get(endpoint)
 
-        assert exc_info.value.status == 404
+        assert exc_info.value.status == status
         assert mock_session.get.call_count == 1
 
     @pytest.mark.asyncio
-    async def test_no_retry_on_401(self, mock_error_response):
-        """No retry on 401 auth error."""
-        from aiohttp import ClientResponseError
-
-        error_response = AsyncMock()
-        error_response.status = 401
-        error_response.raise_for_status = MagicMock(
-            side_effect=mock_error_response(401)
-        )
-        error_response.__aenter__ = AsyncMock(return_value=error_response)
-        error_response.__aexit__ = AsyncMock(return_value=None)
-
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=error_response)
-
-        client = NBAClient(
-            session=mock_session, retry_wait_min=0.01, retry_wait_max=0.02
-        )
-        endpoint = PlayByPlay(game_id="0022500571")
-
-        with pytest.raises(ClientResponseError) as exc_info:
-            await client.get(endpoint)
-
-        assert exc_info.value.status == 401
-        assert mock_session.get.call_count == 1
-
-    @pytest.mark.asyncio
-    async def test_exhausted_retries_raises(self, mock_error_response):
+    async def test_exhausted_retries_raises(self, make_client_response_error):
         """Exception raised after max retries exhausted."""
-        from aiohttp import ClientResponseError
-        from multidict import CIMultiDict, CIMultiDictProxy
-
-        error_response = AsyncMock()
-        error_response.status = 429
-        error_response.headers = CIMultiDictProxy(CIMultiDict())
-        error_response.raise_for_status = MagicMock(
-            side_effect=mock_error_response(429)
-        )
-        error_response.__aenter__ = AsyncMock(return_value=error_response)
-        error_response.__aexit__ = AsyncMock(return_value=None)
-
+        error = make_client_response_error(429)
+        mock_response = _make_mock_response(status=429, raise_error=error)
         mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=error_response)
+        mock_session.get = MagicMock(return_value=mock_response)
 
         # max_retries=2 means 3 total attempts (1 initial + 2 retries)
         client = NBAClient(
@@ -878,13 +722,7 @@ class TestNBAClientGetMany:
     @pytest.mark.asyncio
     async def test_get_many_returns_ordered_results(self, mock_play_by_play_response):
         """get_many returns results in same order as input."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json = AsyncMock(return_value=mock_play_by_play_response)
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
+        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
         mock_session = MagicMock(spec=ClientSession)
         mock_session.get = MagicMock(return_value=mock_response)
 
@@ -906,14 +744,8 @@ class TestNBAClientGetMany:
 
     @pytest.mark.asyncio
     async def test_get_many_default_concurrency(self, mock_play_by_play_response):
-        """get_many defaults to concurrency of 10."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json = AsyncMock(return_value=mock_play_by_play_response)
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
+        """get_many defaults to concurrency of 3."""
+        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
         mock_session = MagicMock(spec=ClientSession)
         mock_session.get = MagicMock(return_value=mock_response)
 
@@ -937,13 +769,7 @@ class TestNBAClientGetMany:
     @pytest.mark.asyncio
     async def test_get_many_custom_concurrency(self, mock_play_by_play_response):
         """get_many respects custom max_concurrency."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json = AsyncMock(return_value=mock_play_by_play_response)
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
+        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
         mock_session = MagicMock(spec=ClientSession)
         mock_session.get = MagicMock(return_value=mock_response)
 
@@ -967,13 +793,7 @@ class TestNBAClientGetMany:
     @pytest.mark.asyncio
     async def test_get_many_logs_batch_start(self, mock_play_by_play_response):
         """get_many logs batch_start with total count."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json = AsyncMock(return_value=mock_play_by_play_response)
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
+        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
         mock_session = MagicMock(spec=ClientSession)
         mock_session.get = MagicMock(return_value=mock_response)
 
@@ -1000,13 +820,7 @@ class TestNBAClientGetMany:
     @pytest.mark.asyncio
     async def test_get_many_logs_batch_complete(self, mock_play_by_play_response):
         """get_many logs batch_complete with total count."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json = AsyncMock(return_value=mock_play_by_play_response)
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
+        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
         mock_session = MagicMock(spec=ClientSession)
         mock_session.get = MagicMock(return_value=mock_response)
 
@@ -1034,13 +848,7 @@ class TestNBAClientGetMany:
         self, mock_play_by_play_response
     ):
         """get_many logs batch_progress for batches >= BATCH_PROGRESS_THRESHOLD."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json = AsyncMock(return_value=mock_play_by_play_response)
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
+        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
         mock_session = MagicMock(spec=ClientSession)
         mock_session.get = MagicMock(return_value=mock_response)
 
@@ -1075,13 +883,7 @@ class TestNBAClientGetMany:
         self, mock_play_by_play_response
     ):
         """get_many doesn't log batch_progress for batches < BATCH_PROGRESS_THRESHOLD."""
-        mock_response = AsyncMock()
-        mock_response.status = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json = AsyncMock(return_value=mock_play_by_play_response)
-        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_response.__aexit__ = AsyncMock(return_value=None)
-
+        mock_response = _make_mock_response(json_data=mock_play_by_play_response)
         mock_session = MagicMock(spec=ClientSession)
         mock_session.get = MagicMock(return_value=mock_response)
 
@@ -1147,45 +949,18 @@ class TestNBAClientGetMany:
 
     @pytest.mark.asyncio
     async def test_get_many_raises_exception_group_on_error(
-        self, mock_play_by_play_response
+        self, make_client_response_error, mock_play_by_play_response
     ):
         """get_many raises ExceptionGroup when any request fails."""
-        from aiohttp import ClientResponseError, RequestInfo
-        from multidict import CIMultiDict
-        from yarl import URL
-
         call_count = 0
-
-        def make_error():
-            request_info = RequestInfo(
-                url=URL("https://stats.nba.com/stats/test"),
-                method="GET",
-                headers=CIMultiDict(),
-                real_url=URL("https://stats.nba.com/stats/test"),
-            )
-            return ClientResponseError(
-                request_info=request_info,
-                history=(),
-                status=404,
-            )
 
         def side_effect(*args, **kwargs):
             nonlocal call_count
             call_count += 1
             if call_count == 2:
-                error_response = AsyncMock()
-                error_response.status = 404
-                error_response.raise_for_status = MagicMock(side_effect=make_error())
-                error_response.__aenter__ = AsyncMock(return_value=error_response)
-                error_response.__aexit__ = AsyncMock(return_value=None)
-                return error_response
-            response = AsyncMock()
-            response.status = 200
-            response.raise_for_status = MagicMock()
-            response.json = AsyncMock(return_value=mock_play_by_play_response)
-            response.__aenter__ = AsyncMock(return_value=response)
-            response.__aexit__ = AsyncMock(return_value=None)
-            return response
+                error = make_client_response_error(404)
+                return _make_mock_response(status=404, raise_error=error)
+            return _make_mock_response(json_data=mock_play_by_play_response)
 
         mock_session = MagicMock(spec=ClientSession)
         mock_session.get = MagicMock(side_effect=side_effect)

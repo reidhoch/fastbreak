@@ -1,4 +1,29 @@
 import pytest
+from aiohttp import ClientResponseError, RequestInfo
+from multidict import CIMultiDict
+from yarl import URL
+
+
+@pytest.fixture
+def make_client_response_error():
+    """Factory fixture for creating ClientResponseError with specified status code.
+
+    Usage:
+        def test_something(make_client_response_error):
+            error = make_client_response_error(429)
+            assert error.status == 429
+    """
+
+    def _make(status: int, url: str = "https://test.com") -> ClientResponseError:
+        request_info = RequestInfo(
+            url=URL(url),
+            method="GET",
+            headers=CIMultiDict(),
+            real_url=URL(url),
+        )
+        return ClientResponseError(request_info=request_info, history=(), status=status)
+
+    return _make
 
 
 @pytest.fixture
