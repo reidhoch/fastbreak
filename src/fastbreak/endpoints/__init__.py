@@ -1,6 +1,7 @@
 """NBA API endpoint definitions.
 
 This module auto-exports all public symbols from submodules.
+Runtime uses dynamic auto-discovery; TYPE_CHECKING provides static analysis support.
 """
 
 import importlib
@@ -8,9 +9,12 @@ import pkgutil
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-# Explicit imports for type checkers (mypy, pyright, etc.)
-# These are redundant at runtime but needed for static analysis
+# Explicit imports for type checkers (mypy, pyright, IDEs)
+# These are not executed at runtime but enable autocomplete and type checking.
+# The `as X` syntax explicitly marks these as public re-exports.
 if TYPE_CHECKING:
+    # Base classes
+    # League-wide endpoints
     from fastbreak.endpoints.all_time_leaders import (
         AllTimeLeadersGrids as AllTimeLeadersGrids,
     )
@@ -24,6 +28,8 @@ if TYPE_CHECKING:
         PlayerDashboardEndpoint as PlayerDashboardEndpoint,
         TeamDashboardEndpoint as TeamDashboardEndpoint,
     )
+
+    # Box score endpoints
     from fastbreak.endpoints.box_score_advanced import (
         BoxScoreAdvanced as BoxScoreAdvanced,
     )
@@ -37,16 +43,14 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.box_score_player_track import (
         BoxScorePlayerTrack as BoxScorePlayerTrack,
     )
-    from fastbreak.endpoints.box_score_scoring import (
-        BoxScoreScoring as BoxScoreScoring,
-    )
-    from fastbreak.endpoints.box_score_summary import (
-        BoxScoreSummary as BoxScoreSummary,
-    )
+    from fastbreak.endpoints.box_score_scoring import BoxScoreScoring as BoxScoreScoring
+    from fastbreak.endpoints.box_score_summary import BoxScoreSummary as BoxScoreSummary
     from fastbreak.endpoints.box_score_traditional import (
         BoxScoreTraditional as BoxScoreTraditional,
     )
     from fastbreak.endpoints.box_score_usage import BoxScoreUsage as BoxScoreUsage
+
+    # Common endpoints
     from fastbreak.endpoints.common_all_players import (
         CommonAllPlayers as CommonAllPlayers,
     )
@@ -59,12 +63,10 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.common_team_roster import (
         CommonTeamRoster as CommonTeamRoster,
     )
-    from fastbreak.endpoints.common_team_years import (
-        CommonTeamYears as CommonTeamYears,
-    )
-    from fastbreak.endpoints.cume_stats_player import (
-        CumeStatsPlayer as CumeStatsPlayer,
-    )
+    from fastbreak.endpoints.common_team_years import CommonTeamYears as CommonTeamYears
+
+    # Cumulative stats endpoints
+    from fastbreak.endpoints.cume_stats_player import CumeStatsPlayer as CumeStatsPlayer
     from fastbreak.endpoints.cume_stats_player_games import (
         CumeStatsPlayerGames as CumeStatsPlayerGames,
     )
@@ -72,6 +74,8 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.cume_stats_team_games import (
         CumeStatsTeamGames as CumeStatsTeamGames,
     )
+
+    # Draft combine endpoints
     from fastbreak.endpoints.draft_combine_drill_results import (
         DraftCombineDrillResults as DraftCombineDrillResults,
     )
@@ -91,6 +95,8 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.dunk_score_leaders import (
         DunkScoreLeaders as DunkScoreLeaders,
     )
+
+    # Franchise endpoints
     from fastbreak.endpoints.franchise_history import (
         FranchiseHistory as FranchiseHistory,
     )
@@ -100,14 +106,20 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.franchise_players import (
         FranchisePlayers as FranchisePlayers,
     )
+
+    # Game endpoints
     from fastbreak.endpoints.game_rotation import GameRotation as GameRotation
     from fastbreak.endpoints.gravity_leaders import GravityLeaders as GravityLeaders
     from fastbreak.endpoints.hustle_stats_boxscore import (
         HustleStatsBoxscore as HustleStatsBoxscore,
     )
+
+    # Player endpoints
     from fastbreak.endpoints.infographic_fanduel_player import (
         InfographicFanDuelPlayer as InfographicFanDuelPlayer,
     )
+
+    # Schedule and scoreboard endpoints
     from fastbreak.endpoints.ist_standings import IstStandings as IstStandings
     from fastbreak.endpoints.league_dash_lineups import (
         LeagueDashLineups as LeagueDashLineups,
@@ -129,21 +141,15 @@ if TYPE_CHECKING:
         LeagueHustleStatsTeam as LeagueHustleStatsTeam,
     )
     from fastbreak.endpoints.league_leaders import LeagueLeaders as LeagueLeaders
-    from fastbreak.endpoints.league_lineup_viz import (
-        LeagueLineupViz as LeagueLineupViz,
-    )
+    from fastbreak.endpoints.league_lineup_viz import LeagueLineupViz as LeagueLineupViz
     from fastbreak.endpoints.league_player_on_details import (
         LeaguePlayerOnDetails as LeaguePlayerOnDetails,
     )
     from fastbreak.endpoints.league_season_matchups import (
         LeagueSeasonMatchups as LeagueSeasonMatchups,
     )
-    from fastbreak.endpoints.league_standings import (
-        LeagueStandings as LeagueStandings,
-    )
-    from fastbreak.endpoints.leverage_leaders import (
-        LeverageLeaders as LeverageLeaders,
-    )
+    from fastbreak.endpoints.league_standings import LeagueStandings as LeagueStandings
+    from fastbreak.endpoints.leverage_leaders import LeverageLeaders as LeverageLeaders
     from fastbreak.endpoints.matchups_rollup import MatchupsRollup as MatchupsRollup
     from fastbreak.endpoints.play_by_play import PlayByPlay as PlayByPlay
     from fastbreak.endpoints.player_awards import PlayerAwards as PlayerAwards
@@ -169,6 +175,8 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.player_dash_pt_shots import (
         PlayerDashPtShots as PlayerDashPtShots,
     )
+
+    # Player dashboard endpoints
     from fastbreak.endpoints.player_dashboard_by_clutch import (
         PlayerDashboardByClutch as PlayerDashboardByClutch,
     )
@@ -196,42 +204,28 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.player_fantasy_profile_bar_graph import (
         PlayerFantasyProfileBarGraph as PlayerFantasyProfileBarGraph,
     )
-    from fastbreak.endpoints.player_game_log import (
-        PlayerGameLog as PlayerGameLog,
-    )
-    from fastbreak.endpoints.player_game_logs import (
-        PlayerGameLogs as PlayerGameLogs,
-    )
+    from fastbreak.endpoints.player_game_log import PlayerGameLog as PlayerGameLog
+    from fastbreak.endpoints.player_game_logs import PlayerGameLogs as PlayerGameLogs
     from fastbreak.endpoints.player_game_streak_finder import (
         PlayerGameStreakFinder as PlayerGameStreakFinder,
     )
-    from fastbreak.endpoints.player_index import (
-        PlayerIndex as PlayerIndex,
-    )
+    from fastbreak.endpoints.player_index import PlayerIndex as PlayerIndex
     from fastbreak.endpoints.player_next_n_games import (
         PlayerNextNGames as PlayerNextNGames,
     )
-    from fastbreak.endpoints.player_profile_v2 import (
-        PlayerProfileV2 as PlayerProfileV2,
-    )
-    from fastbreak.endpoints.player_vs_player import (
-        PlayerVsPlayer as PlayerVsPlayer,
-    )
-    from fastbreak.endpoints.playoff_picture import (
-        PlayoffPicture as PlayoffPicture,
-    )
+    from fastbreak.endpoints.player_profile_v2 import PlayerProfileV2 as PlayerProfileV2
+    from fastbreak.endpoints.player_vs_player import PlayerVsPlayer as PlayerVsPlayer
+    from fastbreak.endpoints.playoff_picture import PlayoffPicture as PlayoffPicture
     from fastbreak.endpoints.schedule_league_v2 import (
         ScheduleLeagueV2 as ScheduleLeagueV2,
     )
     from fastbreak.endpoints.schedule_league_v2_int import (
         ScheduleLeagueV2Int as ScheduleLeagueV2Int,
     )
-    from fastbreak.endpoints.scoreboard_v3 import (
-        ScoreboardV3 as ScoreboardV3,
-    )
-    from fastbreak.endpoints.shot_chart_detail import (
-        ShotChartDetail as ShotChartDetail,
-    )
+    from fastbreak.endpoints.scoreboard_v3 import ScoreboardV3 as ScoreboardV3
+
+    # Shot chart endpoints
+    from fastbreak.endpoints.shot_chart_detail import ShotChartDetail as ShotChartDetail
     from fastbreak.endpoints.shot_chart_leaguewide import (
         ShotChartLeaguewide as ShotChartLeaguewide,
     )
@@ -241,21 +235,19 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.shot_quality_leaders import (
         ShotQualityLeaders as ShotQualityLeaders,
     )
+
+    # Synergy endpoints
     from fastbreak.endpoints.synergy_playtypes import (
         SynergyPlaytypes as SynergyPlaytypes,
     )
+
+    # Team endpoints
     from fastbreak.endpoints.team_and_players_vs_players import (
         TeamAndPlayersVsPlayers as TeamAndPlayersVsPlayers,
     )
-    from fastbreak.endpoints.team_dash_lineups import (
-        TeamDashLineups as TeamDashLineups,
-    )
-    from fastbreak.endpoints.team_dash_pt_pass import (
-        TeamDashPtPass as TeamDashPtPass,
-    )
-    from fastbreak.endpoints.team_dash_pt_reb import (
-        TeamDashPtReb as TeamDashPtReb,
-    )
+    from fastbreak.endpoints.team_dash_lineups import TeamDashLineups as TeamDashLineups
+    from fastbreak.endpoints.team_dash_pt_pass import TeamDashPtPass as TeamDashPtPass
+    from fastbreak.endpoints.team_dash_pt_reb import TeamDashPtReb as TeamDashPtReb
     from fastbreak.endpoints.team_dash_pt_shots import (
         TeamDashPtShots as TeamDashPtShots,
     )
@@ -285,6 +277,8 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.team_year_by_year_stats import (
         TeamYearByYearStats as TeamYearByYearStats,
     )
+
+    # Video endpoints
     from fastbreak.endpoints.video_status import VideoStatus as VideoStatus
 
 # Auto-discover and import all submodules at runtime
