@@ -17,7 +17,7 @@ class LeverageLeaders(Endpoint[LeverageLeadersResponse]):
     Args:
         league_id: League identifier ("00" for NBA)
         season_type: Type of season ("Regular Season", "Playoffs")
-        season_year: Season in YYYY-YY format (e.g., "2025-26")
+        season_year: Season in YYYY-YY format (e.g., "2024-25")
 
     """
 
@@ -26,7 +26,7 @@ class LeverageLeaders(Endpoint[LeverageLeadersResponse]):
 
     league_id: LeagueID = "00"
     season_type: SeasonType = "Regular Season"
-    season_year: Season = "2025-26"
+    season_year: Season = "2024-25"
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

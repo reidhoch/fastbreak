@@ -13,7 +13,7 @@ class TestShotQualityLeaders:
 
         assert endpoint.league_id == "00"
         assert endpoint.season_type == "Regular Season"
-        assert endpoint.season_year == "2025-26"
+        assert endpoint.season_year == "2024-25"
 
     def test_init_with_custom_league_id(self):
         """ShotQualityLeaders accepts custom league_id."""
@@ -50,7 +50,7 @@ class TestShotQualityLeaders:
         endpoint = ShotQualityLeaders(
             league_id="00",
             season_type="Regular Season",
-            season_year="2025-26",
+            season_year="2024-25",
         )
 
         params = endpoint.params()
@@ -58,7 +58,7 @@ class TestShotQualityLeaders:
         assert params == {
             "LeagueID": "00",
             "SeasonType": "Regular Season",
-            "Season": "2025-26",
+            "Season": "2024-25",
         }
 
     def test_path_is_correct(self):

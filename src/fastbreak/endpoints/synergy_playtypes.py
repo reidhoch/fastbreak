@@ -18,7 +18,7 @@ class SynergyPlaytypes(Endpoint[SynergyPlaytypesResponse]):
     """Fetch Synergy play type statistics for players or teams.
 
     Returns offensive or defensive efficiency metrics broken down by play type
-    (Isolation, Transition, Post Up, Pick & Roll, etc.).
+    (Isolation, Transition, Postup, PRBallHandler, PRRollman, etc.).
 
     Args:
         league_id: League identifier ("00" for NBA)
@@ -26,7 +26,7 @@ class SynergyPlaytypes(Endpoint[SynergyPlaytypesResponse]):
         season_type: Type of season ("Regular Season", "Playoffs", "Pre Season")
         per_mode: Stat aggregation mode ("PerGame", "Totals")
         player_or_team: Whether to return player or team stats ("P", "T")
-        play_type: Filter by play type ("Isolation", "Transition", "Post Up",
+        play_type: Filter by play type ("Isolation", "Transition", "Postup",
                    "PRBallHandler", "PRRollman", "Spotup", "Handoff", "Cut",
                    "OffScreen", "OffRebound", "Misc")
         type_grouping: Filter by offensive or defensive ("offensive", "defensive")

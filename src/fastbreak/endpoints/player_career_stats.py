@@ -16,7 +16,7 @@ class PlayerCareerStats(Endpoint[PlayerCareerStatsResponse]):
     Args:
         player_id: The player's unique identifier
         league_id: League identifier ("00" for NBA)
-        per_mode: Stat aggregation mode ("Totals", "PerGame", "Per36")
+        per_mode: Stat aggregation mode ("Totals", "PerGame", "Per36", etc.)
 
     """
 

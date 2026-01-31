@@ -10,12 +10,18 @@ class GravityLeaders(Endpoint[GravityLeadersResponse]):
 
     Gravity measures how much defensive attention a player draws,
     based on how close defenders stay to them.
+
+    Args:
+        season: Season in YYYY-YY format (e.g., "2024-25")
+        season_type: Type of season ("Regular Season", "Playoffs", etc.)
+        league_id: League identifier ("00" for NBA)
+
     """
 
     path: ClassVar[str] = "gravityleaders"
     response_model: ClassVar[type[GravityLeadersResponse]] = GravityLeadersResponse
 
-    season: Season = "2025-26"
+    season: Season = "2024-25"
     season_type: SeasonType = "Regular Season"
     league_id: LeagueID = "00"
 

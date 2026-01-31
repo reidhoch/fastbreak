@@ -15,7 +15,7 @@ class ScheduleLeagueV2(Endpoint[ScheduleLeagueV2Response]):
     teams, broadcasters, venue, and scoring leaders.
 
     Args:
-        league_id: League identifier ("00" for NBA, "10" for WNBA, "20" for G-League)
+        league_id: League identifier ("00" for NBA, "10" for WNBA, "15" for G-League)
         season: Season in YYYY-YY format (e.g., "2024-25")
 
     """
