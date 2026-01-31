@@ -2,30 +2,15 @@
 
 from typing import ClassVar
 
-from fastbreak.endpoints.base import Endpoint
+from fastbreak.endpoints.base import TeamDashboardEndpoint
 from fastbreak.models.team_dashboard_by_shooting_splits import (
     TeamDashboardByShootingSplitsResponse,
 )
-from fastbreak.types import (
-    Conference,
-    Date,
-    Division,
-    GameSegment,
-    LeagueID,
-    Location,
-    MeasureType,
-    Outcome,
-    Period,
-    PerMode,
-    Season,
-    SeasonSegment,
-    SeasonType,
-    ShotClockRange,
-    YesNo,
-)
 
 
-class TeamDashboardByShootingSplits(Endpoint[TeamDashboardByShootingSplitsResponse]):
+class TeamDashboardByShootingSplits(
+    TeamDashboardEndpoint[TeamDashboardByShootingSplitsResponse]
+):
     """Fetch team shooting stats broken down by shot type and distance.
 
     Returns detailed shooting stats including:
@@ -66,71 +51,3 @@ class TeamDashboardByShootingSplits(Endpoint[TeamDashboardByShootingSplitsRespon
     response_model: ClassVar[type[TeamDashboardByShootingSplitsResponse]] = (
         TeamDashboardByShootingSplitsResponse
     )
-
-    # Required parameters
-    team_id: int
-    league_id: LeagueID = "00"
-    season: Season = "2024-25"
-    season_type: SeasonType = "Regular Season"
-    per_mode: PerMode = "PerGame"
-    measure_type: MeasureType = "Base"
-    pace_adjust: YesNo = "N"
-    plus_minus: YesNo = "N"
-    rank: YesNo = "N"
-
-    # Filters with defaults
-    month: int = 0
-    period: Period = 0
-    opponent_team_id: int = 0
-    last_n_games: int = 0
-    po_round: int = 0
-
-    # Optional filters
-    outcome: Outcome | None = None
-    location: Location | None = None
-    season_segment: SeasonSegment | None = None
-    date_from: Date | None = None
-    date_to: Date | None = None
-    vs_conference: Conference | None = None
-    vs_division: Division | None = None
-    game_segment: GameSegment | None = None
-    shot_clock_range: ShotClockRange | None = None
-
-    def params(self) -> dict[str, str]:
-        """Return the query parameters for this endpoint."""
-        result: dict[str, str] = {
-            "TeamID": str(self.team_id),
-            "LeagueID": self.league_id,
-            "Season": self.season,
-            "SeasonType": self.season_type,
-            "PerMode": self.per_mode,
-            "MeasureType": self.measure_type,
-            "PaceAdjust": self.pace_adjust,
-            "PlusMinus": self.plus_minus,
-            "Rank": self.rank,
-            "Month": str(self.month),
-            "Period": str(self.period),
-            "OpponentTeamID": str(self.opponent_team_id),
-            "LastNGames": str(self.last_n_games),
-            "PORound": str(self.po_round),
-        }
-
-        # Map of optional attributes to API parameter names
-        optional_params = {
-            "outcome": "Outcome",
-            "location": "Location",
-            "season_segment": "SeasonSegment",
-            "date_from": "DateFrom",
-            "date_to": "DateTo",
-            "vs_conference": "VsConference",
-            "vs_division": "VsDivision",
-            "game_segment": "GameSegment",
-            "shot_clock_range": "ShotClockRange",
-        }
-
-        for attr, param_name in optional_params.items():
-            value = getattr(self, attr)
-            if value is not None:
-                result[param_name] = value
-
-        return result

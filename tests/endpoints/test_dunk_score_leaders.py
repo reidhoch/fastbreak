@@ -12,7 +12,7 @@ class TestDunkScoreLeaders:
     def test_init_with_defaults(self):
         """Endpoint initializes with default values."""
         endpoint = DunkScoreLeaders()
-        assert endpoint.season == "2025-26"
+        assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
         assert endpoint.league_id == "00"
         assert endpoint.player_id is None
@@ -72,7 +72,7 @@ class TestDunkScoreLeaders:
         params = endpoint.params()
         assert params == {
             "LeagueID": "00",
-            "Season": "2025-26",
+            "Season": "2024-25",
             "SeasonType": "Regular Season",
         }
 

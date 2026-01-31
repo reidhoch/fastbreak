@@ -20,7 +20,7 @@ class ScheduleLeagueV2Int(Endpoint[ScheduleLeagueV2IntResponse]):
     - Broadcaster objects include regionId and localizationRegion fields
 
     Args:
-        league_id: League identifier ("00" for NBA, "10" for WNBA, "20" for G-League)
+        league_id: League identifier ("00" for NBA, "10" for WNBA, "15" for G-League)
         season: Season in YYYY-YY format (e.g., "2024-25")
 
     """

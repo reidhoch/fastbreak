@@ -17,9 +17,12 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.assist_leaders import AssistLeaders as AssistLeaders
     from fastbreak.endpoints.assist_tracker import AssistTracker as AssistTracker
     from fastbreak.endpoints.base import (
+        DashboardEndpoint as DashboardEndpoint,
         DraftCombineEndpoint as DraftCombineEndpoint,
         Endpoint as Endpoint,
         GameIdEndpoint as GameIdEndpoint,
+        PlayerDashboardEndpoint as PlayerDashboardEndpoint,
+        TeamDashboardEndpoint as TeamDashboardEndpoint,
     )
     from fastbreak.endpoints.box_score_advanced import (
         BoxScoreAdvanced as BoxScoreAdvanced,

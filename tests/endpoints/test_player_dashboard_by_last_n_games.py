@@ -25,7 +25,7 @@ class TestPlayerDashboardByLastNGames:
         assert endpoint.opponent_team_id == 0
         assert endpoint.period == 0
         assert endpoint.last_n_games == 0
-        assert endpoint.ist_round == ""
+        assert endpoint.ist_round is None
 
     def test_init_with_player_id(self):
         """PlayerDashboardByLastNGames accepts player_id."""
@@ -67,7 +67,6 @@ class TestPlayerDashboardByLastNGames:
             "OpponentTeamID": "0",
             "Period": "0",
             "LastNGames": "0",
-            "ISTRound": "",
         }
 
     def test_params_with_filters(self):

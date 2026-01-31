@@ -15,7 +15,7 @@ class ScoreboardV3(Endpoint[ScoreboardV3Response]):
     information.
 
     Args:
-        league_id: League identifier ("00" for NBA, "10" for WNBA, "20" for G-League)
+        league_id: League identifier ("00" for NBA, "10" for WNBA, "15" for G-League)
         game_date: Date in YYYY-MM-DD format (e.g., "2024-12-25")
 
     """

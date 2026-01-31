@@ -17,7 +17,7 @@ class DunkScoreLeaders(Endpoint[DunkScoreLeadersResponse]):
     path: ClassVar[str] = "dunkscoreleaders"
     response_model: ClassVar[type[DunkScoreLeadersResponse]] = DunkScoreLeadersResponse
 
-    season: Season = "2025-26"
+    season: Season = "2024-25"
     season_type: SeasonType = "Regular Season"
     league_id: LeagueID = "00"
     player_id: int | None = None

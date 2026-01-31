@@ -14,7 +14,7 @@ class VideoStatus(Endpoint[VideoStatusResponse]):
     (full game video, play-by-play video, etc.).
 
     Args:
-        league_id: League identifier ("00" for NBA, "10" for WNBA, "20" for G-League)
+        league_id: League identifier ("00" for NBA, "10" for WNBA, "15" for G-League)
         game_date: Date to check video status for (MM/DD/YYYY format)
 
     """
