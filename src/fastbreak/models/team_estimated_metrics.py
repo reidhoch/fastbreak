@@ -4,6 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.logging import logger
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 
 
@@ -64,11 +65,22 @@ class TeamEstimatedMetricsResponse(BaseModel):
     def from_result_set(cls, data: object) -> dict[str, Any]:
         """Transform NBA's singular resultSet format into structured data."""
         if not isinstance(data, dict):
+            logger.debug(
+                "team_estimated_metrics_passthrough",
+                actual_type=type(data).__name__,
+                hint="Expected dict with 'resultSet' key",
+            )
             return data  # type: ignore[return-value]
 
         # This endpoint uses singular 'resultSet' instead of 'resultSets'
         result_set = data.get("resultSet")
         if not result_set or not isinstance(result_set, dict):
+            logger.debug(
+                "team_estimated_metrics_passthrough",
+                keys=list(data.keys())[:10],
+                has_result_set=result_set is not None,
+                hint="Expected 'resultSet' key with dict value",
+            )
             return data
 
         headers = result_set.get("headers", [])

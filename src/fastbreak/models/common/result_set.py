@@ -37,13 +37,36 @@ Usage in a Pydantic model:
 from collections.abc import Callable
 from typing import Any, TypeGuard
 
+from fastbreak.logging import logger
+
 # Type alias for validator functions compatible with Pydantic model_validator(mode="before")
 ValidatorFunc = Callable[[object], dict[str, Any]]
 
 
 def is_tabular_response(data: object) -> TypeGuard[dict[str, Any]]:
-    """Check if data is in NBA's tabular resultSets format."""
-    return isinstance(data, dict) and "resultSets" in data
+    """Check if data is in NBA's tabular resultSets format.
+
+    This is used by model validators to determine whether to transform data
+    or pass it through unchanged. Debug logging helps diagnose when data
+    doesn't match the expected format.
+    """
+    if isinstance(data, dict) and "resultSets" in data:
+        return True
+
+    # Log at debug level to help diagnose passthrough scenarios
+    if isinstance(data, dict):
+        logger.debug(
+            "validator_passthrough_missing_key",
+            keys=list(data.keys())[:10],
+            hint="Expected 'resultSets' key for tabular format",
+        )
+    else:
+        logger.debug(
+            "validator_passthrough_wrong_type",
+            actual_type=type(data).__name__,
+            hint="Expected dict with 'resultSets' key",
+        )
+    return False
 
 
 def parse_result_set(
