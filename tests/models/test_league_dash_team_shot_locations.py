@@ -50,12 +50,12 @@ class TestGetResultSet:
         result = _get_result_set(data)
         assert result is None
 
-    def test_returns_empty_dict_when_resultsets_missing(self):
-        """Returns empty dict when resultSets key is missing."""
+    def test_returns_none_when_resultsets_missing(self):
+        """Returns None when resultSets key is missing (logs warning)."""
         data = {"otherKey": "value"}
         result = _get_result_set(data)
-        # When missing, get() returns default {} which is a dict, so it's returned
-        assert result == {}
+        # Missing resultSets indicates unexpected response structure
+        assert result is None
 
     def test_returns_none_when_resultsets_is_none(self):
         """Returns None when resultSets is None."""

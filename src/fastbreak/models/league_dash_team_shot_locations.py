@@ -8,6 +8,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from fastbreak.logging import logger
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.result_set import is_tabular_response
 
@@ -41,14 +42,49 @@ class TeamShotLocations(PandasMixin, PolarsMixin, BaseModel):
 
 
 def _get_result_set(data: dict[str, Any]) -> dict[str, Any] | None:
-    """Extract the result set from the API response."""
-    result_sets = data.get("resultSets", {})
-    if isinstance(result_sets, list) and result_sets:
+    """Extract the result set from the API response.
+
+    Returns None if the expected structure is not found, logging a warning
+    to help diagnose API schema changes or malformed responses.
+    """
+    result_sets = data.get("resultSets")
+    if result_sets is None:
+        logger.warning(
+            "shot_locations_missing_result_sets",
+            data_keys=list(data.keys()),
+            hint="Expected 'resultSets' key in response",
+        )
+        return None
+
+    # Handle list format: extract first element
+    if isinstance(result_sets, list):
+        if not result_sets:
+            return None  # Empty list is valid - no data returned
         first = result_sets[0]
-        return first if isinstance(first, dict) else None
-    if isinstance(result_sets, dict):
+        if isinstance(first, dict):
+            return first
+        logger.warning(
+            "shot_locations_invalid_result_set_type",
+            actual_type=type(first).__name__,
+            hint="Expected dict as first element of resultSets list",
+        )
+    elif isinstance(result_sets, dict):
+        # Handle dict format: extract ShotLocations or use entire dict
         result = result_sets.get("ShotLocations", result_sets)
-        return result if isinstance(result, dict) else None
+        if isinstance(result, dict):
+            return result
+        logger.warning(
+            "shot_locations_invalid_structure",
+            actual_type=type(result).__name__,
+            hint="Expected dict for ShotLocations result",
+        )
+    else:
+        logger.warning(
+            "shot_locations_unexpected_result_sets_type",
+            actual_type=type(result_sets).__name__,
+            hint="Expected list or dict for resultSets",
+        )
+
     return None
 
 
@@ -92,12 +128,33 @@ def _parse_shot_locations(data: dict[str, Any]) -> list[dict[str, Any]]:
 
     The NBA API returns headers in a nested format with rowSet containing
     flat arrays where columns are grouped by distance.
+
+    Returns an empty list if parsing fails, with warnings logged to help
+    diagnose the issue.
     """
     result_set = _get_result_set(data)
     if result_set is None:
+        # Warning already logged by _get_result_set
         return []
 
-    rows = result_set.get("rowSet", [])
+    rows = result_set.get("rowSet")
+    if rows is None:
+        logger.warning(
+            "shot_locations_missing_row_set",
+            result_set_keys=list(result_set.keys()),
+            hint="Expected 'rowSet' key in result set",
+        )
+        return []
+
+    if not isinstance(rows, list):
+        logger.warning(
+            "shot_locations_invalid_row_set_type",
+            actual_type=type(rows).__name__,
+            hint="Expected list for rowSet",
+        )
+        return []
+
+    # Empty rowSet is valid - no teams matched the query
     if not rows:
         return []
 
