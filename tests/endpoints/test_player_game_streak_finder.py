@@ -1,5 +1,6 @@
 """Tests for PlayerGameStreakFinder endpoint."""
 
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import PlayerGameStreakFinder
@@ -47,13 +48,8 @@ class TestPlayerGameStreakFinder:
         """PlayerGameStreakFinder is immutable (frozen dataclass)."""
         endpoint = PlayerGameStreakFinder(player_id="2544")
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.player_id = "203999"  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen
 
 
 class TestPlayerGameStreakFinderResponse:

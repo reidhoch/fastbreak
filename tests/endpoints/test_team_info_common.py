@@ -1,3 +1,4 @@
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import TeamInfoCommon
@@ -60,10 +61,5 @@ class TestTeamInfoCommon:
         """TeamInfoCommon is immutable (frozen dataclass)."""
         endpoint = TeamInfoCommon(team_id=1610612747)
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.team_id = 1610612743  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen, "Endpoint should be frozen (immutable)"

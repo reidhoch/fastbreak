@@ -1,5 +1,6 @@
 """Tests for PlayerProfileV2 endpoint."""
 
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import PlayerProfileV2
@@ -49,13 +50,8 @@ class TestPlayerProfileV2:
         """PlayerProfileV2 is immutable (frozen dataclass)."""
         endpoint = PlayerProfileV2(player_id="2544")
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.player_id = "203999"  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen
 
 
 class TestPlayerProfileV2Response:

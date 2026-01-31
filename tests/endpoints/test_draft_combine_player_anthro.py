@@ -1,3 +1,4 @@
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import DraftCombinePlayerAnthro
@@ -66,10 +67,5 @@ class TestDraftCombinePlayerAnthro:
         """DraftCombinePlayerAnthro is immutable (frozen dataclass)."""
         endpoint = DraftCombinePlayerAnthro()
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.season_year = "2023-24"  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen, "Endpoint should be frozen (immutable)"

@@ -1,3 +1,4 @@
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import ShotQualityLeaders
@@ -77,10 +78,5 @@ class TestShotQualityLeaders:
         """ShotQualityLeaders is immutable (frozen dataclass)."""
         endpoint = ShotQualityLeaders()
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.season_year = "2024-25"  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen, "Endpoint should be frozen (immutable)"

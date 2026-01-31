@@ -1,5 +1,6 @@
 """Tests for CumeStatsPlayer endpoint."""
 
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints.cume_stats_player import CumeStatsPlayer
@@ -90,13 +91,8 @@ class TestCumeStatsPlayer:
         """CumeStatsPlayer is immutable (frozen dataclass)."""
         endpoint = CumeStatsPlayer(player_id=2544)
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.season = "2023"  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen, "Endpoint should be frozen (immutable)"
 
     def test_params_with_multiple_game_ids(self):
         """params() handles multiple comma-separated game IDs."""

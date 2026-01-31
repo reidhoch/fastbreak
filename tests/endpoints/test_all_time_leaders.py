@@ -1,3 +1,4 @@
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import AllTimeLeadersGrids
@@ -97,10 +98,5 @@ class TestAllTimeLeadersGrids:
         """AllTimeLeadersGrids is immutable (frozen dataclass)."""
         endpoint = AllTimeLeadersGrids()
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.top_x = 50  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen, "Endpoint should be frozen (immutable)"

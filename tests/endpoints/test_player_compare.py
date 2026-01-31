@@ -1,5 +1,6 @@
 """Tests for PlayerCompare endpoint."""
 
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import PlayerCompare
@@ -112,13 +113,8 @@ class TestPlayerCompare:
         """PlayerCompare is immutable (frozen dataclass)."""
         endpoint = PlayerCompare()
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.season = "2023-24"  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen, "Endpoint should be frozen (immutable)"
 
 
 class TestPlayerCompareResponse:

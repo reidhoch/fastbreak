@@ -1,5 +1,6 @@
 """Tests for HustleStatsBoxscore endpoint."""
 
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import HustleStatsBoxscore
@@ -39,13 +40,8 @@ class TestHustleStatsBoxscore:
         """HustleStatsBoxscore is immutable (frozen dataclass)."""
         endpoint = HustleStatsBoxscore(game_id="0022500571")
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.game_id = "0022500000"  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen, "Endpoint should be frozen (immutable)"
 
 
 class TestHustleStatsBoxscoreResponse:

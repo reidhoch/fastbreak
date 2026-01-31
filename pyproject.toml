@@ -121,6 +121,7 @@ asyncio_default_fixture_loop_scope = "function"
 [dependency-groups]
 dev = [
     "complexipy>=5.1.0",
+    "hypothesis>=6.151.4",
     "isort>=7.0.0",
     "mutmut>=3.3",
     "mypy>=1.19.1",

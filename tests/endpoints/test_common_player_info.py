@@ -1,3 +1,4 @@
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import CommonPlayerInfo
@@ -68,10 +69,5 @@ class TestCommonPlayerInfo:
         """CommonPlayerInfo is immutable (frozen dataclass)."""
         endpoint = CommonPlayerInfo(player_id=203500)
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.player_id = 2544  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen, "Endpoint should be frozen (immutable)"

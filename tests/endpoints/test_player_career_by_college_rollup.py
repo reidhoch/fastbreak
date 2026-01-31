@@ -1,3 +1,4 @@
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import PlayerCareerByCollegeRollup
@@ -95,10 +96,5 @@ class TestPlayerCareerByCollegeRollup:
         """PlayerCareerByCollegeRollup is immutable (frozen dataclass)."""
         endpoint = PlayerCareerByCollegeRollup()
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.per_mode = "Totals"  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen, "Endpoint should be frozen (immutable)"

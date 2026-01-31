@@ -1,5 +1,6 @@
 """Tests for PlayerDashPtReb endpoint."""
 
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import PlayerDashPtReb
@@ -94,13 +95,8 @@ class TestPlayerDashPtReb:
         """PlayerDashPtReb is immutable (frozen dataclass)."""
         endpoint = PlayerDashPtReb(player_id=2544)
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.season = "2023-24"  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen
 
 
 class TestPlayerDashPtRebResponse:

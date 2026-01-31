@@ -1,5 +1,6 @@
 """Tests for PlayerDashboardByShootingSplits endpoint."""
 
+import pytest
 from pydantic import ValidationError
 
 from fastbreak.endpoints import PlayerDashboardByShootingSplits
@@ -101,13 +102,8 @@ class TestPlayerDashboardByShootingSplits:
         """PlayerDashboardByShootingSplits is immutable (frozen dataclass)."""
         endpoint = PlayerDashboardByShootingSplits(player_id=2544)
 
-        try:
+        with pytest.raises((AttributeError, ValidationError)):
             endpoint.season = "2023-24"  # type: ignore[misc]
-            frozen = False
-        except (AttributeError, ValidationError):
-            frozen = True
-
-        assert frozen
 
 
 class TestPlayerDashboardByShootingSplitsResponse:
