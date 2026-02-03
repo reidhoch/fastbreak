@@ -5,9 +5,12 @@ variables. To test different configurations, we use subprocess to run
 Python code with different environment settings.
 """
 
+import importlib
 import logging
+import os
 import subprocess
 import sys
+from unittest.mock import patch
 
 import pytest
 
@@ -418,3 +421,61 @@ print("OK")
         result = self._run_logging_test({"FASTBREAK_DEBUG": ""}, code)
         assert result.returncode == 0, f"Test failed: {result.stderr}"
         assert "OK" in result.stdout
+
+
+class TestLoggingModuleReload:
+    """Tests that reload the logging module to cover import-time branches.
+
+    These tests use importlib.reload() to reload the logging module
+    with different environment variables set, allowing coverage to be
+    collected on import-time configuration code.
+    """
+
+    @pytest.fixture(autouse=True)
+    def cleanup_env(self):
+        """Clean up environment variables after each test."""
+        original_log_level = os.environ.get("FASTBREAK_LOG_LEVEL")
+        original_debug = os.environ.get("FASTBREAK_DEBUG")
+        yield
+        # Restore original values
+        if original_log_level is not None:
+            os.environ["FASTBREAK_LOG_LEVEL"] = original_log_level
+        else:
+            os.environ.pop("FASTBREAK_LOG_LEVEL", None)
+        if original_debug is not None:
+            os.environ["FASTBREAK_DEBUG"] = original_debug
+        else:
+            os.environ.pop("FASTBREAK_DEBUG", None)
+
+    def test_reload_with_debug_enabled(self) -> None:
+        """Reload module with FASTBREAK_DEBUG=1 to cover debug branch."""
+        import fastbreak.logging as log_module
+
+        os.environ["FASTBREAK_DEBUG"] = "1"
+        os.environ.pop("FASTBREAK_LOG_LEVEL", None)
+
+        importlib.reload(log_module)
+
+        assert log_module._log_level == logging.DEBUG
+
+    def test_reload_with_log_level_info(self) -> None:
+        """Reload module with FASTBREAK_LOG_LEVEL=INFO to cover level map branch."""
+        import fastbreak.logging as log_module
+
+        os.environ.pop("FASTBREAK_DEBUG", None)
+        os.environ["FASTBREAK_LOG_LEVEL"] = "INFO"
+
+        importlib.reload(log_module)
+
+        assert log_module._log_level == logging.INFO
+
+    def test_reload_with_silent_mode(self) -> None:
+        """Reload module with FASTBREAK_LOG_LEVEL=SILENT to cover silent branch."""
+        import fastbreak.logging as log_module
+
+        os.environ.pop("FASTBREAK_DEBUG", None)
+        os.environ["FASTBREAK_LOG_LEVEL"] = "SILENT"
+
+        importlib.reload(log_module)
+
+        assert log_module._log_level > logging.CRITICAL
