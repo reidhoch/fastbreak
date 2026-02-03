@@ -72,7 +72,8 @@ class TeamRetiredJersey(PandasMixin, PolarsMixin, BaseModel):
     position: str | None = Field(alias="POSITION")
     jersey: str | None = Field(alias="JERSEY")
     seasons_with_team: str | None = Field(alias="SEASONSWITHTEAM")
-    year: int = Field(alias="YEAR")
+    # year can be None for honorary jersey retirements
+    year: int | None = Field(default=None, alias="YEAR")
 
 
 class TeamDetailsResponse(BaseModel):

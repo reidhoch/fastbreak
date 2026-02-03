@@ -1,5 +1,8 @@
 """Tests for DataFrame conversion mixins."""
 
+import sys
+from unittest.mock import patch
+
 import pytest
 from pydantic import BaseModel
 
@@ -557,3 +560,45 @@ class TestUnnestAll:
         assert result["first"][0] == 1
         assert result["middle.val"][0] == 50
         assert result["last"][0] == 3
+
+
+class TestImportErrorHandling:
+    """Tests for ImportError handling when pandas/polars are not installed."""
+
+    def test_to_pandas_raises_import_error_when_pandas_missing(self):
+        """to_pandas raises ImportError with helpful message when pandas not installed."""
+        models = [SimpleModel(name="test", value=1)]
+
+        # Mock the import to fail
+        with patch.dict(sys.modules, {"pandas": None}):
+            # Need to trigger fresh import within the method
+            import builtins
+
+            original_import = builtins.__import__
+
+            def mock_import(name, *args, **kwargs):
+                if name == "pandas":
+                    raise ImportError("No module named 'pandas'")
+                return original_import(name, *args, **kwargs)
+
+            with patch.object(builtins, "__import__", side_effect=mock_import):
+                with pytest.raises(ImportError, match="pandas is required"):
+                    SimpleModel.to_pandas(models)
+
+    def test_to_polars_raises_import_error_when_polars_missing(self):
+        """to_polars raises ImportError with helpful message when polars not installed."""
+        models = [SimpleModel(name="test", value=1)]
+
+        # Mock the import to fail
+        import builtins
+
+        original_import = builtins.__import__
+
+        def mock_import(name, *args, **kwargs):
+            if name == "polars":
+                raise ImportError("No module named 'polars'")
+            return original_import(name, *args, **kwargs)
+
+        with patch.object(builtins, "__import__", side_effect=mock_import):
+            with pytest.raises(ImportError, match="polars is required"):
+                SimpleModel.to_polars(models)
