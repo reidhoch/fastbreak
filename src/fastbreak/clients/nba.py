@@ -69,7 +69,7 @@ class NBAClient:
     ) -> None:
         self._session = session
         self._owns_session = session is None
-        self._timeout = timeout or ClientTimeout(total=30)
+        self._timeout = timeout or ClientTimeout(total=60)
         self._session_lock = Lock()
         self._request_delay = request_delay
         self._retry = AsyncRetrying(

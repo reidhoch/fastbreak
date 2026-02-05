@@ -122,7 +122,7 @@ class TestNBAClientInit:
         client = NBAClient()
         assert client._session is None
         assert client._owns_session is True
-        assert client._timeout.total == 30
+        assert client._timeout.total == 60  # Increased from 30s for NBA API reliability
 
     def test_default_max_retries(self):
         """Default max_retries is 3 (4 total attempts)."""

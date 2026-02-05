@@ -247,3 +247,21 @@ YesNo = Annotated[
     Literal["Y", "N"],
     Field(description="Yes or No flag"),
 ]
+
+AheadBehind = Annotated[
+    Literal["Ahead or Behind", "Ahead or Tied", "Behind or Tied"],
+    Field(description="Clutch game situation filter"),
+]
+
+ClutchTime = Annotated[
+    Literal[
+        "Last 5 Minutes",
+        "Last 4 Minutes",
+        "Last 3 Minutes",
+        "Last 2 Minutes",
+        "Last 1 Minute",
+        "Last 30 Seconds",
+        "Last 10 Seconds",
+    ],
+    Field(description="Time remaining in clutch situations"),
+]

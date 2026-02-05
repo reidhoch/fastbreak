@@ -23,15 +23,20 @@ class AdvancedPlayer(PandasMixin, PolarsMixin, BaseModel):
 
 
 class AdvancedTeam(PandasMixin, PolarsMixin, BaseModel):
-    """Team with advanced statistics."""
+    """Team with advanced statistics.
+
+    Note: Some fields are optional because the NBA API returns null values
+    for certain old games (e.g., games from 2003-04 and 2012-13 seasons)
+    where this data was not tracked or digitized.
+    """
 
     teamId: int
-    teamCity: str
-    teamName: str
-    teamTricode: str
-    teamSlug: str
+    teamCity: str | None = None
+    teamName: str | None = None
+    teamTricode: str | None = None
+    teamSlug: str | None = None
     players: list[AdvancedPlayer]
-    statistics: AdvancedTeamStatistics
+    statistics: AdvancedTeamStatistics | None = None
 
 
 class BoxScoreAdvancedData(PandasMixin, PolarsMixin, BaseModel):
