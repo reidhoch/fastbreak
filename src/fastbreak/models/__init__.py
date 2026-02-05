@@ -256,6 +256,10 @@ if TYPE_CHECKING:
         PlayerPtStats as PlayerPtStats,
         TeamPtStats as TeamPtStats,
     )
+    from fastbreak.models.league_dash_team_clutch import (
+        LeagueDashTeamClutchResponse as LeagueDashTeamClutchResponse,
+        TeamClutchStats as TeamClutchStats,
+    )
     from fastbreak.models.league_dash_team_shot_locations import (
         LeagueDashTeamShotLocationsResponse as LeagueDashTeamShotLocationsResponse,
         ShotRange as ShotRange,
