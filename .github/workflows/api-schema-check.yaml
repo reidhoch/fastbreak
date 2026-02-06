@@ -45,30 +45,30 @@ jobs:
             const title = `API Schema Change Detected - ${new Date().toISOString().split('T')[0]}`;
             const body = `## NBA API Schema Changes Detected
 
-The weekly API schema check found new fields in the NBA API responses that are not captured in our models.
+            The weekly API schema check found new fields in the NBA API responses that are not captured in our models.
 
-### Failed Tests
-${failedList || 'See full output below'}
+            ### Failed Tests
+            ${failedList || 'See full output below'}
 
-### What This Means
-The NBA API has added new fields to one or more endpoints. Our models should be updated to capture this new data.
+            ### What This Means
+            The NBA API has added new fields to one or more endpoints. Our models should be updated to capture this new data.
 
-### Action Required
-1. Review the failed tests to identify which endpoints changed
-2. Update the corresponding response models in \`src/fastbreak/models/\`
-3. Run \`pytest -m live_api\` locally to verify fixes
+            ### Action Required
+            1. Review the failed tests to identify which endpoints changed
+            2. Update the corresponding response models in \`src/fastbreak/models/\`
+            3. Run \`pytest -m live_api\` locally to verify fixes
 
-<details>
-<summary>Full Test Output</summary>
+            <details>
+            <summary>Full Test Output</summary>
 
-\`\`\`
-${output.slice(-10000)}
-\`\`\`
+            \`\`\`
+            ${output.slice(-10000)}
+            \`\`\`
 
-</details>
+            </details>
 
----
-*This issue was automatically created by the API Schema Check workflow.*`;
+            ---
+            *This issue was automatically created by the API Schema Check workflow.*`;
 
             await github.rest.issues.create({
               owner: context.repo.owner,
