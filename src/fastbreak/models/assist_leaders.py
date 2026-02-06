@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
@@ -32,7 +33,7 @@ class PlayerAssistLeader(PandasMixin, PolarsMixin, BaseModel):
     ast: float = Field(alias="AST")
 
 
-class AssistLeadersResponse(BaseModel):
+class AssistLeadersResponse(FrozenResponse):
     """Response from the assist leaders endpoint.
 
     Contains either team_leaders or player_leaders depending on the

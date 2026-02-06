@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import named_result_sets_validator
 
 
@@ -42,7 +43,7 @@ class Coach(PandasMixin, PolarsMixin, BaseModel):
     sub_sort_sequence: int = Field(alias="SUB_SORT_SEQUENCE")
 
 
-class CommonTeamRosterResponse(BaseModel):
+class CommonTeamRosterResponse(FrozenResponse):
     """Response from the commonteamroster endpoint."""
 
     players: list[RosterPlayer] = Field(default_factory=list)

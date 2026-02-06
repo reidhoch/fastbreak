@@ -2,12 +2,13 @@
 
 from typing import Any
 
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
 
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
-class AssistTrackerResponse(BaseModel):
+class AssistTrackerResponse(FrozenResponse):
     """Response from the assist tracker endpoint."""
 
     assists: int

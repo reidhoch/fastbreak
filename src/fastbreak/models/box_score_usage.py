@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.meta import Meta
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.usage_statistics import UsageStatistics
 
 
@@ -41,7 +42,7 @@ class BoxScoreUsageData(PandasMixin, PolarsMixin, BaseModel):
     awayTeam: UsageTeam
 
 
-class BoxScoreUsageResponse(BaseModel):
+class BoxScoreUsageResponse(FrozenResponse):
     """Response from the boxscoreusage endpoint."""
 
     meta: Meta

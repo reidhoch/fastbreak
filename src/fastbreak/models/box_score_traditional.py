@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.meta import Meta
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.traditional_statistics import (
     TraditionalGroupStatistics,
     TraditionalStatistics,
@@ -32,8 +33,8 @@ class TraditionalTeam(PandasMixin, PolarsMixin, BaseModel):
     teamSlug: str
     players: list[TraditionalPlayer]
     statistics: TraditionalStatistics
-    starters: TraditionalGroupStatistics
-    bench: TraditionalGroupStatistics
+    starters: TraditionalGroupStatistics | None = None
+    bench: TraditionalGroupStatistics | None = None
 
 
 class BoxScoreTraditionalData(PandasMixin, PolarsMixin, BaseModel):
@@ -46,7 +47,7 @@ class BoxScoreTraditionalData(PandasMixin, PolarsMixin, BaseModel):
     awayTeam: TraditionalTeam
 
 
-class BoxScoreTraditionalResponse(BaseModel):
+class BoxScoreTraditionalResponse(FrozenResponse):
     """Response from the boxscoretraditional endpoint."""
 
     meta: Meta

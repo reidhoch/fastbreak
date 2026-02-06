@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -48,7 +49,7 @@ class LeagueHustlePlayer(PandasMixin, PolarsMixin, BaseModel):
     pct_box_outs_reb: float | None = Field(alias="PCT_BOX_OUTS_REB")
 
 
-class LeagueHustleStatsPlayerResponse(BaseModel):
+class LeagueHustleStatsPlayerResponse(FrozenResponse):
     """Response from the league hustle stats player endpoint.
 
     Contains season-aggregated hustle statistics for all players.

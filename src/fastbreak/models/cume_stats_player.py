@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import named_result_sets_validator
 
 
@@ -92,7 +93,7 @@ class TotalPlayerStat(PandasMixin, PolarsMixin, BaseModel):
     per_min_pts: float = Field(alias="PER_MIN_PTS")
 
 
-class CumeStatsPlayerResponse(BaseModel):
+class CumeStatsPlayerResponse(FrozenResponse):
     """Response from the cumestatsplayer endpoint.
 
     Contains two result sets:

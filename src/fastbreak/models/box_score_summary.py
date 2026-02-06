@@ -7,6 +7,7 @@ from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.meeting import LastFiveMeetings
 from fastbreak.models.common.meta import Meta
 from fastbreak.models.common.official import Official
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.summary_team import SummaryTeam
 
 
@@ -49,7 +50,7 @@ class BoxScoreSummaryData(PandasMixin, PolarsMixin, BaseModel):
     gameSubtype: str
 
 
-class BoxScoreSummaryResponse(BaseModel):
+class BoxScoreSummaryResponse(FrozenResponse):
     """Response from the box score summary endpoint."""
 
     meta: Meta

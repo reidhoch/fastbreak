@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -193,7 +194,7 @@ class StatHigh(PandasMixin, PolarsMixin, BaseModel):
     date_est: str = Field(alias="DATE_EST")
 
 
-class PlayerCareerStatsResponse(BaseModel):
+class PlayerCareerStatsResponse(FrozenResponse):
     """Response from the playercareerstats endpoint.
 
     Contains comprehensive career statistics including season-by-season data,

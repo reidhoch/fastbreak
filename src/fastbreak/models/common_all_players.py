@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import tabular_validator
 
 
@@ -27,7 +28,7 @@ class CommonPlayer(PandasMixin, PolarsMixin, BaseModel):
     other_league_experience: str = Field(alias="OTHERLEAGUE_EXPERIENCE_CH")
 
 
-class CommonAllPlayersResponse(BaseModel):
+class CommonAllPlayersResponse(FrozenResponse):
     """Response from the common all players endpoint."""
 
     players: list[CommonPlayer] = Field(default_factory=list)

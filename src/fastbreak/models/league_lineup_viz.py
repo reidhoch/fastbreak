@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -41,7 +42,7 @@ class LineupViz(PandasMixin, PolarsMixin, BaseModel):
     sum_tm_min: float = Field(alias="SUM_TM_MIN")
 
 
-class LeagueLineupVizResponse(BaseModel):
+class LeagueLineupVizResponse(FrozenResponse):
     """Response from the league lineup viz endpoint.
 
     Contains lineup visualization statistics for player combinations.

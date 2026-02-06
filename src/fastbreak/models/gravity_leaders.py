@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 
 
 class GravityLeader(PandasMixin, PolarsMixin, BaseModel):
@@ -35,6 +36,6 @@ class GravityLeader(PandasMixin, PolarsMixin, BaseModel):
     AST: float
 
 
-class GravityLeadersResponse(BaseModel):
+class GravityLeadersResponse(FrozenResponse):
     params: dict[str, str]
     leaders: list[GravityLeader]

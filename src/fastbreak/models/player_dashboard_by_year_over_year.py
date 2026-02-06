@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -100,7 +101,7 @@ class YearOverYearStats(PandasMixin, PolarsMixin, BaseModel):
     team_count: int | None = Field(default=None, alias="TEAM_COUNT")
 
 
-class PlayerDashboardByYearOverYearResponse(BaseModel):
+class PlayerDashboardByYearOverYearResponse(FrozenResponse):
     """Response from the player dashboard by year over year endpoint.
 
     Contains player stats split by:

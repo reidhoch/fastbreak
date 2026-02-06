@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -96,7 +97,7 @@ class GameSplitStats(PandasMixin, PolarsMixin, BaseModel):
     team_count: int = Field(alias="TEAM_COUNT")
 
 
-class PlayerDashboardByGameSplitsResponse(BaseModel):
+class PlayerDashboardByGameSplitsResponse(FrozenResponse):
     """Response from the player dashboard by game splits endpoint.
 
     Contains stats split by various game segments:

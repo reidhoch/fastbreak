@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
@@ -42,7 +43,7 @@ class AnthroPlayer(PandasMixin, PolarsMixin, BaseModel):
     hand_width: float | None = Field(default=None, alias="HAND_WIDTH")
 
 
-class DraftCombinePlayerAnthroResponse(BaseModel):
+class DraftCombinePlayerAnthroResponse(FrozenResponse):
     """Response from the draft combine player anthro endpoint."""
 
     players: list[AnthroPlayer] = Field(default_factory=list)

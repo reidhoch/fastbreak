@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.matchup_statistics import MatchupStatistics
 from fastbreak.models.common.meta import Meta
+from fastbreak.models.common.response import FrozenResponse
 
 
 class MatchupOpponent(PandasMixin, PolarsMixin, BaseModel):
@@ -52,7 +53,7 @@ class BoxScoreMatchupsData(PandasMixin, PolarsMixin, BaseModel):
     awayTeam: MatchupsTeam
 
 
-class BoxScoreMatchupsResponse(BaseModel):
+class BoxScoreMatchupsResponse(FrozenResponse):
     """Response from the boxscorematchupsv3 endpoint."""
 
     meta: Meta

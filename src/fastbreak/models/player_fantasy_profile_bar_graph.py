@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_single_result_set,
@@ -35,7 +36,7 @@ class FantasyStats(PandasMixin, PolarsMixin, BaseModel):
     fg_pct: float | None = Field(alias="FG_PCT")
 
 
-class PlayerFantasyProfileBarGraphResponse(BaseModel):
+class PlayerFantasyProfileBarGraphResponse(FrozenResponse):
     """Response from the player fantasy profile bar graph endpoint.
 
     Contains season averages and last 5 games averages for fantasy stats.

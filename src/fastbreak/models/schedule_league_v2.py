@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 
 
 class ScheduleBroadcaster(PandasMixin, PolarsMixin, BaseModel):
@@ -150,7 +151,7 @@ class LeagueSchedule(PandasMixin, PolarsMixin, BaseModel):
     weeks: list[ScheduleWeek] = Field(default_factory=list, alias="weeks")
 
 
-class ScheduleLeagueV2Response(BaseModel):
+class ScheduleLeagueV2Response(FrozenResponse):
     """Response from the schedule league v2 endpoint.
 
     This endpoint returns the full season schedule with all games organized

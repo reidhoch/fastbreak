@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import named_result_sets_validator
 
 
@@ -13,7 +14,7 @@ class PlayerGame(PandasMixin, PolarsMixin, BaseModel):
     game_id: str = Field(alias="GAME_ID")
 
 
-class CumeStatsPlayerGamesResponse(BaseModel):
+class CumeStatsPlayerGamesResponse(FrozenResponse):
     """Response from the cumestatsplayergames endpoint.
 
     Contains a list of games the player has participated in,

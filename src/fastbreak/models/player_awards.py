@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
@@ -27,7 +28,7 @@ class PlayerAward(PandasMixin, PolarsMixin, BaseModel):
     subtype3: str | None = Field(alias="SUBTYPE3")
 
 
-class PlayerAwardsResponse(BaseModel):
+class PlayerAwardsResponse(FrozenResponse):
     """Response from the playerawards endpoint.
 
     Contains all awards for a specific player.

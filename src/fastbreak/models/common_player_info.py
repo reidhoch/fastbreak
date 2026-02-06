@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import named_result_sets_validator
 
 
@@ -64,7 +65,7 @@ class AvailableSeason(PandasMixin, PolarsMixin, BaseModel):
     season_id: str = Field(alias="SEASON_ID")
 
 
-class CommonPlayerInfoResponse(BaseModel):
+class CommonPlayerInfoResponse(FrozenResponse):
     """Response from the common player info endpoint.
 
     Contains three result sets:

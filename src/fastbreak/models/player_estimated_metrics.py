@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.logging import logger
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 
 
 class PlayerEstimatedMetric(PandasMixin, PolarsMixin, BaseModel):
@@ -54,7 +55,7 @@ class PlayerEstimatedMetric(PandasMixin, PolarsMixin, BaseModel):
     e_pace_rank: int | None = Field(alias="E_PACE_RANK")
 
 
-class PlayerEstimatedMetricsResponse(BaseModel):
+class PlayerEstimatedMetricsResponse(FrozenResponse):
     """Response from the player estimated metrics endpoint.
 
     Contains estimated advanced metrics for all players in the league.

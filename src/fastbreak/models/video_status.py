@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -30,7 +31,7 @@ class GameVideoStatus(PandasMixin, PolarsMixin, BaseModel):
     pt_xyz_available: int = Field(alias="PT_XYZ_AVAILABLE")
 
 
-class VideoStatusResponse(BaseModel):
+class VideoStatusResponse(FrozenResponse):
     """Response from the videostatus endpoint.
 
     Contains video availability status for games on a given date.

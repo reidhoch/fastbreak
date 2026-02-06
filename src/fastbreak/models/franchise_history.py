@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import named_result_sets_validator
 
 
@@ -30,7 +31,7 @@ class Franchise(PandasMixin, PolarsMixin, BaseModel):
     league_titles: int = Field(alias="LEAGUE_TITLES")
 
 
-class FranchiseHistoryResponse(BaseModel):
+class FranchiseHistoryResponse(FrozenResponse):
     """Response from the franchise history endpoint.
 
     Contains two lists:

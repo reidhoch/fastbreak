@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -56,7 +57,7 @@ class PlayerIndexEntry(PandasMixin, PolarsMixin, BaseModel):
     stats_timeframe: str | None = Field(alias="STATS_TIMEFRAME")
 
 
-class PlayerIndexResponse(BaseModel):
+class PlayerIndexResponse(FrozenResponse):
     """Response from the player index endpoint.
 
     Contains a list of all players for the specified season.

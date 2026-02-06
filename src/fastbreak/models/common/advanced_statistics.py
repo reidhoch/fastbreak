@@ -20,12 +20,10 @@ class AdvancedStatistics(PandasMixin, PolarsMixin, BaseModel):
     defensiveReboundPercentage: float = Field(ge=0.0)  # Relaxed - edge cases exist
     reboundPercentage: float = Field(ge=0.0)  # Relaxed - edge cases exist
     turnoverRatio: float = Field(ge=0.0)
-    effectiveFieldGoalPercentage: float = Field(
-        ge=0.0
-    )  # Can exceed 1.0 with 3-pointers
-    trueShootingPercentage: float = Field(
-        ge=0.0
-    )  # Can exceed 1.0 with efficient FT shooting
+    # eFG% can exceed 1.0 with 3-pointers
+    effectiveFieldGoalPercentage: float = Field(ge=0.0)
+    # ts% can exceed 1.0 with efficient FT shooting
+    trueShootingPercentage: float = Field(ge=0.0)
     usagePercentage: float = Field(ge=0.0)  # Estimates can exceed 1.0
     estimatedUsagePercentage: float = Field(ge=0.0)  # Estimates can exceed 1.0
     estimatedPace: float = Field(ge=0.0)

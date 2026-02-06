@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
@@ -37,7 +38,7 @@ class CollegeRollupEntry(PandasMixin, PolarsMixin, BaseModel):
     pts: float = Field(alias="PTS")
 
 
-class PlayerCareerByCollegeRollupResponse(BaseModel):
+class PlayerCareerByCollegeRollupResponse(FrozenResponse):
     """Response from the playercareerbycollegerollup endpoint.
 
     Contains NBA career statistics rolled up by college and NCAA tournament

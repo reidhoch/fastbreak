@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -30,7 +31,7 @@ class DefendingShots(PandasMixin, PolarsMixin, BaseModel):
     pct_plusminus: float | None = Field(alias="PCT_PLUSMINUS")
 
 
-class PlayerDashPtShotDefendResponse(BaseModel):
+class PlayerDashPtShotDefendResponse(FrozenResponse):
     """Response from the player dashboard shot defense endpoint.
 
     Contains defensive statistics showing how opponents shoot when

@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 
 
 class LeverageLeader(PandasMixin, PolarsMixin, BaseModel):
@@ -35,7 +36,7 @@ class LeverageLeader(PandasMixin, PolarsMixin, BaseModel):
     ast: float = Field(alias="AST")
 
 
-class LeverageLeadersResponse(BaseModel):
+class LeverageLeadersResponse(FrozenResponse):
     """Response from the leverage leaders endpoint."""
 
     params: dict[str, str]

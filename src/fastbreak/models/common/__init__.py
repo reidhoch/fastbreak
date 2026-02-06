@@ -29,6 +29,7 @@ from fastbreak.models.common.period import Period
 # Entity models
 from fastbreak.models.common.player import Player
 from fastbreak.models.common.player_track_statistics import PlayerTrackStatistics
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     ValidatorFunc,
     is_tabular_response,
@@ -54,6 +55,8 @@ __all__ = [
     "ChartTeam",
     "Charts",
     "FourFactorsStatistics",
+    # Response base classes
+    "FrozenResponse",
     "MatchupStatistics",
     "Meeting",
     # Metadata

@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -101,7 +102,7 @@ class AssistedByStats(PandasMixin, PolarsMixin, BaseModel):
     pct_uast_fgm_rank: int = Field(alias="PCT_UAST_FGM_RANK")
 
 
-class PlayerDashboardByShootingSplitsResponse(BaseModel):
+class PlayerDashboardByShootingSplitsResponse(FrozenResponse):
     """Response from the player dashboard by shooting splits endpoint.
 
     Contains detailed shooting stats by:

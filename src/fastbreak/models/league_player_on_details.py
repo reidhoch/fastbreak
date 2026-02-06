@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -76,7 +77,7 @@ class PlayerOnCourtDetail(PandasMixin, PolarsMixin, BaseModel):
     plus_minus_rank: int = Field(alias="PLUS_MINUS_RANK")
 
 
-class LeaguePlayerOnDetailsResponse(BaseModel):
+class LeaguePlayerOnDetailsResponse(FrozenResponse):
     """Response from the league player on details endpoint.
 
     Contains team statistics when each player is on the court.

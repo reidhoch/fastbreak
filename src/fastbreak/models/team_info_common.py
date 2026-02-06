@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -60,7 +61,7 @@ class AvailableSeason(PandasMixin, PolarsMixin, BaseModel):
     season_id: str = Field(alias="SEASON_ID")
 
 
-class TeamInfoCommonResponse(BaseModel):
+class TeamInfoCommonResponse(FrozenResponse):
     """Response from the team info common endpoint.
 
     Contains basic team information, season rankings, and available seasons.

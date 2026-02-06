@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -44,7 +45,7 @@ class GameFinderResult(PandasMixin, PolarsMixin, BaseModel):
     plus_minus: float | None = Field(alias="PLUS_MINUS")
 
 
-class LeagueGameFinderResponse(BaseModel):
+class LeagueGameFinderResponse(FrozenResponse):
     """Response from the league game finder endpoint.
 
     Contains a list of games matching the search criteria with box score stats.

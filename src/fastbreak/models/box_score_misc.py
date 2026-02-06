@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.meta import Meta
 from fastbreak.models.common.misc_statistics import MiscStatistics
+from fastbreak.models.common.response import FrozenResponse
 
 
 class MiscPlayer(PandasMixin, PolarsMixin, BaseModel):
@@ -41,7 +42,7 @@ class BoxScoreMiscData(PandasMixin, PolarsMixin, BaseModel):
     awayTeam: MiscTeam
 
 
-class BoxScoreMiscResponse(BaseModel):
+class BoxScoreMiscResponse(FrozenResponse):
     """Response from the boxscoremisc endpoint."""
 
     meta: Meta

@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -54,7 +55,7 @@ class LineupLeagueAverage(PandasMixin, PolarsMixin, BaseModel):
     fg_pct: float = Field(alias="FG_PCT")
 
 
-class ShotChartLineupDetailResponse(BaseModel):
+class ShotChartLineupDetailResponse(FrozenResponse):
     """Response from the shot chart lineup detail endpoint.
 
     Contains individual shot data with lineup context and league averages.

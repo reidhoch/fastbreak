@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 
 
 class IstGame(PandasMixin, PolarsMixin, BaseModel):
@@ -45,7 +46,7 @@ class IstTeamStanding(PandasMixin, PolarsMixin, BaseModel):
     games: list[IstGame] = Field(alias="games")
 
 
-class IstStandingsResponse(BaseModel):
+class IstStandingsResponse(FrozenResponse):
     """Response from the IST standings endpoint.
 
     Contains standings for all teams in the In-Season Tournament (NBA Cup),

@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
@@ -36,7 +37,7 @@ class CollegePlayerCareer(PandasMixin, PolarsMixin, BaseModel):
     pts: float = Field(alias="PTS")
 
 
-class PlayerCareerByCollegeResponse(BaseModel):
+class PlayerCareerByCollegeResponse(FrozenResponse):
     """Response from the playercareerbycollege endpoint.
 
     Contains career statistics for all NBA players from a specific college.

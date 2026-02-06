@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.meta import Meta
+from fastbreak.models.common.response import FrozenResponse
 
 
 class PlayByPlayAction(PandasMixin, PolarsMixin, BaseModel):
@@ -44,7 +45,7 @@ class PlayByPlayGame(PandasMixin, PolarsMixin, BaseModel):
     actions: list[PlayByPlayAction]
 
 
-class PlayByPlayResponse(BaseModel):
+class PlayByPlayResponse(FrozenResponse):
     """Response from the play-by-play endpoint."""
 
     meta: Meta
