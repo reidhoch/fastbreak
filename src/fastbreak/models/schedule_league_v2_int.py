@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 
 
 class IntlBroadcasterInfo(PandasMixin, PolarsMixin, BaseModel):
@@ -171,7 +172,7 @@ class IntlLeagueSchedule(PandasMixin, PolarsMixin, BaseModel):
     )
 
 
-class ScheduleLeagueV2IntResponse(BaseModel):
+class ScheduleLeagueV2IntResponse(FrozenResponse):
     """Response from the international schedule league v2 endpoint.
 
     This endpoint returns the full season schedule with all games organized

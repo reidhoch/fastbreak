@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.four_factors_statistics import FourFactorsStatistics
 from fastbreak.models.common.meta import Meta
+from fastbreak.models.common.response import FrozenResponse
 
 
 class FourFactorsPlayer(PandasMixin, PolarsMixin, BaseModel):
@@ -41,7 +42,7 @@ class BoxScoreFourFactorsData(PandasMixin, PolarsMixin, BaseModel):
     awayTeam: FourFactorsTeam
 
 
-class BoxScoreFourFactorsResponse(BaseModel):
+class BoxScoreFourFactorsResponse(FrozenResponse):
     """Response from the boxscorefourfactorsv3 endpoint."""
 
     meta: Meta

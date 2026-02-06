@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
@@ -115,7 +116,7 @@ class CombinePlayer(PandasMixin, PolarsMixin, BaseModel):
     on_move_college: str | None = Field(default=None, alias="ON_MOVE_COLLEGE")
 
 
-class DraftCombineStatsResponse(BaseModel):
+class DraftCombineStatsResponse(FrozenResponse):
     """Response from the draft combine stats endpoint."""
 
     players: list[CombinePlayer] = Field(default_factory=list)

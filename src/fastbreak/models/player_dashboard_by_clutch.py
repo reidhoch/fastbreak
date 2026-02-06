@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_single_result_set,
@@ -95,7 +96,7 @@ class ClutchStats(PandasMixin, PolarsMixin, BaseModel):
     team_count: int = Field(alias="TEAM_COUNT")
 
 
-class PlayerDashboardByClutchResponse(BaseModel):
+class PlayerDashboardByClutchResponse(FrozenResponse):
     """Response from the player dashboard by clutch endpoint.
 
     Contains stats for various clutch time definitions:

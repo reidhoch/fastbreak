@@ -5,6 +5,7 @@ from typing import Any, TypeGuard
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 
 
 def _is_singular_result_set(data: object) -> TypeGuard[dict[str, Any]]:
@@ -50,7 +51,7 @@ class LeagueLeader(PandasMixin, PolarsMixin, BaseModel):
     eff: float = Field(alias="EFF")
 
 
-class LeagueLeadersResponse(BaseModel):
+class LeagueLeadersResponse(FrozenResponse):
     """Response from the league leaders endpoint.
 
     Contains ranked player statistics for a specific category.

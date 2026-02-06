@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
@@ -64,7 +65,7 @@ class TeamSynergyPlaytype(PandasMixin, PolarsMixin, BaseModel):
     fgmx: float = Field(alias="FGMX")
 
 
-class SynergyPlaytypesResponse(BaseModel):
+class SynergyPlaytypesResponse(FrozenResponse):
     """Response from the synergy playtypes endpoint.
 
     Contains either player or team play type statistics depending on

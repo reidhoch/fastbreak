@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -124,7 +125,7 @@ class RebDistanceRebounding(PandasMixin, PolarsMixin, BaseModel):
     uc_reb_pct: float = Field(alias="UC_REB_PCT")
 
 
-class PlayerDashPtRebResponse(BaseModel):
+class PlayerDashPtRebResponse(FrozenResponse):
     """Response from the player dashboard rebounding endpoint.
 
     Contains rebounding statistics broken down by:

@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 
 
 class ScoreboardBroadcaster(PandasMixin, PolarsMixin, BaseModel):
@@ -155,7 +156,7 @@ class Scoreboard(PandasMixin, PolarsMixin, BaseModel):
     games: list[ScoreboardGame] = Field(default_factory=list, alias="games")
 
 
-class ScoreboardV3Response(BaseModel):
+class ScoreboardV3Response(FrozenResponse):
     """Response from the scoreboard v3 endpoint.
 
     This endpoint returns the daily scoreboard with all games for a given date.

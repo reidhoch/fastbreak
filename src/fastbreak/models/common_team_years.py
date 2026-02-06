@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import tabular_validator
 
 
@@ -16,7 +17,7 @@ class TeamYear(PandasMixin, PolarsMixin, BaseModel):
     abbreviation: str | None = Field(alias="ABBREVIATION")
 
 
-class CommonTeamYearsResponse(BaseModel):
+class CommonTeamYearsResponse(FrozenResponse):
     """Response from the commonteamyears endpoint."""
 
     teams: list[TeamYear] = Field(default_factory=list)

@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -45,7 +46,7 @@ class GameLogEntry(PandasMixin, PolarsMixin, BaseModel):
     video_available: int = Field(alias="VIDEO_AVAILABLE")
 
 
-class LeagueGameLogResponse(BaseModel):
+class LeagueGameLogResponse(FrozenResponse):
     """Response from the league game log endpoint.
 
     Contains a sorted list of game logs across the league.

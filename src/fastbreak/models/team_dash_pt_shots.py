@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -63,7 +64,7 @@ class TeamTouchTimeStats(_TeamBaseShotStats):
     touch_time_range: str = Field(alias="TOUCH_TIME_RANGE")
 
 
-class TeamDashPtShotsResponse(BaseModel):
+class TeamDashPtShotsResponse(FrozenResponse):
     """Response from the team dashboard PT shots endpoint.
 
     Contains shooting statistics broken down by various factors like

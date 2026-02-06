@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.logging import logger
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import is_tabular_response
 
 
@@ -161,7 +162,7 @@ def _parse_shot_locations(data: dict[str, Any]) -> list[dict[str, Any]]:
     return [_parse_team_row(row) for row in rows]
 
 
-class LeagueDashTeamShotLocationsResponse(BaseModel):
+class LeagueDashTeamShotLocationsResponse(FrozenResponse):
     """Response from the league dashboard team shot locations endpoint.
 
     Contains shot statistics by distance range for all teams.

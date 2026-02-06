@@ -6,6 +6,7 @@ from fastbreak.models.common.player_track_statistics import (
     PlayerTrackStatistics,
     TeamPlayerTrackStatistics,
 )
+from fastbreak.models.common.response import FrozenResponse
 
 
 class PlayerTrackPlayer(PandasMixin, PolarsMixin, BaseModel):
@@ -44,7 +45,7 @@ class BoxScorePlayerTrackData(PandasMixin, PolarsMixin, BaseModel):
     awayTeam: PlayerTrackTeam
 
 
-class BoxScorePlayerTrackResponse(BaseModel):
+class BoxScorePlayerTrackResponse(FrozenResponse):
     """Response from the boxscoreplayertrack endpoint."""
 
     meta: Meta

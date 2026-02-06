@@ -2,8 +2,9 @@
 
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import Field, model_validator
 
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -12,7 +13,7 @@ from fastbreak.models.common.result_set import (
 from fastbreak.models.player_dashboard_by_game_splits import GameSplitStats
 
 
-class PlayerDashboardByLastNGamesResponse(BaseModel):
+class PlayerDashboardByLastNGamesResponse(FrozenResponse):
     """Response from the player dashboard by last N games endpoint.
 
     Contains rolling averages at different lookback windows:

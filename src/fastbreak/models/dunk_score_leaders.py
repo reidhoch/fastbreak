@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 
 
 class Dunk(PandasMixin, PolarsMixin, BaseModel):
@@ -84,7 +85,7 @@ class Dunk(PandasMixin, PolarsMixin, BaseModel):
     videoAvailable: bool
 
 
-class DunkScoreLeadersResponse(BaseModel):
+class DunkScoreLeadersResponse(FrozenResponse):
     """Response from dunk score leaders endpoint."""
 
     params: dict[str, str | int | None]

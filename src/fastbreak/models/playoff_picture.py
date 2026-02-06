@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -74,7 +75,7 @@ class RemainingGames(PandasMixin, PolarsMixin, BaseModel):
     remaining_away_g: int | None = Field(default=None, alias="REMAINING_AWAY_G")
 
 
-class PlayoffPictureResponse(BaseModel):
+class PlayoffPictureResponse(FrozenResponse):
     """Response from the playoff picture endpoint.
 
     Contains result sets for both conferences:

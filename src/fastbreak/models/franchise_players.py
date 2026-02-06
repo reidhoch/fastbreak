@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
@@ -47,7 +48,7 @@ class FranchisePlayer(PandasMixin, PolarsMixin, BaseModel):
     pts: float = Field(alias="PTS")
 
 
-class FranchisePlayersResponse(BaseModel):
+class FranchisePlayersResponse(FrozenResponse):
     """Response from the franchise players endpoint."""
 
     players: list[FranchisePlayer] = Field(default_factory=list)

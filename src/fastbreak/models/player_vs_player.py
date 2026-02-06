@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -156,7 +157,7 @@ class PlayerVsPlayerPlayerInfo(PandasMixin, PolarsMixin, BaseModel):
     last_affiliation: str | None = Field(default=None, alias="LAST_AFFILIATION")
 
 
-class PlayerVsPlayerResponse(BaseModel):
+class PlayerVsPlayerResponse(FrozenResponse):
     """Response from the player vs player endpoint.
 
     Contains multiple result sets:

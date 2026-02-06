@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import tabular_validator
 
 
@@ -160,7 +161,7 @@ class TeamStanding(PandasMixin, PolarsMixin, BaseModel):
     neutral: str = Field(alias="NEUTRAL")
 
 
-class LeagueStandingsResponse(BaseModel):
+class LeagueStandingsResponse(FrozenResponse):
     """Response from the league standings endpoint."""
 
     standings: list[TeamStanding]

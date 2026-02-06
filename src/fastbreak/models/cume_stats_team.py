@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import named_result_sets_validator
 
 
@@ -101,7 +102,7 @@ class TotalTeamStat(PandasMixin, PolarsMixin, BaseModel):
     dq: int = Field(alias="DQ")
 
 
-class CumeStatsTeamResponse(BaseModel):
+class CumeStatsTeamResponse(FrozenResponse):
     """Response from the cumestatsteam endpoint.
 
     Contains two result sets:

@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 
 
 class ShotQualityLeader(PandasMixin, PolarsMixin, BaseModel):
@@ -96,7 +97,7 @@ class ShotQualityLeader(PandasMixin, PolarsMixin, BaseModel):
     avg_defender_pressure_score_rank: int = Field(alias="AVGDEFENDERPRESSURESCORE_RANK")
 
 
-class ShotQualityLeadersResponse(BaseModel):
+class ShotQualityLeadersResponse(FrozenResponse):
     """Response from the shot quality leaders endpoint."""
 
     params: dict[str, str]

@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
@@ -27,7 +28,7 @@ class FranchiseLeader(PandasMixin, PolarsMixin, BaseModel):
     stl: StatLeader
 
 
-class FranchiseLeadersResponse(BaseModel):
+class FranchiseLeadersResponse(FrozenResponse):
     """Response from the franchise leaders endpoint."""
 
     leaders: list[FranchiseLeader] = Field(default_factory=list)

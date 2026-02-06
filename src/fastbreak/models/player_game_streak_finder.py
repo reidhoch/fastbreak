@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -28,7 +29,7 @@ class PlayerGameStreak(PandasMixin, PolarsMixin, BaseModel):
     first_season: str = Field(alias="FIRSTSEASON")
 
 
-class PlayerGameStreakFinderResponse(BaseModel):
+class PlayerGameStreakFinderResponse(FrozenResponse):
     """Response from the player game streak finder endpoint.
 
     Contains game streak information for a player.

@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -156,7 +157,7 @@ class LineupStats(PandasMixin, PolarsMixin, BaseModel):
     sum_time_played: int = Field(alias="SUM_TIME_PLAYED")
 
 
-class TeamDashLineupsResponse(BaseModel):
+class TeamDashLineupsResponse(FrozenResponse):
     """Response from the team dashboard lineups endpoint.
 
     Contains overall team stats and stats for each lineup combination.

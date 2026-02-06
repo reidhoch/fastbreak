@@ -6,6 +6,7 @@ from fastbreak.models.common.advanced_statistics import (
 )
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.meta import Meta
+from fastbreak.models.common.response import FrozenResponse
 
 
 class AdvancedPlayer(PandasMixin, PolarsMixin, BaseModel):
@@ -49,7 +50,7 @@ class BoxScoreAdvancedData(PandasMixin, PolarsMixin, BaseModel):
     awayTeam: AdvancedTeam
 
 
-class BoxScoreAdvancedResponse(BaseModel):
+class BoxScoreAdvancedResponse(FrozenResponse):
     """Response from the boxscoreadvancedv3 endpoint."""
 
     meta: Meta

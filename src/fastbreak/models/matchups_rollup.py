@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
 
 
@@ -35,7 +36,7 @@ class MatchupRollupEntry(PandasMixin, PolarsMixin, BaseModel):
     sfl: float = Field(alias="SFL")
 
 
-class MatchupsRollupResponse(BaseModel):
+class MatchupsRollupResponse(FrozenResponse):
     """Response from the matchupsrollup endpoint.
 
     Contains matchup statistics aggregated by defender against a specific

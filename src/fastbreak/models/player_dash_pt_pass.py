@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     parse_result_set_by_name,
@@ -69,7 +70,7 @@ class PassReceived(PandasMixin, PolarsMixin, BaseModel):
     fg3_pct: float | None = Field(alias="FG3_PCT")
 
 
-class PlayerDashPtPassResponse(BaseModel):
+class PlayerDashPtPassResponse(FrozenResponse):
     """Response from the player dashboard passing endpoint.
 
     Contains pass statistics for:
