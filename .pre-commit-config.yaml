@@ -18,7 +18,7 @@ repos:
       - id: fix-byte-order-marker
       - id: trailing-whitespace
   - repo: https://github.com/rohaquinlop/complexipy-pre-commit
-    rev: v4.2.0
+    rev: v5.1.0
     hooks:
       # Run the cognitive complexity checker.
       - id: complexipy
@@ -28,7 +28,7 @@ repos:
       - id: isort
         name: isort (python)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.14.14"
+    rev: "v0.15.0"
     hooks:
       - id: ruff-check
         args: [--no-cache]
