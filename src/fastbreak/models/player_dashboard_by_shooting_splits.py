@@ -1,16 +1,10 @@
 """Models for the Player Dashboard by Shooting Splits endpoint response."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-    parse_single_result_set,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class ShootingSplitStats(PandasMixin, PolarsMixin, BaseModel):
@@ -125,32 +119,17 @@ class PlayerDashboardByShootingSplitsResponse(FrozenResponse):
     by_shot_type_detail: list[ShootingSplitStatsWithRank] = Field(default_factory=list)
     assisted_by: list[AssistedByStats] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        d = data
-        return {
-            "overall": parse_single_result_set(d, "OverallPlayerDashboard"),
-            "by_shot_distance_5ft": parse_result_set_by_name(
-                d, "Shot5FTPlayerDashboard"
-            ),
-            "by_shot_distance_8ft": parse_result_set_by_name(
-                d, "Shot8FTPlayerDashboard"
-            ),
-            "by_shot_area": parse_result_set_by_name(d, "ShotAreaPlayerDashboard"),
-            "by_assisted": parse_result_set_by_name(
-                d,
-                "AssitedShotPlayerDashboard",  # Note: NBA API typo
-            ),
-            "by_shot_type_summary": parse_result_set_by_name(
-                d, "ShotTypeSummaryPlayerDashboard"
-            ),
-            "by_shot_type_detail": parse_result_set_by_name(
-                d, "ShotTypePlayerDashboard"
-            ),
-            "assisted_by": parse_result_set_by_name(d, "AssistedBy"),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "overall": ("OverallPlayerDashboard", True),
+                "by_shot_distance_5ft": "Shot5FTPlayerDashboard",
+                "by_shot_distance_8ft": "Shot8FTPlayerDashboard",
+                "by_shot_area": "ShotAreaPlayerDashboard",
+                "by_assisted": "AssitedShotPlayerDashboard",  # Note: NBA API typo
+                "by_shot_type_summary": "ShotTypeSummaryPlayerDashboard",
+                "by_shot_type_detail": "ShotTypePlayerDashboard",
+                "assisted_by": "AssistedBy",
+            }
+        )
+    )

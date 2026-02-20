@@ -1,15 +1,9 @@
 """Models for the Player Dashboard by Team Performance endpoint response."""
 
-from typing import Any
-
 from pydantic import Field, model_validator
 
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-    parse_single_result_set,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 from fastbreak.models.player_dashboard_by_game_splits import GameSplitStats
 
 
@@ -39,24 +33,13 @@ class PlayerDashboardByTeamPerformanceResponse(FrozenResponse):
     by_points_scored: list[TeamPerformanceStats] = Field(default_factory=list)
     by_points_against: list[TeamPerformanceStats] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        d = data
-        return {
-            "overall": parse_single_result_set(d, "OverallPlayerDashboard"),
-            "by_score_differential": parse_result_set_by_name(
-                d, "ScoreDifferentialPlayerDashboard"
-            ),
-            "by_points_scored": parse_result_set_by_name(
-                d, "PointsScoredPlayerDashboard"
-            ),
-            "by_points_against": parse_result_set_by_name(
-                d,
-                "PontsAgainstPlayerDashboard",  # Note: NBA API typo
-            ),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "overall": ("OverallPlayerDashboard", True),
+                "by_score_differential": "ScoreDifferentialPlayerDashboard",
+                "by_points_scored": "PointsScoredPlayerDashboard",
+                "by_points_against": "PontsAgainstPlayerDashboard",  # Note: NBA API typo
+            }
+        )
+    )

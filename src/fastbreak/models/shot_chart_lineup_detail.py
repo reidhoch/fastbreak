@@ -1,15 +1,10 @@
 """Models for the shot chart lineup detail endpoint."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class LineupShot(PandasMixin, PolarsMixin, BaseModel):
@@ -64,20 +59,11 @@ class ShotChartLineupDetailResponse(FrozenResponse):
     shots: list[LineupShot] = Field(default_factory=list)
     league_averages: list[LineupLeagueAverage] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        shots = parse_result_set_by_name(data, "ShotChartLineupDetail")
-        league_averages = parse_result_set_by_name(
-            data,
-            "ShotChartLineupLeagueAverage",
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "shots": "ShotChartLineupDetail",
+                "league_averages": "ShotChartLineupLeagueAverage",
+            }
         )
-
-        return {
-            "shots": shots,
-            "league_averages": league_averages,
-        }
+    )

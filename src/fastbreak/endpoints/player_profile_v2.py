@@ -2,12 +2,11 @@
 
 from typing import ClassVar
 
-from fastbreak.endpoints.base import Endpoint
+from fastbreak.endpoints.base import PlayerPerModeEndpoint
 from fastbreak.models.player_profile_v2 import PlayerProfileV2Response
-from fastbreak.types import LeagueID, PerMode
 
 
-class PlayerProfileV2(Endpoint[PlayerProfileV2Response]):
+class PlayerProfileV2(PlayerPerModeEndpoint[PlayerProfileV2Response]):
     """Fetch comprehensive career statistics for a player.
 
     Returns season-by-season and career totals for regular season, playoffs,
@@ -23,15 +22,3 @@ class PlayerProfileV2(Endpoint[PlayerProfileV2Response]):
 
     path: ClassVar[str] = "playerprofilev2"
     response_model: ClassVar[type[PlayerProfileV2Response]] = PlayerProfileV2Response
-
-    player_id: str
-    league_id: LeagueID = "00"
-    per_mode: PerMode = "PerGame"
-
-    def params(self) -> dict[str, str]:
-        """Return the query parameters for this endpoint."""
-        return {
-            "PlayerID": self.player_id,
-            "LeagueID": self.league_id,
-            "PerMode": self.per_mode,
-        }

@@ -1,15 +1,10 @@
 """Models for the Player Dashboard by Clutch endpoint response."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_single_result_set,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class ClutchStats(PandasMixin, PolarsMixin, BaseModel):
@@ -125,44 +120,20 @@ class PlayerDashboardByClutchResponse(FrozenResponse):
     last_30_sec_pm_3_pts: ClutchStats | None = None
     last_10_sec_pm_3_pts: ClutchStats | None = None
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        d = data
-        return {
-            "overall": parse_single_result_set(d, "OverallPlayerDashboard"),
-            "last_5_min_lte_5_pts": parse_single_result_set(
-                d, "Last5Min5PointPlayerDashboard"
-            ),
-            "last_3_min_lte_5_pts": parse_single_result_set(
-                d, "Last3Min5PointPlayerDashboard"
-            ),
-            "last_1_min_lte_5_pts": parse_single_result_set(
-                d, "Last1Min5PointPlayerDashboard"
-            ),
-            "last_30_sec_lte_3_pts": parse_single_result_set(
-                d, "Last30Sec3PointPlayerDashboard"
-            ),
-            "last_10_sec_lte_3_pts": parse_single_result_set(
-                d, "Last10Sec3PointPlayerDashboard"
-            ),
-            "last_5_min_pm_5_pts": parse_single_result_set(
-                d, "Last5MinPlusMinus5PointPlayerDashboard"
-            ),
-            "last_3_min_pm_5_pts": parse_single_result_set(
-                d, "Last3MinPlusMinus5PointPlayerDashboard"
-            ),
-            "last_1_min_pm_5_pts": parse_single_result_set(
-                d, "Last1MinPlusMinus5PointPlayerDashboard"
-            ),
-            "last_30_sec_pm_3_pts": parse_single_result_set(
-                d, "Last30Sec3Point2PlayerDashboard"
-            ),
-            "last_10_sec_pm_3_pts": parse_single_result_set(
-                d, "Last10Sec3Point2PlayerDashboard"
-            ),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "overall": ("OverallPlayerDashboard", True),
+                "last_5_min_lte_5_pts": ("Last5Min5PointPlayerDashboard", True),
+                "last_3_min_lte_5_pts": ("Last3Min5PointPlayerDashboard", True),
+                "last_1_min_lte_5_pts": ("Last1Min5PointPlayerDashboard", True),
+                "last_30_sec_lte_3_pts": ("Last30Sec3PointPlayerDashboard", True),
+                "last_10_sec_lte_3_pts": ("Last10Sec3PointPlayerDashboard", True),
+                "last_5_min_pm_5_pts": ("Last5MinPlusMinus5PointPlayerDashboard", True),
+                "last_3_min_pm_5_pts": ("Last3MinPlusMinus5PointPlayerDashboard", True),
+                "last_1_min_pm_5_pts": ("Last1MinPlusMinus5PointPlayerDashboard", True),
+                "last_30_sec_pm_3_pts": ("Last30Sec3Point2PlayerDashboard", True),
+                "last_10_sec_pm_3_pts": ("Last10Sec3Point2PlayerDashboard", True),
+            }
+        )
+    )

@@ -1,16 +1,10 @@
 """Models for the Team Details endpoint response."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-    parse_single_result_set,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class TeamBackground(PandasMixin, PolarsMixin, BaseModel):
@@ -93,21 +87,17 @@ class TeamDetailsResponse(FrozenResponse):
     hall_of_fame: list[TeamHofPlayer] = Field(default_factory=list)
     retired_jerseys: list[TeamRetiredJersey] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        d = data
-        return {
-            "background": parse_single_result_set(d, "TeamBackground"),
-            "history": parse_result_set_by_name(d, "TeamHistory"),
-            "social_sites": parse_result_set_by_name(d, "TeamSocialSites"),
-            "championships": parse_result_set_by_name(d, "TeamAwardsChampionships"),
-            "conference_titles": parse_result_set_by_name(d, "TeamAwardsConf"),
-            "division_titles": parse_result_set_by_name(d, "TeamAwardsDiv"),
-            "hall_of_fame": parse_result_set_by_name(d, "TeamHof"),
-            "retired_jerseys": parse_result_set_by_name(d, "TeamRetired"),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "background": ("TeamBackground", True),
+                "history": "TeamHistory",
+                "social_sites": "TeamSocialSites",
+                "championships": "TeamAwardsChampionships",
+                "conference_titles": "TeamAwardsConf",
+                "division_titles": "TeamAwardsDiv",
+                "hall_of_fame": "TeamHof",
+                "retired_jerseys": "TeamRetired",
+            }
+        )
+    )

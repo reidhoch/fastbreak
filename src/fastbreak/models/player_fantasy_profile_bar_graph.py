@@ -1,15 +1,10 @@
 """Models for the Player Fantasy Profile Bar Graph endpoint response."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_single_result_set,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class FantasyStats(PandasMixin, PolarsMixin, BaseModel):
@@ -45,15 +40,11 @@ class PlayerFantasyProfileBarGraphResponse(FrozenResponse):
     season_avg: FantasyStats | None = None
     last_five_games_avg: FantasyStats | None = None
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        d = data
-        return {
-            "season_avg": parse_single_result_set(d, "SeasonAvg"),
-            "last_five_games_avg": parse_single_result_set(d, "LastFiveGamesAvg"),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "season_avg": ("SeasonAvg", True),
+                "last_five_games_avg": ("LastFiveGamesAvg", True),
+            }
+        )
+    )

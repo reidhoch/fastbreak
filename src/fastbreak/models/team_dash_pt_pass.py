@@ -1,15 +1,10 @@
 """Models for the Team Dashboard Passing endpoint response."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class TeamPassMade(PandasMixin, PolarsMixin, BaseModel):
@@ -75,20 +70,11 @@ class TeamDashPtPassResponse(FrozenResponse):
     passes_made: list[TeamPassMade] = Field(default_factory=list)
     passes_received: list[TeamPassReceived] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        return {
-            "passes_made": parse_result_set_by_name(
-                data,
-                "PassesMade",
-            ),
-            "passes_received": parse_result_set_by_name(
-                data,
-                "PassesReceived",
-            ),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "passes_made": "PassesMade",
+                "passes_received": "PassesReceived",
+            }
+        )
+    )

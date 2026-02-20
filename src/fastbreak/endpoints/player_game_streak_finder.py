@@ -2,12 +2,11 @@
 
 from typing import ClassVar
 
-from fastbreak.endpoints.base import Endpoint
+from fastbreak.endpoints.base import SimplePlayerEndpoint
 from fastbreak.models.player_game_streak_finder import PlayerGameStreakFinderResponse
-from fastbreak.types import LeagueID
 
 
-class PlayerGameStreakFinder(Endpoint[PlayerGameStreakFinderResponse]):
+class PlayerGameStreakFinder(SimplePlayerEndpoint[PlayerGameStreakFinderResponse]):
     """Fetch consecutive game streak information for a player.
 
     Returns details about game streaks including start/end dates,
@@ -23,13 +22,3 @@ class PlayerGameStreakFinder(Endpoint[PlayerGameStreakFinderResponse]):
     response_model: ClassVar[type[PlayerGameStreakFinderResponse]] = (
         PlayerGameStreakFinderResponse
     )
-
-    player_id: str
-    league_id: LeagueID = "00"
-
-    def params(self) -> dict[str, str]:
-        """Return the query parameters for this endpoint."""
-        return {
-            "PlayerID": self.player_id,
-            "LeagueID": self.league_id,
-        }

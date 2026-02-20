@@ -1,15 +1,10 @@
 """Models for the Team Dashboard PT Shots endpoint response."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class _TeamBaseShotStats(PandasMixin, PolarsMixin, BaseModel):
@@ -82,36 +77,15 @@ class TeamDashPtShotsResponse(FrozenResponse):
     )
     touch_time_shooting: list[TeamTouchTimeStats] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        return {
-            "general_shooting": parse_result_set_by_name(
-                data,
-                "GeneralShooting",
-            ),
-            "shot_clock_shooting": parse_result_set_by_name(
-                data,
-                "ShotClockShooting",
-            ),
-            "dribble_shooting": parse_result_set_by_name(
-                data,
-                "DribbleShooting",
-            ),
-            "closest_defender_shooting": parse_result_set_by_name(
-                data,
-                "ClosestDefenderShooting",
-            ),
-            "closest_defender_10ft_plus_shooting": parse_result_set_by_name(
-                data,
-                "ClosestDefender10ftPlusShooting",
-            ),
-            "touch_time_shooting": parse_result_set_by_name(
-                data,
-                "TouchTimeShooting",
-            ),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "general_shooting": "GeneralShooting",
+                "shot_clock_shooting": "ShotClockShooting",
+                "dribble_shooting": "DribbleShooting",
+                "closest_defender_shooting": "ClosestDefenderShooting",
+                "closest_defender_10ft_plus_shooting": "ClosestDefender10ftPlusShooting",
+                "touch_time_shooting": "TouchTimeShooting",
+            }
+        )
+    )

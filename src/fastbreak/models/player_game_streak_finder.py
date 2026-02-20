@@ -1,15 +1,10 @@
 """Models for the Player Game Streak Finder endpoint response."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class PlayerGameStreak(PandasMixin, PolarsMixin, BaseModel):
@@ -37,16 +32,6 @@ class PlayerGameStreakFinderResponse(FrozenResponse):
 
     streaks: list[PlayerGameStreak] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        return {
-            "streaks": parse_result_set_by_name(
-                data,
-                "PlayerGameStreakFinderResults",
-            ),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator({"streaks": "PlayerGameStreakFinderResults"})
+    )

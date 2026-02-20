@@ -2,12 +2,11 @@
 
 from typing import ClassVar
 
-from fastbreak.endpoints.base import Endpoint
+from fastbreak.endpoints.base import TeamSeasonEndpoint
 from fastbreak.models.team_game_logs import TeamGameLogsResponse
-from fastbreak.types import LeagueID, Season, SeasonType
 
 
-class TeamGameLogs(Endpoint[TeamGameLogsResponse]):
+class TeamGameLogs(TeamSeasonEndpoint[TeamGameLogsResponse]):
     """Fetch extended game-by-game stats for a team's season.
 
     Returns traditional box score statistics with league-wide rankings
@@ -23,17 +22,3 @@ class TeamGameLogs(Endpoint[TeamGameLogsResponse]):
 
     path: ClassVar[str] = "teamgamelogs"
     response_model: ClassVar[type[TeamGameLogsResponse]] = TeamGameLogsResponse
-
-    team_id: int
-    season: Season = "2024-25"
-    season_type: SeasonType = "Regular Season"
-    league_id: LeagueID = "00"
-
-    def params(self) -> dict[str, str]:
-        """Return the query parameters for this endpoint."""
-        return {
-            "TeamID": str(self.team_id),
-            "Season": self.season,
-            "SeasonType": self.season_type,
-            "LeagueID": self.league_id,
-        }

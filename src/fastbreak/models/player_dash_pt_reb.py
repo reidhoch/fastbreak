@@ -1,16 +1,10 @@
 """Models for the Player Dashboard Rebounding endpoint response."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-    parse_single_result_set,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class OverallRebounding(PandasMixin, PolarsMixin, BaseModel):
@@ -142,18 +136,14 @@ class PlayerDashPtRebResponse(FrozenResponse):
     by_shot_distance: list[ShotDistanceRebounding] = Field(default_factory=list)
     by_reb_distance: list[RebDistanceRebounding] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        d = data
-        return {
-            "overall": parse_single_result_set(d, "OverallRebounding"),
-            "by_shot_type": parse_result_set_by_name(d, "ShotTypeRebounding"),
-            "by_num_contested": parse_result_set_by_name(d, "NumContestedRebounding"),
-            "by_shot_distance": parse_result_set_by_name(d, "ShotDistanceRebounding"),
-            "by_reb_distance": parse_result_set_by_name(d, "RebDistanceRebounding"),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "overall": ("OverallRebounding", True),
+                "by_shot_type": "ShotTypeRebounding",
+                "by_num_contested": "NumContestedRebounding",
+                "by_shot_distance": "ShotDistanceRebounding",
+                "by_reb_distance": "RebDistanceRebounding",
+            }
+        )
+    )

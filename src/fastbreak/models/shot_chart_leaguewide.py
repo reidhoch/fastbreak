@@ -1,12 +1,10 @@
 """Models for the shot chart leaguewide endpoint."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
+from fastbreak.models.common.result_set import tabular_validator
 
 
 class LeagueWideShotZone(PandasMixin, PolarsMixin, BaseModel):
@@ -30,13 +28,4 @@ class ShotChartLeaguewideResponse(FrozenResponse):
 
     league_wide: list[LeagueWideShotZone] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        rows = parse_result_set(data)
-
-        return {"league_wide": rows}
+    from_result_sets = model_validator(mode="before")(tabular_validator("league_wide"))

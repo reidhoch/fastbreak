@@ -1,12 +1,10 @@
 """Models for the draft history endpoint."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import is_tabular_response, parse_result_set
+from fastbreak.models.common.result_set import tabular_validator
 
 
 class DraftPick(PandasMixin, PolarsMixin, BaseModel):
@@ -33,13 +31,4 @@ class DraftHistoryResponse(FrozenResponse):
 
     picks: list[DraftPick] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        rows = parse_result_set(data)
-
-        return {"picks": rows}
+    from_result_sets = model_validator(mode="before")(tabular_validator("picks"))

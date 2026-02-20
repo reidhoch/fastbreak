@@ -14,14 +14,14 @@ class TestPlayerGameStreakFinder:
         """PlayerGameStreakFinder uses sensible defaults."""
         endpoint = PlayerGameStreakFinder(player_id="2544")
 
-        assert endpoint.player_id == "2544"
+        assert endpoint.player_id == 2544
         assert endpoint.league_id == "00"
 
     def test_init_with_player_id(self):
         """PlayerGameStreakFinder accepts player_id."""
         endpoint = PlayerGameStreakFinder(player_id="2544")
 
-        assert endpoint.player_id == "2544"
+        assert endpoint.player_id == 2544
 
     def test_params_returns_all_parameters(self):
         """params() returns all query parameters."""

@@ -1,15 +1,10 @@
 """Models for the Team Dashboard by General Splits endpoint response."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class TeamSplitStats(PandasMixin, PolarsMixin, BaseModel):
@@ -105,38 +100,15 @@ class TeamDashboardByGeneralSplitsResponse(FrozenResponse):
     by_pre_post_all_star: list[TeamSplitStats] = Field(default_factory=list)
     by_days_rest: list[TeamSplitStats] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        overall_rows = parse_result_set_by_name(
-            data,
-            "OverallTeamDashboard",
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "overall": ("OverallTeamDashboard", True),
+                "by_location": "LocationTeamDashboard",
+                "by_wins_losses": "WinsLossesTeamDashboard",
+                "by_month": "MonthTeamDashboard",
+                "by_pre_post_all_star": "PrePostAllStarTeamDashboard",
+                "by_days_rest": "DaysRestTeamDashboard",
+            }
         )
-
-        return {
-            "overall": overall_rows[0] if overall_rows else None,
-            "by_location": parse_result_set_by_name(
-                data,
-                "LocationTeamDashboard",
-            ),
-            "by_wins_losses": parse_result_set_by_name(
-                data,
-                "WinsLossesTeamDashboard",
-            ),
-            "by_month": parse_result_set_by_name(
-                data,
-                "MonthTeamDashboard",
-            ),
-            "by_pre_post_all_star": parse_result_set_by_name(
-                data,
-                "PrePostAllStarTeamDashboard",
-            ),
-            "by_days_rest": parse_result_set_by_name(
-                data,
-                "DaysRestTeamDashboard",
-            ),
-        }
+    )

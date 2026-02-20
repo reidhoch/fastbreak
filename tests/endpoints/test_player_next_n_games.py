@@ -14,7 +14,7 @@ class TestPlayerNextNGames:
         """PlayerNextNGames uses sensible defaults."""
         endpoint = PlayerNextNGames(player_id="2544")
 
-        assert endpoint.player_id == "2544"
+        assert endpoint.player_id == 2544
         assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
@@ -24,7 +24,7 @@ class TestPlayerNextNGames:
         """PlayerNextNGames accepts player_id."""
         endpoint = PlayerNextNGames(player_id="2544")
 
-        assert endpoint.player_id == "2544"
+        assert endpoint.player_id == 2544
 
     def test_params_returns_all_parameters(self):
         """params() returns all query parameters."""

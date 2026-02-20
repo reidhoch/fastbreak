@@ -41,3 +41,10 @@ htmlcov/
 
 # Complexipy
 .complexipy_cache/
+
+# CodeQL
+codeql_*.db/
+
+# Semgrep
+semgrep-results-*/
+*.sarif
