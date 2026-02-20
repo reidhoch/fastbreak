@@ -14,7 +14,6 @@ from fastbreak.models.league_hustle_stats_team import LeagueHustleStatsTeamRespo
 from fastbreak.models.league_leaders import LeagueLeadersResponse
 from fastbreak.models.league_lineup_viz import LeagueLineupVizResponse
 from fastbreak.models.league_season_matchups import LeagueSeasonMatchupsResponse
-from fastbreak.models.player_career_by_college import PlayerCareerByCollegeResponse
 from fastbreak.models.player_career_by_college_rollup import (
     PlayerCareerByCollegeRollupResponse,
 )
@@ -23,9 +22,6 @@ from fastbreak.models.player_career_stats import (
     SeasonRankings,
 )
 from fastbreak.models.shot_chart_lineup_detail import ShotChartLineupDetailResponse
-from fastbreak.models.team_and_players_vs_players import (
-    TeamAndPlayersVsPlayersResponse,
-)
 from fastbreak.models.team_dash_lineups import TeamDashLineupsResponse
 from fastbreak.models.team_dash_pt_pass import TeamDashPtPassResponse
 from fastbreak.models.team_dash_pt_reb import TeamDashPtRebResponse
@@ -46,24 +42,6 @@ from fastbreak.models.team_player_on_off_summary import TeamPlayerOnOffSummaryRe
 from fastbreak.models.team_vs_player import TeamVsPlayerResponse
 from fastbreak.models.team_year_by_year_stats import TeamYearByYearStatsResponse
 from fastbreak.models.video_status import VideoStatusResponse
-
-
-class TestPlayerCareerByCollegeTabular:
-    """Tests for PlayerCareerByCollegeResponse tabular parsing."""
-
-    def test_parse_tabular_data(self):
-        """Response parses tabular resultSets format."""
-        data = {
-            "resultSets": [
-                {
-                    "name": "Results",
-                    "headers": ["PLAYER_ID", "PLAYER_NAME", "COLLEGE"],
-                    "rowSet": [],
-                }
-            ]
-        }
-        response = PlayerCareerByCollegeResponse.model_validate(data)
-        assert response.players == []
 
 
 class TestPlayerCareerByCollegeRollupTabular:
@@ -150,24 +128,6 @@ class TestShotChartLineupDetailTabular:
         }
         response = ShotChartLineupDetailResponse.model_validate(data)
         assert response.shots == []
-
-
-class TestTeamAndPlayersVsPlayersTabular:
-    """Tests for TeamAndPlayersVsPlayersResponse tabular parsing."""
-
-    def test_parse_tabular_data(self):
-        """Response parses tabular resultSets format."""
-        data = {
-            "resultSets": [
-                {"name": "PlayersVsPlayers", "headers": [], "rowSet": []},
-                {"name": "TeamPlayersVsPlayersOff", "headers": [], "rowSet": []},
-                {"name": "TeamPlayersVsPlayersOn", "headers": [], "rowSet": []},
-                {"name": "TeamVsPlayers", "headers": [], "rowSet": []},
-                {"name": "TeamVsPlayersOff", "headers": [], "rowSet": []},
-            ]
-        }
-        response = TeamAndPlayersVsPlayersResponse.model_validate(data)
-        assert response.players_vs_players == []
 
 
 class TestTeamDashLineupsTabular:

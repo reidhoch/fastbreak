@@ -318,10 +318,6 @@ if TYPE_CHECKING:
         PlayerAward as PlayerAward,
         PlayerAwardsResponse as PlayerAwardsResponse,
     )
-    from fastbreak.models.player_career_by_college import (
-        CollegePlayerCareer as CollegePlayerCareer,
-        PlayerCareerByCollegeResponse as PlayerCareerByCollegeResponse,
-    )
     from fastbreak.models.player_career_by_college_rollup import (
         CollegeRollupEntry as CollegeRollupEntry,
         PlayerCareerByCollegeRollupResponse as PlayerCareerByCollegeRollupResponse,
@@ -504,11 +500,6 @@ if TYPE_CHECKING:
         PlayerSynergyPlaytype as PlayerSynergyPlaytype,
         SynergyPlaytypesResponse as SynergyPlaytypesResponse,
         TeamSynergyPlaytype as TeamSynergyPlaytype,
-    )
-    from fastbreak.models.team_and_players_vs_players import (
-        PlayerVsPlayersStats as PlayerVsPlayersStats,
-        TeamAndPlayersVsPlayersResponse as TeamAndPlayersVsPlayersResponse,
-        VsPlayersStats as VsPlayersStats,
     )
     from fastbreak.models.team_dash_lineups import (
         LineupStats as LineupStats,

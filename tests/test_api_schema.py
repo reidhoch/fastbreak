@@ -63,7 +63,6 @@ from fastbreak.endpoints import (  # No required params (39 endpoints); game_id 
     MatchupsRollup,
     PlayByPlay,
     PlayerAwards,
-    PlayerCareerByCollege,
     PlayerCareerByCollegeRollup,
     PlayerCareerStats,
     PlayerCompare,
@@ -96,7 +95,6 @@ from fastbreak.endpoints import (  # No required params (39 endpoints); game_id 
     ShotChartLineupDetail,
     ShotQualityLeaders,
     SynergyPlaytypes,
-    TeamAndPlayersVsPlayers,
     TeamDashboardByGeneralSplits,
     TeamDashboardByShootingSplits,
     TeamDashLineups,
@@ -309,15 +307,6 @@ class TestApiSchemaUnchanged:
             StrictModel = get_strict_response_model(endpoint)
             StrictModel.model_validate(response.model_dump())
 
-    async def test_college_endpoint_schema(self):
-        """Test PlayerCareerByCollege endpoint (requires college)."""
-        async with NBAClient() as client:
-            endpoint = PlayerCareerByCollege(college=COLLEGE)
-            response = await client.get(endpoint)
-
-            StrictModel = get_strict_response_model(endpoint)
-            StrictModel.model_validate(response.model_dump())
-
     async def test_player_vs_player_schema(self):
         """Test PlayerVsPlayer endpoint (requires player_id and vs_player_id)."""
         async with NBAClient() as client:
@@ -331,15 +320,6 @@ class TestApiSchemaUnchanged:
         """Test TeamVsPlayer endpoint (requires team_id and vs_player_id)."""
         async with NBAClient() as client:
             endpoint = TeamVsPlayer(team_id=TEAM_ID, vs_player_id=PLAYER_ID_2)
-            response = await client.get(endpoint)
-
-            StrictModel = get_strict_response_model(endpoint)
-            StrictModel.model_validate(response.model_dump())
-
-    async def test_team_and_players_vs_players_schema(self):
-        """Test TeamAndPlayersVsPlayers endpoint (requires team_id and vs_team_id)."""
-        async with NBAClient() as client:
-            endpoint = TeamAndPlayersVsPlayers(team_id=TEAM_ID, vs_team_id=TEAM_ID_2)
             response = await client.get(endpoint)
 
             StrictModel = get_strict_response_model(endpoint)
