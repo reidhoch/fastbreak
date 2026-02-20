@@ -124,6 +124,12 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.league_dash_lineups import (
         LeagueDashLineups as LeagueDashLineups,
     )
+    from fastbreak.endpoints.league_dash_player_clutch import (
+        LeagueDashPlayerClutch as LeagueDashPlayerClutch,
+    )
+    from fastbreak.endpoints.league_dash_player_stats import (
+        LeagueDashPlayerStats as LeagueDashPlayerStats,
+    )
     from fastbreak.endpoints.league_dash_pt_stats import (
         LeagueDashPtStats as LeagueDashPtStats,
     )
