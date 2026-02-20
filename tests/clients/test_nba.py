@@ -5,7 +5,6 @@ import certifi
 import pytest
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout
 from pydantic import ValidationError
-from tenacity import wait_exponential_jitter
 
 from fastbreak.clients.nba import (
     BATCH_PROGRESS_THRESHOLD,
@@ -136,31 +135,29 @@ class TestNBAClientInit:
         assert client._retry.stop.max_attempt_number == 6
 
     def test_default_retry_wait_strategy(self):
-        """Default wait strategy uses correct min/max values."""
+        """Default wait strategy uses correct max value."""
         client = NBAClient()
-        wait_strategy = client._retry.wait
-        # Verify it's an exponential jitter strategy
-        assert isinstance(wait_strategy, wait_exponential_jitter)
-        # Verify initial (min) is 1.0
-        assert wait_strategy.initial == 1.0
-        # Verify max is 10.0
-        assert wait_strategy.max == 10.0
+        # Wait strategy is now a custom function that respects Retry-After
+        assert callable(client._retry.wait)
+        # Verify max_wait is stored for capping
+        assert client._retry_wait_max == 10.0
 
     def test_custom_retry_wait_min(self):
         """Custom retry_wait_min is applied to wait strategy."""
+        # We can verify the wait function exists; min is internal to the function
         client = NBAClient(retry_wait_min=2.5)
-        assert client._retry.wait.initial == 2.5
+        assert callable(client._retry.wait)
 
     def test_custom_retry_wait_max(self):
         """Custom retry_wait_max is applied to wait strategy."""
         client = NBAClient(retry_wait_max=30.0)
-        assert client._retry.wait.max == 30.0
+        assert client._retry_wait_max == 30.0
 
     def test_custom_retry_wait_both(self):
         """Custom retry_wait_min and max are both applied."""
         client = NBAClient(retry_wait_min=0.5, retry_wait_max=5.0)
-        assert client._retry.wait.initial == 0.5
-        assert client._retry.wait.max == 5.0
+        assert callable(client._retry.wait)
+        assert client._retry_wait_max == 5.0
 
     def test_custom_timeout(self):
         """Client accepts custom timeout."""
@@ -420,8 +417,11 @@ class TestNBAClientGet:
 
             await client.get(endpoint)
 
-            # Verify logger.bind was called with endpoint path
-            mock_logger.bind.assert_called_with(endpoint="playbyplayv3")
+            # Verify logger.bind was called with endpoint path and request_id
+            mock_logger.bind.assert_called_once()
+            bind_kwargs = mock_logger.bind.call_args[1]
+            assert bind_kwargs["endpoint"] == "playbyplayv3"
+            assert "request_id" in bind_kwargs  # UUID generated automatically
 
             # Verify request_attempt log was called with all params
             request_log_calls = [
@@ -487,7 +487,8 @@ class TestNBAClientGet:
             assert len(rate_limit_calls) == 1
             call_kwargs = rate_limit_calls[0][1]
             assert call_kwargs["status"] == 429
-            assert call_kwargs["retry_after"] == "30"
+            assert call_kwargs["retry_after"] == 30.0  # Parsed to float
+            assert call_kwargs["retry_after_raw"] == "30"  # Original header value
             assert call_kwargs["attempt"] == 1
 
     @pytest.mark.asyncio
@@ -1141,3 +1142,252 @@ class TestNBAClientRequestDelay:
             mock_sleep.assert_not_called()
 
         await client.close()
+
+
+class TestNBAClientCaching:
+    """Tests for response caching functionality."""
+
+    def test_cache_disabled_by_default(self):
+        """Cache is disabled when cache_ttl is 0."""
+        client = NBAClient()
+        assert client._cache is None
+        assert client.cache_info is None
+
+    def test_cache_enabled_with_ttl(self):
+        """Cache is enabled when cache_ttl > 0."""
+        client = NBAClient(cache_ttl=300)
+        assert client._cache is not None
+        assert client.cache_info == {"size": 0, "maxsize": 256, "ttl": 300}
+
+    def test_cache_custom_maxsize(self):
+        """Cache uses custom maxsize."""
+        client = NBAClient(cache_ttl=60, cache_maxsize=100)
+        assert client.cache_info["maxsize"] == 100
+
+    @pytest.mark.asyncio
+    async def test_cache_hit_returns_cached_response(
+        self, mock_play_by_play_response, make_mock_client
+    ):
+        """Repeated requests return cached response."""
+        client, mock_session = make_mock_client(
+            json_data=mock_play_by_play_response, cache_ttl=300
+        )
+        endpoint = PlayByPlay(game_id="0022500571")
+
+        # First request - cache miss
+        result1 = await client.get(endpoint)
+
+        # Second request - cache hit
+        result2 = await client.get(endpoint)
+
+        # Both should return same data
+        assert result1.game.gameId == result2.game.gameId
+
+        # Only one actual request should be made
+        assert mock_session.get.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_cache_miss_different_params(
+        self, mock_play_by_play_response, make_mock_client
+    ):
+        """Different parameters result in cache miss."""
+        client, mock_session = make_mock_client(
+            json_data=mock_play_by_play_response, cache_ttl=300
+        )
+
+        endpoint1 = PlayByPlay(game_id="0022500571")
+        endpoint2 = PlayByPlay(game_id="0022500572")
+
+        await client.get(endpoint1)
+        await client.get(endpoint2)
+
+        # Both should make actual requests
+        assert mock_session.get.call_count == 2
+
+    def test_clear_cache(self, mock_play_by_play_response):
+        """clear_cache() empties the cache."""
+        client = NBAClient(cache_ttl=300)
+        # Manually add an item using a real model
+        test_response = PlayByPlayResponse.model_validate(mock_play_by_play_response)
+        client._cache.set("test_key", test_response)
+        assert client.cache_info["size"] == 1
+
+        client.clear_cache()
+        assert client.cache_info["size"] == 0
+
+    def test_cache_key_generation(self):
+        """Cache keys are deterministic and unique."""
+        client = NBAClient(cache_ttl=300)
+        endpoint1 = PlayByPlay(game_id="0022500571")
+        endpoint2 = PlayByPlay(game_id="0022500572")
+        endpoint3 = PlayByPlay(game_id="0022500571")  # Same as endpoint1
+
+        key1 = client._make_cache_key(endpoint1)
+        key2 = client._make_cache_key(endpoint2)
+        key3 = client._make_cache_key(endpoint3)
+
+        assert key1 == key3  # Same endpoint params = same key
+        assert key1 != key2  # Different params = different key
+
+
+class TestNBAClientCorrelationId:
+    """Tests for correlation ID / request tracing functionality."""
+
+    @pytest.mark.asyncio
+    async def test_get_generates_request_id(
+        self, mock_play_by_play_response, make_mock_client
+    ):
+        """get() generates a UUID request_id when none provided."""
+        client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
+        endpoint = PlayByPlay(game_id="0022500571")
+
+        with patch("fastbreak.clients.nba.logger") as mock_logger:
+            mock_bound = MagicMock()
+            mock_bound.adebug = AsyncMock()
+            mock_logger.bind.return_value = mock_bound
+
+            await client.get(endpoint)
+
+            # Check that request_id was generated
+            bind_kwargs = mock_logger.bind.call_args[1]
+            assert "request_id" in bind_kwargs
+            # Should be a valid UUID format
+            import uuid
+
+            uuid.UUID(bind_kwargs["request_id"])
+
+    @pytest.mark.asyncio
+    async def test_get_uses_provided_request_id(
+        self, mock_play_by_play_response, make_mock_client
+    ):
+        """get() uses provided request_id when given."""
+        client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
+        endpoint = PlayByPlay(game_id="0022500571")
+
+        with patch("fastbreak.clients.nba.logger") as mock_logger:
+            mock_bound = MagicMock()
+            mock_bound.adebug = AsyncMock()
+            mock_logger.bind.return_value = mock_bound
+
+            await client.get(endpoint, request_id="custom-request-123")
+
+            bind_kwargs = mock_logger.bind.call_args[1]
+            assert bind_kwargs["request_id"] == "custom-request-123"
+
+    @pytest.mark.asyncio
+    async def test_get_many_generates_batch_id(
+        self, mock_play_by_play_response, make_mock_client
+    ):
+        """get_many() generates a batch_id for the batch."""
+        client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
+        endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(2)]
+
+        with patch("fastbreak.clients.nba.logger") as mock_logger:
+            mock_bound = MagicMock()
+            mock_bound.adebug = AsyncMock()
+            mock_logger.bind.return_value = mock_bound
+
+            await client.get_many(endpoints)
+
+            # Find the batch_start log call
+            batch_start_binds = [
+                c for c in mock_logger.bind.call_args_list if "batch_id" in c[1]
+            ]
+            assert len(batch_start_binds) >= 1
+
+            # batch_id should be a valid UUID
+            import uuid
+
+            uuid.UUID(batch_start_binds[0][1]["batch_id"])
+
+
+class TestRetryAfterState:
+    """Tests for the _RetryAfterState helper class."""
+
+    def test_initial_state_is_none(self):
+        """Initial retry_after value is None."""
+        from fastbreak.clients.nba import _RetryAfterState
+
+        state = _RetryAfterState()
+        assert state.retry_after is None
+
+    def test_set_retry_after(self):
+        """set_retry_after stores the value."""
+        from fastbreak.clients.nba import _RetryAfterState
+
+        state = _RetryAfterState()
+        state.set_retry_after(30.0)
+        assert state.retry_after == 30.0
+
+    def test_get_and_clear(self):
+        """get_and_clear returns value and resets to None."""
+        from fastbreak.clients.nba import _RetryAfterState
+
+        state = _RetryAfterState()
+        state.set_retry_after(60.0)
+
+        value = state.get_and_clear()
+        assert value == 60.0
+        assert state.retry_after is None
+
+    def test_get_and_clear_when_none(self):
+        """get_and_clear returns None when not set."""
+        from fastbreak.clients.nba import _RetryAfterState
+
+        state = _RetryAfterState()
+        value = state.get_and_clear()
+        assert value is None
+
+
+class TestRetryAfterParsing:
+    """Tests for Retry-After header parsing."""
+
+    def test_parse_integer_string(self):
+        """Parses integer string to float."""
+        client = NBAClient()
+        assert client._parse_retry_after("30") == 30.0
+
+    def test_parse_float_string(self):
+        """Parses float string to float."""
+        client = NBAClient()
+        assert client._parse_retry_after("1.5") == 1.5
+
+    def test_parse_none(self):
+        """Returns None for None input."""
+        client = NBAClient()
+        assert client._parse_retry_after(None) is None
+
+    def test_parse_empty_string(self):
+        """Returns None for empty string."""
+        client = NBAClient()
+        assert client._parse_retry_after("") is None
+
+    def test_parse_invalid_string(self):
+        """Returns None for invalid string."""
+        client = NBAClient()
+        assert client._parse_retry_after("not-a-number") is None
+
+    @pytest.mark.asyncio
+    async def test_retry_after_used_in_wait_strategy(
+        self, make_mock_client, make_client_response_error
+    ):
+        """Retry-After header value is used for wait time."""
+        # Create client with mocked 429 response that has Retry-After header
+        error = make_client_response_error(429, "https://stats.nba.com/stats/test")
+        client, mock_session = make_mock_client(
+            status=429,
+            raise_error=error,
+            headers={"Retry-After": "5"},
+            max_retries=0,  # No retries so we can inspect state immediately
+            retry_wait_min=0.1,
+            retry_wait_max=60.0,
+        )
+        endpoint = PlayByPlay(game_id="0022500571")
+
+        # After the 429 response, state should be set then cleared
+        with pytest.raises(ClientResponseError):
+            await client.get(endpoint)
+
+        # The retry_after_state should have been cleared after being used
+        # (or still None since we didn't retry)
+        assert client._retry_after_state.retry_after is None

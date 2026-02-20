@@ -1,7 +1,5 @@
 """Tests for FrozenResponse base class."""
 
-import logging
-
 import pytest
 from pydantic import ValidationError
 
@@ -31,22 +29,21 @@ class TestFrozenResponse:
         assert response.value == 42
         assert not hasattr(response, "unknown_field")
 
-    def test_warns_on_extra_fields(self, caplog):
+    def test_warns_on_extra_fields(self, capsys):
         """Logs warning when extra fields are present."""
-        with caplog.at_level(logging.WARNING):
-            ExampleResponse(name="test", value=42, new_api_field="detected")
+        ExampleResponse(name="test", value=42, new_api_field="detected")
 
-        assert len(caplog.records) == 1
-        assert "ExampleResponse received unknown fields" in caplog.text
-        assert "new_api_field" in caplog.text
-        assert "Consider updating the model" in caplog.text
+        captured = capsys.readouterr()
+        assert "unknown_fields_received" in captured.out
+        assert "ExampleResponse" in captured.out
+        assert "new_api_field" in captured.out
 
-    def test_no_warning_without_extra_fields(self, caplog):
+    def test_no_warning_without_extra_fields(self, capsys):
         """No warning when all fields are known."""
-        with caplog.at_level(logging.WARNING):
-            ExampleResponse(name="test", value=42)
+        ExampleResponse(name="test", value=42)
 
-        assert len(caplog.records) == 0
+        captured = capsys.readouterr()
+        assert "unknown_fields_received" not in captured.out
 
 
 class TestStrictMode:

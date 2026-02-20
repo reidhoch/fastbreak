@@ -1,11 +1,10 @@
 """Base class for API response models."""
 
-import logging
 from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
-logger = logging.getLogger(__name__)
+from fastbreak.logging import logger
 
 
 class FrozenResponse(BaseModel):
@@ -33,10 +32,9 @@ class FrozenResponse(BaseModel):
         extra_fields = set(data.keys()) - model_fields
         if extra_fields:
             logger.warning(
-                "%s received unknown fields: %s. "
-                "Consider updating the model to capture new API data.",
-                cls.__name__,
-                sorted(extra_fields),
+                "unknown_fields_received",
+                model=cls.__name__,
+                fields=sorted(extra_fields),
             )
         return data
 
