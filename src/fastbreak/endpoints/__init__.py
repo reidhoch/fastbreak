@@ -156,9 +156,6 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.matchups_rollup import MatchupsRollup as MatchupsRollup
     from fastbreak.endpoints.play_by_play import PlayByPlay as PlayByPlay
     from fastbreak.endpoints.player_awards import PlayerAwards as PlayerAwards
-    from fastbreak.endpoints.player_career_by_college import (
-        PlayerCareerByCollege as PlayerCareerByCollege,
-    )
     from fastbreak.endpoints.player_career_by_college_rollup import (
         PlayerCareerByCollegeRollup as PlayerCareerByCollegeRollup,
     )
@@ -245,9 +242,6 @@ if TYPE_CHECKING:
     )
 
     # Team endpoints
-    from fastbreak.endpoints.team_and_players_vs_players import (
-        TeamAndPlayersVsPlayers as TeamAndPlayersVsPlayers,
-    )
     from fastbreak.endpoints.team_dash_lineups import TeamDashLineups as TeamDashLineups
     from fastbreak.endpoints.team_dash_pt_pass import TeamDashPtPass as TeamDashPtPass
     from fastbreak.endpoints.team_dash_pt_reb import TeamDashPtReb as TeamDashPtReb
