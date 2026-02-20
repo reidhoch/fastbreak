@@ -58,7 +58,7 @@ df = TeamStanding.to_polars(standings.standings)
 
 ## Available Endpoints
 
-80+ endpoints covering:
+100+ endpoints covering:
 
 | Category | Examples |
 |----------|----------|
