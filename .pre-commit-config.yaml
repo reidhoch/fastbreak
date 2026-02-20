@@ -41,6 +41,8 @@ repos:
         additional_dependencies:
           - pydantic>=2.12
           - aiohttp>=3.13
+          - types-cachetools>=5.5
+          - tenacity>=8.0
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.0
     hooks:

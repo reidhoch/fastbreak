@@ -97,7 +97,6 @@ class TestLoggingEnvironmentVariables:
         env = os.environ.copy()
         # Clear any existing fastbreak logging vars
         env.pop("FASTBREAK_LOG_LEVEL", None)
-        env.pop("FASTBREAK_DEBUG", None)
         # Set the test vars
         env.update(env_vars)
 
@@ -118,42 +117,6 @@ assert _log_level == logging.WARNING, f"Expected WARNING, got {_log_level}"
 print("OK")
 """
         result = self._run_logging_test({}, code)
-        assert result.returncode == 0, f"Test failed: {result.stderr}"
-        assert "OK" in result.stdout
-
-    def test_fastbreak_debug_enables_debug_level(self) -> None:
-        """FASTBREAK_DEBUG=1 should enable DEBUG level."""
-        code = """
-import logging
-from fastbreak.logging import _log_level
-assert _log_level == logging.DEBUG, f"Expected DEBUG, got {_log_level}"
-print("OK")
-"""
-        result = self._run_logging_test({"FASTBREAK_DEBUG": "1"}, code)
-        assert result.returncode == 0, f"Test failed: {result.stderr}"
-        assert "OK" in result.stdout
-
-    def test_fastbreak_debug_true_enables_debug_level(self) -> None:
-        """FASTBREAK_DEBUG=true should enable DEBUG level."""
-        code = """
-import logging
-from fastbreak.logging import _log_level
-assert _log_level == logging.DEBUG, f"Expected DEBUG, got {_log_level}"
-print("OK")
-"""
-        result = self._run_logging_test({"FASTBREAK_DEBUG": "true"}, code)
-        assert result.returncode == 0, f"Test failed: {result.stderr}"
-        assert "OK" in result.stdout
-
-    def test_fastbreak_debug_yes_enables_debug_level(self) -> None:
-        """FASTBREAK_DEBUG=yes should enable DEBUG level."""
-        code = """
-import logging
-from fastbreak.logging import _log_level
-assert _log_level == logging.DEBUG, f"Expected DEBUG, got {_log_level}"
-print("OK")
-"""
-        result = self._run_logging_test({"FASTBREAK_DEBUG": "yes"}, code)
         assert result.returncode == 0, f"Test failed: {result.stderr}"
         assert "OK" in result.stdout
 
@@ -271,7 +234,6 @@ logger.{log_level}("test_message", key="value")
 
         env = os.environ.copy()
         env.pop("FASTBREAK_LOG_LEVEL", None)
-        env.pop("FASTBREAK_DEBUG", None)
         env.update(env_vars)
 
         return subprocess.run(
@@ -357,72 +319,6 @@ logger.{log_level}("test_message", key="value")
         assert "test_message" not in result.stdout
 
 
-class TestLoggingLegacySupport:
-    """Tests for legacy FASTBREAK_DEBUG support."""
-
-    def _run_logging_test(
-        self, env_vars: dict, code: str
-    ) -> subprocess.CompletedProcess:
-        """Run Python code with specific environment variables."""
-        import os
-
-        env = os.environ.copy()
-        env.pop("FASTBREAK_LOG_LEVEL", None)
-        env.pop("FASTBREAK_DEBUG", None)
-        env.update(env_vars)
-
-        return subprocess.run(
-            [sys.executable, "-c", code],
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-
-    def test_fastbreak_debug_takes_precedence(self) -> None:
-        """FASTBREAK_DEBUG=1 should take precedence over FASTBREAK_LOG_LEVEL."""
-        code = """
-import logging
-from fastbreak.logging import _log_level
-# When FASTBREAK_DEBUG=1, should be DEBUG regardless of LOG_LEVEL
-assert _log_level == logging.DEBUG, f"Expected DEBUG, got {_log_level}"
-print("OK")
-"""
-        result = self._run_logging_test(
-            {"FASTBREAK_DEBUG": "1", "FASTBREAK_LOG_LEVEL": "ERROR"}, code
-        )
-        assert result.returncode == 0, f"Test failed: {result.stderr}"
-        assert "OK" in result.stdout
-
-    def test_fastbreak_debug_false_values_ignored(self) -> None:
-        """FASTBREAK_DEBUG with false-like values should be ignored."""
-        code = """
-import logging
-from fastbreak.logging import _log_level
-# With FASTBREAK_DEBUG=0 and LOG_LEVEL=ERROR, should be ERROR
-assert _log_level == logging.ERROR, f"Expected ERROR, got {_log_level}"
-print("OK")
-"""
-        # "0" is not in ("1", "true", "yes"), so should be ignored
-        result = self._run_logging_test(
-            {"FASTBREAK_DEBUG": "0", "FASTBREAK_LOG_LEVEL": "ERROR"}, code
-        )
-        assert result.returncode == 0, f"Test failed: {result.stderr}"
-        assert "OK" in result.stdout
-
-    def test_empty_fastbreak_debug_ignored(self) -> None:
-        """Empty FASTBREAK_DEBUG should be ignored."""
-        code = """
-import logging
-from fastbreak.logging import _log_level
-assert _log_level == logging.WARNING, f"Expected WARNING (default), got {_log_level}"
-print("OK")
-"""
-        result = self._run_logging_test({"FASTBREAK_DEBUG": ""}, code)
-        assert result.returncode == 0, f"Test failed: {result.stderr}"
-        assert "OK" in result.stdout
-
-
 class TestLoggingModuleReload:
     """Tests that reload the logging module to cover import-time branches.
 
@@ -435,34 +331,17 @@ class TestLoggingModuleReload:
     def cleanup_env(self):
         """Clean up environment variables after each test."""
         original_log_level = os.environ.get("FASTBREAK_LOG_LEVEL")
-        original_debug = os.environ.get("FASTBREAK_DEBUG")
         yield
         # Restore original values
         if original_log_level is not None:
             os.environ["FASTBREAK_LOG_LEVEL"] = original_log_level
         else:
             os.environ.pop("FASTBREAK_LOG_LEVEL", None)
-        if original_debug is not None:
-            os.environ["FASTBREAK_DEBUG"] = original_debug
-        else:
-            os.environ.pop("FASTBREAK_DEBUG", None)
-
-    def test_reload_with_debug_enabled(self) -> None:
-        """Reload module with FASTBREAK_DEBUG=1 to cover debug branch."""
-        import fastbreak.logging as log_module
-
-        os.environ["FASTBREAK_DEBUG"] = "1"
-        os.environ.pop("FASTBREAK_LOG_LEVEL", None)
-
-        importlib.reload(log_module)
-
-        assert log_module._log_level == logging.DEBUG
 
     def test_reload_with_log_level_info(self) -> None:
         """Reload module with FASTBREAK_LOG_LEVEL=INFO to cover level map branch."""
         import fastbreak.logging as log_module
 
-        os.environ.pop("FASTBREAK_DEBUG", None)
         os.environ["FASTBREAK_LOG_LEVEL"] = "INFO"
 
         importlib.reload(log_module)
@@ -473,7 +352,6 @@ class TestLoggingModuleReload:
         """Reload module with FASTBREAK_LOG_LEVEL=SILENT to cover silent branch."""
         import fastbreak.logging as log_module
 
-        os.environ.pop("FASTBREAK_DEBUG", None)
         os.environ["FASTBREAK_LOG_LEVEL"] = "SILENT"
 
         importlib.reload(log_module)
