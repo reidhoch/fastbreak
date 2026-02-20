@@ -273,6 +273,10 @@ if TYPE_CHECKING:
         ShotRange as ShotRange,
         TeamShotLocations as TeamShotLocations,
     )
+    from fastbreak.models.league_dash_team_stats import (
+        LeagueDashTeamStatsResponse as LeagueDashTeamStatsResponse,
+        LeagueDashTeamStatsRow as LeagueDashTeamStatsRow,
+    )
     from fastbreak.models.league_game_finder import (
         GameFinderResult as GameFinderResult,
         LeagueGameFinderResponse as LeagueGameFinderResponse,

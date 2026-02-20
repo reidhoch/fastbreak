@@ -1,5 +1,8 @@
 """Tests for LeagueDashPlayerStats endpoint."""
 
+import pytest
+from pydantic import ValidationError
+
 from fastbreak.endpoints import LeagueDashPlayerStats
 from fastbreak.models import LeagueDashPlayerStatsResponse
 
@@ -11,22 +14,78 @@ class TestLeagueDashPlayerStats:
         """LeagueDashPlayerStats uses sensible defaults."""
         endpoint = LeagueDashPlayerStats()
 
+        assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "PerGame"
         assert endpoint.measure_type == "Base"
-        assert endpoint.league_id == "00"
+
+    def test_init_with_custom_season(self):
+        """LeagueDashPlayerStats accepts custom season."""
+        endpoint = LeagueDashPlayerStats(season="2023-24")
+
+        assert endpoint.season == "2023-24"
+
+    def test_init_with_custom_per_mode(self):
+        """LeagueDashPlayerStats accepts custom per_mode."""
+        endpoint = LeagueDashPlayerStats(per_mode="Totals")
+
+        assert endpoint.per_mode == "Totals"
+
+    def test_init_with_custom_measure_type(self):
+        """LeagueDashPlayerStats accepts custom measure_type."""
+        endpoint = LeagueDashPlayerStats(measure_type="Advanced")
+
+        assert endpoint.measure_type == "Advanced"
+
+    def test_init_with_optional_filters(self):
+        """LeagueDashPlayerStats accepts optional filters."""
+        endpoint = LeagueDashPlayerStats(
+            conference="East",
+            division="Atlantic",
+            location="Home",
+            outcome="W",
+        )
+
+        assert endpoint.conference == "East"
+        assert endpoint.division == "Atlantic"
+        assert endpoint.location == "Home"
+        assert endpoint.outcome == "W"
 
     def test_params_returns_correct_dict(self):
         """params() returns correctly formatted parameters."""
         endpoint = LeagueDashPlayerStats()
+
         params = endpoint.params()
 
+        assert params["LeagueID"] == "00"
         assert params["Season"] == "2024-25"
         assert params["SeasonType"] == "Regular Season"
         assert params["PerMode"] == "PerGame"
         assert params["MeasureType"] == "Base"
-        assert params["LeagueID"] == "00"
+
+    def test_params_with_optional_filters(self):
+        """params() correctly includes optional filters."""
+        endpoint = LeagueDashPlayerStats(
+            conference="West",
+            division="Pacific",
+        )
+
+        params = endpoint.params()
+
+        assert params["Conference"] == "West"
+        assert params["Division"] == "Pacific"
+
+    def test_params_empty_string_for_unset_filters(self):
+        """params() uses empty string for unset optional filters."""
+        endpoint = LeagueDashPlayerStats()
+
+        params = endpoint.params()
+
+        assert params["Conference"] == ""
+        assert params["Division"] == ""
+        assert params["DateFrom"] == ""
+        assert params["DateTo"] == ""
 
     def test_path_is_correct(self):
         """LeagueDashPlayerStats has correct API path."""
@@ -39,3 +98,10 @@ class TestLeagueDashPlayerStats:
         endpoint = LeagueDashPlayerStats()
 
         assert endpoint.response_model is LeagueDashPlayerStatsResponse
+
+    def test_endpoint_is_frozen(self):
+        """LeagueDashPlayerStats is immutable (frozen dataclass)."""
+        endpoint = LeagueDashPlayerStats()
+
+        with pytest.raises((AttributeError, ValidationError)):
+            endpoint.season = "2023-24"  # type: ignore[misc]
