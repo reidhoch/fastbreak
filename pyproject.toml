@@ -36,6 +36,7 @@ classifiers = [
 dependencies = [
     "aiodns>=4.0",
     "aiohttp>=3.13",
+    "anyio>=4.12.1",
     "certifi>=2026",
     "pydantic>=2.12",
     "structlog>=25.0",

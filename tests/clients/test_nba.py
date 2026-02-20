@@ -1057,9 +1057,7 @@ class TestNBAClientRequestDelay:
         )
         endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
 
-        with patch(
-            "fastbreak.clients.nba.asyncio.sleep", new_callable=AsyncMock
-        ) as mock_sleep:
+        with patch("anyio.sleep", new_callable=AsyncMock) as mock_sleep:
             await client.get_many(endpoints)
             # Should not have called sleep since delay is 0
             mock_sleep.assert_not_called()
@@ -1074,9 +1072,7 @@ class TestNBAClientRequestDelay:
         )
         endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
 
-        with patch(
-            "fastbreak.clients.nba.asyncio.sleep", new_callable=AsyncMock
-        ) as mock_sleep:
+        with patch("anyio.sleep", new_callable=AsyncMock) as mock_sleep:
             await client.get_many(endpoints, max_concurrency=1)
 
             # Should have called sleep once per request
@@ -1094,9 +1090,7 @@ class TestNBAClientRequestDelay:
         )
         endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(5)]
 
-        with patch(
-            "fastbreak.clients.nba.asyncio.sleep", new_callable=AsyncMock
-        ) as mock_sleep:
+        with patch("anyio.sleep", new_callable=AsyncMock) as mock_sleep:
             await client.get_many(endpoints, max_concurrency=1)
 
             # One sleep call per endpoint
@@ -1115,9 +1109,7 @@ class TestNBAClientRequestDelay:
         )
         endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(6)]
 
-        with patch(
-            "fastbreak.clients.nba.asyncio.sleep", new_callable=AsyncMock
-        ) as mock_sleep:
+        with patch("anyio.sleep", new_callable=AsyncMock) as mock_sleep:
             await client.get_many(endpoints, max_concurrency=3)
 
             # Each of the 6 requests should trigger a delay
@@ -1133,9 +1125,7 @@ class TestNBAClientRequestDelay:
         )
         endpoint = PlayByPlay(game_id="0022500571")
 
-        with patch(
-            "fastbreak.clients.nba.asyncio.sleep", new_callable=AsyncMock
-        ) as mock_sleep:
+        with patch("anyio.sleep", new_callable=AsyncMock) as mock_sleep:
             await client.get(endpoint)
             # Single get() should not use the delay
             mock_sleep.assert_not_called()
@@ -1145,9 +1135,7 @@ class TestNBAClientRequestDelay:
         """get_many with empty list does not call sleep."""
         client = NBAClient(request_delay=0.5)
 
-        with patch(
-            "fastbreak.clients.nba.asyncio.sleep", new_callable=AsyncMock
-        ) as mock_sleep:
+        with patch("anyio.sleep", new_callable=AsyncMock) as mock_sleep:
             results = await client.get_many([])
             assert results == []
             mock_sleep.assert_not_called()

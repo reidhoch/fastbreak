@@ -1,12 +1,12 @@
-import asyncio
 import ssl
-from asyncio import Lock, Semaphore
 from collections.abc import Sequence
 from types import TracebackType
 from typing import ClassVar, Self, TypeVar
 
+import anyio
 import certifi
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, TCPConnector
+from anyio import CapacityLimiter, Lock
 from pydantic import BaseModel, ValidationError
 from tenacity import (
     AsyncRetrying,
@@ -177,7 +177,7 @@ class NBAClient:
     ) -> list[T]:
         """Fetch data from multiple endpoints concurrently.
 
-        Uses asyncio.TaskGroup for structured concurrency. If any request fails,
+        Uses anyio task groups for structured concurrency. If any request fails,
         all other requests are cancelled and an ExceptionGroup is raised.
 
         Args:
@@ -200,18 +200,18 @@ class NBAClient:
 
         total = len(endpoints)
         concurrency = max_concurrency or 3
-        semaphore = Semaphore(concurrency)
+        limiter = CapacityLimiter(concurrency)
         results: list[T] = [None] * total  # type: ignore[list-item]
         completed = 0
 
         log = logger.bind(total=total, concurrency=concurrency)
         await log.adebug("batch_start")
 
-        async def _fetch_with_semaphore(index: int, endpoint: Endpoint[T]) -> None:
+        async def _fetch_with_limiter(index: int, endpoint: Endpoint[T]) -> None:
             nonlocal completed
-            async with semaphore:
+            async with limiter:
                 if self._request_delay > 0:
-                    await asyncio.sleep(self._request_delay)
+                    await anyio.sleep(self._request_delay)
                 results[index] = await self.get(endpoint)
                 completed += 1
                 if (
@@ -220,9 +220,9 @@ class NBAClient:
                 ):
                     await log.adebug("batch_progress", completed=completed, total=total)
 
-        async with asyncio.TaskGroup() as tg:
+        async with anyio.create_task_group() as tg:
             for i, endpoint in enumerate(endpoints):
-                tg.create_task(_fetch_with_semaphore(i, endpoint))
+                tg.start_soon(_fetch_with_limiter, i, endpoint)
 
         await log.adebug("batch_complete", total=total)
         return results
