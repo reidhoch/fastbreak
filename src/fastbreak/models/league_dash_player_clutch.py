@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import named_result_sets_validator
+from fastbreak.models.common.result_set import tabular_validator
 
 
 class LeagueDashPlayerClutchRow(PandasMixin, PolarsMixin, BaseModel):
@@ -48,6 +48,4 @@ class LeagueDashPlayerClutchResponse(FrozenResponse):
 
     players: list[LeagueDashPlayerClutchRow] = Field(default_factory=list)
 
-    from_result_sets = model_validator(mode="before")(
-        named_result_sets_validator({"players": "LeagueDashPlayerClutch"})
-    )
+    from_result_sets = model_validator(mode="before")(tabular_validator("players"))
