@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.meta import Meta
 from fastbreak.models.common.response import FrozenResponse
 
 
@@ -25,6 +26,7 @@ class ScheduleBroadcaster(PandasMixin, PolarsMixin, BaseModel):
     )
     broadcaster_team_id: int | None = Field(default=None, alias="broadcasterTeamId")
     broadcaster_ranking: int | None = Field(default=None, alias="broadcasterRanking")
+    localization_region: str | None = Field(default=None, alias="localizationRegion")
 
 
 class GameBroadcasters(PandasMixin, PolarsMixin, BaseModel):
@@ -162,4 +164,5 @@ class ScheduleLeagueV2Response(FrozenResponse):
     resultSets tabular format used by older NBA API endpoints.
     """
 
+    meta: Meta | None = Field(default=None, alias="meta")
     league_schedule: LeagueSchedule | None = Field(default=None, alias="leagueSchedule")

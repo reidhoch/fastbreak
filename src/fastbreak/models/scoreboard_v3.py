@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.meta import Meta
 from fastbreak.models.common.response import FrozenResponse
 
 
@@ -166,4 +167,5 @@ class ScoreboardV3Response(FrozenResponse):
     The response uses nested JSON format (v3 style) instead of resultSets.
     """
 
+    meta: Meta | None = Field(default=None, alias="meta")
     scoreboard: Scoreboard | None = Field(default=None, alias="scoreboard")

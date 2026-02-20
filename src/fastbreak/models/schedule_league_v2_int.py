@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+from fastbreak.models.common.meta import Meta
 from fastbreak.models.common.response import FrozenResponse
 
 
@@ -72,6 +73,15 @@ class IntlGameBroadcasters(PandasMixin, PolarsMixin, BaseModel):
     )
     away_ott_broadcasters: list[IntlScheduleBroadcaster] = Field(
         default_factory=list, alias="awayOttBroadcasters"
+    )
+    intl_tv_broadcasters: list[IntlScheduleBroadcaster] = Field(
+        default_factory=list, alias="intlTvBroadcasters"
+    )
+    intl_radio_broadcasters: list[IntlScheduleBroadcaster] = Field(
+        default_factory=list, alias="intlRadioBroadcasters"
+    )
+    intl_ott_broadcasters: list[IntlScheduleBroadcaster] = Field(
+        default_factory=list, alias="intlOttBroadcasters"
     )
 
 
@@ -185,6 +195,7 @@ class ScheduleLeagueV2IntResponse(FrozenResponse):
     - Broadcaster objects include regionId and localizationRegion fields
     """
 
+    meta: Meta | None = Field(default=None, alias="meta")
     league_schedule: IntlLeagueSchedule | None = Field(
         default=None, alias="leagueSchedule"
     )
