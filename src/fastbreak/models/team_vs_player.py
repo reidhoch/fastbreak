@@ -1,15 +1,10 @@
 """Models for the Team vs Player endpoint response."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class TeamVsPlayerTeamStats(PandasMixin, PolarsMixin, BaseModel):
@@ -264,25 +259,14 @@ class TeamVsPlayerResponse(FrozenResponse):
     shot_distance_overall: list[ShotDistanceStats] = Field(default_factory=list)
     shot_area_overall: list[ShotAreaStats] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        vs_player_rows = parse_result_set_by_name(data, "vsPlayerOverall")
-
-        return {
-            "overall": parse_result_set_by_name(data, "Overall"),
-            "vs_player_overall": vs_player_rows[0] if vs_player_rows else None,
-            "on_off_court": parse_result_set_by_name(data, "OnOffCourt"),
-            "shot_distance_overall": parse_result_set_by_name(
-                data,
-                "ShotDistanceOverall",
-            ),
-            "shot_area_overall": parse_result_set_by_name(
-                data,
-                "ShotAreaOverall",
-            ),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "overall": "Overall",
+                "vs_player_overall": ("vsPlayerOverall", True),
+                "on_off_court": "OnOffCourt",
+                "shot_distance_overall": "ShotDistanceOverall",
+                "shot_area_overall": "ShotAreaOverall",
+            }
+        )
+    )

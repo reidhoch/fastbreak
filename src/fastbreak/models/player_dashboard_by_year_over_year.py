@@ -1,16 +1,10 @@
 """Models for the Player Dashboard by Year Over Year endpoint response."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-    parse_single_result_set,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class YearOverYearStats(PandasMixin, PolarsMixin, BaseModel):
@@ -112,15 +106,11 @@ class PlayerDashboardByYearOverYearResponse(FrozenResponse):
     overall: YearOverYearStats | None = None
     by_year: list[YearOverYearStats] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        d = data
-        return {
-            "overall": parse_single_result_set(d, "OverallPlayerDashboard"),
-            "by_year": parse_result_set_by_name(d, "ByYearPlayerDashboard"),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "overall": ("OverallPlayerDashboard", True),
+                "by_year": "ByYearPlayerDashboard",
+            }
+        )
+    )

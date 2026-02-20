@@ -14,7 +14,7 @@ class TestPlayerGameLogs:
         """PlayerGameLogs uses sensible defaults."""
         endpoint = PlayerGameLogs(player_id="2544")
 
-        assert endpoint.player_id == "2544"
+        assert endpoint.player_id == 2544
         assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
@@ -23,7 +23,7 @@ class TestPlayerGameLogs:
         """PlayerGameLogs accepts player_id."""
         endpoint = PlayerGameLogs(player_id="2544")
 
-        assert endpoint.player_id == "2544"
+        assert endpoint.player_id == 2544
 
     def test_params_returns_all_parameters(self):
         """params() returns all query parameters."""

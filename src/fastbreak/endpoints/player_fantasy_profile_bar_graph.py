@@ -2,14 +2,15 @@
 
 from typing import ClassVar
 
-from fastbreak.endpoints.base import Endpoint
+from fastbreak.endpoints.base import PlayerSeasonEndpoint
 from fastbreak.models.player_fantasy_profile_bar_graph import (
     PlayerFantasyProfileBarGraphResponse,
 )
-from fastbreak.types import LeagueID, Season, SeasonType
 
 
-class PlayerFantasyProfileBarGraph(Endpoint[PlayerFantasyProfileBarGraphResponse]):
+class PlayerFantasyProfileBarGraph(
+    PlayerSeasonEndpoint[PlayerFantasyProfileBarGraphResponse]
+):
     """Fetch fantasy statistics for a player.
 
     Returns season averages and last 5 games averages for fantasy points
@@ -27,17 +28,3 @@ class PlayerFantasyProfileBarGraph(Endpoint[PlayerFantasyProfileBarGraphResponse
     response_model: ClassVar[type[PlayerFantasyProfileBarGraphResponse]] = (
         PlayerFantasyProfileBarGraphResponse
     )
-
-    player_id: str
-    league_id: LeagueID = "00"
-    season: Season = "2024-25"
-    season_type: SeasonType = "Regular Season"
-
-    def params(self) -> dict[str, str]:
-        """Return the query parameters for this endpoint."""
-        return {
-            "PlayerID": self.player_id,
-            "LeagueID": self.league_id,
-            "Season": self.season,
-            "SeasonType": self.season_type,
-        }

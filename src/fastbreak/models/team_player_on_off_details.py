@@ -1,15 +1,10 @@
 """Models for the Team Player On/Off Details endpoint response."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class TeamOnOffOverall(PandasMixin, PolarsMixin, BaseModel):
@@ -166,26 +161,12 @@ class TeamPlayerOnOffDetailsResponse(FrozenResponse):
     players_on_court: list[PlayerOnOffDetails] = Field(default_factory=list)
     players_off_court: list[PlayerOnOffDetails] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        overall_rows = parse_result_set_by_name(
-            data,
-            "OverallTeamPlayerOnOffDetails",
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "overall": ("OverallTeamPlayerOnOffDetails", True),
+                "players_on_court": "PlayersOnCourtTeamPlayerOnOffDetails",
+                "players_off_court": "PlayersOffCourtTeamPlayerOnOffDetails",
+            }
         )
-
-        return {
-            "overall": overall_rows[0] if overall_rows else None,
-            "players_on_court": parse_result_set_by_name(
-                data,
-                "PlayersOnCourtTeamPlayerOnOffDetails",
-            ),
-            "players_off_court": parse_result_set_by_name(
-                data,
-                "PlayersOffCourtTeamPlayerOnOffDetails",
-            ),
-        }
+    )

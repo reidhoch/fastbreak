@@ -14,7 +14,7 @@ class TestPlayerProfileV2:
         """PlayerProfileV2 uses sensible defaults."""
         endpoint = PlayerProfileV2(player_id="2544")
 
-        assert endpoint.player_id == "2544"
+        assert endpoint.player_id == 2544
         assert endpoint.league_id == "00"
         assert endpoint.per_mode == "PerGame"
 
@@ -22,7 +22,7 @@ class TestPlayerProfileV2:
         """PlayerProfileV2 accepts player_id."""
         endpoint = PlayerProfileV2(player_id="2544")
 
-        assert endpoint.player_id == "2544"
+        assert endpoint.player_id == 2544
 
     def test_params_returns_all_parameters(self):
         """params() returns all query parameters."""

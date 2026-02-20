@@ -14,7 +14,7 @@ class TestPlayerFantasyProfileBarGraph:
         """PlayerFantasyProfileBarGraph uses sensible defaults."""
         endpoint = PlayerFantasyProfileBarGraph(player_id="2544")
 
-        assert endpoint.player_id == "2544"
+        assert endpoint.player_id == 2544
         assert endpoint.league_id == "00"
         assert endpoint.season == "2024-25"
         assert endpoint.season_type == "Regular Season"
@@ -23,7 +23,7 @@ class TestPlayerFantasyProfileBarGraph:
         """PlayerFantasyProfileBarGraph accepts player_id."""
         endpoint = PlayerFantasyProfileBarGraph(player_id="2544")
 
-        assert endpoint.player_id == "2544"
+        assert endpoint.player_id == 2544
 
     def test_params_returns_all_parameters(self):
         """params() returns all query parameters."""

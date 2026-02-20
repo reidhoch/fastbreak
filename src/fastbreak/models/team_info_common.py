@@ -1,15 +1,10 @@
 """Models for the Team Info Common endpoint response."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class TeamInfoCommon(PandasMixin, PolarsMixin, BaseModel):
@@ -71,18 +66,12 @@ class TeamInfoCommonResponse(FrozenResponse):
     season_ranks: TeamSeasonRanks | None = Field(default=None)
     available_seasons: list[AvailableSeason] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        team_info_rows = parse_result_set_by_name(data, "TeamInfoCommon")
-        season_ranks_rows = parse_result_set_by_name(data, "TeamSeasonRanks")
-
-        return {
-            "team_info": team_info_rows[0] if team_info_rows else None,
-            "season_ranks": season_ranks_rows[0] if season_ranks_rows else None,
-            "available_seasons": parse_result_set_by_name(data, "AvailableSeasons"),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "team_info": ("TeamInfoCommon", True),
+                "season_ranks": ("TeamSeasonRanks", True),
+                "available_seasons": "AvailableSeasons",
+            }
+        )
+    )

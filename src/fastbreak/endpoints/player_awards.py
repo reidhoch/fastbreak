@@ -2,11 +2,11 @@
 
 from typing import ClassVar
 
-from fastbreak.endpoints.base import Endpoint
+from fastbreak.endpoints.base import PlayerIdEndpoint
 from fastbreak.models.player_awards import PlayerAwardsResponse
 
 
-class PlayerAwards(Endpoint[PlayerAwardsResponse]):
+class PlayerAwards(PlayerIdEndpoint[PlayerAwardsResponse]):
     """Fetch all awards for a specific player.
 
     Args:
@@ -16,11 +16,3 @@ class PlayerAwards(Endpoint[PlayerAwardsResponse]):
 
     path: ClassVar[str] = "playerawards"
     response_model: ClassVar[type[PlayerAwardsResponse]] = PlayerAwardsResponse
-
-    player_id: int
-
-    def params(self) -> dict[str, str]:
-        """Return the query parameters for this endpoint."""
-        return {
-            "PlayerID": str(self.player_id),
-        }

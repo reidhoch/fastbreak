@@ -1,15 +1,10 @@
 """Response models for the playercareerstats endpoint."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class SeasonTotals(PandasMixin, PolarsMixin, BaseModel):
@@ -217,68 +212,23 @@ class PlayerCareerStatsResponse(FrozenResponse):
     season_highs: list[StatHigh] = Field(default_factory=list)
     career_highs: list[StatHigh] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        return {
-            "season_totals_regular_season": parse_result_set_by_name(
-                data,
-                "SeasonTotalsRegularSeason",
-            ),
-            "career_totals_regular_season": parse_result_set_by_name(
-                data,
-                "CareerTotalsRegularSeason",
-            ),
-            "season_totals_post_season": parse_result_set_by_name(
-                data,
-                "SeasonTotalsPostSeason",
-            ),
-            "career_totals_post_season": parse_result_set_by_name(
-                data,
-                "CareerTotalsPostSeason",
-            ),
-            "season_totals_all_star": parse_result_set_by_name(
-                data,
-                "SeasonTotalsAllStarSeason",
-            ),
-            "career_totals_all_star": parse_result_set_by_name(
-                data,
-                "CareerTotalsAllStarSeason",
-            ),
-            "season_totals_college": parse_result_set_by_name(
-                data,
-                "SeasonTotalsCollegeSeason",
-            ),
-            "career_totals_college": parse_result_set_by_name(
-                data,
-                "CareerTotalsCollegeSeason",
-            ),
-            "season_totals_showcase": parse_result_set_by_name(
-                data,
-                "SeasonTotalsShowcaseSeason",
-            ),
-            "career_totals_showcase": parse_result_set_by_name(
-                data,
-                "CareerTotalsShowcaseSeason",
-            ),
-            "season_rankings_regular_season": parse_result_set_by_name(
-                data,
-                "SeasonRankingsRegularSeason",
-            ),
-            "season_rankings_post_season": parse_result_set_by_name(
-                data,
-                "SeasonRankingsPostSeason",
-            ),
-            "season_highs": parse_result_set_by_name(
-                data,
-                "SeasonHighs",
-            ),
-            "career_highs": parse_result_set_by_name(
-                data,
-                "CareerHighs",
-            ),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "season_totals_regular_season": "SeasonTotalsRegularSeason",
+                "career_totals_regular_season": "CareerTotalsRegularSeason",
+                "season_totals_post_season": "SeasonTotalsPostSeason",
+                "career_totals_post_season": "CareerTotalsPostSeason",
+                "season_totals_all_star": "SeasonTotalsAllStarSeason",
+                "career_totals_all_star": "CareerTotalsAllStarSeason",
+                "season_totals_college": "SeasonTotalsCollegeSeason",
+                "career_totals_college": "CareerTotalsCollegeSeason",
+                "season_totals_showcase": "SeasonTotalsShowcaseSeason",
+                "career_totals_showcase": "CareerTotalsShowcaseSeason",
+                "season_rankings_regular_season": "SeasonRankingsRegularSeason",
+                "season_rankings_post_season": "SeasonRankingsPostSeason",
+                "season_highs": "SeasonHighs",
+                "career_highs": "CareerHighs",
+            }
+        )
+    )

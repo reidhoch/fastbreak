@@ -236,3 +236,132 @@ class TeamDashboardEndpoint[T: BaseModel](DashboardEndpoint[T]):
         result = self._base_params()
         result["TeamID"] = str(self.team_id)
         return result
+
+
+class PlayerIdEndpoint[T: BaseModel](Endpoint[T]):
+    """Base class for endpoints that only require a player_id parameter.
+
+    This is the simplest player endpoint base class.
+    Subclasses only need to define path and response_model.
+
+    Args:
+        player_id: NBA player ID (required)
+
+    """
+
+    _is_base_endpoint: ClassVar[bool] = True
+
+    player_id: int
+
+    def params(self) -> dict[str, str]:
+        """Return the query parameters for this endpoint."""
+        return {"PlayerID": str(self.player_id)}
+
+
+class SimplePlayerEndpoint[T: BaseModel](PlayerIdEndpoint[T]):
+    """Base class for player endpoints with league_id parameter.
+
+    Extends PlayerIdEndpoint with league_id.
+    Subclasses only need to define path and response_model.
+
+    Args:
+        player_id: NBA player ID (required)
+        league_id: League identifier ("00" for NBA)
+
+    """
+
+    _is_base_endpoint: ClassVar[bool] = True
+
+    league_id: LeagueID = "00"
+
+    def params(self) -> dict[str, str]:
+        """Return the query parameters for this endpoint."""
+        return {
+            "PlayerID": str(self.player_id),
+            "LeagueID": self.league_id,
+        }
+
+
+class PlayerPerModeEndpoint[T: BaseModel](SimplePlayerEndpoint[T]):
+    """Base class for player endpoints with per_mode parameter.
+
+    Extends SimplePlayerEndpoint with per_mode for stat aggregation.
+    Subclasses only need to define path and response_model.
+
+    Args:
+        player_id: NBA player ID (required)
+        league_id: League identifier ("00" for NBA)
+        per_mode: Stat aggregation mode ("PerGame", "Per36", "Totals", etc.)
+
+    """
+
+    _is_base_endpoint: ClassVar[bool] = True
+
+    per_mode: PerMode = "PerGame"
+
+    def params(self) -> dict[str, str]:
+        """Return the query parameters for this endpoint."""
+        return {
+            "PlayerID": str(self.player_id),
+            "LeagueID": self.league_id,
+            "PerMode": self.per_mode,
+        }
+
+
+class PlayerSeasonEndpoint[T: BaseModel](SimplePlayerEndpoint[T]):
+    """Base class for player endpoints with season parameters.
+
+    Extends SimplePlayerEndpoint with season and season_type.
+    Subclasses only need to define path and response_model.
+
+    Args:
+        player_id: NBA player ID (required)
+        league_id: League identifier ("00" for NBA)
+        season: Season in YYYY-YY format (e.g., "2024-25")
+        season_type: Type of season ("Regular Season", "Playoffs", "Pre Season")
+
+    """
+
+    _is_base_endpoint: ClassVar[bool] = True
+
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+
+    def params(self) -> dict[str, str]:
+        """Return the query parameters for this endpoint."""
+        return {
+            "PlayerID": str(self.player_id),
+            "LeagueID": self.league_id,
+            "Season": self.season,
+            "SeasonType": self.season_type,
+        }
+
+
+class TeamSeasonEndpoint[T: BaseModel](Endpoint[T]):
+    """Base class for team endpoints with season parameters.
+
+    Subclasses only need to define path and response_model.
+
+    Args:
+        team_id: NBA team ID (required)
+        season: Season in YYYY-YY format (e.g., "2024-25")
+        season_type: Type of season ("Regular Season", "Playoffs", "Pre Season")
+        league_id: League identifier ("00" for NBA)
+
+    """
+
+    _is_base_endpoint: ClassVar[bool] = True
+
+    team_id: int
+    season: Season = "2024-25"
+    season_type: SeasonType = "Regular Season"
+    league_id: LeagueID = "00"
+
+    def params(self) -> dict[str, str]:
+        """Return the query parameters for this endpoint."""
+        return {
+            "TeamID": str(self.team_id),
+            "Season": self.season,
+            "SeasonType": self.season_type,
+            "LeagueID": self.league_id,
+        }

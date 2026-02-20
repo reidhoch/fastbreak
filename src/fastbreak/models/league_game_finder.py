@@ -1,15 +1,10 @@
 """Models for the league game finder endpoint."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class GameFinderResult(PandasMixin, PolarsMixin, BaseModel):
@@ -53,16 +48,6 @@ class LeagueGameFinderResponse(FrozenResponse):
 
     games: list[GameFinderResult] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        return {
-            "games": parse_result_set_by_name(
-                data,
-                "LeagueGameFinderResults",
-            ),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator({"games": "LeagueGameFinderResults"})
+    )

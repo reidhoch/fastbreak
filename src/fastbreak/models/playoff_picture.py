@@ -1,15 +1,10 @@
 """Models for the playoff picture endpoint."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class PlayoffMatchup(PandasMixin, PolarsMixin, BaseModel):
@@ -94,36 +89,15 @@ class PlayoffPictureResponse(FrozenResponse):
     east_conf_remaining_games: list[RemainingGames] = Field(default_factory=list)
     west_conf_remaining_games: list[RemainingGames] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        return {
-            "east_conf_playoff_picture": parse_result_set_by_name(
-                data,
-                "EastConfPlayoffPicture",
-            ),
-            "west_conf_playoff_picture": parse_result_set_by_name(
-                data,
-                "WestConfPlayoffPicture",
-            ),
-            "east_conf_standings": parse_result_set_by_name(
-                data,
-                "EastConfStandings",
-            ),
-            "west_conf_standings": parse_result_set_by_name(
-                data,
-                "WestConfStandings",
-            ),
-            "east_conf_remaining_games": parse_result_set_by_name(
-                data,
-                "EastConfRemainingGames",
-            ),
-            "west_conf_remaining_games": parse_result_set_by_name(
-                data,
-                "WestConfRemainingGames",
-            ),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "east_conf_playoff_picture": "EastConfPlayoffPicture",
+                "west_conf_playoff_picture": "WestConfPlayoffPicture",
+                "east_conf_standings": "EastConfStandings",
+                "west_conf_standings": "WestConfStandings",
+                "east_conf_remaining_games": "EastConfRemainingGames",
+                "west_conf_remaining_games": "WestConfRemainingGames",
+            }
+        )
+    )

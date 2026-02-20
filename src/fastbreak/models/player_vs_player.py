@@ -1,15 +1,10 @@
 """Models for the player vs player endpoint."""
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
-from fastbreak.models.common.result_set import (
-    is_tabular_response,
-    parse_result_set_by_name,
-)
+from fastbreak.models.common.result_set import named_result_sets_validator
 
 
 class PlayerVsPlayerOverallStats(PandasMixin, PolarsMixin, BaseModel):
@@ -194,52 +189,19 @@ class PlayerVsPlayerResponse(FrozenResponse):
     player_info: list[PlayerVsPlayerPlayerInfo] = Field(default_factory=list)
     vs_player_info: list[PlayerVsPlayerPlayerInfo] = Field(default_factory=list)
 
-    @model_validator(mode="before")
-    @classmethod
-    def from_result_sets(cls, data: object) -> dict[str, Any]:
-        """Transform NBA's tabular resultSets format into structured data."""
-        if not is_tabular_response(data):
-            return data  # type: ignore[return-value]
-
-        return {
-            "overall": parse_result_set_by_name(
-                data,
-                "Overall",
-            ),
-            "on_off_court": parse_result_set_by_name(
-                data,
-                "OnOffCourt",
-            ),
-            "shot_distance_overall": parse_result_set_by_name(
-                data,
-                "ShotDistanceOverall",
-            ),
-            "shot_distance_on_court": parse_result_set_by_name(
-                data,
-                "ShotDistanceOnCourt",
-            ),
-            "shot_distance_off_court": parse_result_set_by_name(
-                data,
-                "ShotDistanceOffCourt",
-            ),
-            "shot_area_overall": parse_result_set_by_name(
-                data,
-                "ShotAreaOverall",
-            ),
-            "shot_area_on_court": parse_result_set_by_name(
-                data,
-                "ShotAreaOnCourt",
-            ),
-            "shot_area_off_court": parse_result_set_by_name(
-                data,
-                "ShotAreaOffCourt",
-            ),
-            "player_info": parse_result_set_by_name(
-                data,
-                "PlayerInfo",
-            ),
-            "vs_player_info": parse_result_set_by_name(
-                data,
-                "VsPlayerInfo",
-            ),
-        }
+    from_result_sets = model_validator(mode="before")(
+        named_result_sets_validator(
+            {
+                "overall": "Overall",
+                "on_off_court": "OnOffCourt",
+                "shot_distance_overall": "ShotDistanceOverall",
+                "shot_distance_on_court": "ShotDistanceOnCourt",
+                "shot_distance_off_court": "ShotDistanceOffCourt",
+                "shot_area_overall": "ShotAreaOverall",
+                "shot_area_on_court": "ShotAreaOnCourt",
+                "shot_area_off_court": "ShotAreaOffCourt",
+                "player_info": "PlayerInfo",
+                "vs_player_info": "VsPlayerInfo",
+            }
+        )
+    )
