@@ -251,6 +251,14 @@ if TYPE_CHECKING:
         LeagueDashLineupsResponse as LeagueDashLineupsResponse,
         LeagueLineup as LeagueLineup,
     )
+    from fastbreak.models.league_dash_player_clutch import (
+        LeagueDashPlayerClutchResponse as LeagueDashPlayerClutchResponse,
+        LeagueDashPlayerClutchRow as LeagueDashPlayerClutchRow,
+    )
+    from fastbreak.models.league_dash_player_stats import (
+        LeagueDashPlayerStatsResponse as LeagueDashPlayerStatsResponse,
+        LeagueDashPlayerStatsRow as LeagueDashPlayerStatsRow,
+    )
     from fastbreak.models.league_dash_pt_stats import (
         LeagueDashPtStatsResponse as LeagueDashPtStatsResponse,
         PlayerPtStats as PlayerPtStats,
