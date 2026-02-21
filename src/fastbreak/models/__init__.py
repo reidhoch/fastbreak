@@ -34,11 +34,42 @@ if TYPE_CHECKING:
         BoxScoreAdvancedData as BoxScoreAdvancedData,
         BoxScoreAdvancedResponse as BoxScoreAdvancedResponse,
     )
+
+    # V3 Box score models
+    from fastbreak.models.box_score_advanced_v3 import (
+        AdvancedPlayerV3 as AdvancedPlayerV3,
+        AdvancedStatisticsV3 as AdvancedStatisticsV3,
+        AdvancedTeamV3 as AdvancedTeamV3,
+        BoxScoreAdvancedV3Data as BoxScoreAdvancedV3Data,
+        BoxScoreAdvancedV3Response as BoxScoreAdvancedV3Response,
+    )
+    from fastbreak.models.box_score_defensive import (
+        BoxScoreDefensiveData as BoxScoreDefensiveData,
+        BoxScoreDefensiveResponse as BoxScoreDefensiveResponse,
+        DefensivePlayer as DefensivePlayer,
+        DefensiveStatistics as DefensiveStatistics,
+        DefensiveTeam as DefensiveTeam,
+        DefensiveTeamStatistics as DefensiveTeamStatistics,
+    )
     from fastbreak.models.box_score_four_factors import (
         BoxScoreFourFactorsData as BoxScoreFourFactorsData,
         BoxScoreFourFactorsResponse as BoxScoreFourFactorsResponse,
         FourFactorsPlayer as FourFactorsPlayer,
         FourFactorsTeam as FourFactorsTeam,
+    )
+    from fastbreak.models.box_score_four_factors_v3 import (
+        BoxScoreFourFactorsV3Data as BoxScoreFourFactorsV3Data,
+        BoxScoreFourFactorsV3Response as BoxScoreFourFactorsV3Response,
+        FourFactorsPlayerV3 as FourFactorsPlayerV3,
+        FourFactorsStatisticsV3 as FourFactorsStatisticsV3,
+        FourFactorsTeamV3 as FourFactorsTeamV3,
+    )
+    from fastbreak.models.box_score_hustle import (
+        BoxScoreHustleData as BoxScoreHustleData,
+        BoxScoreHustleResponse as BoxScoreHustleResponse,
+        HustlePlayer as HustlePlayer,
+        HustleStatistics as HustleStatistics,
+        HustleTeam as HustleTeam,
     )
     from fastbreak.models.box_score_matchups import (
         BoxScoreMatchupsData as BoxScoreMatchupsData,
@@ -47,11 +78,27 @@ if TYPE_CHECKING:
         MatchupsPlayer as MatchupsPlayer,
         MatchupsTeam as MatchupsTeam,
     )
+
+    # V3 matchups
+    from fastbreak.models.box_score_matchups_v3 import (
+        BoxScoreMatchupsV3Data as BoxScoreMatchupsV3Data,
+        BoxScoreMatchupsV3Response as BoxScoreMatchupsV3Response,
+        MatchupOpponentV3 as MatchupOpponentV3,
+        MatchupsPlayerV3 as MatchupsPlayerV3,
+        MatchupsTeamV3 as MatchupsTeamV3,
+    )
     from fastbreak.models.box_score_misc import (
         BoxScoreMiscData as BoxScoreMiscData,
         BoxScoreMiscResponse as BoxScoreMiscResponse,
         MiscPlayer as MiscPlayer,
         MiscTeam as MiscTeam,
+    )
+    from fastbreak.models.box_score_misc_v3 import (
+        BoxScoreMiscV3Data as BoxScoreMiscV3Data,
+        BoxScoreMiscV3Response as BoxScoreMiscV3Response,
+        MiscPlayerV3 as MiscPlayerV3,
+        MiscStatisticsV3 as MiscStatisticsV3,
+        MiscTeamV3 as MiscTeamV3,
     )
     from fastbreak.models.box_score_player_track import (
         BoxScorePlayerTrackData as BoxScorePlayerTrackData,
@@ -59,15 +106,38 @@ if TYPE_CHECKING:
         PlayerTrackPlayer as PlayerTrackPlayer,
         PlayerTrackTeam as PlayerTrackTeam,
     )
+    from fastbreak.models.box_score_player_track_v3 import (
+        BoxScorePlayerTrackV3Data as BoxScorePlayerTrackV3Data,
+        BoxScorePlayerTrackV3Response as BoxScorePlayerTrackV3Response,
+        PlayerTrackPlayerV3 as PlayerTrackPlayerV3,
+        PlayerTrackStatisticsV3 as PlayerTrackStatisticsV3,
+        PlayerTrackTeamV3 as PlayerTrackTeamV3,
+    )
     from fastbreak.models.box_score_scoring import (
         BoxScoreScoringData as BoxScoreScoringData,
         BoxScoreScoringResponse as BoxScoreScoringResponse,
         ScoringPlayer as ScoringPlayer,
         ScoringTeam as ScoringTeam,
     )
+    from fastbreak.models.box_score_scoring_v3 import (
+        BoxScoreScoringV3Data as BoxScoreScoringV3Data,
+        BoxScoreScoringV3Response as BoxScoreScoringV3Response,
+        ScoringPlayerV3 as ScoringPlayerV3,
+        ScoringStatisticsV3 as ScoringStatisticsV3,
+        ScoringTeamV3 as ScoringTeamV3,
+    )
     from fastbreak.models.box_score_summary import (
         BoxScoreSummaryData as BoxScoreSummaryData,
         BoxScoreSummaryResponse as BoxScoreSummaryResponse,
+    )
+    from fastbreak.models.box_score_summary_v3 import (
+        ArenaV3 as ArenaV3,
+        BoxScoreSummaryV3Data as BoxScoreSummaryV3Data,
+        BoxScoreSummaryV3Response as BoxScoreSummaryV3Response,
+        BroadcastersV3 as BroadcastersV3,
+        BroadcasterV3 as BroadcasterV3,
+        OfficialV3 as OfficialV3,
+        SummaryTeamV3 as SummaryTeamV3,
     )
     from fastbreak.models.box_score_traditional import (
         BoxScoreTraditionalData as BoxScoreTraditionalData,
@@ -75,17 +145,40 @@ if TYPE_CHECKING:
         TraditionalPlayer as TraditionalPlayer,
         TraditionalTeam as TraditionalTeam,
     )
+    from fastbreak.models.box_score_traditional_v3 import (
+        BoxScoreTraditionalV3Data as BoxScoreTraditionalV3Data,
+        BoxScoreTraditionalV3Response as BoxScoreTraditionalV3Response,
+        TraditionalPlayerV3 as TraditionalPlayerV3,
+        TraditionalStatisticsV3 as TraditionalStatisticsV3,
+        TraditionalTeamV3 as TraditionalTeamV3,
+    )
     from fastbreak.models.box_score_usage import (
         BoxScoreUsageData as BoxScoreUsageData,
         BoxScoreUsageResponse as BoxScoreUsageResponse,
         UsagePlayer as UsagePlayer,
         UsageTeam as UsageTeam,
     )
+    from fastbreak.models.box_score_usage_v3 import (
+        BoxScoreUsageV3Data as BoxScoreUsageV3Data,
+        BoxScoreUsageV3Response as BoxScoreUsageV3Response,
+        UsagePlayerV3 as UsagePlayerV3,
+        UsageStatisticsV3 as UsageStatisticsV3,
+        UsageTeamV3 as UsageTeamV3,
+    )
     from fastbreak.models.common.advanced_statistics import (
         AdvancedStatistics as AdvancedStatistics,
         AdvancedTeamStatistics as AdvancedTeamStatistics,
     )
     from fastbreak.models.common.arena import Arena as Arena
+
+    # Common V3 base classes
+    from fastbreak.models.common.box_score_v3 import (
+        BoxScoreDataV3Base as BoxScoreDataV3Base,
+        BoxScorePlayerV3 as BoxScorePlayerV3,
+        BoxScorePlayerV3Base as BoxScorePlayerV3Base,
+        BoxScoreTeamV3 as BoxScoreTeamV3,
+        BoxScoreTeamV3Base as BoxScoreTeamV3Base,
+    )
     from fastbreak.models.common.broadcaster import (
         Broadcaster as Broadcaster,
         Broadcasters as Broadcasters,
@@ -232,6 +325,20 @@ if TYPE_CHECKING:
         GravityLeader as GravityLeader,
         GravityLeadersResponse as GravityLeadersResponse,
     )
+    from fastbreak.models.homepage_leaders import (
+        HomepageLeader as HomepageLeader,
+        HomepageLeadersResponse as HomepageLeadersResponse,
+    )
+    from fastbreak.models.homepage_v2 import (
+        HomePageStatAst as HomePageStatAst,
+        HomePageStatBlk as HomePageStatBlk,
+        HomePageStatFg3Pct as HomePageStatFg3Pct,
+        HomePageStatPlayer as HomePageStatPlayer,
+        HomePageStatPts as HomePageStatPts,
+        HomePageStatReb as HomePageStatReb,
+        HomePageStatStl as HomePageStatStl,
+        HomepageV2Response as HomepageV2Response,
+    )
     from fastbreak.models.hustle_stats_boxscore import (
         HustleStatsAvailable as HustleStatsAvailable,
         HustleStatsBoxscoreResponse as HustleStatsBoxscoreResponse,
@@ -247,9 +354,27 @@ if TYPE_CHECKING:
         IstStandingsResponse as IstStandingsResponse,
         IstTeamStanding as IstTeamStanding,
     )
+    from fastbreak.models.leaders_tiles import (
+        AllTimeSeasonHigh as AllTimeSeasonHigh,
+        LastSeasonHigh as LastSeasonHigh,
+        LeadersTilesResponse as LeadersTilesResponse,
+        LeaderTile as LeaderTile,
+    )
     from fastbreak.models.league_dash_lineups import (
         LeagueDashLineupsResponse as LeagueDashLineupsResponse,
         LeagueLineup as LeagueLineup,
+    )
+
+    # Tracking shot stats
+    from fastbreak.models.league_dash_opp_pt_shot import (
+        LeagueDashOppPtShotResponse as LeagueDashOppPtShotResponse,
+        OppPtShotStats as OppPtShotStats,
+    )
+
+    # Player bio stats
+    from fastbreak.models.league_dash_player_bio_stats import (
+        LeagueDashPlayerBioStatsResponse as LeagueDashPlayerBioStatsResponse,
+        PlayerBioStats as PlayerBioStats,
     )
     from fastbreak.models.league_dash_player_clutch import (
         LeagueDashPlayerClutchResponse as LeagueDashPlayerClutchResponse,
@@ -264,9 +389,17 @@ if TYPE_CHECKING:
         PlayerPtStats as PlayerPtStats,
         TeamPtStats as TeamPtStats,
     )
+    from fastbreak.models.league_dash_pt_team_defend import (
+        LeagueDashPtTeamDefendResponse as LeagueDashPtTeamDefendResponse,
+        TeamDefendStats as TeamDefendStats,
+    )
     from fastbreak.models.league_dash_team_clutch import (
         LeagueDashTeamClutchResponse as LeagueDashTeamClutchResponse,
         TeamClutchStats as TeamClutchStats,
+    )
+    from fastbreak.models.league_dash_team_pt_shot import (
+        LeagueDashTeamPtShotResponse as LeagueDashTeamPtShotResponse,
+        TeamPtShotStats as TeamPtShotStats,
     )
     from fastbreak.models.league_dash_team_shot_locations import (
         LeagueDashTeamShotLocationsResponse as LeagueDashTeamShotLocationsResponse,
@@ -312,6 +445,12 @@ if TYPE_CHECKING:
     from fastbreak.models.league_standings import (
         LeagueStandingsResponse as LeagueStandingsResponse,
         TeamStanding as TeamStanding,
+    )
+
+    # League standings V3
+    from fastbreak.models.league_standings_v3 import (
+        LeagueStandingsV3Response as LeagueStandingsV3Response,
+        TeamStandingV3 as TeamStandingV3,
     )
     from fastbreak.models.leverage_leaders import (
         LeverageLeader as LeverageLeader,
@@ -598,6 +737,13 @@ if TYPE_CHECKING:
     from fastbreak.models.team_year_by_year_stats import (
         TeamYearByYearStatsResponse as TeamYearByYearStatsResponse,
         TeamYearStats as TeamYearStats,
+    )
+    from fastbreak.models.video_events import (
+        PlaylistItem as PlaylistItem,
+        VideoEventsResponse as VideoEventsResponse,
+        VideoMeta as VideoMeta,
+        VideoResultSets as VideoResultSets,
+        VideoUrl as VideoUrl,
     )
     from fastbreak.models.video_status import (
         GameVideoStatus as GameVideoStatus,
