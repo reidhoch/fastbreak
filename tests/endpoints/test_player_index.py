@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import PlayerIndex
 from fastbreak.models import PlayerIndexResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestPlayerIndex:
@@ -15,7 +16,7 @@ class TestPlayerIndex:
         endpoint = PlayerIndex()
 
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
 
     def test_init_with_custom_season(self):
         """PlayerIndex accepts custom season."""

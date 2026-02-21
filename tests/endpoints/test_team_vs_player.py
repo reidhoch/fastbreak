@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import TeamVsPlayer
 from fastbreak.models import TeamVsPlayerResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestTeamVsPlayer:
@@ -14,7 +15,7 @@ class TestTeamVsPlayer:
 
         assert endpoint.team_id == 1610612747
         assert endpoint.vs_player_id == 2544
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "PerGame"
         assert endpoint.league_id == "00"
@@ -62,7 +63,7 @@ class TestTeamVsPlayer:
 
         assert params["TeamID"] == "1610612747"
         assert params["VsPlayerID"] == "2544"
-        assert params["Season"] == "2024-25"
+        assert params["Season"] == get_season_from_date()
         assert params["SeasonType"] == "Regular Season"
         assert params["PerMode"] == "PerGame"
 

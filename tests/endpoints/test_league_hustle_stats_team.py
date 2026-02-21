@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import LeagueHustleStatsTeam
 from fastbreak.models import LeagueHustleStatsTeamResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestLeagueHustleStatsTeam:
@@ -14,7 +15,7 @@ class TestLeagueHustleStatsTeam:
         """LeagueHustleStatsTeam uses sensible defaults."""
         endpoint = LeagueHustleStatsTeam()
 
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "PerGame"
         assert endpoint.league_id is None

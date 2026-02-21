@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints.schedule_league_v2_int import ScheduleLeagueV2Int
 from fastbreak.models.schedule_league_v2_int import ScheduleLeagueV2IntResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestScheduleLeagueV2Int:
@@ -15,7 +16,7 @@ class TestScheduleLeagueV2Int:
         endpoint = ScheduleLeagueV2Int()
 
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
 
     def test_init_with_custom_season(self):
         """ScheduleLeagueV2Int accepts custom season."""

@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Any, ClassVar
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from fastbreak.models import JSON
 from fastbreak.types import (
@@ -21,6 +21,7 @@ from fastbreak.types import (
     ShotClockRange,
     YesNo,
 )
+from fastbreak.utils import get_season_from_date
 
 
 class Endpoint[T: BaseModel](BaseModel):
@@ -103,7 +104,7 @@ class DraftCombineEndpoint[T: BaseModel](Endpoint[T]):
     _is_base_endpoint: ClassVar[bool] = True
 
     league_id: LeagueID = "00"
-    season_year: str = "2024-25"
+    season_year: str = Field(default_factory=get_season_from_date)
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""
@@ -125,7 +126,7 @@ class DashboardEndpoint[T: BaseModel](Endpoint[T]):
 
     # Common stat parameters
     league_id: LeagueID = "00"
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
     season_type: SeasonType = "Regular Season"
     per_mode: PerMode = "PerGame"
     measure_type: MeasureType = "Base"
@@ -324,7 +325,7 @@ class PlayerSeasonEndpoint[T: BaseModel](SimplePlayerEndpoint[T]):
 
     _is_base_endpoint: ClassVar[bool] = True
 
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
     season_type: SeasonType = "Regular Season"
 
     def params(self) -> dict[str, str]:
@@ -353,7 +354,7 @@ class TeamSeasonEndpoint[T: BaseModel](Endpoint[T]):
     _is_base_endpoint: ClassVar[bool] = True
 
     team_id: int
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
     season_type: SeasonType = "Regular Season"
     league_id: LeagueID = "00"
 

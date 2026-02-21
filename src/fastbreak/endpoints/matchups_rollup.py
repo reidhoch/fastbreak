@@ -2,9 +2,12 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.matchups_rollup import MatchupsRollupResponse
 from fastbreak.types import LeagueID, PerMode, Season, SeasonType
+from fastbreak.utils import get_season_from_date
 
 
 class MatchupsRollup(Endpoint[MatchupsRollupResponse]):
@@ -26,7 +29,7 @@ class MatchupsRollup(Endpoint[MatchupsRollupResponse]):
     response_model: ClassVar[type[MatchupsRollupResponse]] = MatchupsRollupResponse
 
     league_id: LeagueID = "00"
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
     season_type: SeasonType = "Regular Season"
     per_mode: PerMode = "PerGame"
     off_team_id: int = 0

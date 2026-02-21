@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import DraftCombineNonstationaryShooting
 from fastbreak.models import DraftCombineNonstationaryShootingResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestDraftCombineNonstationaryShooting:
@@ -13,7 +14,7 @@ class TestDraftCombineNonstationaryShooting:
         endpoint = DraftCombineNonstationaryShooting()
 
         assert endpoint.league_id == "00"
-        assert endpoint.season_year == "2024-25"
+        assert endpoint.season_year == get_season_from_date()
 
     def test_init_with_custom_league_id(self):
         """DraftCombineNonstationaryShooting accepts custom league_id."""

@@ -2,6 +2,8 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.assist_tracker import AssistTrackerResponse
 from fastbreak.types import (
@@ -19,6 +21,7 @@ from fastbreak.types import (
     SeasonType,
     StarterBench,
 )
+from fastbreak.utils import get_season_from_date
 
 
 class AssistTracker(Endpoint[AssistTrackerResponse]):
@@ -61,7 +64,7 @@ class AssistTracker(Endpoint[AssistTrackerResponse]):
 
     # Required parameters
     league_id: LeagueID = "00"
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
     season_type: SeasonType = "Regular Season"
     per_mode: PerMode = "Totals"
 

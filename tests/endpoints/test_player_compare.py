@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import PlayerCompare
 from fastbreak.models import PlayerCompareResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestPlayerCompare:
@@ -17,7 +18,7 @@ class TestPlayerCompare:
         assert endpoint.league_id == "00"
         assert endpoint.player_id_list == ""
         assert endpoint.vs_player_id_list == ""
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "PerGame"
         assert endpoint.measure_type == "Base"
@@ -66,7 +67,7 @@ class TestPlayerCompare:
             "LeagueID": "00",
             "PlayerIDList": "",
             "VsPlayerIDList": "",
-            "Season": "2024-25",
+            "Season": get_season_from_date(),
             "SeasonType": "Regular Season",
             "PerMode": "PerGame",
             "MeasureType": "Base",

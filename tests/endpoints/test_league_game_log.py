@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import LeagueGameLog
 from fastbreak.models import LeagueGameLogResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestLeagueGameLog:
@@ -15,7 +16,7 @@ class TestLeagueGameLog:
         endpoint = LeagueGameLog()
 
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.player_or_team == "T"
         assert endpoint.counter == 1000

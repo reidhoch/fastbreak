@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import CommonAllPlayers
 from fastbreak.models import CommonAllPlayersResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestCommonAllPlayers:
@@ -13,7 +14,7 @@ class TestCommonAllPlayers:
         endpoint = CommonAllPlayers()
 
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.is_only_current_season == 1
 
     def test_init_with_custom_league_id(self):

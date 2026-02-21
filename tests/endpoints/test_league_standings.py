@@ -1,5 +1,6 @@
 from fastbreak.endpoints import LeagueStandings
 from fastbreak.models import LeagueStandingsResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestLeagueStandings:
@@ -9,7 +10,7 @@ class TestLeagueStandings:
         """LeagueStandings uses sensible defaults."""
         endpoint = LeagueStandings()
 
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.league_id == "00"
 

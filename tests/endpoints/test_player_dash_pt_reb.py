@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import PlayerDashPtReb
 from fastbreak.models import PlayerDashPtRebResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestPlayerDashPtReb:
@@ -16,7 +17,7 @@ class TestPlayerDashPtReb:
 
         assert endpoint.player_id == 2544
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.per_mode == "PerGame"
         # Always-sent params have default 0
         assert endpoint.team_id == 0
@@ -53,7 +54,7 @@ class TestPlayerDashPtReb:
         assert params == {
             "PlayerID": "203999",
             "LeagueID": "00",
-            "Season": "2024-25",
+            "Season": get_season_from_date(),
             "SeasonType": "Regular Season",
             "PerMode": "PerGame",
             "TeamID": "0",

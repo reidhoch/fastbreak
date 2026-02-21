@@ -2,6 +2,8 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.shot_chart_lineup_detail import ShotChartLineupDetailResponse
 from fastbreak.types import (
@@ -17,6 +19,7 @@ from fastbreak.types import (
     SeasonSegment,
     SeasonType,
 )
+from fastbreak.utils import get_season_from_date
 
 
 class ShotChartLineupDetail(Endpoint[ShotChartLineupDetailResponse]):
@@ -57,7 +60,7 @@ class ShotChartLineupDetail(Endpoint[ShotChartLineupDetailResponse]):
     # Required parameters
     team_id: int
     league_id: LeagueID = "00"
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
     season_type: SeasonType = "Regular Season"
     context_measure: ContextMeasure = "FGA"
 

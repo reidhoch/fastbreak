@@ -2,9 +2,12 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.common_all_players import CommonAllPlayersResponse
 from fastbreak.types import LeagueID, Season
+from fastbreak.utils import get_season_from_date
 
 
 class CommonAllPlayers(Endpoint[CommonAllPlayersResponse]):
@@ -21,7 +24,7 @@ class CommonAllPlayers(Endpoint[CommonAllPlayersResponse]):
     response_model: ClassVar[type[CommonAllPlayersResponse]] = CommonAllPlayersResponse
 
     league_id: LeagueID = "00"
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
     is_only_current_season: int = 1
 
     def params(self) -> dict[str, str]:

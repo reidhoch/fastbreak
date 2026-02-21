@@ -616,6 +616,17 @@ if TYPE_CHECKING:
         IntlScheduleWeek as IntlScheduleWeek,
         ScheduleLeagueV2IntResponse as ScheduleLeagueV2IntResponse,
     )
+    from fastbreak.models.scoreboard_v2 import (  # noqa: F401
+        AvailableGame as AvailableGame,
+        ConferenceStanding as ConferenceStanding,
+        GameHeader as GameHeader,
+        LastMeeting as LastMeeting,
+        LineScore as LineScore,
+        ScoreboardV2Response as ScoreboardV2Response,
+        SeriesStanding as SeriesStanding,
+        TeamLeader as TeamLeaderV2,
+        TicketLink as TicketLink,
+    )
     from fastbreak.models.scoreboard_v3 import (
         GameLeader as GameLeader,
         GameLeaders as GameLeaders,

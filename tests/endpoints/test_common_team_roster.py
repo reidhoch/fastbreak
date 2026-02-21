@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import CommonTeamRoster
 from fastbreak.models import CommonTeamRosterResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestCommonTeamRoster:
@@ -14,7 +15,7 @@ class TestCommonTeamRoster:
 
         assert endpoint.team_id == 1610612745
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
 
     def test_init_with_custom_league_id(self):
         """CommonTeamRoster accepts custom league_id."""

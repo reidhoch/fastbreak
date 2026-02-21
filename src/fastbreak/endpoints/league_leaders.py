@@ -2,6 +2,8 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.league_leaders import LeagueLeadersResponse
 from fastbreak.types import (
@@ -12,6 +14,7 @@ from fastbreak.types import (
     SeasonType,
     StatCategoryAbbreviation,
 )
+from fastbreak.utils import get_season_from_date
 
 
 class LeagueLeaders(Endpoint[LeagueLeadersResponse]):
@@ -34,7 +37,7 @@ class LeagueLeaders(Endpoint[LeagueLeadersResponse]):
     path: ClassVar[str] = "leagueleaders"
     response_model: ClassVar[type[LeagueLeadersResponse]] = LeagueLeadersResponse
 
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
     season_type: SeasonType = "Regular Season"
     per_mode: PerMode = "PerGame"
     stat_category: StatCategoryAbbreviation = "PTS"
