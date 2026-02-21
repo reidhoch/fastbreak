@@ -186,8 +186,70 @@ def tabular_validator(
     return validator
 
 
+def named_tabular_validator(
+    field_name: str,
+    result_set_name: str,
+) -> ValidatorFunc:
+    """Create a model_validator that parses a named result set into a field.
+
+    Like tabular_validator, but looks up the result set by name instead of index.
+    Returns an empty list if the result set is not found, making it safe for
+    APIs that may omit result sets.
+
+    Args:
+        field_name: The model field name to populate
+        result_set_name: The "name" field of the resultSet to parse
+
+    Returns:
+        A function suitable for use with @model_validator(mode="before")
+
+    Example:
+        class LeagueDashResponse(BaseModel):
+            teams: list[TeamStats]
+
+            from_result_sets = model_validator(mode="before")(
+                named_tabular_validator("teams", "LeagueDashPTShots")
+            )
+
+    """
+
+    def validator(data: object) -> dict[str, Any]:
+        if not is_tabular_response(data):
+            return data  # type: ignore[return-value]
+        try:
+            rows = parse_result_set_by_name(data, result_set_name)
+        except ValueError:
+            return {field_name: []}
+        else:
+            return {field_name: rows or []}
+
+    return validator
+
+
+def _parse_mapping_value(
+    data: dict[str, Any],
+    result_set_name: str,
+    *,
+    is_single: bool,
+    ignore_missing: bool,
+) -> list[dict[str, Any]] | dict[str, Any] | None:
+    """Parse a single result set mapping, handling missing result sets."""
+    try:
+        rows = parse_result_set_by_name(data, result_set_name)
+    except ValueError:
+        if not ignore_missing:
+            raise
+        rows = []
+
+    if is_single:
+        return rows[0] if rows else None
+    return rows
+
+
 def named_result_sets_validator(
     mappings: dict[str, tuple[str, bool] | str],
+    *,
+    ignore_missing: bool = False,
 ) -> ValidatorFunc:
     """Create a model_validator that parses multiple named result sets.
 
@@ -199,6 +261,8 @@ def named_result_sets_validator(
             - field_name: The model field name to populate
             - value: Either a result_set_name string (returns list), or a tuple of
               (result_set_name, is_single) where is_single=True takes first row or None.
+        ignore_missing: If True, missing result sets return empty list/None instead
+            of raising ValueError. Useful for APIs that may omit result sets.
 
     Returns:
         A function suitable for use with @model_validator(mode="before")
@@ -226,8 +290,60 @@ def named_result_sets_validator(
             result_set_name, is_single = (
                 (mapping, False) if isinstance(mapping, str) else mapping
             )
-            rows = parse_result_set_by_name(data, result_set_name)
-            result[field_name] = (rows[0] if rows else None) if is_single else rows
+            result[field_name] = _parse_mapping_value(
+                data,
+                result_set_name,
+                is_single=is_single,
+                ignore_missing=ignore_missing,
+            )
+        return result
+
+    return validator
+
+
+def singular_result_set_validator(
+    mappings: dict[str, str],
+) -> ValidatorFunc:
+    """Create a model_validator for APIs using 'resultSet' (singular) format.
+
+    Some NBA API endpoints return 'resultSet' (singular) instead of 'resultSets'
+    (plural). This validator handles that format.
+
+    Args:
+        mappings: Dict mapping field names to result set names.
+            Each result set is expected to return a list.
+
+    Returns:
+        A function suitable for use with @model_validator(mode="before")
+
+    Example:
+        class LeadersTilesResponse(BaseModel):
+            leaders: list[LeaderTile]
+            all_time_high: list[AllTimeHigh]
+
+            from_result_set = model_validator(mode="before")(
+                singular_result_set_validator({
+                    "leaders": "LeadersTiles",
+                    "all_time_high": "AllTimeSeasonHigh",
+                })
+            )
+
+    """
+
+    def validator(data: object) -> dict[str, Any]:
+        if not isinstance(data, dict) or "resultSet" not in data:
+            return data  # type: ignore[return-value]
+
+        # Convert singular to plural format for parsing
+        wrapped_data: dict[str, Any] = {"resultSets": data["resultSet"]}
+
+        result: dict[str, Any] = {}
+        for field_name, result_set_name in mappings.items():
+            try:
+                rows = parse_result_set_by_name(wrapped_data, result_set_name)
+            except ValueError:
+                rows = []
+            result[field_name] = rows or []
         return result
 
     return validator

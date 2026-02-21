@@ -33,9 +33,15 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.box_score_advanced import (
         BoxScoreAdvanced as BoxScoreAdvanced,
     )
+
+    # V2 Box score endpoints
+    from fastbreak.endpoints.box_score_defensive import (
+        BoxScoreDefensive as BoxScoreDefensive,
+    )
     from fastbreak.endpoints.box_score_four_factors import (
         BoxScoreFourFactors as BoxScoreFourFactors,
     )
+    from fastbreak.endpoints.box_score_hustle import BoxScoreHustle as BoxScoreHustle
     from fastbreak.endpoints.box_score_matchups import (
         BoxScoreMatchups as BoxScoreMatchups,
     )
@@ -49,6 +55,19 @@ if TYPE_CHECKING:
         BoxScoreTraditional as BoxScoreTraditional,
     )
     from fastbreak.endpoints.box_score_usage import BoxScoreUsage as BoxScoreUsage
+
+    # V3 Box score endpoints (consolidated)
+    from fastbreak.endpoints.box_scores_v3 import (
+        BoxScoreAdvancedV3 as BoxScoreAdvancedV3,
+        BoxScoreFourFactorsV3 as BoxScoreFourFactorsV3,
+        BoxScoreMatchupsV3 as BoxScoreMatchupsV3,
+        BoxScoreMiscV3 as BoxScoreMiscV3,
+        BoxScorePlayerTrackV3 as BoxScorePlayerTrackV3,
+        BoxScoreScoringV3 as BoxScoreScoringV3,
+        BoxScoreSummaryV3 as BoxScoreSummaryV3,
+        BoxScoreTraditionalV3 as BoxScoreTraditionalV3,
+        BoxScoreUsageV3 as BoxScoreUsageV3,
+    )
 
     # Common endpoints
     from fastbreak.endpoints.common_all_players import (
@@ -110,6 +129,10 @@ if TYPE_CHECKING:
     # Game endpoints
     from fastbreak.endpoints.game_rotation import GameRotation as GameRotation
     from fastbreak.endpoints.gravity_leaders import GravityLeaders as GravityLeaders
+    from fastbreak.endpoints.homepage_leaders import (
+        HomepageLeaders as HomepageLeaders,
+    )
+    from fastbreak.endpoints.homepage_v2 import HomepageV2 as HomepageV2
     from fastbreak.endpoints.hustle_stats_boxscore import (
         HustleStatsBoxscore as HustleStatsBoxscore,
     )
@@ -121,8 +144,19 @@ if TYPE_CHECKING:
 
     # Schedule and scoreboard endpoints
     from fastbreak.endpoints.ist_standings import IstStandings as IstStandings
+    from fastbreak.endpoints.leaders_tiles import LeadersTiles as LeadersTiles
     from fastbreak.endpoints.league_dash_lineups import (
         LeagueDashLineups as LeagueDashLineups,
+    )
+
+    # Tracking shot endpoints
+    from fastbreak.endpoints.league_dash_opp_pt_shot import (
+        LeagueDashOppPtShot as LeagueDashOppPtShot,
+    )
+
+    # Bio stats endpoint
+    from fastbreak.endpoints.league_dash_player_bio_stats import (
+        LeagueDashPlayerBioStats as LeagueDashPlayerBioStats,
     )
     from fastbreak.endpoints.league_dash_player_clutch import (
         LeagueDashPlayerClutch as LeagueDashPlayerClutch,
@@ -133,8 +167,14 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.league_dash_pt_stats import (
         LeagueDashPtStats as LeagueDashPtStats,
     )
+    from fastbreak.endpoints.league_dash_pt_team_defend import (
+        LeagueDashPtTeamDefend as LeagueDashPtTeamDefend,
+    )
     from fastbreak.endpoints.league_dash_team_clutch import (
         LeagueDashTeamClutch as LeagueDashTeamClutch,
+    )
+    from fastbreak.endpoints.league_dash_team_pt_shot import (
+        LeagueDashTeamPtShot as LeagueDashTeamPtShot,
     )
     from fastbreak.endpoints.league_dash_team_shot_locations import (
         LeagueDashTeamShotLocations as LeagueDashTeamShotLocations,
@@ -161,6 +201,11 @@ if TYPE_CHECKING:
         LeagueSeasonMatchups as LeagueSeasonMatchups,
     )
     from fastbreak.endpoints.league_standings import LeagueStandings as LeagueStandings
+
+    # League standings V3
+    from fastbreak.endpoints.league_standings_v3 import (
+        LeagueStandingsV3 as LeagueStandingsV3,
+    )
     from fastbreak.endpoints.leverage_leaders import LeverageLeaders as LeverageLeaders
     from fastbreak.endpoints.matchups_rollup import MatchupsRollup as MatchupsRollup
     from fastbreak.endpoints.play_by_play import PlayByPlay as PlayByPlay
@@ -285,6 +330,7 @@ if TYPE_CHECKING:
     )
 
     # Video endpoints
+    from fastbreak.endpoints.video_events import VideoEvents as VideoEvents
     from fastbreak.endpoints.video_status import VideoStatus as VideoStatus
 
 # Auto-discover and import all submodules at runtime
