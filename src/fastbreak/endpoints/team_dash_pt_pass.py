@@ -2,6 +2,8 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.team_dash_pt_pass import TeamDashPtPassResponse
 from fastbreak.types import (
@@ -16,6 +18,7 @@ from fastbreak.types import (
     SeasonSegment,
     SeasonType,
 )
+from fastbreak.utils import get_season_from_date
 
 
 class TeamDashPtPass(Endpoint[TeamDashPtPassResponse]):
@@ -49,7 +52,7 @@ class TeamDashPtPass(Endpoint[TeamDashPtPassResponse]):
     # Required parameters
     team_id: int
     league_id: LeagueID = "00"
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
     season_type: SeasonType = "Regular Season"
     per_mode: PerMode = "PerGame"
 

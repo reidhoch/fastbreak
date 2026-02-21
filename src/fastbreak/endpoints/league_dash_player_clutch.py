@@ -2,6 +2,8 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.league_dash_player_clutch import LeagueDashPlayerClutchResponse
 from fastbreak.types import (
@@ -26,6 +28,7 @@ from fastbreak.types import (
     StarterBench,
     YesNo,
 )
+from fastbreak.utils import get_season_from_date
 
 
 class LeagueDashPlayerClutch(Endpoint[LeagueDashPlayerClutchResponse]):
@@ -51,7 +54,7 @@ class LeagueDashPlayerClutch(Endpoint[LeagueDashPlayerClutchResponse]):
     )
 
     # Required parameters
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
     season_type: SeasonType = "Regular Season"
     clutch_time: ClutchTime = "Last 5 Minutes"
     ahead_behind: AheadBehind = "Ahead or Behind"

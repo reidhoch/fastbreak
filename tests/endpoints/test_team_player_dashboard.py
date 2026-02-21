@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import TeamPlayerDashboard
 from fastbreak.models import TeamPlayerDashboardResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestTeamPlayerDashboard:
@@ -13,7 +14,7 @@ class TestTeamPlayerDashboard:
         endpoint = TeamPlayerDashboard(team_id=1610612747)
 
         assert endpoint.team_id == 1610612747
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "PerGame"
         assert endpoint.measure_type == "Base"
@@ -61,7 +62,7 @@ class TestTeamPlayerDashboard:
         params = endpoint.params()
 
         assert params["TeamID"] == "1610612747"
-        assert params["Season"] == "2024-25"
+        assert params["Season"] == get_season_from_date()
         assert params["SeasonType"] == "Regular Season"
         assert params["PerMode"] == "PerGame"
         assert params["MeasureType"] == "Base"

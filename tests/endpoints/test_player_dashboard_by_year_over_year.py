@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import PlayerDashboardByYearOverYear
 from fastbreak.models import PlayerDashboardByYearOverYearResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestPlayerDashboardByYearOverYear:
@@ -16,7 +17,7 @@ class TestPlayerDashboardByYearOverYear:
 
         assert endpoint.player_id == 2544
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "PerGame"
         assert endpoint.measure_type == "Base"
@@ -55,7 +56,7 @@ class TestPlayerDashboardByYearOverYear:
         assert params == {
             "PlayerID": "203999",
             "LeagueID": "00",
-            "Season": "2024-25",
+            "Season": get_season_from_date(),
             "SeasonType": "Regular Season",
             "PerMode": "PerGame",
             "MeasureType": "Base",

@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import LeagueDashPtStats
 from fastbreak.models import LeagueDashPtStatsResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestLeagueDashPtStats:
@@ -16,7 +17,7 @@ class TestLeagueDashPtStats:
 
         assert endpoint.pt_measure_type == "Drives"
         assert endpoint.player_or_team == "Team"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "PerGame"
         assert endpoint.league_id == "00"
@@ -44,7 +45,7 @@ class TestLeagueDashPtStats:
 
         assert params["PtMeasureType"] == "Drives"
         assert params["PlayerOrTeam"] == "Team"
-        assert params["Season"] == "2024-25"
+        assert params["Season"] == get_season_from_date()
         assert params["TeamID"] == "1610612747"
         assert "Outcome" not in params
         assert "Location" not in params

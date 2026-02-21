@@ -2,6 +2,8 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.league_dash_team_stats import LeagueDashTeamStatsResponse
 from fastbreak.types import (
@@ -24,6 +26,7 @@ from fastbreak.types import (
     StarterBench,
     YesNo,
 )
+from fastbreak.utils import get_season_from_date
 
 
 class LeagueDashTeamStats(Endpoint[LeagueDashTeamStatsResponse]):
@@ -47,7 +50,7 @@ class LeagueDashTeamStats(Endpoint[LeagueDashTeamStatsResponse]):
     )
 
     # Required parameters
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
     season_type: SeasonType = "Regular Season"
     per_mode: PerMode = "PerGame"
     measure_type: MeasureType = "Base"

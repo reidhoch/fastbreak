@@ -2,9 +2,12 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.player_dash_pt_shots import PlayerDashPtShotsResponse
 from fastbreak.types import Date, LeagueID, PerMode, Season, SeasonType
+from fastbreak.utils import get_season_from_date
 
 
 class PlayerDashPtShots(Endpoint[PlayerDashPtShotsResponse]):
@@ -43,7 +46,7 @@ class PlayerDashPtShots(Endpoint[PlayerDashPtShotsResponse]):
     # Required parameters
     player_id: str
     league_id: LeagueID = "00"
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
     season_type: SeasonType = "Regular Season"
     per_mode: PerMode = "PerGame"
 

@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import ShotChartLineupDetail
 from fastbreak.models import ShotChartLineupDetailResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestShotChartLineupDetail:
@@ -13,7 +14,7 @@ class TestShotChartLineupDetail:
         endpoint = ShotChartLineupDetail(team_id=1610612747)
 
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.team_id == 1610612747
         assert endpoint.context_measure == "FGA"

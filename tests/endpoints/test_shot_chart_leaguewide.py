@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import ShotChartLeaguewide
 from fastbreak.models import ShotChartLeaguewideResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestShotChartLeaguewide:
@@ -13,7 +14,7 @@ class TestShotChartLeaguewide:
         endpoint = ShotChartLeaguewide()
 
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
 
     def test_init_with_custom_league_id(self):
         """ShotChartLeaguewide accepts custom league_id."""

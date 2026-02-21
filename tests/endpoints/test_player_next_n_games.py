@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import PlayerNextNGames
 from fastbreak.models import PlayerNextNGamesResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestPlayerNextNGames:
@@ -16,7 +17,7 @@ class TestPlayerNextNGames:
 
         assert endpoint.player_id == 2544
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.number_of_games == "10"
 
@@ -34,7 +35,7 @@ class TestPlayerNextNGames:
 
         assert params["PlayerID"] == "2544"
         assert params["LeagueID"] == "00"
-        assert params["Season"] == "2024-25"
+        assert params["Season"] == get_season_from_date()
         assert params["SeasonType"] == "Regular Season"
         assert params["NumberOfGames"] == "5"
 

@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import TeamEstimatedMetrics
 from fastbreak.models import TeamEstimatedMetricsResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestTeamEstimatedMetrics:
@@ -13,7 +14,7 @@ class TestTeamEstimatedMetrics:
         endpoint = TeamEstimatedMetrics()
 
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
 
     def test_init_with_custom_season(self):
@@ -54,7 +55,7 @@ class TestTeamEstimatedMetrics:
         params = endpoint.params()
 
         assert params["LeagueID"] == "00"
-        assert params["Season"] == "2024-25"
+        assert params["Season"] == get_season_from_date()
         assert params["SeasonType"] == "Regular Season"
 
     def test_path_is_correct(self):

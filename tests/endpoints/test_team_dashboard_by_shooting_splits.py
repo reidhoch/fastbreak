@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import TeamDashboardByShootingSplits
 from fastbreak.models import TeamDashboardByShootingSplitsResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestTeamDashboardByShootingSplits:
@@ -14,7 +15,7 @@ class TestTeamDashboardByShootingSplits:
 
         assert endpoint.team_id == 1610612747
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "PerGame"
         assert endpoint.measure_type == "Base"

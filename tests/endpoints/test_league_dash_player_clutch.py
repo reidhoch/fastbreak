@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import LeagueDashPlayerClutch
 from fastbreak.models import LeagueDashPlayerClutchResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestLeagueDashPlayerClutch:
@@ -15,7 +16,7 @@ class TestLeagueDashPlayerClutch:
         endpoint = LeagueDashPlayerClutch()
 
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.clutch_time == "Last 5 Minutes"
         assert endpoint.ahead_behind == "Ahead or Behind"
@@ -74,7 +75,7 @@ class TestLeagueDashPlayerClutch:
         params = endpoint.params()
 
         assert params["LeagueID"] == "00"
-        assert params["Season"] == "2024-25"
+        assert params["Season"] == get_season_from_date()
         assert params["SeasonType"] == "Regular Season"
         assert params["ClutchTime"] == "Last 5 Minutes"
         assert params["AheadBehind"] == "Ahead or Behind"

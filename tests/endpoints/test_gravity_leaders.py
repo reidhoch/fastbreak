@@ -3,6 +3,7 @@
 import pytest
 
 from fastbreak.endpoints import GravityLeaders
+from fastbreak.utils import get_season_from_date
 
 
 class TestGravityLeaders:
@@ -11,7 +12,7 @@ class TestGravityLeaders:
     def test_init_with_defaults(self):
         """Endpoint initializes with default values."""
         endpoint = GravityLeaders()
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.league_id == "00"
 
@@ -61,7 +62,7 @@ class TestGravityLeaders:
         params = endpoint.params()
         assert params == {
             "LeagueID": "00",
-            "Season": "2024-25",
+            "Season": get_season_from_date(),
             "SeasonType": "Regular Season",
         }
 

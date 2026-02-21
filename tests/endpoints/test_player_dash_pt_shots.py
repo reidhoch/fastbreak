@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import PlayerDashPtShots
 from fastbreak.models import PlayerDashPtShotsResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestPlayerDashPtShots:
@@ -16,7 +17,7 @@ class TestPlayerDashPtShots:
 
         assert endpoint.player_id == "2544"
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.per_mode == "PerGame"
 
     def test_init_with_player_id(self):

@@ -276,6 +276,7 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.schedule_league_v2_int import (
         ScheduleLeagueV2Int as ScheduleLeagueV2Int,
     )
+    from fastbreak.endpoints.scoreboard_v2 import ScoreboardV2 as ScoreboardV2
     from fastbreak.endpoints.scoreboard_v3 import ScoreboardV3 as ScoreboardV3
 
     # Shot chart endpoints

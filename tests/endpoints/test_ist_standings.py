@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import IstStandings
 from fastbreak.models import IstStandingsResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestIstStandings:
@@ -15,7 +16,7 @@ class TestIstStandings:
         endpoint = IstStandings()
 
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.section == "group"
 
     def test_init_with_custom_season(self):

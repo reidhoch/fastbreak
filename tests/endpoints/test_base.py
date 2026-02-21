@@ -19,6 +19,7 @@ from fastbreak.endpoints.base import (
     PlayerDashboardEndpoint,
     TeamDashboardEndpoint,
 )
+from fastbreak.utils import get_season_from_date
 
 # =============================================================================
 # Test Response Model
@@ -181,7 +182,7 @@ class TestDraftCombineEndpointBase:
 
         endpoint = TestEndpoint()
         assert endpoint.league_id == "00"
-        assert endpoint.season_year == "2024-25"
+        assert endpoint.season_year == get_season_from_date()
 
     def test_params_returns_correct_dict(self):
         """DraftCombineEndpoint.params() returns correct parameters."""
@@ -211,7 +212,10 @@ class TestDashboardEndpointBase:
         """DashboardEndpoint has correct default parameters."""
         # Check defaults on the actual base class rather than creating a subclass
         assert DashboardEndpoint.model_fields["league_id"].default == "00"
-        assert DashboardEndpoint.model_fields["season"].default == "2024-25"
+        assert (
+            DashboardEndpoint.model_fields["season"].default_factory()
+            == get_season_from_date()
+        )
         assert DashboardEndpoint.model_fields["season_type"].default == "Regular Season"
         assert DashboardEndpoint.model_fields["per_mode"].default == "PerGame"
 

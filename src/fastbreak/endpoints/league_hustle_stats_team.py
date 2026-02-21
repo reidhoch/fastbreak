@@ -2,9 +2,12 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.league_hustle_stats_team import LeagueHustleStatsTeamResponse
 from fastbreak.types import LeagueID, PerMode, Season, SeasonType
+from fastbreak.utils import get_season_from_date
 
 
 class LeagueHustleStatsTeam(Endpoint[LeagueHustleStatsTeamResponse]):
@@ -26,7 +29,7 @@ class LeagueHustleStatsTeam(Endpoint[LeagueHustleStatsTeamResponse]):
         LeagueHustleStatsTeamResponse
     )
 
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
     season_type: SeasonType = "Regular Season"
     per_mode: PerMode = "PerGame"
     league_id: LeagueID | None = None

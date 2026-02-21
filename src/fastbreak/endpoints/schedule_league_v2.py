@@ -2,9 +2,12 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.schedule_league_v2 import ScheduleLeagueV2Response
 from fastbreak.types import LeagueID, Season
+from fastbreak.utils import get_season_from_date
 
 
 class ScheduleLeagueV2(Endpoint[ScheduleLeagueV2Response]):
@@ -24,7 +27,7 @@ class ScheduleLeagueV2(Endpoint[ScheduleLeagueV2Response]):
     response_model: ClassVar[type[ScheduleLeagueV2Response]] = ScheduleLeagueV2Response
 
     league_id: LeagueID = "00"
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

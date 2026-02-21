@@ -2,9 +2,12 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.common_team_roster import CommonTeamRosterResponse
 from fastbreak.types import LeagueID, Season
+from fastbreak.utils import get_season_from_date
 
 
 class CommonTeamRoster(Endpoint[CommonTeamRosterResponse]):
@@ -22,7 +25,7 @@ class CommonTeamRoster(Endpoint[CommonTeamRosterResponse]):
 
     team_id: int
     league_id: LeagueID = "00"
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

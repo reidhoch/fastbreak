@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import LeagueLineupViz
 from fastbreak.models import LeagueLineupVizResponse
+from fastbreak.utils import get_season_from_date
 
 
 class TestLeagueLineupViz:
@@ -14,7 +15,7 @@ class TestLeagueLineupViz:
         """LeagueLineupViz uses sensible defaults."""
         endpoint = LeagueLineupViz(team_id=1610612747)
 
-        assert endpoint.season == "2024-25"
+        assert endpoint.season == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "Totals"
         assert endpoint.measure_type == "Base"

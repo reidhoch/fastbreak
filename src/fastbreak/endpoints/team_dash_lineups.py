@@ -2,6 +2,8 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.team_dash_lineups import TeamDashLineupsResponse
 from fastbreak.types import (
@@ -21,6 +23,7 @@ from fastbreak.types import (
     ShotClockRange,
     YesNo,
 )
+from fastbreak.utils import get_season_from_date
 
 
 class TeamDashLineups(Endpoint[TeamDashLineupsResponse]):
@@ -64,7 +67,7 @@ class TeamDashLineups(Endpoint[TeamDashLineupsResponse]):
     team_id: int
     group_quantity: int = 5
     league_id: LeagueID = "00"
-    season: Season = "2024-25"
+    season: Season = Field(default_factory=get_season_from_date)
     season_type: SeasonType = "Regular Season"
     per_mode: PerMode = "PerGame"
     measure_type: MeasureType = "Base"
