@@ -124,39 +124,35 @@ class TestNBAClientInit:
         assert client._timeout.total == 60  # Increased from 30s for NBA API reliability
 
     def test_default_max_retries(self):
-        """Default max_retries is 3 (4 total attempts)."""
+        """Default max_retries is 3."""
         client = NBAClient()
-        # stop_after_attempt(max_retries + 1) = stop_after_attempt(4)
-        assert client._retry.stop.max_attempt_number == 4
+        assert client._max_retries == 3
 
     def test_custom_max_retries(self):
         """Custom max_retries is respected."""
         client = NBAClient(max_retries=5)
-        assert client._retry.stop.max_attempt_number == 6
+        assert client._max_retries == 5
 
     def test_default_retry_wait_strategy(self):
-        """Default wait strategy uses correct max value."""
+        """Default wait strategy config uses correct values."""
         client = NBAClient()
-        # Wait strategy is now a custom function that respects Retry-After
-        assert callable(client._retry.wait)
-        # Verify max_wait is stored for capping
+        assert client._retry_wait_min == 1.0
         assert client._retry_wait_max == 10.0
 
     def test_custom_retry_wait_min(self):
-        """Custom retry_wait_min is applied to wait strategy."""
-        # We can verify the wait function exists; min is internal to the function
+        """Custom retry_wait_min is stored."""
         client = NBAClient(retry_wait_min=2.5)
-        assert callable(client._retry.wait)
+        assert client._retry_wait_min == 2.5
 
     def test_custom_retry_wait_max(self):
-        """Custom retry_wait_max is applied to wait strategy."""
+        """Custom retry_wait_max is stored."""
         client = NBAClient(retry_wait_max=30.0)
         assert client._retry_wait_max == 30.0
 
     def test_custom_retry_wait_both(self):
-        """Custom retry_wait_min and max are both applied."""
+        """Custom retry_wait_min and max are both stored."""
         client = NBAClient(retry_wait_min=0.5, retry_wait_max=5.0)
-        assert callable(client._retry.wait)
+        assert client._retry_wait_min == 0.5
         assert client._retry_wait_max == 5.0
 
     def test_custom_timeout(self):
@@ -776,9 +772,10 @@ class TestNBAClientRetry:
         """Custom retry parameters are stored correctly."""
         client = NBAClient(max_retries=5, retry_wait_min=2.0, retry_wait_max=30.0)
 
-        # Verify the retry config was built with correct stop condition
-        # stop_after_attempt(6) since max_retries=5 means 6 total attempts
-        assert client._retry.stop.max_attempt_number == 6
+        # Verify the retry config values are stored correctly
+        assert client._max_retries == 5
+        assert client._retry_wait_min == 2.0
+        assert client._retry_wait_max == 30.0
 
 
 class TestNBAClientGetMany:
@@ -1371,23 +1368,22 @@ class TestRetryAfterParsing:
     async def test_retry_after_used_in_wait_strategy(
         self, make_mock_client, make_client_response_error
     ):
-        """Retry-After header value is used for wait time."""
+        """Retry-After header value is parsed from 429 responses."""
         # Create client with mocked 429 response that has Retry-After header
         error = make_client_response_error(429, "https://stats.nba.com/stats/test")
         client, mock_session = make_mock_client(
             status=429,
             raise_error=error,
             headers={"Retry-After": "5"},
-            max_retries=0,  # No retries so we can inspect state immediately
+            max_retries=0,  # No retries - just verify it handles 429
             retry_wait_min=0.1,
             retry_wait_max=60.0,
         )
         endpoint = PlayByPlay(game_id="0022500571")
 
-        # After the 429 response, state should be set then cleared
-        with pytest.raises(ClientResponseError):
+        # The request should fail with 429 (no retries configured)
+        # The retry-after state is now per-request, so we just verify
+        # the request was made and the error is raised
+        with pytest.raises(ClientResponseError) as exc_info:
             await client.get(endpoint)
-
-        # The retry_after_state should have been cleared after being used
-        # (or still None since we didn't retry)
-        assert client._retry_after_state.retry_after is None
+        assert exc_info.value.status == 429

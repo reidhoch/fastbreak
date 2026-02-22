@@ -60,7 +60,11 @@ def _get_result_set(data: dict[str, Any]) -> dict[str, Any] | None:
     # Handle list format: extract first element
     if isinstance(result_sets, list):
         if not result_sets:
-            return None  # Empty list is valid - no data returned
+            logger.debug(
+                "shot_locations_empty_result_sets",
+                hint="resultSets is an empty list - no data returned from API",
+            )
+            return None
         first = result_sets[0]
         if isinstance(first, dict):
             return first
@@ -119,6 +123,15 @@ def _parse_team_row(row: list[Any]) -> dict[str, Any]:
             }
             idx += 3
         else:
+            logger.warning(
+                "shot_locations_truncated_row",
+                team_id=team_data.get("team_id"),
+                team_name=team_data.get("team_name"),
+                missing_range=range_name,
+                row_length=len(row),
+                expected_min_length=idx + 3,
+                hint="Row has fewer columns than expected; some shot ranges missing",
+            )
             break
 
     return team_data

@@ -188,11 +188,11 @@ class TestSeasonValidation:
             SeasonModel(season="2024-25 ")
 
     @given(
-        year=st.integers(min_value=1000, max_value=9999),
-        suffix=st.integers(min_value=0, max_value=99),
+        year=st.integers(min_value=1000, max_value=9998),
     )
-    def test_valid_season_formats_fuzzed(self, year, suffix):
-        """Any YYYY-YY pattern should be valid."""
+    def test_valid_season_formats_fuzzed(self, year):
+        """Valid seasons have correct year continuity (YYYY-YY where YY = (YYYY+1) % 100)."""
+        suffix = (year + 1) % 100
         season = f"{year:04d}-{suffix:02d}"
         model = SeasonModel(season=season)
         assert model.season == season
@@ -261,12 +261,12 @@ class TestDateValidation:
             DateModel(date="2025-01-15")
 
     def test_invalid_date_european_format(self):
-        """European format (DD/MM/YYYY) is not distinguished but different order."""
-        # Note: 15/01/2025 is technically valid as MM/DD/YYYY format
-        # but represents an invalid month (15)
-        model = DateModel(date="15/01/2025")
-        assert (
-            model.date == "15/01/2025"
+        """European format (DD/MM/YYYY) with invalid month is rejected."""
+        # 15/01/2025 has month=15 which is invalid
+        with pytest.raises(ValidationError) as exc_info:
+            DateModel(date="15/01/2025")
+        assert "Date must be a valid date" in str(
+            exc_info.value
         )  # Format valid, semantic validation is external
 
     def test_invalid_date_wrong_separator_dash(self):
@@ -300,12 +300,12 @@ class TestDateValidation:
             DateModel(date="Jan/15/2025")
 
     @given(
-        month=st.integers(min_value=0, max_value=99),
-        day=st.integers(min_value=0, max_value=99),
-        year=st.integers(min_value=1000, max_value=9999),
+        month=st.integers(min_value=1, max_value=12),
+        day=st.integers(min_value=1, max_value=28),
+        year=st.integers(min_value=1900, max_value=2100),
     )
     def test_valid_date_formats_fuzzed(self, month, day, year):
-        """Any MM/DD/YYYY pattern should be valid format-wise."""
+        """Valid dates in MM/DD/YYYY format should be accepted."""
         date = f"{month:02d}/{day:02d}/{year:04d}"
         model = DateModel(date=date)
         assert model.date == date

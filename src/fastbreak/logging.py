@@ -1,5 +1,9 @@
 """Structured logging for fastbreak.
 
+Logging is configured automatically at import time, but only if structlog
+hasn't already been configured by the application. This allows applications
+to set up their own structlog configuration before importing fastbreak.
+
 Logging is controlled by environment variables:
 
 FASTBREAK_LOG_LEVEL:
@@ -45,25 +49,27 @@ if _log_format == "json":
 else:
     _renderer = structlog.dev.ConsoleRenderer()
 
-if _log_level <= logging.CRITICAL:
-    # Normal logging mode - show messages at configured level and above
-    structlog.configure(
-        processors=[
-            structlog.contextvars.merge_contextvars,
-            structlog.processors.add_log_level,
-            structlog.processors.TimeStamper(fmt="iso"),
-            _renderer,
-        ],
-        wrapper_class=structlog.make_filtering_bound_logger(_log_level),
-        context_class=dict,
-        logger_factory=structlog.PrintLoggerFactory(),
-    )
-else:
-    # Silent mode - discard all log messages by using highest standard level
-    # and a logger factory that discards output
-    structlog.configure(
-        wrapper_class=structlog.make_filtering_bound_logger(logging.CRITICAL),
-        logger_factory=structlog.ReturnLoggerFactory(),
-    )
+# Only configure if the application hasn't already configured structlog
+if not structlog.is_configured():
+    if _log_level <= logging.CRITICAL:
+        # Normal logging mode - show messages at configured level and above
+        structlog.configure(
+            processors=[
+                structlog.contextvars.merge_contextvars,
+                structlog.processors.add_log_level,
+                structlog.processors.TimeStamper(fmt="iso"),
+                _renderer,
+            ],
+            wrapper_class=structlog.make_filtering_bound_logger(_log_level),
+            context_class=dict,
+            logger_factory=structlog.PrintLoggerFactory(),
+        )
+    else:
+        # Silent mode - discard all log messages by using highest standard level
+        # and a logger factory that discards output
+        structlog.configure(
+            wrapper_class=structlog.make_filtering_bound_logger(logging.CRITICAL),
+            logger_factory=structlog.ReturnLoggerFactory(),
+        )
 
 logger = structlog.get_logger("fastbreak")

@@ -446,12 +446,6 @@ if TYPE_CHECKING:
         LeagueStandingsResponse as LeagueStandingsResponse,
         TeamStanding as TeamStanding,
     )
-
-    # League standings V3
-    from fastbreak.models.league_standings_v3 import (
-        LeagueStandingsV3Response as LeagueStandingsV3Response,
-        TeamStandingV3 as TeamStandingV3,
-    )
     from fastbreak.models.leverage_leaders import (
         LeverageLeader as LeverageLeader,
         LeverageLeadersResponse as LeverageLeadersResponse,
