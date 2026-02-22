@@ -201,11 +201,6 @@ if TYPE_CHECKING:
         LeagueSeasonMatchups as LeagueSeasonMatchups,
     )
     from fastbreak.endpoints.league_standings import LeagueStandings as LeagueStandings
-
-    # League standings V3
-    from fastbreak.endpoints.league_standings_v3 import (
-        LeagueStandingsV3 as LeagueStandingsV3,
-    )
     from fastbreak.endpoints.leverage_leaders import LeverageLeaders as LeverageLeaders
     from fastbreak.endpoints.matchups_rollup import MatchupsRollup as MatchupsRollup
     from fastbreak.endpoints.play_by_play import PlayByPlay as PlayByPlay

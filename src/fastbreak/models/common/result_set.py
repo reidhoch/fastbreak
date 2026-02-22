@@ -219,6 +219,14 @@ def named_tabular_validator(
         try:
             rows = parse_result_set_by_name(data, result_set_name)
         except ValueError:
+            available = [rs.get("name") for rs in data.get("resultSets", [])]
+            logger.warning(
+                "result_set_not_found_fallback",
+                field_name=field_name,
+                result_set_name=result_set_name,
+                available_sets=available,
+                hint="Returning empty list as fallback",
+            )
             return {field_name: []}
         else:
             return {field_name: rows or []}
@@ -342,6 +350,18 @@ def singular_result_set_validator(
             try:
                 rows = parse_result_set_by_name(wrapped_data, result_set_name)
             except ValueError:
+                available = [
+                    rs.get("name")
+                    for rs in wrapped_data.get("resultSets", [])
+                    if isinstance(rs, dict)
+                ]
+                logger.warning(
+                    "singular_result_set_not_found",
+                    field_name=field_name,
+                    result_set_name=result_set_name,
+                    available_sets=available,
+                    hint="Returning empty list as fallback",
+                )
                 rows = []
             result[field_name] = rows or []
         return result

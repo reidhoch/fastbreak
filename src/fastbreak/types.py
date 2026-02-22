@@ -3,24 +3,38 @@ Type aliases for NBA API parameters.
 """
 
 import re
+from datetime import datetime
 from typing import Annotated, Literal
 
 from pydantic import AfterValidator, Field
 
 
 def _validate_season(value: str) -> str:
-    """Validate season format is YYYY-YY (e.g., '2024-25')."""
+    """Validate season format is YYYY-YY (e.g., '2024-25') with correct year continuity."""
     if not re.match(r"^\d{4}-\d{2}$", value):
         msg = "Season must be in YYYY-YY format (e.g., '2024-25')"
+        raise ValueError(msg)
+    start_year = int(value[:4])
+    end_suffix = int(value[5:])
+    expected_suffix = (start_year + 1) % 100
+    if end_suffix != expected_suffix:
+        msg = f"Invalid season: '{value}' - suffix should be {expected_suffix:02d} for year {start_year}"
         raise ValueError(msg)
     return value
 
 
 def _validate_date(value: str) -> str:
-    """Validate date format is MM/DD/YYYY (e.g., '01/15/2025')."""
+    """Validate date is a valid date in MM/DD/YYYY format (e.g., '01/15/2025')."""
+    # First check strict format (zero-padded)
     if not re.match(r"^\d{2}/\d{2}/\d{4}$", value):
         msg = "Date must be in MM/DD/YYYY format (e.g., '01/15/2025')"
         raise ValueError(msg)
+    # Then validate it's an actual valid date
+    try:
+        datetime.strptime(value, "%m/%d/%Y")  # noqa: DTZ007
+    except ValueError:
+        msg = "Date must be a valid date in MM/DD/YYYY format (e.g., '01/15/2025')"
+        raise ValueError(msg) from None
     return value
 
 

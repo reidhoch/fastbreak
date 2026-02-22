@@ -1,10 +1,12 @@
+import asyncio
 import hashlib
 import json
 import ssl
 import uuid
+import warnings
 from collections.abc import Callable, Sequence
 from types import TracebackType
-from typing import TYPE_CHECKING, ClassVar, Self, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Self, cast
 
 import anyio
 import certifi
@@ -30,12 +32,27 @@ if TYPE_CHECKING:
 
     from fastbreak.models import JSON
 
-T = TypeVar("T", bound=BaseModel)
-
 HTTP_TOO_MANY_REQUESTS = 429
 HTTP_SERVER_ERROR_MIN = 500
 BATCH_PROGRESS_THRESHOLD = 10
 DEFAULT_CACHE_MAXSIZE = 256
+SESSION_CLOSE_TIMEOUT = 5.0
+
+
+class CacheTypeMismatchError(Exception):
+    """Raised when a cached response has an unexpected type.
+
+    This indicates a cache key collision or bug in the caching logic.
+    """
+
+    def __init__(self, key: str, expected: str, actual: str) -> None:
+        self.key = key
+        self.expected = expected
+        self.actual = actual
+        super().__init__(
+            f"Cache type mismatch for key '{key[:16]}...': "
+            f"expected {expected}, got {actual}"
+        )
 
 
 class _TypedResponseCache:
@@ -44,12 +61,17 @@ class _TypedResponseCache:
     This wrapper encapsulates the type relationship between cache keys
     (derived from endpoints) and their stored response types, providing
     type-safe get/set operations without requiring cast() at call sites.
+
+    Stores response type alongside value to enable reliable type checking,
+    since isinstance() alone cannot distinguish between Pydantic model types.
     """
 
     def __init__(self, maxsize: int, ttl: int) -> None:
-        self._cache: TTLCache[str, BaseModel] = TTLCache(maxsize=maxsize, ttl=ttl)
+        self._cache: TTLCache[str, tuple[type[BaseModel], BaseModel]] = TTLCache(
+            maxsize=maxsize, ttl=ttl
+        )
 
-    def get(self, key: str, response_type: type[T]) -> T | None:
+    def get[T: BaseModel](self, key: str, response_type: type[T]) -> T | None:
         """Retrieve a cached response with proper type narrowing.
 
         Args:
@@ -59,19 +81,29 @@ class _TypedResponseCache:
         Returns:
             The cached response cast to T, or None if not found
 
-        """
-        value = self._cache.get(key)
-        if value is None:
-            return None
-        # Type narrowing: we trust that the key was generated from an endpoint
-        # that produces response_type, so this cast is safe
-        if isinstance(value, response_type):
-            return value
-        return None  # Type mismatch (defensive, shouldn't happen)
+        Raises:
+            CacheTypeMismatchError: If cached value has wrong type (indicates bug)
 
-    def set(self, key: str, value: T) -> None:
-        """Store a response in the cache."""
-        self._cache[key] = value
+        """
+        cached = self._cache.get(key)
+        if cached is None:
+            return None
+        cached_type, value = cached
+        if cached_type is response_type:
+            return cast("T", value)
+        # Type mismatch indicates a bug - raise instead of silently returning None
+        logger.error(
+            "cache_type_mismatch_bug",
+            key=key[:16] + "...",
+            expected=response_type.__name__,
+            actual=cached_type.__name__,
+            hint="This indicates a cache key collision or bug",
+        )
+        raise CacheTypeMismatchError(key, response_type.__name__, cached_type.__name__)
+
+    def set[T: BaseModel](self, key: str, value: T) -> None:
+        """Store a response in the cache with its type."""
+        self._cache[key] = (type(value), value)
 
     def __contains__(self, key: str) -> bool:
         return key in self._cache
@@ -195,16 +227,11 @@ class NBAClient:
         self._timeout = timeout or ClientTimeout(total=60)
         self._session_lock = Lock()
         self._request_delay = request_delay
-        self._retry_after_state = _RetryAfterState()
+
+        # Retry configuration (stored for per-request retry instances)
+        self._max_retries = max_retries
+        self._retry_wait_min = retry_wait_min
         self._retry_wait_max = retry_wait_max
-        self._retry = AsyncRetrying(
-            stop=stop_after_attempt(max_retries + 1),
-            wait=_make_wait_with_retry_after(
-                self._retry_after_state, retry_wait_min, retry_wait_max
-            ),
-            retry=retry_if_exception(_is_retryable_error),
-            reraise=True,
-        )
 
         # Response caching
         self._cache: _TypedResponseCache | None = None
@@ -212,7 +239,7 @@ class NBAClient:
             self._cache = _TypedResponseCache(maxsize=cache_maxsize, ttl=cache_ttl)
         self._cache_lock = Lock()
 
-    def _make_cache_key(self, endpoint: Endpoint[T]) -> str:
+    def _make_cache_key[T: BaseModel](self, endpoint: Endpoint[T]) -> str:
         """Generate a cache key from endpoint path and parameters."""
         params_json = json.dumps(endpoint.params(), sort_keys=True)
         key_data = f"{endpoint.path}:{params_json}"
@@ -235,11 +262,33 @@ class NBAClient:
         return self._session
 
     async def close(self) -> None:
-        """Close the client session if we own it."""
+        """Close the client session if we own it.
+
+        Uses a timeout to prevent hanging on stuck connections.
+        """
         async with self._session_lock:
             if self._owns_session and self._session is not None:
-                await self._session.close()
-                self._session = None
+                try:
+                    await asyncio.wait_for(
+                        self._session.close(), timeout=SESSION_CLOSE_TIMEOUT
+                    )
+                except TimeoutError:
+                    logger.warning(
+                        "session_close_timeout",
+                        timeout=SESSION_CLOSE_TIMEOUT,
+                        hint="Session close timed out, forcing cleanup",
+                    )
+                finally:
+                    self._session = None
+
+    def __del__(self) -> None:
+        """Warn if client was not properly closed."""
+        if self._owns_session and self._session is not None:
+            warnings.warn(
+                "NBAClient was not properly closed. Use 'async with NBAClient() as client:'",
+                ResourceWarning,
+                stacklevel=2,
+            )
 
     async def __aenter__(self) -> Self:
         return self
@@ -264,10 +313,14 @@ class NBAClient:
             # Try parsing as integer seconds first (most common)
             return float(value)
         except ValueError:
-            # HTTP-date format not commonly used by NBA API, skip for now
+            logger.debug(
+                "retry_after_parse_failed",
+                raw_value=value,
+                hint="Falling back to exponential backoff",
+            )
             return None
 
-    async def _check_cache(
+    async def _check_cache[T: BaseModel](
         self, endpoint: Endpoint[T], request_id: str
     ) -> tuple[str | None, T | None]:
         """Check cache for a cached response.
@@ -289,13 +342,17 @@ class NBAClient:
                 )
             return cache_key, cached
 
-    async def _store_in_cache(self, cache_key: str | None, result: T) -> None:
+    async def _store_in_cache[T: BaseModel](
+        self, cache_key: str | None, result: T
+    ) -> None:
         """Store a response in the cache if caching is enabled."""
         if self._cache is not None and cache_key is not None:
             async with self._cache_lock:
                 self._cache.set(cache_key, result)
 
-    async def get(self, endpoint: Endpoint[T], *, request_id: str | None = None) -> T:
+    async def get[T: BaseModel](
+        self, endpoint: Endpoint[T], *, request_id: str | None = None
+    ) -> T:
         """Fetch data from an endpoint and return the parsed response.
 
         Args:
@@ -316,7 +373,18 @@ class NBAClient:
         url = f"{self.BASE_URL}/{endpoint.path}"
         log = logger.bind(request_id=req_id, endpoint=endpoint.path)
 
-        async for attempt in self._retry:
+        # Create per-request retry state to avoid race conditions
+        retry_after_state = _RetryAfterState()
+        retry = AsyncRetrying(
+            stop=stop_after_attempt(self._max_retries + 1),
+            wait=_make_wait_with_retry_after(
+                retry_after_state, self._retry_wait_min, self._retry_wait_max
+            ),
+            retry=retry_if_exception(_is_retryable_error),
+            reraise=True,
+        )
+
+        async for attempt in retry:
             with attempt:
                 attempt_num = attempt.retry_state.attempt_number
                 await log.adebug(
@@ -327,7 +395,9 @@ class NBAClient:
                 )
 
                 async with session.get(url, params=endpoint.params()) as resp:
-                    await self._handle_rate_limit(resp, log, attempt_num)
+                    await self._handle_rate_limit(
+                        resp, log, attempt_num, retry_after_state
+                    )
                     resp.raise_for_status()
                     data = await resp.json()
 
@@ -345,6 +415,7 @@ class NBAClient:
         resp: "ClientResponse",
         log: "BoundLogger",
         attempt_num: int,
+        retry_after_state: _RetryAfterState,
     ) -> None:
         """Handle rate limit response by storing Retry-After for the wait strategy."""
         if resp.status != HTTP_TOO_MANY_REQUESTS:
@@ -352,7 +423,7 @@ class NBAClient:
 
         retry_after_raw = resp.headers.get("Retry-After")
         retry_after = self._parse_retry_after(retry_after_raw)
-        self._retry_after_state.set_retry_after(retry_after)
+        retry_after_state.set_retry_after(retry_after)
         await log.adebug(
             "rate_limited",
             status=resp.status,
@@ -361,7 +432,7 @@ class NBAClient:
             attempt=attempt_num,
         )
 
-    async def _parse_and_validate(
+    async def _parse_and_validate[T: BaseModel](
         self,
         endpoint: Endpoint[T],
         data: "JSON",
@@ -379,7 +450,7 @@ class NBAClient:
             )
             raise
 
-    async def get_many(
+    async def get_many[T: BaseModel](
         self,
         endpoints: Sequence[Endpoint[T]],
         *,
@@ -398,6 +469,7 @@ class NBAClient:
             A list of parsed responses in the same order as the input endpoints.
 
         Raises:
+            TypeError: If any item in endpoints is not an Endpoint instance.
             ExceptionGroup: If any request fails, contains all exceptions.
 
         Example:
@@ -408,13 +480,19 @@ class NBAClient:
         if not endpoints:
             return []
 
+        # Validate all items are Endpoint instances
+        for i, ep in enumerate(endpoints):
+            if not isinstance(ep, Endpoint):
+                msg = f"Item at index {i} is not an Endpoint instance: {type(ep).__name__}"
+                raise TypeError(msg)
+
         # Generate batch correlation ID
         batch_id = str(uuid.uuid4())
 
         total = len(endpoints)
         concurrency = max_concurrency or 3
         limiter = CapacityLimiter(concurrency)
-        results: list[T] = [None] * total  # type: ignore[list-item]
+        results: dict[int, T] = {}
         completed = 0
 
         log = logger.bind(batch_id=batch_id, total=total, concurrency=concurrency)
@@ -440,7 +518,7 @@ class NBAClient:
                 tg.start_soon(_fetch_with_limiter, i, endpoint)
 
         await log.adebug("batch_complete", total=total)
-        return results
+        return [results[i] for i in range(total)]
 
     def clear_cache(self) -> None:
         """Clear the response cache."""
