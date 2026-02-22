@@ -1387,3 +1387,286 @@ class TestRetryAfterParsing:
         with pytest.raises(ClientResponseError) as exc_info:
             await client.get(endpoint)
         assert exc_info.value.status == 429
+
+
+class TestSearchPlayers:
+    """Tests for player search functionality."""
+
+    @pytest.fixture
+    def mock_player_index_response(self):
+        """Sample PlayerIndex API response."""
+        return {
+            "resultSets": [
+                {
+                    "name": "PlayerIndex",
+                    "headers": [
+                        "PERSON_ID",
+                        "PLAYER_LAST_NAME",
+                        "PLAYER_FIRST_NAME",
+                        "PLAYER_SLUG",
+                        "TEAM_ID",
+                        "TEAM_SLUG",
+                        "IS_DEFUNCT",
+                        "TEAM_CITY",
+                        "TEAM_NAME",
+                        "TEAM_ABBREVIATION",
+                        "JERSEY_NUMBER",
+                        "POSITION",
+                        "HEIGHT",
+                        "WEIGHT",
+                        "COLLEGE",
+                        "COUNTRY",
+                        "DRAFT_YEAR",
+                        "DRAFT_ROUND",
+                        "DRAFT_NUMBER",
+                        "ROSTER_STATUS",
+                        "FROM_YEAR",
+                        "TO_YEAR",
+                        "PTS",
+                        "REB",
+                        "AST",
+                        "STATS_TIMEFRAME",
+                    ],
+                    "rowSet": [
+                        [
+                            201939,
+                            "Curry",
+                            "Stephen",
+                            "stephen-curry",
+                            1610612744,
+                            "warriors",
+                            0,
+                            "Golden State",
+                            "Warriors",
+                            "GSW",
+                            "30",
+                            "G",
+                            "6-2",
+                            "185",
+                            "Davidson",
+                            "USA",
+                            2009,
+                            1,
+                            7,
+                            1.0,
+                            "2009",
+                            "2024",
+                            24.5,
+                            4.3,
+                            6.1,
+                            "2024-25",
+                        ],
+                        [
+                            203552,
+                            "Curry",
+                            "Seth",
+                            "seth-curry",
+                            1610612766,
+                            "hornets",
+                            0,
+                            "Charlotte",
+                            "Hornets",
+                            "CHA",
+                            "31",
+                            "G",
+                            "6-1",
+                            "185",
+                            "Duke",
+                            "USA",
+                            2013,
+                            None,
+                            None,
+                            1.0,
+                            "2013",
+                            "2024",
+                            8.2,
+                            1.8,
+                            2.1,
+                            "2024-25",
+                        ],
+                        [
+                            2544,
+                            "James",
+                            "LeBron",
+                            "lebron-james",
+                            1610612747,
+                            "lakers",
+                            0,
+                            "Los Angeles",
+                            "Lakers",
+                            "LAL",
+                            "23",
+                            "F",
+                            "6-9",
+                            "250",
+                            None,
+                            "USA",
+                            2003,
+                            1,
+                            1,
+                            1.0,
+                            "2003",
+                            "2024",
+                            25.7,
+                            7.3,
+                            8.3,
+                            "2024-25",
+                        ],
+                    ],
+                }
+            ]
+        }
+
+    @pytest.mark.asyncio
+    async def test_search_players_finds_partial_match(self, mock_player_index_response):
+        """search_players should find players by partial name."""
+        with patch.object(NBAClient, "get") as mock_get:
+            mock_response = MagicMock()
+            mock_response.players = [
+                MagicMock(
+                    person_id=201939,
+                    player_first_name="Stephen",
+                    player_last_name="Curry",
+                ),
+                MagicMock(
+                    person_id=203552,
+                    player_first_name="Seth",
+                    player_last_name="Curry",
+                ),
+            ]
+            mock_get.return_value = mock_response
+
+            async with NBAClient() as client:
+                results = await client.search_players("Curry")
+
+            assert len(results) == 2
+
+    @pytest.mark.asyncio
+    async def test_search_players_empty_query_returns_empty(self):
+        """search_players with empty query returns empty list."""
+        async with NBAClient() as client:
+            results = await client.search_players("")
+        assert results == []
+
+    @pytest.mark.asyncio
+    async def test_search_players_respects_limit(self):
+        """search_players should respect the limit parameter."""
+        with patch.object(NBAClient, "get") as mock_get:
+            mock_response = MagicMock()
+            mock_response.players = [
+                MagicMock(
+                    person_id=i, player_first_name="Test", player_last_name=f"Player{i}"
+                )
+                for i in range(20)
+            ]
+            mock_get.return_value = mock_response
+
+            async with NBAClient() as client:
+                results = await client.search_players("Test", limit=5)
+
+            assert len(results) == 5
+
+    @pytest.mark.asyncio
+    async def test_get_player_by_id(self):
+        """get_player should find player by ID."""
+        with patch.object(NBAClient, "get") as mock_get:
+            mock_player = MagicMock(
+                person_id=201939,
+                player_first_name="Stephen",
+                player_last_name="Curry",
+            )
+            mock_response = MagicMock()
+            mock_response.players = [mock_player]
+            mock_get.return_value = mock_response
+
+            async with NBAClient() as client:
+                result = await client.get_player(201939)
+
+            assert result is not None
+            assert result.person_id == 201939
+
+    @pytest.mark.asyncio
+    async def test_get_player_by_exact_name(self):
+        """get_player should find player by exact full name."""
+        with patch.object(NBAClient, "get") as mock_get:
+            mock_player = MagicMock(
+                person_id=201939,
+                player_first_name="Stephen",
+                player_last_name="Curry",
+            )
+            mock_response = MagicMock()
+            mock_response.players = [mock_player]
+            mock_get.return_value = mock_response
+
+            async with NBAClient() as client:
+                result = await client.get_player("Stephen Curry")
+
+            assert result is not None
+            assert result.person_id == 201939
+
+    @pytest.mark.asyncio
+    async def test_get_player_not_found_returns_none(self):
+        """get_player returns None when player not found."""
+        with patch.object(NBAClient, "get") as mock_get:
+            mock_response = MagicMock()
+            mock_response.players = []
+            mock_get.return_value = mock_response
+
+            async with NBAClient() as client:
+                result = await client.get_player(99999999)
+
+            assert result is None
+
+    @pytest.mark.asyncio
+    async def test_get_player_id_returns_id(self):
+        """get_player_id should return player's ID."""
+        with patch.object(NBAClient, "get") as mock_get:
+            mock_player = MagicMock(
+                person_id=201939,
+                player_first_name="Stephen",
+                player_last_name="Curry",
+            )
+            mock_response = MagicMock()
+            mock_response.players = [mock_player]
+            mock_get.return_value = mock_response
+
+            async with NBAClient() as client:
+                result = await client.get_player_id("Stephen Curry")
+
+            assert result == 201939
+
+    @pytest.mark.asyncio
+    async def test_get_player_id_not_found_returns_none(self):
+        """get_player_id returns None when player not found."""
+        with patch.object(NBAClient, "get") as mock_get:
+            mock_response = MagicMock()
+            mock_response.players = []
+            mock_get.return_value = mock_response
+
+            async with NBAClient() as client:
+                result = await client.get_player_id("Nonexistent Player")
+
+            assert result is None
+
+
+@pytest.mark.live_api
+class TestSearchPlayersLive:
+    """Live API tests for player search."""
+
+    @pytest.mark.asyncio
+    async def test_search_players_live(self):
+        """Search for a well-known player against live API."""
+        async with NBAClient() as client:
+            results = await client.search_players("LeBron")
+
+        assert len(results) > 0
+        assert any(p.player_last_name == "James" for p in results)
+
+    @pytest.mark.asyncio
+    async def test_get_player_by_id_live(self):
+        """Get player by ID against live API."""
+        async with NBAClient() as client:
+            result = await client.get_player(2544)  # LeBron James
+
+        assert result is not None
+        assert result.player_last_name == "James"
