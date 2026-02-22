@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from aiohttp import ClientResponse
     from structlog import BoundLogger
 
-    from fastbreak.models import JSON
+    from fastbreak.models import JSON, PlayerIndexEntry
 
 HTTP_TOO_MANY_REQUESTS = 429
 HTTP_SERVER_ERROR_MIN = 500
@@ -540,3 +540,124 @@ class NBAClient:
             "maxsize": int(self._cache.maxsize),
             "ttl": int(self._cache.ttl),
         }
+
+    async def search_players(
+        self,
+        query: str,
+        *,
+        season: str | None = None,
+        limit: int = 10,
+    ) -> list["PlayerIndexEntry"]:
+        """Search for players by partial name match.
+
+        Args:
+            query: Search string (matches first name, last name, or full name)
+            season: Season to search in (defaults to current)
+            limit: Maximum results to return
+
+        Returns:
+            List of matching PlayerIndexEntry objects, sorted by relevance
+
+        Examples:
+            await client.search_players("Curry")  # finds Stephen, Seth, etc.
+            await client.search_players("Ant")    # finds Anthony Edwards, etc.
+
+        """
+        if not query or not query.strip():
+            return []
+
+        # Import inside method to avoid circular import issues
+        from fastbreak.endpoints import PlayerIndex  # noqa: PLC0415
+        from fastbreak.models import PlayerIndexEntry  # noqa: PLC0415, TC001
+        from fastbreak.utils import get_season_from_date  # noqa: PLC0415
+
+        season = season or get_season_from_date()
+        response = await self.get(PlayerIndex(season=season))
+
+        q = query.lower().strip()
+        matches: list[tuple[int, PlayerIndexEntry]] = []
+
+        for player in response.players:
+            first = player.player_first_name.lower()
+            last = player.player_last_name.lower()
+            full = f"{first} {last}"
+
+            # Priority: 0=exact full, 1=last starts, 2=first starts, 3=contains
+            if full == q:
+                priority = 0
+            elif last.startswith(q):
+                priority = 1
+            elif first.startswith(q):
+                priority = 2
+            elif q in first or q in last or q in full:
+                priority = 3
+            else:
+                continue
+
+            matches.append((priority, player))
+
+        # Sort by priority, then by last name
+        matches.sort(key=lambda x: (x[0], x[1].player_last_name.lower()))
+        return [player for _, player in matches[:limit]]
+
+    async def get_player(
+        self,
+        identifier: int | str,
+        *,
+        season: str | None = None,
+    ) -> "PlayerIndexEntry | None":
+        """Get a player by ID or exact name.
+
+        Args:
+            identifier: Player ID (int) or exact full name (str)
+            season: Season to search in (defaults to current)
+
+        Returns:
+            PlayerIndexEntry if found, None otherwise
+
+        Examples:
+            await client.get_player(201939)           # by ID
+            await client.get_player("Stephen Curry")  # exact name match
+
+        """
+        from fastbreak.endpoints import PlayerIndex  # noqa: PLC0415
+        from fastbreak.utils import get_season_from_date  # noqa: PLC0415
+
+        season = season or get_season_from_date()
+        response = await self.get(PlayerIndex(season=season))
+
+        if isinstance(identifier, int):
+            for player in response.players:
+                if player.person_id == identifier:
+                    return player
+            return None
+
+        # String identifier - exact name match (case-insensitive)
+        name = identifier.lower().strip()
+        for player in response.players:
+            full_name = f"{player.player_first_name} {player.player_last_name}".lower()
+            if full_name == name:
+                return player
+        return None
+
+    async def get_player_id(
+        self,
+        name: str,
+        *,
+        season: str | None = None,
+    ) -> int | None:
+        """Get a player's ID by exact name.
+
+        Args:
+            name: Exact full name of the player
+            season: Season to search in (defaults to current)
+
+        Returns:
+            Player ID if found, None otherwise
+
+        Examples:
+            player_id = await client.get_player_id("LeBron James")
+
+        """
+        player = await self.get_player(name, season=season)
+        return player.person_id if player else None
