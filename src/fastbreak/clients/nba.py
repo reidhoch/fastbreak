@@ -6,7 +6,7 @@ import uuid
 import warnings
 from collections.abc import Callable, Sequence
 from types import TracebackType
-from typing import TYPE_CHECKING, ClassVar, Self, cast
+from typing import TYPE_CHECKING, ClassVar, Self, cast, overload
 
 import anyio
 import certifi
@@ -600,6 +600,22 @@ class NBAClient:
         matches.sort(key=lambda x: (x[0], x[1].player_last_name.lower()))
         return [player for _, player in matches[:limit]]
 
+    @overload
+    async def get_player(
+        self,
+        identifier: int,
+        *,
+        season: str | None = None,
+    ) -> "PlayerIndexEntry | None": ...
+
+    @overload
+    async def get_player(
+        self,
+        identifier: str,
+        *,
+        season: str | None = None,
+    ) -> "PlayerIndexEntry | None": ...
+
     async def get_player(
         self,
         identifier: int | str,
@@ -633,7 +649,8 @@ class NBAClient:
             return None
 
         # String identifier - exact name match (case-insensitive)
-        name = identifier.lower().strip()
+        # Type is narrowed to str after int check above
+        name: str = identifier.lower().strip()
         for player in response.players:
             full_name = f"{player.player_first_name} {player.player_last_name}".lower()
             if full_name == name:
