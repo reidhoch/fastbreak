@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import json
+import signal
 import ssl
 import uuid
 import warnings
@@ -208,6 +209,8 @@ class NBAClient:
         request_delay: float = 0.0,
         cache_ttl: int = 0,
         cache_maxsize: int = DEFAULT_CACHE_MAXSIZE,
+        *,
+        handle_signals: bool = True,
     ) -> None:
         """Initialize the NBA API client.
 
@@ -220,6 +223,8 @@ class NBAClient:
             request_delay: Delay between requests in get_many() for rate limiting
             cache_ttl: TTL in seconds for response caching (0 = disabled, default)
             cache_maxsize: Maximum number of cached responses (default: 256)
+            handle_signals: Register SIGINT/SIGTERM handlers for graceful shutdown
+                (default: True). Set to False to manage signal handling yourself.
 
         """
         self._session = session
@@ -238,6 +243,8 @@ class NBAClient:
         if cache_ttl > 0:
             self._cache = _TypedResponseCache(maxsize=cache_maxsize, ttl=cache_ttl)
         self._cache_lock = Lock()
+
+        self._handle_signals = handle_signals
 
     def _make_cache_key[T: BaseModel](self, endpoint: Endpoint[T]) -> str:
         """Generate a cache key from endpoint path and parameters."""
@@ -291,6 +298,8 @@ class NBAClient:
             )
 
     async def __aenter__(self) -> Self:
+        if self._handle_signals:
+            self._install_signal_handlers()
         return self
 
     async def __aexit__(
@@ -299,7 +308,44 @@ class NBAClient:
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
+        if self._handle_signals:
+            self._remove_signal_handlers()
         await self.close()
+
+    def _install_signal_handlers(self) -> None:
+        """Register SIGINT and SIGTERM handlers for graceful shutdown."""
+        try:
+            loop = asyncio.get_running_loop()
+            loop.add_signal_handler(signal.SIGINT, self._on_signal)
+            loop.add_signal_handler(signal.SIGTERM, self._on_signal)
+        except (NotImplementedError, RuntimeError, ValueError):
+            pass
+
+    def _remove_signal_handlers(self) -> None:
+        """Remove the registered SIGINT and SIGTERM handlers."""
+        try:
+            loop = asyncio.get_running_loop()
+            loop.remove_signal_handler(signal.SIGINT)
+            loop.remove_signal_handler(signal.SIGTERM)
+        except (NotImplementedError, ValueError, RuntimeError):
+            pass
+
+    def _on_signal(self) -> None:
+        """Handle SIGINT/SIGTERM by scheduling a graceful shutdown."""
+        # Remove handlers immediately to prevent re-entrancy on double Ctrl-C
+        self._remove_signal_handlers()
+        asyncio.get_running_loop().create_task(
+            self._graceful_shutdown(),
+            name="fastbreak-shutdown",
+        )
+
+    async def _graceful_shutdown(self) -> None:
+        """Close open connections then cancel all pending tasks."""
+        await self.close()
+        current = asyncio.current_task()
+        for task in asyncio.all_tasks():
+            if task is not current:
+                task.cancel()
 
     def _parse_retry_after(self, value: str | None) -> float | None:
         """Parse Retry-After header value to seconds.
