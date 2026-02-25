@@ -48,13 +48,43 @@ df = TeamStanding.to_pandas(standings.standings)
 df = TeamStanding.to_polars(standings.standings)
 ```
 
+### Batch Requests
+
+Fetch multiple endpoints concurrently with `get_many()`:
+
+```python
+from fastbreak.endpoints import BoxScoreTraditional
+
+game_ids = ["0022401001", "0022401002", "0022401003"]
+
+async with NBAClient() as client:
+    results = await client.get_many(
+        [BoxScoreTraditional(game_id=gid) for gid in game_ids],
+        max_concurrency=5,
+    )
+```
+
+Results are returned in the same order as the input. If any request fails, all in-flight requests are cancelled and an `ExceptionGroup` is raised.
+
+### Caching
+
+Enable TTL-based response caching to avoid redundant API calls:
+
+```python
+async with NBAClient(cache_ttl=300, cache_maxsize=256) as client:
+    result = await client.get(LeagueStandings(season="2025-26"))  # cached for 5 min
+    print(client.cache_info)  # {'size': 1, 'maxsize': 256, 'ttl': 300}
+    client.clear_cache()
+```
+
 ## Features
 
-- **Async-first** - Built on aiohttp for high-performance concurrent requests
-- **Fully typed** - Complete type hints with strict mypy compliance
-- **Pydantic models** - Validated response parsing with IDE autocomplete
-- **DataFrame support** - Optional conversion to pandas or polars
-- **Automatic retries** - Handles rate limiting and transient errors
+- Async I/O via aiohttp
+- Strict mypy typing throughout
+- Pydantic models for all responses, with pandas/polars export
+- Retries and rate-limit handling built in
+- `get_many()` for concurrent batch requests
+- Optional TTL response caching
 
 ## Available Endpoints
 
@@ -74,7 +104,7 @@ See [`fastbreak.endpoints`](https://github.com/reidhoch/fastbreak/tree/main/src/
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
 
 ## License
 
