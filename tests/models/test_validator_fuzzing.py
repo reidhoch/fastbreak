@@ -5,7 +5,7 @@ arbitrary input types gracefully without crashing.
 """
 
 import pytest
-from hypothesis import given, settings, strategies as st
+from hypothesis import HealthCheck, given, settings, strategies as st
 from pydantic import ValidationError
 
 from fastbreak.models.common.result_set import (
@@ -61,7 +61,7 @@ class TestIsTabularResponseFuzzing:
     """Fuzz tests for is_tabular_response type guard."""
 
     @given(data=json_values)
-    @settings(max_examples=200)
+    @settings(max_examples=200, suppress_health_check=[HealthCheck.differing_executors])
     def test_never_crashes_on_arbitrary_input(self, data):
         """is_tabular_response should never raise on any input type."""
         result = is_tabular_response(data)

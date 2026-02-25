@@ -24,6 +24,7 @@ class LeagueGameLog(Endpoint[LeagueGameLogResponse]):
         counter: Number of results to return
         sorter: Stat field to sort by (e.g., "PTS", "REB", "AST")
         direction: Sort direction ("ASC" or "DESC")
+        team_id: Filter to a specific team's games (None = all teams)
         date_from: Filter games from date (MM/DD/YYYY)
         date_to: Filter games to date (MM/DD/YYYY)
 
@@ -43,7 +44,8 @@ class LeagueGameLog(Endpoint[LeagueGameLogResponse]):
     sorter: str = "PTS"
     direction: str = "DESC"
 
-    # Optional date filters
+    # Optional filters
+    team_id: int | None = None
     date_from: Date | None = None
     date_to: Date | None = None
 
@@ -59,6 +61,8 @@ class LeagueGameLog(Endpoint[LeagueGameLogResponse]):
             "Direction": self.direction,
         }
 
+        if self.team_id is not None:
+            result["TeamID"] = str(self.team_id)
         if self.date_from is not None:
             result["DateFrom"] = self.date_from
         if self.date_to is not None:

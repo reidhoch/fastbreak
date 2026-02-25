@@ -10,7 +10,6 @@ import logging
 import os
 import subprocess
 import sys
-from unittest.mock import patch
 
 import pytest
 

@@ -1,4 +1,6 @@
 from fastbreak._version import __version__, __version_tuple__
+from fastbreak.games import get_game_ids
+from fastbreak.players import get_player, get_player_id, search_players
 from fastbreak.types import (
     Conference,
     ContextMeasure,
@@ -42,9 +44,7 @@ from fastbreak.utils import (
 )
 
 __all__ = [
-    # Utilities
     "TEAMS",
-    # Types
     "Conference",
     "ContextMeasure",
     "Date",
@@ -74,12 +74,15 @@ __all__ = [
     "TeamID",
     "TeamInfo",
     "YesNo",
-    # Version
     "__version__",
     "__version_tuple__",
+    "get_game_ids",
+    "get_player",
+    "get_player_id",
     "get_season_from_date",
     "get_team",
     "get_team_id",
+    "search_players",
     "season_start_year",
     "season_to_season_id",
     "teams_by_conference",
