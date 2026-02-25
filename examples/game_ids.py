@@ -4,9 +4,9 @@ import asyncio
 
 from fastbreak.clients import NBAClient
 from fastbreak.games import get_game_ids
+from fastbreak.utils import get_team_id
 
-# Indiana Pacers team ID
-IND_TEAM_ID = 1610612754
+IND_TEAM_ID = get_team_id("IND")
 
 
 async def main() -> None:
