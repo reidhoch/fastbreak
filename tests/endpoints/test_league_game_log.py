@@ -92,6 +92,34 @@ class TestLeagueGameLog:
         assert "DateFrom" not in params
         assert "DateTo" not in params
 
+    def test_init_with_team_id(self):
+        """LeagueGameLog accepts an optional team_id."""
+        endpoint = LeagueGameLog(team_id=1610612744)
+
+        assert endpoint.team_id == 1610612744
+
+    def test_team_id_defaults_to_none(self):
+        """team_id defaults to None (no team filter)."""
+        endpoint = LeagueGameLog()
+
+        assert endpoint.team_id is None
+
+    def test_params_includes_team_id_when_set(self):
+        """params() includes TeamID when team_id is provided."""
+        endpoint = LeagueGameLog(team_id=1610612744)
+
+        params = endpoint.params()
+
+        assert params["TeamID"] == "1610612744"
+
+    def test_params_excludes_team_id_when_none(self):
+        """params() omits TeamID when team_id is not set."""
+        endpoint = LeagueGameLog()
+
+        params = endpoint.params()
+
+        assert "TeamID" not in params
+
     def test_path_is_correct(self):
         """LeagueGameLog has correct API path."""
         endpoint = LeagueGameLog()

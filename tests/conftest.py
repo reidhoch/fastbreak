@@ -1,9 +1,10 @@
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from aiohttp import ClientResponseError, ClientSession, RequestInfo
 from multidict import CIMultiDict, CIMultiDictProxy
+from pytest_mock import MockerFixture
 from yarl import URL
 
 from fastbreak.clients.nba import NBAClient
@@ -121,7 +122,7 @@ def sample_response_data(sample_meta_data, sample_game_data):
 
 
 @pytest.fixture
-def make_mock_client():
+def make_mock_client(mocker: MockerFixture):
     """Factory fixture for creating NBAClient with mocked session.
 
     Returns a tuple of (client, mock_session) for tests that need to inspect calls.
@@ -146,22 +147,22 @@ def make_mock_client():
         **client_kwargs: Any,
     ) -> tuple[NBAClient, MagicMock]:
         # Create mock response
-        response = AsyncMock()
+        response = mocker.AsyncMock()
         response.status = status
         response.headers = CIMultiDictProxy(CIMultiDict(headers or {}))
 
         if raise_error:
-            response.raise_for_status = MagicMock(side_effect=raise_error)
+            response.raise_for_status = mocker.MagicMock(side_effect=raise_error)
         else:
-            response.raise_for_status = MagicMock()
+            response.raise_for_status = mocker.MagicMock()
 
-        response.json = AsyncMock(return_value=json_data)
-        response.__aenter__ = AsyncMock(return_value=response)
-        response.__aexit__ = AsyncMock(return_value=None)
+        response.json = mocker.AsyncMock(return_value=json_data)
+        response.__aenter__ = mocker.AsyncMock(return_value=response)
+        response.__aexit__ = mocker.AsyncMock(return_value=None)
 
         # Create mock session
-        mock_session = MagicMock(spec=ClientSession)
-        mock_session.get = MagicMock(return_value=response)
+        mock_session = mocker.MagicMock(spec=ClientSession)
+        mock_session.get = mocker.MagicMock(return_value=response)
 
         # Create client with mock session
         client = NBAClient(session=mock_session, **client_kwargs)

@@ -154,3 +154,143 @@ class TestVideoStatusOptionalParams:
         params = endpoint.params()
         # game_date is optional and should not be in params if None
         assert "GameDate" not in params or params.get("GameDate") == ""
+
+
+class TestLeagueDashTeamPtShotParams:
+    """Tests for LeagueDashTeamPtShot params() coverage."""
+
+    def test_params_default_keys(self):
+        """params() includes required keys with correct default values."""
+        from fastbreak.endpoints import LeagueDashTeamPtShot
+
+        params = LeagueDashTeamPtShot().params()
+
+        assert params["LeagueID"] == "00"
+        assert params["SeasonType"] == "Regular Season"
+        assert params["PerMode"] == "Totals"
+
+    def test_params_excludes_season_by_default(self):
+        """params() omits Season when season is None."""
+        from fastbreak.endpoints import LeagueDashTeamPtShot
+
+        assert "Season" not in LeagueDashTeamPtShot().params()
+
+    def test_params_includes_season_when_set(self):
+        """params() includes Season when explicitly provided."""
+        from fastbreak.endpoints import LeagueDashTeamPtShot
+
+        assert LeagueDashTeamPtShot(season="2024-25").params()["Season"] == "2024-25"
+
+
+class TestLeagueDashOppPtShotParams:
+    """Tests for LeagueDashOppPtShot params() coverage."""
+
+    def test_params_default_keys(self):
+        """params() includes required keys with correct default values."""
+        from fastbreak.endpoints import LeagueDashOppPtShot
+
+        params = LeagueDashOppPtShot().params()
+
+        assert params["LeagueID"] == "00"
+        assert params["SeasonType"] == "Regular Season"
+        assert params["PerMode"] == "Totals"
+
+    def test_params_excludes_season_by_default(self):
+        """params() omits Season when season is None."""
+        from fastbreak.endpoints import LeagueDashOppPtShot
+
+        assert "Season" not in LeagueDashOppPtShot().params()
+
+    def test_params_includes_season_when_set(self):
+        """params() includes Season when explicitly provided."""
+        from fastbreak.endpoints import LeagueDashOppPtShot
+
+        assert LeagueDashOppPtShot(season="2024-25").params()["Season"] == "2024-25"
+
+
+class TestLeagueDashPlayerBioStatsParams:
+    """Tests for LeagueDashPlayerBioStats params() coverage."""
+
+    def test_params_default_keys(self):
+        """params() includes required keys with correct default values."""
+        from fastbreak.endpoints import LeagueDashPlayerBioStats
+
+        params = LeagueDashPlayerBioStats().params()
+
+        assert params["LeagueID"] == "00"
+        assert params["SeasonType"] == "Regular Season"
+        assert params["PerMode"] == "Totals"
+
+    def test_params_excludes_all_optional_by_default(self):
+        """params() omits all optional keys when not set."""
+        from fastbreak.endpoints import LeagueDashPlayerBioStats
+
+        params = LeagueDashPlayerBioStats().params()
+
+        for key in (
+            "Season",
+            "College",
+            "Country",
+            "DraftYear",
+            "DraftPick",
+            "Height",
+            "Weight",
+        ):
+            assert key not in params
+
+    def test_params_includes_all_optional_filters_when_set(self):
+        """params() includes every optional key when all filters are provided."""
+        from fastbreak.endpoints import LeagueDashPlayerBioStats
+
+        params = LeagueDashPlayerBioStats(
+            season="2024-25",
+            college="Duke",
+            country="USA",
+            draft_year="2024",
+            draft_pick="1st Round",
+            height="6-0",
+            weight="200",
+        ).params()
+
+        assert params["Season"] == "2024-25"
+        assert params["College"] == "Duke"
+        assert params["Country"] == "USA"
+        assert params["DraftYear"] == "2024"
+        assert params["DraftPick"] == "1st Round"
+        assert params["Height"] == "6-0"
+        assert params["Weight"] == "200"
+
+
+class TestLeagueDashPtTeamDefendParams:
+    """Tests for LeagueDashPtTeamDefend params() coverage."""
+
+    def test_params_default_keys(self):
+        """params() includes required keys including DefenseCategory."""
+        from fastbreak.endpoints import LeagueDashPtTeamDefend
+
+        params = LeagueDashPtTeamDefend().params()
+
+        assert params["LeagueID"] == "00"
+        assert params["SeasonType"] == "Regular Season"
+        assert params["PerMode"] == "Totals"
+        assert params["DefenseCategory"] == "Overall"
+
+    def test_params_excludes_season_by_default(self):
+        """params() omits Season when season is None."""
+        from fastbreak.endpoints import LeagueDashPtTeamDefend
+
+        assert "Season" not in LeagueDashPtTeamDefend().params()
+
+    def test_params_includes_season_when_set(self):
+        """params() includes Season when explicitly provided."""
+        from fastbreak.endpoints import LeagueDashPtTeamDefend
+
+        assert LeagueDashPtTeamDefend(season="2024-25").params()["Season"] == "2024-25"
+
+    def test_params_uses_custom_defense_category(self):
+        """params() uses the provided defense_category value."""
+        from fastbreak.endpoints import LeagueDashPtTeamDefend
+
+        params = LeagueDashPtTeamDefend(defense_category="3 Pointers").params()
+
+        assert params["DefenseCategory"] == "3 Pointers"
