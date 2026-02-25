@@ -40,7 +40,7 @@ async def get_game_ids(  # noqa: PLR0913
     Examples:
         ids = await get_game_ids(client, "2024-25")
         playoff_ids = await get_game_ids(client, "2024-25", season_type="Playoffs")
-        gsw_ids = await get_game_ids(client, "2024-25", team_id=1610612744)
+        ind_ids = await get_game_ids(client, "2024-25", team_id=1610612754)
 
     """
     from fastbreak.endpoints import LeagueGameLog  # noqa: PLC0415
