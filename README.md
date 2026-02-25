@@ -79,7 +79,7 @@ async with NBAClient(cache_ttl=300, cache_maxsize=256) as client:
 
 ## Features
 
-- Async I/O via aiohttp
+- Async I/O via aiohttp (asyncio backend; trio is not tested)
 - Strict mypy typing throughout
 - Pydantic models for all responses, with pandas/polars export
 - Retries and rate-limit handling built in
