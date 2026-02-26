@@ -132,3 +132,254 @@ class TestGetPlayerId:
         result = await get_player_id(client, "Nonexistent Player")
 
         assert result is None
+
+
+from fastbreak.players import get_player_game_log
+
+
+def _make_game_log_client(mocker: MockerFixture, games: list):
+    """Return a NBAClient whose .get() resolves to a mock PlayerGameLogResponse."""
+    response = mocker.MagicMock()
+    response.games = games
+    client = NBAClient(session=mocker.MagicMock())
+    client.get = mocker.AsyncMock(return_value=response)
+    return client
+
+
+class TestGetPlayerGameLog:
+    """Tests for get_player_game_log standalone function."""
+
+    async def test_returns_game_log_entries(self, mocker: MockerFixture):
+        """get_player_game_log returns the list of game log entries."""
+        entry = mocker.MagicMock()
+        client = _make_game_log_client(mocker, [entry])
+
+        result = await get_player_game_log(client, player_id=201939)
+
+        assert result == [entry]
+
+    async def test_returns_empty_list_when_no_games(self, mocker: MockerFixture):
+        """get_player_game_log returns [] when no games are found."""
+        client = _make_game_log_client(mocker, [])
+
+        result = await get_player_game_log(client, player_id=201939)
+
+        assert result == []
+
+    async def test_passes_player_id_to_endpoint(self, mocker: MockerFixture):
+        """get_player_game_log passes player_id to PlayerGameLog."""
+        client = _make_game_log_client(mocker, [])
+
+        await get_player_game_log(client, player_id=201939)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.player_id == 201939
+
+    async def test_passes_season_to_endpoint(self, mocker: MockerFixture):
+        """get_player_game_log passes season to PlayerGameLog."""
+        client = _make_game_log_client(mocker, [])
+
+        await get_player_game_log(client, player_id=201939, season="2023-24")
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.season == "2023-24"
+
+    async def test_passes_season_type_to_endpoint(self, mocker: MockerFixture):
+        """get_player_game_log passes season_type to PlayerGameLog."""
+        client = _make_game_log_client(mocker, [])
+
+        await get_player_game_log(client, player_id=201939, season_type="Playoffs")
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.season_type == "Playoffs"
+
+
+from fastbreak.players import get_player_stats
+
+
+def _make_career_client(mocker: MockerFixture, career_response):
+    """Return a NBAClient whose .get() resolves to a mock PlayerCareerStatsResponse."""
+    client = NBAClient(session=mocker.MagicMock())
+    client.get = mocker.AsyncMock(return_value=career_response)
+    return client
+
+
+class TestGetPlayerStats:
+    """Tests for get_player_stats standalone function."""
+
+    async def test_returns_full_career_response(self, mocker: MockerFixture):
+        """get_player_stats returns the entire PlayerCareerStatsResponse."""
+        response = mocker.MagicMock()
+        client = _make_career_client(mocker, response)
+
+        result = await get_player_stats(client, player_id=201939)
+
+        assert result is response
+
+    async def test_passes_player_id_to_endpoint(self, mocker: MockerFixture):
+        """get_player_stats passes player_id to PlayerCareerStats."""
+        client = _make_career_client(mocker, mocker.MagicMock())
+
+        await get_player_stats(client, player_id=201939)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.player_id == 201939
+
+    async def test_default_per_mode_is_per_game(self, mocker: MockerFixture):
+        """get_player_stats defaults to PerGame stats."""
+        client = _make_career_client(mocker, mocker.MagicMock())
+
+        await get_player_stats(client, player_id=201939)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.per_mode == "PerGame"
+
+    async def test_passes_per_mode_to_endpoint(self, mocker: MockerFixture):
+        """get_player_stats passes per_mode to PlayerCareerStats."""
+        client = _make_career_client(mocker, mocker.MagicMock())
+
+        await get_player_stats(client, player_id=201939, per_mode="Totals")
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.per_mode == "Totals"
+
+
+from fastbreak.players import get_league_leaders
+
+
+def _make_leaders_client(mocker: MockerFixture, leaders: list):
+    """Return a NBAClient whose .get() resolves to a mock LeagueLeadersResponse."""
+    response = mocker.MagicMock()
+    response.leaders = leaders
+    client = NBAClient(session=mocker.MagicMock())
+    client.get = mocker.AsyncMock(return_value=response)
+    return client
+
+
+class TestGetLeagueLeaders:
+    """Tests for get_league_leaders standalone function."""
+
+    async def test_returns_list_of_leaders(self, mocker: MockerFixture):
+        """get_league_leaders returns the full list of leaders."""
+        leader = mocker.MagicMock()
+        client = _make_leaders_client(mocker, [leader])
+
+        result = await get_league_leaders(client)
+
+        assert result == [leader]
+
+    async def test_returns_empty_list_when_no_leaders(self, mocker: MockerFixture):
+        """get_league_leaders returns [] when no leaders returned."""
+        client = _make_leaders_client(mocker, [])
+
+        result = await get_league_leaders(client)
+
+        assert result == []
+
+    async def test_default_stat_category_is_pts(self, mocker: MockerFixture):
+        """get_league_leaders defaults to PTS category."""
+        client = _make_leaders_client(mocker, [])
+
+        await get_league_leaders(client)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.stat_category == "PTS"
+
+    async def test_passes_stat_category_to_endpoint(self, mocker: MockerFixture):
+        """get_league_leaders passes stat_category to LeagueLeaders."""
+        client = _make_leaders_client(mocker, [])
+
+        await get_league_leaders(client, stat_category="AST")
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.stat_category == "AST"
+
+    async def test_passes_season_to_endpoint(self, mocker: MockerFixture):
+        """get_league_leaders passes season to LeagueLeaders."""
+        client = _make_leaders_client(mocker, [])
+
+        await get_league_leaders(client, season="2023-24")
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.season == "2023-24"
+
+    async def test_limit_truncates_results(self, mocker: MockerFixture):
+        """get_league_leaders returns at most limit results."""
+        leaders = [mocker.MagicMock() for _ in range(10)]
+        client = _make_leaders_client(mocker, leaders)
+
+        result = await get_league_leaders(client, limit=3)
+
+        assert len(result) == 3
+        assert result == leaders[:3]
+
+    async def test_no_limit_returns_all(self, mocker: MockerFixture):
+        """get_league_leaders returns all results when limit is None."""
+        leaders = [mocker.MagicMock() for _ in range(10)]
+        client = _make_leaders_client(mocker, leaders)
+
+        result = await get_league_leaders(client)
+
+        assert len(result) == 10
+
+
+from fastbreak.players import get_hustle_stats
+
+
+def _make_hustle_client(mocker: MockerFixture, players: list):
+    """Return a NBAClient whose .get() resolves to a mock LeagueHustleStatsPlayerResponse."""
+    response = mocker.MagicMock()
+    response.players = players
+    client = NBAClient(session=mocker.MagicMock())
+    client.get = mocker.AsyncMock(return_value=response)
+    return client
+
+
+class TestGetHustleStats:
+    """Tests for get_hustle_stats standalone function."""
+
+    async def test_returns_matching_player(self, mocker: MockerFixture):
+        """get_hustle_stats returns the hustle stats for the given player."""
+        player = mocker.MagicMock()
+        player.player_id = 201939
+        client = _make_hustle_client(mocker, [player])
+
+        result = await get_hustle_stats(client, player_id=201939)
+
+        assert result is player
+
+    async def test_returns_none_when_player_not_found(self, mocker: MockerFixture):
+        """get_hustle_stats returns None when the player is not in the results."""
+        player = mocker.MagicMock()
+        player.player_id = 999
+        client = _make_hustle_client(mocker, [player])
+
+        result = await get_hustle_stats(client, player_id=201939)
+
+        assert result is None
+
+    async def test_returns_none_when_no_players(self, mocker: MockerFixture):
+        """get_hustle_stats returns None for an empty response."""
+        client = _make_hustle_client(mocker, [])
+
+        result = await get_hustle_stats(client, player_id=201939)
+
+        assert result is None
+
+    async def test_passes_season_type_to_endpoint(self, mocker: MockerFixture):
+        """get_hustle_stats passes season_type to LeagueHustleStatsPlayer."""
+        client = _make_hustle_client(mocker, [])
+
+        await get_hustle_stats(client, player_id=201939, season_type="Playoffs")
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.season_type == "Playoffs"
+
+    async def test_passes_season_to_endpoint(self, mocker: MockerFixture):
+        """get_hustle_stats passes season to LeagueHustleStatsPlayer."""
+        client = _make_hustle_client(mocker, [])
+
+        await get_hustle_stats(client, player_id=201939, season="2023-24")
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.season == "2023-24"

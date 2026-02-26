@@ -6,6 +6,7 @@ from pydantic import Field
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.league_dash_pt_stats import LeagueDashPtStatsResponse
+from fastbreak.seasons import get_season_from_date
 from fastbreak.types import (
     Conference,
     Date,
@@ -23,7 +24,6 @@ from fastbreak.types import (
     SeasonType,
     StarterBench,
 )
-from fastbreak.utils import get_season_from_date
 
 
 class LeagueDashPtStats(Endpoint[LeagueDashPtStatsResponse]):

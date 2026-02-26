@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/github/license/reidhoch/fastbreak)](https://github.com/reidhoch/fastbreak/blob/main/LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/reidhoch/fastbreak/ci.yaml?label=CI)](https://github.com/reidhoch/fastbreak/actions)
 
-Async Python client for the NBA Stats API. Fully typed, with Pydantic models and optional DataFrame conversion.
+Async Python client for the NBA Stats API, fully typed with Pydantic models and optional DataFrame conversion.
 
 ## Installation
 
@@ -53,6 +53,7 @@ df = TeamStanding.to_polars(standings.standings)
 Fetch multiple endpoints concurrently with `get_many()`:
 
 ```python
+from fastbreak.clients import NBAClient
 from fastbreak.endpoints import BoxScoreTraditional
 
 game_ids = ["0022401001", "0022401002", "0022401003"]
@@ -71,6 +72,9 @@ Results are returned in the same order as the input. If any request fails, all i
 Enable TTL-based response caching to avoid redundant API calls:
 
 ```python
+from fastbreak.clients import NBAClient
+from fastbreak.endpoints import LeagueStandings
+
 async with NBAClient(cache_ttl=300, cache_maxsize=256) as client:
     result = await client.get(LeagueStandings(season="2025-26"))  # cached for 5 min
     print(client.cache_info)  # {'size': 1, 'maxsize': 256, 'ttl': 300}
@@ -79,7 +83,7 @@ async with NBAClient(cache_ttl=300, cache_maxsize=256) as client:
 
 ## Features
 
-- Async I/O via aiohttp (asyncio backend; trio is not tested)
+- Async I/O via aiohttp (asyncio only; trio is not supported)
 - Strict mypy typing throughout
 - Pydantic models for all responses, with pandas/polars export
 - Retries and rate-limit handling built in

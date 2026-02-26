@@ -14,7 +14,7 @@ Thanks for your interest in contributing!
 2. Install dependencies with [uv](https://docs.astral.sh/uv/):
 
    ```bash
-   uv sync --all-groups
+   uv sync --dev
    ```
 
 3. Install pre-commit hooks:
@@ -34,10 +34,10 @@ uv run pytest -n auto tests/
 Before submitting a PR, ensure your code passes all checks:
 
 ```bash
-uv run complexipy src/
 uv run isort src/ tests/
-uv run ruff check src/ tests/
 uv run ruff format src/ tests/
+uv run ruff check src/ tests/
+uv run complexipy src/
 uv run mypy src/
 ```
 

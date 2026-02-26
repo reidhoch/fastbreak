@@ -3,17 +3,22 @@
 import asyncio
 
 from fastbreak.clients import NBAClient
-from fastbreak.players import get_player, get_player_id, search_players
+from fastbreak.players import (
+    get_player,
+    get_player_game_log,
+    get_player_id,
+    search_players,
+)
 
 
-async def main() -> None:
+async def main() -> None:  # noqa: PLR0915
     async with NBAClient() as client:
         # 1. Search by partial name — returns closest matches first
         print("=" * 60)
-        print("Searching for 'Curry'...")
+        print("Searching for 'Tyrese'...")
         print("=" * 60)
-        currys = await search_players(client, "Curry")
-        for player in currys:
+        results = await search_players(client, "Tyrese")
+        for player in results:
             print(f"  {player.player_first_name} {player.player_last_name}")
             print(f"    ID: {player.person_id}")
             print(f"    Team: {player.team_name} ({player.team_abbreviation})")
@@ -67,6 +72,21 @@ async def main() -> None:
                 f"  {i}. {player.player_first_name} {player.player_last_name}"
                 f" ({player.team_abbreviation})"
             )
+
+        # 6. Fetch a player's game log for the season
+        print("=" * 60)
+        print("Pascal Siakam's last 5 games this season...")
+        print("=" * 60)
+        siakam_id = await get_player_id(client, "Pascal Siakam")
+        if siakam_id:
+            log = await get_player_game_log(client, player_id=siakam_id)
+            for entry in log[-5:]:
+                print(
+                    f"  {entry.game_date}  {entry.matchup}"
+                    f"  {entry.pts} pts / {entry.reb} reb / {entry.ast} ast"
+                    f"  {'W' if entry.wl == 'W' else 'L'}"
+                )
+        print()
 
 
 if __name__ == "__main__":

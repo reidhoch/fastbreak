@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import PlayerDashboardByGameSplits
 from fastbreak.models import PlayerDashboardByGameSplitsResponse
-from fastbreak.utils import get_season_from_date
+from fastbreak.seasons import get_season_from_date
 
 
 class TestPlayerDashboardByGameSplits:

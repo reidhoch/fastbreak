@@ -6,6 +6,7 @@ from pydantic import Field
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.team_player_on_off_details import TeamPlayerOnOffDetailsResponse
+from fastbreak.seasons import get_season_from_date
 from fastbreak.types import (
     Date,
     LeagueID,
@@ -16,7 +17,6 @@ from fastbreak.types import (
     SeasonType,
     YesNo,
 )
-from fastbreak.utils import get_season_from_date
 
 
 class TeamPlayerOnOffDetails(Endpoint[TeamPlayerOnOffDetailsResponse]):

@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints.player_vs_player import PlayerVsPlayer
 from fastbreak.models.player_vs_player import PlayerVsPlayerResponse
-from fastbreak.utils import get_season_from_date
+from fastbreak.seasons import get_season_from_date
 
 
 class TestPlayerVsPlayer:

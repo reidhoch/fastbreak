@@ -35,6 +35,30 @@ Fetch box scores for all of yesterday's games using `get_many()` for concurrent 
 uv run python examples/boxscores.py
 ```
 
+### [game_ids.py](game_ids.py)
+
+Fetch game IDs with various filters: by season, by team, by season type (regular/playoffs), and by date range.
+
+```bash
+uv run python examples/game_ids.py
+```
+
+### [player_lookup.py](player_lookup.py)
+
+Search and look up players using `fastbreak.players`: search by partial name, look up by numeric ID or full name, get a player's game log for the current season.
+
+```bash
+uv run python examples/player_lookup.py
+```
+
+### [team_lookup.py](team_lookup.py)
+
+Search for teams and fetch game logs using `fastbreak.teams`. Team search is synchronous (no API call needed); game log fetching is async.
+
+```bash
+uv run python examples/team_lookup.py
+```
+
 ## Advanced Examples
 
 ### [player_trends.py](player_trends.py)
@@ -43,6 +67,30 @@ Analyze player scoring trends over the last 2 weeks. Shows which players are hea
 
 ```bash
 uv run python examples/player_trends.py
+```
+
+### [player_stats.py](player_stats.py)
+
+Fetch career stats (season-by-season), hustle stats, and league leaders using `fastbreak.players`. Shows how to pull scoring and assist leaders for the current season.
+
+```bash
+uv run python examples/player_stats.py
+```
+
+### [team_stats.py](team_stats.py)
+
+Fetch team season stats and lineup analysis using `fastbreak.teams`. Covers 5-man lineup net ratings and two-man combination minutes.
+
+```bash
+uv run python examples/team_stats.py
+```
+
+### [play_by_play.py](play_by_play.py)
+
+Fetch and analyze play-by-play data using `fastbreak.games`. Breaks down action types, isolates 4th-quarter plays, and lists the last five made shots of the game.
+
+```bash
+uv run python examples/play_by_play.py
 ```
 
 ### [three_two_one.py](three_two_one.py)

@@ -3,7 +3,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import DraftCombineDrillResults
 from fastbreak.models import DraftCombineDrillResultsResponse
-from fastbreak.utils import get_season_from_date
+from fastbreak.seasons import get_season_from_date
 
 
 class TestDraftCombineDrillResults:
