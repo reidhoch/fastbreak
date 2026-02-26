@@ -5,6 +5,9 @@ from __future__ import annotations
 from datetime import date
 from typing import TYPE_CHECKING
 
+from fastbreak.seasons import get_season_from_date
+from fastbreak.types import _validate_iso_date
+
 if TYPE_CHECKING:
     from fastbreak.clients.nba import NBAClient
     from fastbreak.models.box_score_summary import BoxScoreSummaryData
@@ -49,7 +52,6 @@ async def get_game_ids(  # noqa: PLR0913
 
     """
     from fastbreak.endpoints import LeagueGameLog  # noqa: PLC0415
-    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
 
     season = season or get_season_from_date()
     endpoint = LeagueGameLog(
@@ -89,11 +91,7 @@ async def get_games_on_date(
             print(game.game_status_text)
 
     """
-    try:
-        date.fromisoformat(game_date)
-    except ValueError:
-        msg = f"Invalid game_date: {game_date!r}. Expected YYYY-MM-DD format (e.g., '2025-01-15')."
-        raise ValueError(msg) from None
+    _validate_iso_date(game_date)
 
     from fastbreak.endpoints import ScoreboardV3  # noqa: PLC0415
 

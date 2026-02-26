@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from fastbreak.logging import logger
+from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
     from fastbreak.clients.nba import NBAClient
@@ -49,7 +50,6 @@ async def search_players(
         return []
 
     from fastbreak.endpoints import PlayerIndex  # noqa: PLC0415
-    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
 
     season = season or get_season_from_date()
     response = await client.get(PlayerIndex(season=season))
@@ -100,24 +100,22 @@ async def get_player(
         await get_player(client, "Stephen Curry")  # exact name match
 
     """
-    from fastbreak.endpoints import PlayerIndex  # noqa: PLC0415
-    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
-
-    season = season or get_season_from_date()
-    response = await client.get(PlayerIndex(season=season))
-
     if isinstance(identifier, int):
+        from fastbreak.endpoints import PlayerIndex  # noqa: PLC0415
+
+        season = season or get_season_from_date()
+        response = await client.get(PlayerIndex(season=season))
         for player in response.players:
             if player.person_id == identifier:
                 return player
         logger.debug("player_not_found", identifier=identifier, season=season)
         return None
 
-    name: str = identifier.lower().strip()
-    for player in response.players:
-        full_name = f"{player.player_first_name} {player.player_last_name}".lower()
-        if full_name == name:
-            return player
+    results = await search_players(client, identifier, season=season, limit=1)
+    if results:
+        full = f"{results[0].player_first_name} {results[0].player_last_name}"
+        if full.lower() == identifier.lower().strip():
+            return results[0]
     logger.debug("player_not_found", identifier=identifier, season=season)
     return None
 
@@ -169,7 +167,6 @@ async def get_player_game_log(
 
     """
     from fastbreak.endpoints import PlayerGameLog  # noqa: PLC0415
-    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
 
     season = season or get_season_from_date()
     response = await client.get(
@@ -237,7 +234,6 @@ async def get_league_leaders(
         raise ValueError(msg)
 
     from fastbreak.endpoints import LeagueLeaders  # noqa: PLC0415
-    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
 
     season = season or get_season_from_date()
     response = await client.get(
@@ -280,7 +276,6 @@ async def get_hustle_stats(
 
     """
     from fastbreak.endpoints import LeagueHustleStatsPlayer  # noqa: PLC0415
-    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
 
     season = season or get_season_from_date()
     response = await client.get(
