@@ -6,8 +6,8 @@ from pydantic import Field
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.league_game_log import LeagueGameLogResponse
+from fastbreak.seasons import get_season_from_date
 from fastbreak.types import Date, LeagueID, PlayerOrTeamAbbreviation, Season, SeasonType
-from fastbreak.utils import get_season_from_date
 
 
 class LeagueGameLog(Endpoint[LeagueGameLogResponse]):

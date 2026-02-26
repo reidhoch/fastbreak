@@ -6,6 +6,7 @@ from pydantic import Field
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.shot_chart_lineup_detail import ShotChartLineupDetailResponse
+from fastbreak.seasons import get_season_from_date
 from fastbreak.types import (
     Conference,
     ContextMeasure,
@@ -19,7 +20,6 @@ from fastbreak.types import (
     SeasonSegment,
     SeasonType,
 )
-from fastbreak.utils import get_season_from_date
 
 
 class ShotChartLineupDetail(Endpoint[ShotChartLineupDetailResponse]):

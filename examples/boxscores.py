@@ -1,29 +1,37 @@
+"""Example: Fetching box scores with fastbreak.games."""
+
 import asyncio
 from datetime import UTC, datetime, timedelta
 
 from fastbreak.clients import NBAClient
-from fastbreak.endpoints import BoxScoreTraditional, ScoreboardV3
+from fastbreak.games import get_box_scores, get_games_on_date
 
 
-async def get_box_scores() -> None:
+async def main() -> None:
     async with NBAClient() as client:
-        yesterday = datetime.now(tz=UTC).astimezone().date() - timedelta(days=1)
-        response = await client.get(ScoreboardV3(game_date=yesterday.isoformat()))
-        scoreboard = response.scoreboard
-        if not scoreboard:
-            print("No games found for yesterday.")
+        yesterday = (
+            datetime.now(tz=UTC).astimezone().date() - timedelta(days=1)
+        ).isoformat()
+
+        games = await get_games_on_date(client, yesterday)
+        if not games:
+            print(f"No games on {yesterday}.")
             return
-        # Retrieve multiple box scores concurrently using get_many()
-        game_ids = [BoxScoreTraditional(game_id=game.game_id) for game in scoreboard.games if game.game_id]
-        scores = await client.get_many(game_ids)
-        if not scores:
-            print("No box scores found.")
-            return
-        for score in scores:
-            boxscore = score.boxScoreTraditional
+
+        print(f"{len(games)} game(s) on {yesterday}\n")
+
+        game_ids = [g.game_id for g in games if g.game_id]
+        box_scores = await get_box_scores(client, game_ids)
+
+        for game_id, boxscore in box_scores.items():
             away = boxscore.awayTeam
             home = boxscore.homeTeam
-            print(f"{away.teamTricode} @ {home.teamTricode}: {away.statistics.points} - {home.statistics.points}")
+            print(
+                f"  {away.teamTricode} @ {home.teamTricode}:"
+                f"  {away.statistics.points} - {home.statistics.points}"
+                f"  [{game_id}]"
+            )
 
 
-asyncio.run(get_box_scores())
+if __name__ == "__main__":
+    asyncio.run(main())

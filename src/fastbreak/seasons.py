@@ -1,0 +1,71 @@
+"""Season utility functions."""
+
+from datetime import UTC, date, datetime
+
+# October is when the NBA season starts
+_SEASON_START_MONTH = 10
+
+
+def get_season_from_date(reference_date: date | None = None) -> str:
+    """Return the NBA season for a given date in YYYY-YY format.
+
+    The NBA season typically starts in October and ends in June.
+    A season is identified by the year it starts (e.g., "2024-25" for the
+    season that started in October 2024).
+
+    Args:
+        reference_date: Date to get season for (defaults to today)
+
+    Returns:
+        Season string in YYYY-YY format (e.g., "2024-25")
+
+    Examples:
+        >>> get_season_from_date(date(2024, 11, 15))
+        '2024-25'
+        >>> get_season_from_date(date(2025, 3, 15))
+        '2024-25'
+        >>> get_season_from_date(date(2025, 10, 15))
+        '2025-26'
+        >>> get_season_from_date()  # returns current season
+        '2025-26'
+
+    """
+    ref = reference_date or datetime.now(tz=UTC).date()
+
+    # NBA season starts in October
+    # If we're in Oct-Dec, we're in the season that started this year
+    # If we're in Jan-Sep, we're in the season that started last year
+    start_year = ref.year if ref.month >= _SEASON_START_MONTH else ref.year - 1
+
+    end_year_short = (start_year + 1) % 100
+    return f"{start_year}-{end_year_short:02d}"
+
+
+def season_start_year(season: str) -> int:
+    """Extract the start year from a season string.
+
+    Args:
+        season: Season in YYYY-YY format (e.g., "2024-25")
+
+    Returns:
+        The start year as an integer (e.g., 2024)
+
+    """
+    return int(season.split("-", maxsplit=1)[0])
+
+
+def season_to_season_id(season: str) -> str:
+    """Convert a season string to NBA season ID format.
+
+    Some endpoints use a season ID format like "22024" where the prefix
+    indicates the season type (2 = regular season).
+
+    Args:
+        season: Season in YYYY-YY format (e.g., "2024-25")
+
+    Returns:
+        Season ID string (e.g., "22024")
+
+    """
+    start_year = season_start_year(season)
+    return f"2{start_year}"

@@ -6,8 +6,8 @@ from pydantic import Field
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.player_index import PlayerIndexResponse
+from fastbreak.seasons import get_season_from_date
 from fastbreak.types import LeagueID, Season
-from fastbreak.utils import get_season_from_date
 
 
 class PlayerIndex(Endpoint[PlayerIndexResponse]):

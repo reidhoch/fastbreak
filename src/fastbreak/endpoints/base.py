@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 from pydantic import BaseModel, ConfigDict, Field
 
 from fastbreak.models import JSON
+from fastbreak.seasons import get_season_from_date
 from fastbreak.types import (
     Conference,
     Date,
@@ -21,7 +22,6 @@ from fastbreak.types import (
     ShotClockRange,
     YesNo,
 )
-from fastbreak.utils import get_season_from_date
 
 
 class Endpoint[T: BaseModel](BaseModel):

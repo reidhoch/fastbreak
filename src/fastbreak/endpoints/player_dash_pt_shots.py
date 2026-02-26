@@ -6,8 +6,8 @@ from pydantic import Field
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.player_dash_pt_shots import PlayerDashPtShotsResponse
+from fastbreak.seasons import get_season_from_date
 from fastbreak.types import Date, LeagueID, PerMode, Season, SeasonType
-from fastbreak.utils import get_season_from_date
 
 
 class PlayerDashPtShots(Endpoint[PlayerDashPtShotsResponse]):

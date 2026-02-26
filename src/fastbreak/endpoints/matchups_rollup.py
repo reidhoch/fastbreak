@@ -6,8 +6,8 @@ from pydantic import Field
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.matchups_rollup import MatchupsRollupResponse
+from fastbreak.seasons import get_season_from_date
 from fastbreak.types import LeagueID, PerMode, Season, SeasonType
-from fastbreak.utils import get_season_from_date
 
 
 class MatchupsRollup(Endpoint[MatchupsRollupResponse]):

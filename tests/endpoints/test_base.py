@@ -19,7 +19,7 @@ from fastbreak.endpoints.base import (
     PlayerDashboardEndpoint,
     TeamDashboardEndpoint,
 )
-from fastbreak.utils import get_season_from_date
+from fastbreak.seasons import get_season_from_date
 
 # =============================================================================
 # Test Response Model

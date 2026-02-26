@@ -1,6 +1,39 @@
 from fastbreak._version import __version__, __version_tuple__
-from fastbreak.games import get_game_ids
-from fastbreak.players import get_player, get_player_id, search_players
+from fastbreak.games import (
+    get_box_scores,
+    get_game_ids,
+    get_game_summary,
+    get_games_on_date,
+    get_play_by_play,
+    get_todays_games,
+)
+from fastbreak.players import (
+    get_hustle_stats,
+    get_league_leaders,
+    get_player,
+    get_player_game_log,
+    get_player_id,
+    get_player_stats,
+    search_players,
+)
+from fastbreak.seasons import (
+    get_season_from_date,
+    season_start_year,
+    season_to_season_id,
+)
+from fastbreak.teams import (
+    TEAMS,
+    TeamID,
+    TeamInfo,
+    get_lineup_stats,
+    get_team,
+    get_team_game_log,
+    get_team_id,
+    get_team_stats,
+    search_teams,
+    teams_by_conference,
+    teams_by_division,
+)
 from fastbreak.types import (
     Conference,
     ContextMeasure,
@@ -29,18 +62,6 @@ from fastbreak.types import (
     StarterBench,
     StatCategoryAbbreviation,
     YesNo,
-)
-from fastbreak.utils import (
-    TEAMS,
-    TeamID,
-    TeamInfo,
-    get_season_from_date,
-    get_team,
-    get_team_id,
-    season_start_year,
-    season_to_season_id,
-    teams_by_conference,
-    teams_by_division,
 )
 
 __all__ = [
@@ -76,13 +97,26 @@ __all__ = [
     "YesNo",
     "__version__",
     "__version_tuple__",
+    "get_box_scores",
     "get_game_ids",
+    "get_game_summary",
+    "get_games_on_date",
+    "get_hustle_stats",
+    "get_league_leaders",
+    "get_lineup_stats",
+    "get_play_by_play",
     "get_player",
+    "get_player_game_log",
     "get_player_id",
+    "get_player_stats",
     "get_season_from_date",
     "get_team",
+    "get_team_game_log",
     "get_team_id",
+    "get_team_stats",
+    "get_todays_games",
     "search_players",
+    "search_teams",
     "season_start_year",
     "season_to_season_id",
     "teams_by_conference",

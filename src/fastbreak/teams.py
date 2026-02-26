@@ -1,76 +1,17 @@
-"""Utility functions and static data for the NBA Stats API."""
+"""Team data, lookup, and API utility functions for the NBA Stats API."""
+
+from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
 from enum import IntEnum
+from typing import TYPE_CHECKING
 
-# October is when the NBA season starts
-_SEASON_START_MONTH = 10
-
-
-def get_season_from_date(reference_date: date | None = None) -> str:
-    """Return the NBA season for a given date in YYYY-YY format.
-
-    The NBA season typically starts in October and ends in June.
-    A season is identified by the year it starts (e.g., "2024-25" for the
-    season that started in October 2024).
-
-    Args:
-        reference_date: Date to get season for (defaults to today)
-
-    Returns:
-        Season string in YYYY-YY format (e.g., "2024-25")
-
-    Examples:
-        >>> get_season_from_date(date(2024, 11, 15))
-        '2024-25'
-        >>> get_season_from_date(date(2025, 3, 15))
-        '2024-25'
-        >>> get_season_from_date(date(2025, 10, 15))
-        '2025-26'
-        >>> get_season_from_date()  # returns current season
-        '2025-26'
-
-    """
-    ref = reference_date or datetime.now(tz=UTC).date()
-
-    # NBA season starts in October
-    # If we're in Oct-Dec, we're in the season that started this year
-    # If we're in Jan-Sep, we're in the season that started last year
-    start_year = ref.year if ref.month >= _SEASON_START_MONTH else ref.year - 1
-
-    end_year_short = (start_year + 1) % 100
-    return f"{start_year}-{end_year_short:02d}"
-
-
-def season_start_year(season: str) -> int:
-    """Extract the start year from a season string.
-
-    Args:
-        season: Season in YYYY-YY format (e.g., "2024-25")
-
-    Returns:
-        The start year as an integer (e.g., 2024)
-
-    """
-    return int(season.split("-", maxsplit=1)[0])
-
-
-def season_to_season_id(season: str) -> str:
-    """Convert a season string to NBA season ID format.
-
-    Some endpoints use a season ID format like "22024" where the prefix
-    indicates the season type (2 = regular season).
-
-    Args:
-        season: Season in YYYY-YY format (e.g., "2024-25")
-
-    Returns:
-        Season ID string (e.g., "22024")
-
-    """
-    start_year = season_start_year(season)
-    return f"2{start_year}"
+if TYPE_CHECKING:
+    from fastbreak.clients.nba import NBAClient
+    from fastbreak.models.league_dash_team_stats import LeagueDashTeamStatsRow
+    from fastbreak.models.team_dash_lineups import LineupStats
+    from fastbreak.models.team_game_log import TeamGameLogEntry
+    from fastbreak.types import PerMode, SeasonType
 
 
 class TeamID(IntEnum):
@@ -506,3 +447,154 @@ def teams_by_division(division: str) -> list[TeamInfo]:
     """
     div = division.capitalize()
     return [t for t in TEAMS.values() if t.division == div]
+
+
+def search_teams(query: str, *, limit: int = 5) -> list[TeamInfo]:
+    """Search for teams by partial abbreviation, name, or city.
+
+    Args:
+        query: Search string (abbreviation, city, or team name)
+        limit: Maximum results to return
+
+    Returns:
+        List of matching TeamInfo objects, sorted by relevance
+
+    Examples:
+        search_teams("IND")      # Indiana Pacers
+        search_teams("Lakers")   # Los Angeles Lakers
+        search_teams("New")      # Knicks, Nets, Pelicans, Thunder, etc.
+
+    """
+    if not query or not query.strip():
+        return []
+
+    q = query.strip().lower()
+    q_upper = q.upper()
+    matches: list[tuple[int, TeamInfo]] = []
+
+    for team in TEAMS.values():
+        abbr = team.abbreviation.upper()
+        city = team.city.lower()
+        name = team.name.lower()
+        full = team.full_name.lower()
+
+        if abbr == q_upper:
+            priority = 0
+        elif q in (city, name, full):
+            priority = 1
+        elif city.startswith(q) or name.startswith(q) or abbr.startswith(q_upper):
+            priority = 2
+        elif q in city or q in name or q in full:
+            priority = 3
+        else:
+            continue
+
+        matches.append((priority, team))
+
+    matches.sort(key=lambda x: (x[0], x[1].abbreviation))
+    return [team for _, team in matches[:limit]]
+
+
+async def get_team_game_log(
+    client: NBAClient,
+    *,
+    team_id: int,
+    season: str | None = None,
+    season_type: SeasonType = "Regular Season",
+) -> list[TeamGameLogEntry]:
+    """Return a team's game-by-game stats for a season.
+
+    Args:
+        client: NBA API client
+        team_id: NBA team ID
+        season: Season in YYYY-YY format (defaults to current)
+        season_type: "Regular Season", "Playoffs", etc.
+
+    Returns:
+        List of TeamGameLogEntry objects, one per game played
+
+    Examples:
+        log = await get_team_game_log(client, team_id=1610612754)
+
+    """
+    from fastbreak.endpoints import TeamGameLog  # noqa: PLC0415
+    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    response = await client.get(
+        TeamGameLog(team_id=team_id, season=season, season_type=season_type)
+    )
+    return response.games
+
+
+async def get_team_stats(
+    client: NBAClient,
+    *,
+    season: str | None = None,
+    season_type: SeasonType = "Regular Season",
+    per_mode: PerMode = "PerGame",
+) -> list[LeagueDashTeamStatsRow]:
+    """Return per-game stats for all teams in the league.
+
+    Args:
+        client: NBA API client
+        season: Season in YYYY-YY format (defaults to current)
+        season_type: "Regular Season", "Playoffs", etc.
+        per_mode: Stat aggregation mode ("PerGame", "Totals", "Per36", etc.)
+
+    Returns:
+        List of LeagueDashTeamStatsRow objects, one per team
+
+    Examples:
+        teams = await get_team_stats(client)
+        top_offense = sorted(teams, key=lambda t: t.pts, reverse=True)[:5]
+
+    """
+    from fastbreak.endpoints import LeagueDashTeamStats  # noqa: PLC0415
+    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    response = await client.get(
+        LeagueDashTeamStats(season=season, season_type=season_type, per_mode=per_mode)
+    )
+    return response.teams
+
+
+async def get_lineup_stats(
+    client: NBAClient,
+    team_id: int,
+    *,
+    season: str | None = None,
+    season_type: SeasonType = "Regular Season",
+    group_quantity: int = 5,
+) -> list[LineupStats]:
+    """Return lineup combination stats for a team.
+
+    Args:
+        client: NBA API client
+        team_id: NBA team ID
+        season: Season in YYYY-YY format (defaults to current)
+        season_type: "Regular Season", "Playoffs", etc.
+        group_quantity: Number of players in each lineup (2-5, default 5)
+
+    Returns:
+        List of LineupStats objects sorted by minutes played (API default)
+
+    Examples:
+        lineups = await get_lineup_stats(client, team_id=1610612754)
+        best = sorted(lineups, key=lambda l: l.plus_minus, reverse=True)[:5]
+
+    """
+    from fastbreak.endpoints import TeamDashLineups  # noqa: PLC0415
+    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    response = await client.get(
+        TeamDashLineups(
+            team_id=team_id,
+            season=season,
+            season_type=season_type,
+            group_quantity=group_quantity,
+        )
+    )
+    return response.lineups

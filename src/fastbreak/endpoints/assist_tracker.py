@@ -6,6 +6,7 @@ from pydantic import Field
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.assist_tracker import AssistTrackerResponse
+from fastbreak.seasons import get_season_from_date
 from fastbreak.types import (
     Conference,
     Date,
@@ -21,7 +22,6 @@ from fastbreak.types import (
     SeasonType,
     StarterBench,
 )
-from fastbreak.utils import get_season_from_date
 
 
 class AssistTracker(Endpoint[AssistTrackerResponse]):

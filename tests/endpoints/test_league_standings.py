@@ -1,6 +1,6 @@
 from fastbreak.endpoints import LeagueStandings
 from fastbreak.models import LeagueStandingsResponse
-from fastbreak.utils import get_season_from_date
+from fastbreak.seasons import get_season_from_date
 
 
 class TestLeagueStandings:

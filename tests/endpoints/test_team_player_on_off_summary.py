@@ -3,7 +3,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import TeamPlayerOnOffSummary
 from fastbreak.models import TeamPlayerOnOffSummaryResponse
-from fastbreak.utils import get_season_from_date
+from fastbreak.seasons import get_season_from_date
 
 
 class TestTeamPlayerOnOffSummary:

@@ -1,23 +1,30 @@
+"""Example: Fetching today's games with fastbreak.games."""
+
 import asyncio
-from datetime import UTC, datetime
+from datetime import datetime
 
 from fastbreak.clients import NBAClient
-from fastbreak.endpoints import ScoreboardV3
+from fastbreak.games import get_todays_games
 
 
-async def get_games() -> None:
+async def main() -> None:
     async with NBAClient() as client:
-        today = datetime.now(tz=UTC).astimezone().date()
-        response = await client.get(ScoreboardV3(game_date=today.isoformat()))
-        if response.scoreboard:
-            for game in response.scoreboard.games:
-                if not game.game_time_utc:
-                    print("Game time not available.")
-                    continue
-                local_time = datetime.fromisoformat(game.game_time_utc).astimezone(tz=None)
-                away_team = game.away_team.team_tricode if game.away_team else "N/A"
-                home_team = game.home_team.team_tricode if game.home_team else "N/A"
-                print(f"{away_team} @ {home_team} at {local_time.time()}")
+        games = await get_todays_games(client)
+
+        if not games:
+            print("No games scheduled today.")
+            return
+
+        print(f"{len(games)} game(s) today\n")
+        for game in games:
+            if not game.game_time_utc:
+                print("Game time not available.")
+                continue
+            local_time = datetime.fromisoformat(game.game_time_utc).astimezone(tz=None)
+            away = game.away_team.team_tricode if game.away_team else "N/A"
+            home = game.home_team.team_tricode if game.home_team else "N/A"
+            print(f"  {away} @ {home}  {local_time.strftime('%I:%M %p %Z')}")
 
 
-asyncio.run(get_games())
+if __name__ == "__main__":
+    asyncio.run(main())

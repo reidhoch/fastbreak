@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import LeagueDashTeamStats
 from fastbreak.models import LeagueDashTeamStatsResponse
-from fastbreak.utils import get_season_from_date
+from fastbreak.seasons import get_season_from_date
 
 
 class TestLeagueDashTeamStats:

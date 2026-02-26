@@ -30,7 +30,9 @@ class PlayerTrend:
     total_ppg: float
 
 
-async def analyze_player_trends(start_date: date, end_date: date, min_games: int = 2) -> list[PlayerTrend]:
+async def analyze_player_trends(  # noqa: C901
+    start_date: date, end_date: date, min_games: int = 2
+) -> list[PlayerTrend]:
     """
     Analyze player performance trends across a date range.
 
@@ -48,7 +50,7 @@ async def analyze_player_trends(start_date: date, end_date: date, min_games: int
                 game_ids.extend(
                     game.game_id
                     for game in response.scoreboard.games
-                    if game.game_status == 3 and game.game_id is not None
+                    if game.game_status == 3 and game.game_id is not None  # noqa: PLR2004
                 )
             current += timedelta(days=1)
 
@@ -73,10 +75,13 @@ async def analyze_player_trends(start_date: date, end_date: date, min_games: int
                 box_score.boxScoreTraditional.awayTeam,
             ]:
                 for player in team.players:
-                    if not player.statistics.minutes or ":" not in player.statistics.minutes:
+                    if (
+                        not player.statistics.minutes
+                        or ":" not in player.statistics.minutes
+                    ):
                         continue
                     mins = int(player.statistics.minutes.split(":")[0])
-                    if mins < 10:  # Only players with 10+ minutes
+                    if mins < 10:  # noqa: PLR2004 — only players with 10+ minutes
                         continue
                     player_games[player.personId].append(
                         PlayerGame(
@@ -118,7 +123,9 @@ async def analyze_player_trends(start_date: date, end_date: date, min_games: int
                     ppg_early=round(avg_first, 1),
                     ppg_recent=round(avg_second, 1),
                     trend=round(trend, 1),
-                    total_ppg=round(sum(g.pts for g in sorted_games) / len(sorted_games), 1),
+                    total_ppg=round(
+                        sum(g.pts for g in sorted_games) / len(sorted_games), 1
+                    ),
                 )
             )
 
@@ -141,7 +148,9 @@ async def main() -> None:
     def print_players(title: str, players: list[PlayerTrend]) -> None:
         print(f"\n{title}")
         print("-" * 60)
-        print(f"{'Player':<25} {'Team':<5} {'GP':<4} {'Early':<7} {'Recent':<7} {'Trend':<7}")
+        print(
+            f"{'Player':<25} {'Team':<5} {'GP':<4} {'Early':<7} {'Recent':<7} {'Trend':<7}"
+        )
         print("-" * 60)
         for p in players:
             trend_str = f"+{p.trend}" if p.trend >= 0 else str(p.trend)

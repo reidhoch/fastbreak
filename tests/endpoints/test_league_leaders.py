@@ -9,7 +9,7 @@ from fastbreak.models.league_leaders import (
     _is_singular_result_set,
     _parse_singular_result_set,
 )
-from fastbreak.utils import get_season_from_date
+from fastbreak.seasons import get_season_from_date
 
 
 class TestLeagueLeaders:

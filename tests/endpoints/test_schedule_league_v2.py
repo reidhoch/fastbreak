@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints.schedule_league_v2 import ScheduleLeagueV2
 from fastbreak.models.schedule_league_v2 import ScheduleLeagueV2Response
-from fastbreak.utils import get_season_from_date
+from fastbreak.seasons import get_season_from_date
 
 
 class TestScheduleLeagueV2:

@@ -6,6 +6,7 @@ from pydantic import Field
 
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.player_dash_pt_shot_defend import PlayerDashPtShotDefendResponse
+from fastbreak.seasons import get_season_from_date
 from fastbreak.types import (
     Conference,
     Date,
@@ -20,7 +21,6 @@ from fastbreak.types import (
     SeasonSegment,
     SeasonType,
 )
-from fastbreak.utils import get_season_from_date
 
 
 class PlayerDashPtShotDefend(Endpoint[PlayerDashPtShotDefendResponse]):
