@@ -465,6 +465,9 @@ def search_teams(query: str, *, limit: int = 5) -> list[TeamInfo]:
         search_teams("New")      # Knicks, Nets, Pelicans, Thunder, etc.
 
     """
+    if limit < 1:
+        msg = f"limit must be a positive integer, got {limit}"
+        raise ValueError(msg)
     if not query or not query.strip():
         return []
 

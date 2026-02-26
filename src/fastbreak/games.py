@@ -180,7 +180,7 @@ async def get_play_by_play(
 
     Examples:
         actions = await get_play_by_play(client, "0022400001")
-        shots = [a for a in actions if a.action_type == "2pt"]
+        shots = [a for a in actions if a.actionType == "2pt"]
 
     """
     from fastbreak.endpoints import PlayByPlay  # noqa: PLC0415
