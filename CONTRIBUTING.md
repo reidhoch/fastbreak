@@ -14,7 +14,7 @@ Thanks for your interest in contributing!
 2. Install dependencies with [uv](https://docs.astral.sh/uv/):
 
    ```bash
-   uv sync --dev
+   uv sync --group dev
    ```
 
 3. Install pre-commit hooks:

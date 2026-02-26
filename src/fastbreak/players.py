@@ -157,7 +157,7 @@ async def get_player_game_log(
         client: NBA API client
         player_id: NBA player ID
         season: Season in YYYY-YY format (defaults to current)
-        season_type: \"Regular Season\", \"Playoffs\", etc.
+        season_type: "Regular Season", "Playoffs", etc.
 
     Returns:
         List of PlayerGameLogEntry objects, one per game played
