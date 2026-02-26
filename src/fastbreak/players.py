@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from fastbreak.logging import logger
+
 if TYPE_CHECKING:
     from fastbreak.clients.nba import NBAClient
     from fastbreak.models import PlayerIndexEntry
@@ -105,6 +107,7 @@ async def get_player(
         for player in response.players:
             if player.person_id == identifier:
                 return player
+        logger.debug("player_not_found", identifier=identifier, season=season)
         return None
 
     name: str = identifier.lower().strip()
@@ -112,6 +115,7 @@ async def get_player(
         full_name = f"{player.player_first_name} {player.player_last_name}".lower()
         if full_name == name:
             return player
+    logger.debug("player_not_found", identifier=identifier, season=season)
     return None
 
 
@@ -222,6 +226,10 @@ async def get_league_leaders(
         assisters = await get_league_leaders(client, stat_category="AST", limit=5)
 
     """
+    if limit is not None and limit < 1:
+        msg = f"limit must be a positive integer, got {limit}"
+        raise ValueError(msg)
+
     from fastbreak.endpoints import LeagueLeaders  # noqa: PLC0415
     from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
 
@@ -233,9 +241,6 @@ async def get_league_leaders(
             season_type=season_type,
         )
     )
-    if limit is not None and limit < 1:
-        msg = f"limit must be a positive integer, got {limit}"
-        raise ValueError(msg)
     leaders = response.leaders
     return leaders if limit is None else leaders[:limit]
 
@@ -278,4 +283,5 @@ async def get_hustle_stats(
     for player in response.players:
         if player.player_id == player_id:
             return player
+    logger.debug("hustle_stats_not_found", player_id=player_id, season=season)
     return None

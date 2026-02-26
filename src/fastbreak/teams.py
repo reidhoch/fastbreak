@@ -362,6 +362,8 @@ _TEAMS_BY_ABBREVIATION: dict[str, TeamInfo] = {
 }
 _TEAMS_BY_NAME: dict[str, TeamInfo] = {t.name.lower(): t for t in TEAMS.values()}
 _TEAMS_BY_CITY: dict[str, TeamInfo] = {t.city.lower(): t for t in TEAMS.values()}
+_VALID_CONFERENCES: frozenset[str] = frozenset({t.conference for t in TEAMS.values()})
+_VALID_DIVISIONS: frozenset[str] = frozenset({t.division for t in TEAMS.values()})
 
 
 def get_team(identifier: int | str) -> TeamInfo | None:
@@ -430,8 +432,14 @@ def teams_by_conference(conference: str) -> list[TeamInfo]:
     Returns:
         List of TeamInfo for teams in the conference
 
+    Raises:
+        ValueError: If the conference is not "East" or "West".
+
     """
     conf = conference.capitalize()
+    if conf not in _VALID_CONFERENCES:
+        msg = f"Unknown conference: {conference!r}. Expected one of: {sorted(_VALID_CONFERENCES)}"
+        raise ValueError(msg)
     return [t for t in TEAMS.values() if t.conference == conf]
 
 
@@ -444,8 +452,14 @@ def teams_by_division(division: str) -> list[TeamInfo]:
     Returns:
         List of TeamInfo for teams in the division
 
+    Raises:
+        ValueError: If the division name is not recognized.
+
     """
     div = division.capitalize()
+    if div not in _VALID_DIVISIONS:
+        msg = f"Unknown division: {division!r}. Expected one of: {sorted(_VALID_DIVISIONS)}"
+        raise ValueError(msg)
     return [t for t in TEAMS.values() if t.division == div]
 
 
