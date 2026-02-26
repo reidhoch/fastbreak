@@ -2,7 +2,6 @@
 
 from datetime import UTC, date, datetime
 
-# October is when the NBA season starts
 _SEASON_START_MONTH = 10
 
 
@@ -26,7 +25,7 @@ def get_season_from_date(reference_date: date | None = None) -> str:
         '2024-25'
         >>> get_season_from_date(date(2025, 10, 15))
         '2025-26'
-        >>> get_season_from_date()  # returns current season
+        >>> get_season_from_date()  # doctest: +SKIP
         '2025-26'
 
     """

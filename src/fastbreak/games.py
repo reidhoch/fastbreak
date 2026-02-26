@@ -80,6 +80,9 @@ async def get_games_on_date(
     Returns:
         List of ScoreboardGame objects for that date
 
+    Raises:
+        ValueError: If game_date is not in YYYY-MM-DD format.
+
     Examples:
         games = await get_games_on_date(client, "2025-01-15")
         for game in games:
@@ -182,7 +185,8 @@ async def get_play_by_play(
         game_id: NBA game ID string
 
     Returns:
-        List of PlayByPlayAction objects in chronological order
+        List of PlayByPlayAction objects in the order returned by the API
+        (typically chronological by actionNumber)
 
     Examples:
         actions = await get_play_by_play(client, "0022400001")

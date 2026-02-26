@@ -79,7 +79,7 @@ uv run python examples/player_stats.py
 
 ### [team_stats.py](team_stats.py)
 
-Fetch team season stats and lineup analysis using `fastbreak.teams`. Covers 5-man lineup net ratings and two-man combination minutes.
+Fetch team season stats and lineup analysis using `fastbreak.teams`. Covers 5-man lineup plus/minus and two-man combination minutes.
 
 ```bash
 uv run python examples/team_stats.py

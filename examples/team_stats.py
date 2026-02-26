@@ -24,7 +24,7 @@ async def main() -> None:
             print(f"  3P%:  {pacers.fg3_pct:.3f}")
         print()
 
-        # 2. Pacers 5-man lineup stats — top 5 by net rating
+        # 2. Pacers 5-man lineup stats — top 5 by plus/minus
         print("=" * 60)
         print(f"{ind.full_name} — top 5 lineups by +/- per game")
         print("=" * 60)
