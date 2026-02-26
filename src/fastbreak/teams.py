@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
+from fastbreak.seasons import get_season_from_date
+
 if TYPE_CHECKING:
     from fastbreak.clients.nba import NBAClient
     from fastbreak.models.league_dash_team_stats import LeagueDashTeamStatsRow
@@ -536,7 +538,6 @@ async def get_team_game_log(
 
     """
     from fastbreak.endpoints import TeamGameLog  # noqa: PLC0415
-    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
 
     season = season or get_season_from_date()
     response = await client.get(
@@ -569,7 +570,6 @@ async def get_team_stats(
 
     """
     from fastbreak.endpoints import LeagueDashTeamStats  # noqa: PLC0415
-    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
 
     season = season or get_season_from_date()
     response = await client.get(
@@ -604,7 +604,6 @@ async def get_lineup_stats(
 
     """
     from fastbreak.endpoints import TeamDashLineups  # noqa: PLC0415
-    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
 
     season = season or get_season_from_date()
     response = await client.get(

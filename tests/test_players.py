@@ -2,7 +2,15 @@ import pytest
 from pytest_mock import MockerFixture
 
 from fastbreak.clients.nba import NBAClient
-from fastbreak.players import get_player, get_player_id, search_players
+from fastbreak.players import (
+    get_hustle_stats,
+    get_league_leaders,
+    get_player,
+    get_player_game_log,
+    get_player_id,
+    get_player_stats,
+    search_players,
+)
 
 
 def _make_player(mocker: MockerFixture, person_id: int, first: str, last: str):
@@ -181,9 +189,6 @@ class TestGetPlayerId:
         assert result is None
 
 
-from fastbreak.players import get_player_game_log
-
-
 def _make_game_log_client(mocker: MockerFixture, games: list):
     """Return a NBAClient whose .get() resolves to a mock PlayerGameLogResponse."""
     response = mocker.MagicMock()
@@ -241,9 +246,6 @@ class TestGetPlayerGameLog:
         assert endpoint.season_type == "Playoffs"
 
 
-from fastbreak.players import get_player_stats
-
-
 def _make_career_client(mocker: MockerFixture, career_response):
     """Return a NBAClient whose .get() resolves to a mock PlayerCareerStatsResponse."""
     client = NBAClient(session=mocker.MagicMock())
@@ -289,9 +291,6 @@ class TestGetPlayerStats:
 
         endpoint = client.get.call_args[0][0]
         assert endpoint.per_mode == "Totals"
-
-
-from fastbreak.players import get_league_leaders
 
 
 def _make_leaders_client(mocker: MockerFixture, leaders: list):
@@ -391,9 +390,6 @@ class TestGetLeagueLeaders:
             await get_league_leaders(client, limit=0)
 
         client.get.assert_not_called()
-
-
-from fastbreak.players import get_hustle_stats
 
 
 def _make_hustle_client(mocker: MockerFixture, players: list):
