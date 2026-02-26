@@ -63,6 +63,53 @@ class TestSearchPlayers:
 
         assert results == []
 
+    async def test_raises_for_zero_limit(self, mocker: MockerFixture):
+        """search_players raises ValueError when limit=0."""
+        client = _make_client(mocker)
+
+        with pytest.raises(ValueError, match="positive integer"):
+            await search_players(client, "Curry", limit=0)
+
+        client.get.assert_not_called()
+
+    async def test_raises_for_negative_limit(self, mocker: MockerFixture):
+        """search_players raises ValueError when limit is negative."""
+        client = _make_client(mocker)
+
+        with pytest.raises(ValueError, match="positive integer"):
+            await search_players(client, "Curry", limit=-5)
+
+        client.get.assert_not_called()
+
+    async def test_last_name_prefix_ranked_before_first_name_prefix(
+        self, mocker: MockerFixture
+    ):
+        """Last-name prefix match (priority 1) ranks before first-name prefix (priority 2)."""
+        # "james" matches LeBron James on last name (priority 1)
+        # and James Brown on first name (priority 2)
+        last_name_match = _make_player(mocker, 1, "LeBron", "James")
+        first_name_match = _make_player(mocker, 2, "James", "Brown")
+        # Provide in reverse expected order to confirm sorting, not insertion order
+        client = _make_client(mocker, first_name_match, last_name_match)
+
+        results = await search_players(client, "james")
+
+        assert results[0].person_id == 1  # LeBron James (last-name prefix) first
+        assert results[1].person_id == 2  # James Brown (first-name prefix) second
+
+    async def test_exact_full_name_ranked_before_substring(self, mocker: MockerFixture):
+        """Exact full-name match (priority 0) ranks before substring match (priority 3)."""
+        # "james brown" exactly matches James Brown (priority 0)
+        # and appears as substring in "james browning" (priority 3)
+        exact_match = _make_player(mocker, 1, "James", "Brown")
+        substring_match = _make_player(mocker, 2, "James", "Browning")
+        client = _make_client(mocker, substring_match, exact_match)
+
+        results = await search_players(client, "james brown")
+
+        assert results[0].person_id == 1  # exact match first
+        assert results[1].person_id == 2  # substring match second
+
 
 class TestGetPlayer:
     """Tests for the get_player standalone function."""
@@ -321,6 +368,29 @@ class TestGetLeagueLeaders:
         result = await get_league_leaders(client)
 
         assert len(result) == 10
+
+    async def test_raises_for_zero_limit(self, mocker: MockerFixture):
+        """get_league_leaders raises ValueError when limit=0."""
+        client = _make_leaders_client(mocker, [])
+
+        with pytest.raises(ValueError, match="positive integer"):
+            await get_league_leaders(client, limit=0)
+
+    async def test_raises_for_negative_limit(self, mocker: MockerFixture):
+        """get_league_leaders raises ValueError when limit is negative."""
+        client = _make_leaders_client(mocker, [])
+
+        with pytest.raises(ValueError, match="positive integer"):
+            await get_league_leaders(client, limit=-1)
+
+    async def test_raises_before_api_call(self, mocker: MockerFixture):
+        """get_league_leaders raises ValueError without calling the API."""
+        client = _make_leaders_client(mocker, [])
+
+        with pytest.raises(ValueError, match="positive integer"):
+            await get_league_leaders(client, limit=0)
+
+        client.get.assert_not_called()
 
 
 from fastbreak.players import get_hustle_stats

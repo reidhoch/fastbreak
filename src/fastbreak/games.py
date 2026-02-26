@@ -11,12 +11,12 @@ if TYPE_CHECKING:
     from fastbreak.models.box_score_traditional import BoxScoreTraditionalData
     from fastbreak.models.play_by_play import PlayByPlayAction
     from fastbreak.models.scoreboard_v3 import ScoreboardGame
-    from fastbreak.types import Date, SeasonType
+    from fastbreak.types import Date, ISODate, Season, SeasonType
 
 
 async def get_game_ids(  # noqa: PLR0913
     client: NBAClient,
-    season: str | None = None,
+    season: Season | None = None,
     *,
     season_type: SeasonType = "Regular Season",
     team_id: int | None = None,
@@ -69,7 +69,7 @@ async def get_game_ids(  # noqa: PLR0913
 
 async def get_games_on_date(
     client: NBAClient,
-    game_date: str,
+    game_date: ISODate,
 ) -> list[ScoreboardGame]:
     """Return all games scheduled on a specific date.
 

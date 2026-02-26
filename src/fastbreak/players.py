@@ -13,14 +13,14 @@ if TYPE_CHECKING:
     from fastbreak.models.league_leaders import LeagueLeader
     from fastbreak.models.player_career_stats import PlayerCareerStatsResponse
     from fastbreak.models.player_game_log import PlayerGameLogEntry
-    from fastbreak.types import PerMode, SeasonType, StatCategoryAbbreviation
+    from fastbreak.types import PerMode, Season, SeasonType, StatCategoryAbbreviation
 
 
 async def search_players(
     client: NBAClient,
     query: str,
     *,
-    season: str | None = None,
+    season: Season | None = None,
     limit: int = 10,
 ) -> list[PlayerIndexEntry]:
     """Search for players by partial name match.
@@ -83,7 +83,7 @@ async def get_player(
     client: NBAClient,
     identifier: int | str,
     *,
-    season: str | None = None,
+    season: Season | None = None,
 ) -> PlayerIndexEntry | None:
     """Get a player by ID or exact name.
 
@@ -126,7 +126,7 @@ async def get_player_id(
     client: NBAClient,
     name: str,
     *,
-    season: str | None = None,
+    season: Season | None = None,
 ) -> int | None:
     """Get a player's ID by exact name.
 
@@ -150,7 +150,7 @@ async def get_player_game_log(
     client: NBAClient,
     *,
     player_id: int,
-    season: str | None = None,
+    season: Season | None = None,
     season_type: SeasonType = "Regular Season",
 ) -> list[PlayerGameLogEntry]:
     """Return a player's game-by-game stats for a season.
@@ -207,7 +207,7 @@ async def get_player_stats(
 async def get_league_leaders(
     client: NBAClient,
     *,
-    season: str | None = None,
+    season: Season | None = None,
     stat_category: StatCategoryAbbreviation = "PTS",
     season_type: SeasonType = "Regular Season",
     limit: int | None = None,
@@ -255,7 +255,7 @@ async def get_hustle_stats(
     client: NBAClient,
     player_id: int,
     *,
-    season: str | None = None,
+    season: Season | None = None,
     season_type: SeasonType = "Regular Season",
 ) -> LeagueHustlePlayer | None:
     """Return season hustle statistics for a player.

@@ -18,6 +18,7 @@ from fastbreak.types import (
     DistanceRange,
     Division,
     GameSegment,
+    ISODate,
     LeagueID,
     Location,
     MeasureType,
@@ -40,6 +41,7 @@ from fastbreak.types import (
     StatCategoryAbbreviation,
     YesNo,
     _validate_date,
+    _validate_iso_date,
     _validate_season,
 )
 
@@ -58,6 +60,12 @@ class DateModel(BaseModel):
     """Test model for Date type."""
 
     date: Date
+
+
+class ISODateModel(BaseModel):
+    """Test model for ISODate type."""
+
+    date: ISODate
 
 
 class LeagueIDModel(BaseModel):
@@ -343,6 +351,129 @@ class TestDateValidatorFunction:
             assert re.match(r"^\d{2}/\d{2}/\d{4}$", result)
         except ValueError as e:
             assert "MM/DD/YYYY format" in str(e)
+
+
+# =============================================================================
+# ISODate Validation Tests
+# =============================================================================
+
+
+class TestISODateValidation:
+    """Tests for ISODate type validation."""
+
+    def test_valid_iso_date_format(self):
+        """Valid YYYY-MM-DD format is accepted."""
+        model = ISODateModel(date="2025-01-15")
+        assert model.date == "2025-01-15"
+
+    def test_valid_iso_date_end_of_year(self):
+        """End of year ISO date is accepted."""
+        model = ISODateModel(date="2024-12-31")
+        assert model.date == "2024-12-31"
+
+    def test_valid_iso_date_beginning_of_year(self):
+        """Beginning of year ISO date is accepted."""
+        model = ISODateModel(date="2024-01-01")
+        assert model.date == "2024-01-01"
+
+    def test_valid_iso_date_leap_day(self):
+        """Leap day in a leap year is accepted."""
+        model = ISODateModel(date="2024-02-29")
+        assert model.date == "2024-02-29"
+
+    def test_invalid_iso_date_mm_dd_yyyy_format(self):
+        """MM/DD/YYYY format (the NBA API Date type) raises ValidationError."""
+        with pytest.raises(ValidationError, match="YYYY-MM-DD format"):
+            ISODateModel(date="01/15/2025")
+
+    def test_invalid_iso_date_slash_separator(self):
+        """ISO date with slash separator raises ValidationError."""
+        with pytest.raises(ValidationError, match="YYYY-MM-DD format"):
+            ISODateModel(date="2025/01/15")
+
+    def test_invalid_iso_date_two_digit_year(self):
+        """ISO date with two-digit year raises ValidationError."""
+        with pytest.raises(ValidationError, match="YYYY-MM-DD format"):
+            ISODateModel(date="25-01-15")
+
+    def test_invalid_iso_date_single_digit_month(self):
+        """ISO date with single-digit month raises ValidationError."""
+        with pytest.raises(ValidationError, match="YYYY-MM-DD format"):
+            ISODateModel(date="2025-1-15")
+
+    def test_invalid_iso_date_single_digit_day(self):
+        """ISO date with single-digit day raises ValidationError."""
+        with pytest.raises(ValidationError, match="YYYY-MM-DD format"):
+            ISODateModel(date="2025-01-5")
+
+    def test_invalid_iso_date_month_overflow(self):
+        """Month 13 raises ValidationError."""
+        with pytest.raises(ValidationError, match="YYYY-MM-DD format"):
+            ISODateModel(date="2025-13-01")
+
+    def test_invalid_iso_date_non_leap_day(self):
+        """Feb 29 in a non-leap year raises ValidationError."""
+        with pytest.raises(ValidationError, match="YYYY-MM-DD format"):
+            ISODateModel(date="2025-02-29")
+
+    def test_invalid_iso_date_empty_string(self):
+        """Empty string raises ValidationError."""
+        with pytest.raises(ValidationError, match="YYYY-MM-DD format"):
+            ISODateModel(date="")
+
+    def test_invalid_iso_date_partial_date(self):
+        """Partial date (year-month only) raises ValidationError."""
+        with pytest.raises(ValidationError, match="YYYY-MM-DD format"):
+            ISODateModel(date="2025-01")
+
+    @given(
+        year=st.integers(min_value=1900, max_value=2100),
+        month=st.integers(min_value=1, max_value=12),
+        day=st.integers(min_value=1, max_value=28),
+    )
+    def test_valid_iso_date_formats_fuzzed(self, year, month, day):
+        """Valid dates in YYYY-MM-DD format are accepted."""
+        date_str = f"{year:04d}-{month:02d}-{day:02d}"
+        model = ISODateModel(date=date_str)
+        assert model.date == date_str
+
+    @given(data=st.text(max_size=20))
+    @settings(max_examples=200)
+    def test_invalid_iso_date_random_strings(self, data):
+        """Random strings that don't match YYYY-MM-DD should fail."""
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", data):
+            return  # Skip valid-format strings
+
+        with pytest.raises(ValidationError):
+            ISODateModel(date=data)
+
+
+class TestISODateValidatorFunction:
+    """Direct tests for _validate_iso_date function."""
+
+    def test_returns_valid_date_unchanged(self):
+        """Valid ISO date is returned unchanged."""
+        assert _validate_iso_date("2025-01-15") == "2025-01-15"
+
+    def test_raises_value_error_for_mm_dd_yyyy(self):
+        """MM/DD/YYYY format raises ValueError."""
+        with pytest.raises(ValueError, match="YYYY-MM-DD format"):
+            _validate_iso_date("01/15/2025")
+
+    def test_raises_value_error_for_month_overflow(self):
+        """Semantically invalid date raises ValueError."""
+        with pytest.raises(ValueError, match="YYYY-MM-DD format"):
+            _validate_iso_date("2025-13-01")
+
+    @given(data=st.text(max_size=50))
+    @settings(max_examples=300)
+    def test_never_crashes_on_any_string(self, data):
+        """Function should never crash - either return value or raise ValueError."""
+        try:
+            result = _validate_iso_date(data)
+            assert result == data
+        except ValueError as e:
+            assert "YYYY-MM-DD format" in str(e)
 
 
 # =============================================================================

@@ -197,6 +197,42 @@ class TestGetGamesOnDate:
 
         assert len(result) == 10
 
+    async def test_raises_for_mm_dd_yyyy_format(self, mocker: MockerFixture):
+        """get_games_on_date raises ValueError when given MM/DD/YYYY instead of YYYY-MM-DD."""
+        client = _make_scoreboard_client(mocker, [])
+
+        with pytest.raises(ValueError, match="YYYY-MM-DD"):
+            await get_games_on_date(client, "01/15/2025")
+
+        client.get.assert_not_called()
+
+    async def test_raises_for_wrong_separator(self, mocker: MockerFixture):
+        """get_games_on_date raises ValueError when given slashes instead of dashes."""
+        client = _make_scoreboard_client(mocker, [])
+
+        with pytest.raises(ValueError, match="YYYY-MM-DD"):
+            await get_games_on_date(client, "2025/01/15")
+
+        client.get.assert_not_called()
+
+    async def test_raises_for_invalid_date_string(self, mocker: MockerFixture):
+        """get_games_on_date raises ValueError for a non-date string."""
+        client = _make_scoreboard_client(mocker, [])
+
+        with pytest.raises(ValueError, match="YYYY-MM-DD"):
+            await get_games_on_date(client, "not-a-date")
+
+        client.get.assert_not_called()
+
+    async def test_raises_for_semantically_invalid_date(self, mocker: MockerFixture):
+        """get_games_on_date raises ValueError for a correctly formatted but invalid date."""
+        client = _make_scoreboard_client(mocker, [])
+
+        with pytest.raises(ValueError, match="YYYY-MM-DD"):
+            await get_games_on_date(client, "2025-13-01")
+
+        client.get.assert_not_called()
+
 
 class TestGetTodaysGames:
     """Tests for get_todays_games convenience function."""
