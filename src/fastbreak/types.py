@@ -3,7 +3,7 @@ Type aliases for NBA API parameters.
 """
 
 import re
-from datetime import datetime
+from datetime import date as _date, datetime
 from typing import Annotated, Literal
 
 from pydantic import AfterValidator, Field
@@ -20,6 +20,16 @@ def _validate_season(value: str) -> str:
     if end_suffix != expected_suffix:
         msg = f"Invalid season: '{value}' - suffix should be {expected_suffix:02d} for year {start_year}"
         raise ValueError(msg)
+    return value
+
+
+def _validate_iso_date(value: str) -> str:
+    """Validate date is a valid date in YYYY-MM-DD format (e.g., '2025-01-15')."""
+    try:
+        _date.fromisoformat(value)
+    except ValueError:
+        msg = "Date must be in YYYY-MM-DD format (e.g., '2025-01-15')"
+        raise ValueError(msg) from None
     return value
 
 
@@ -66,6 +76,12 @@ Date = Annotated[
     str,
     AfterValidator(_validate_date),
     Field(description="Date in MM/DD/YYYY format (e.g., '01/15/2025')"),
+]
+
+ISODate = Annotated[
+    str,
+    AfterValidator(_validate_iso_date),
+    Field(description="Date in YYYY-MM-DD format (e.g., '2025-01-15')"),
 ]
 
 DistanceRange = Annotated[

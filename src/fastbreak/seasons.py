@@ -1,11 +1,17 @@
 """Season utility functions."""
 
+from __future__ import annotations
+
 from datetime import UTC, date, datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from fastbreak.types import Season
 
 _SEASON_START_MONTH = 10
 
 
-def get_season_from_date(reference_date: date | None = None) -> str:
+def get_season_from_date(reference_date: date | None = None) -> Season:
     """Return the NBA season for a given date in YYYY-YY format.
 
     The NBA season typically starts in October and ends in June.
@@ -40,7 +46,7 @@ def get_season_from_date(reference_date: date | None = None) -> str:
     return f"{start_year}-{end_year_short:02d}"
 
 
-def season_start_year(season: str) -> int:
+def season_start_year(season: Season) -> int:
     """Extract the start year from a season string.
 
     Args:
@@ -64,7 +70,7 @@ def season_start_year(season: str) -> int:
         raise ValueError(msg) from None
 
 
-def season_to_season_id(season: str) -> str:
+def season_to_season_id(season: Season) -> str:
     """Convert a season string to NBA season ID format.
 
     Some endpoints use a season ID format like "22024" where the prefix

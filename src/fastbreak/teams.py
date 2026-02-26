@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from fastbreak.models.league_dash_team_stats import LeagueDashTeamStatsRow
     from fastbreak.models.team_dash_lineups import LineupStats
     from fastbreak.models.team_game_log import TeamGameLogEntry
-    from fastbreak.types import PerMode, SeasonType
+    from fastbreak.types import Conference, Division, PerMode, Season, SeasonType
 
 
 class TeamID(IntEnum):
@@ -67,13 +67,13 @@ class TeamID(IntEnum):
 class TeamInfo:
     """Static information about an NBA team."""
 
-    id: int
+    id: TeamID
     abbreviation: str
     city: str
     name: str
     full_name: str
-    conference: str
-    division: str
+    conference: Conference
+    division: Division
 
 
 TEAMS: dict[int, TeamInfo] = {
@@ -401,7 +401,7 @@ def get_team(identifier: int | str) -> TeamInfo | None:
     return None
 
 
-def get_team_id(identifier: str) -> int | None:
+def get_team_id(identifier: str) -> TeamID | None:
     """Get a team's ID by abbreviation, name, or city.
 
     Args:
@@ -516,8 +516,8 @@ def search_teams(query: str, *, limit: int = 5) -> list[TeamInfo]:
 async def get_team_game_log(
     client: NBAClient,
     *,
-    team_id: int,
-    season: str | None = None,
+    team_id: int | TeamID,
+    season: Season | None = None,
     season_type: SeasonType = "Regular Season",
 ) -> list[TeamGameLogEntry]:
     """Return a team's game-by-game stats for a season.
@@ -548,7 +548,7 @@ async def get_team_game_log(
 async def get_team_stats(
     client: NBAClient,
     *,
-    season: str | None = None,
+    season: Season | None = None,
     season_type: SeasonType = "Regular Season",
     per_mode: PerMode = "PerGame",
 ) -> list[LeagueDashTeamStatsRow]:
@@ -580,9 +580,9 @@ async def get_team_stats(
 
 async def get_lineup_stats(
     client: NBAClient,
-    team_id: int,
+    team_id: int | TeamID,
     *,
-    season: str | None = None,
+    season: Season | None = None,
     season_type: SeasonType = "Regular Season",
     group_quantity: int = 5,
 ) -> list[LineupStats]:

@@ -1,5 +1,6 @@
 """Tests for fastbreak.teams utility functions."""
 
+import pytest
 from pytest_mock import MockerFixture
 
 from fastbreak.clients.nba import NBAClient
@@ -73,6 +74,23 @@ class TestSearchTeams:
         """Exact abbreviation match is returned as the first result."""
         results = search_teams("LAL")
         assert results[0].abbreviation == "LAL"
+
+    def test_raises_for_zero_limit(self):
+        """search_teams raises ValueError when limit=0."""
+        with pytest.raises(ValueError, match="positive integer"):
+            search_teams("Lakers", limit=0)
+
+    def test_raises_for_negative_limit(self):
+        """search_teams raises ValueError when limit is negative."""
+        with pytest.raises(ValueError, match="positive integer"):
+            search_teams("Lakers", limit=-1)
+
+    def test_same_priority_sorted_alphabetically_by_abbreviation(self):
+        """Teams at the same priority rank alphabetically by abbreviation."""
+        # "LA" matches both LAC (Clippers) and LAL (Lakers) as abbreviation prefix
+        results = search_teams("LA", limit=10)
+        la_abbrs = [t.abbreviation for t in results if t.abbreviation in ("LAC", "LAL")]
+        assert la_abbrs == ["LAC", "LAL"]  # LAC before LAL alphabetically
 
 
 def _make_team_game_log_client(mocker: MockerFixture, games: list):
@@ -347,6 +365,12 @@ class TestGetTeam:
         assert get_team("Unknown") is None
         assert get_team(99999) is None
 
+    def test_get_by_team_id_enum(self) -> None:
+        """get_team accepts a TeamID enum value as the integer identifier."""
+        team = get_team(TeamID.LAKERS)
+        assert team is not None
+        assert team.abbreviation == "LAL"
+
 
 class TestGetTeamId:
     """Tests for get_team_id function."""
@@ -358,6 +382,10 @@ class TestGetTeamId:
     def test_get_id_by_name(self) -> None:
         """Can get team ID by name."""
         assert get_team_id("Lakers") == 1610612747
+
+    def test_get_id_by_city(self) -> None:
+        """get_team_id returns the team ID when looking up by city name."""
+        assert get_team_id("Boston") == TeamID.CELTICS
 
     def test_unknown_returns_none(self) -> None:
         """Unknown team returns None."""
@@ -394,6 +422,16 @@ class TestTeamsByConference:
         team_names = [t.name for t in west]
         assert "Lakers" in team_names
 
+    def test_raises_for_unknown_conference(self) -> None:
+        """teams_by_conference raises ValueError for an unknown conference name."""
+        with pytest.raises(ValueError, match="Unknown conference"):
+            teams_by_conference("Northern")
+
+    def test_raises_for_invalid_conference_name(self) -> None:
+        """teams_by_conference raises ValueError for a plausible but wrong name."""
+        with pytest.raises(ValueError, match="Unknown conference"):
+            teams_by_conference("Eastern")
+
 
 class TestTeamsByDivision:
     """Tests for teams_by_division function."""
@@ -427,3 +465,13 @@ class TestTeamsByDivision:
         pacific = teams_by_division("Pacific")
         team_names = [t.name for t in pacific]
         assert "Lakers" in team_names
+
+    def test_raises_for_unknown_division(self) -> None:
+        """teams_by_division raises ValueError for a division that no longer exists."""
+        with pytest.raises(ValueError, match="Unknown division"):
+            teams_by_division("Midwest")
+
+    def test_raises_for_invalid_division_name(self) -> None:
+        """teams_by_division raises ValueError for a plausible but wrong name."""
+        with pytest.raises(ValueError, match="Unknown division"):
+            teams_by_division("Northern")
