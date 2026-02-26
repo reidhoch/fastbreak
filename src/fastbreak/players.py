@@ -37,6 +37,9 @@ async def search_players(
         await search_players(client, "Ant")    # finds Anthony Edwards, etc.
 
     """
+    if limit < 1:
+        msg = f"limit must be a positive integer, got {limit}"
+        raise ValueError(msg)
     if not query or not query.strip():
         return []
 
@@ -230,6 +233,9 @@ async def get_league_leaders(
             season_type=season_type,
         )
     )
+    if limit is not None and limit < 1:
+        msg = f"limit must be a positive integer, got {limit}"
+        raise ValueError(msg)
     leaders = response.leaders
     return leaders if limit is None else leaders[:limit]
 
