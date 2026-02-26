@@ -76,7 +76,6 @@ class TeamInfo:
     division: str
 
 
-# Complete team information lookup
 TEAMS: dict[int, TeamInfo] = {
     # Eastern Conference - Atlantic Division
     TeamID.CELTICS: TeamInfo(
@@ -356,7 +355,6 @@ TEAMS: dict[int, TeamInfo] = {
     ),
 }
 
-# Lookup indexes for quick access
 _TEAMS_BY_ABBREVIATION: dict[str, TeamInfo] = {
     t.abbreviation: t for t in TEAMS.values()
 }
@@ -427,7 +425,7 @@ def teams_by_conference(conference: str) -> list[TeamInfo]:
     """Get all teams in a conference.
 
     Args:
-        conference: "East" or "West"
+        conference: Conference name, case-insensitive ("East" or "West")
 
     Returns:
         List of TeamInfo for teams in the conference
@@ -447,7 +445,7 @@ def teams_by_division(division: str) -> list[TeamInfo]:
     """Get all teams in a division.
 
     Args:
-        division: Division name (e.g., "Atlantic", "Pacific")
+        division: Division name, case-insensitive (e.g., "Atlantic", "pacific")
 
     Returns:
         List of TeamInfo for teams in the division
@@ -473,10 +471,13 @@ def search_teams(query: str, *, limit: int = 5) -> list[TeamInfo]:
     Returns:
         List of matching TeamInfo objects, sorted by relevance
 
+    Raises:
+        ValueError: If limit is less than 1.
+
     Examples:
         search_teams("IND")      # Indiana Pacers
         search_teams("Lakers")   # Los Angeles Lakers
-        search_teams("New")      # Knicks, Nets, Pelicans, Thunder, etc.
+        search_teams("New")      # New Orleans Pelicans, New York Knicks
 
     """
     if limit < 1:

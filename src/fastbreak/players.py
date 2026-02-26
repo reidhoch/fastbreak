@@ -34,8 +34,11 @@ async def search_players(
     Returns:
         List of matching PlayerIndexEntry objects, sorted by relevance
 
+    Raises:
+        ValueError: If limit is less than 1.
+
     Examples:
-        await search_players(client, "Curry")  # finds Stephen, Seth, etc.
+        await search_players(client, "Curry")  # finds Stephen Curry, etc.
         await search_players(client, "Ant")    # finds Anthony Edwards, etc.
 
     """
@@ -220,6 +223,9 @@ async def get_league_leaders(
 
     Returns:
         List of LeagueLeader objects ranked by stat_category
+
+    Raises:
+        ValueError: If limit is less than 1.
 
     Examples:
         scorers = await get_league_leaders(client, stat_category="PTS", limit=10)

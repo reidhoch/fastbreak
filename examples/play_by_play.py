@@ -46,8 +46,8 @@ async def main() -> None:
         scoring = [a for a in actions if a.shotResult == "Made"]
         print("\n  Last 5 made shots:")
         for action in scoring[-5:]:
-            clock = getattr(action, "clock", "")
-            desc = getattr(action, "description", "")
+            clock = action.clock
+            desc = action.description
             print(f"    Q{action.period} {clock}  {desc}")
 
 
