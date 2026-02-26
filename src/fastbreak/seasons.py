@@ -50,8 +50,19 @@ def season_start_year(season: str) -> int:
     Returns:
         The start year as an integer (e.g., 2024)
 
+    Raises:
+        ValueError: If the season string is not in YYYY-YY format.
+
     """
-    return int(season.split("-", maxsplit=1)[0])
+    parts = season.split("-", maxsplit=1)
+    if len(parts) != 2 or len(parts[0]) != 4 or len(parts[1]) != 2:  # noqa: PLR2004
+        msg = f"Invalid season format: {season!r}. Expected YYYY-YY (e.g., '2024-25')."
+        raise ValueError(msg)
+    try:
+        return int(parts[0])
+    except ValueError:
+        msg = f"Invalid season format: {season!r}. Expected YYYY-YY (e.g., '2024-25')."
+        raise ValueError(msg) from None
 
 
 def season_to_season_id(season: str) -> str:

@@ -86,6 +86,12 @@ async def get_games_on_date(
             print(game.game_status_text)
 
     """
+    try:
+        date.fromisoformat(game_date)
+    except ValueError:
+        msg = f"Invalid game_date: {game_date!r}. Expected YYYY-MM-DD format (e.g., '2025-01-15')."
+        raise ValueError(msg) from None
+
     from fastbreak.endpoints import ScoreboardV3  # noqa: PLC0415
 
     response = await client.get(ScoreboardV3(game_date=game_date))
