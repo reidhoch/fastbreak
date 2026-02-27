@@ -12,7 +12,7 @@ class FranchisePlayers(Endpoint[FranchisePlayersResponse]):
 
     Args:
         league_id: League identifier ("00" for NBA)
-        team_id: Team identifier (e.g., "1610612745" for Rockets)
+        team_id: Team identifier (e.g., 1610612745 for Rockets)
         season_type: Type of season ("Regular Season", "Playoffs")
         per_mode: Stat aggregation mode ("PerGame", "Totals")
 
