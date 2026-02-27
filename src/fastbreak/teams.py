@@ -629,7 +629,7 @@ def _lineup_net_rtg(plus_minus: float, minutes: float) -> float | None:
 
 async def get_lineup_net_ratings(
     client: NBAClient,
-    team_id: int,
+    team_id: int | TeamID,
     season: Season | None = None,
     *,
     min_minutes: float = 10.0,
