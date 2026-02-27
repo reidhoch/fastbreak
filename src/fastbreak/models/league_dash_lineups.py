@@ -22,6 +22,7 @@ class LeagueLineup(PandasMixin, PolarsMixin, BaseModel):
     losses: int = Field(alias="L")
     w_pct: float = Field(alias="W_PCT")
     min: float = Field(alias="MIN")
+    sum_time_played: str | None = Field(default=None, alias="SUM_TIME_PLAYED")
 
     # Shooting stats
     fgm: float = Field(alias="FGM")

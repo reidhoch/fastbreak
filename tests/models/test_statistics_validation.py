@@ -602,13 +602,15 @@ class TestHustleStatisticsValidation:
 
         assert "loose_balls_recovered" in str(exc_info.value)
 
-    def test_box_outs_partition_mismatch_raises(self, valid_data):
-        """offensive_box_outs + defensive_box_outs != box_outs should raise."""
+    def test_box_outs_partition_mismatch_is_allowed(self, valid_data):
+        """offensive_box_outs + defensive_box_outs != box_outs is accepted.
+
+        The NBA API itself returns data where this does not sum correctly
+        (e.g., 0 + 1 != 2), so we do not enforce this constraint.
+        """
         from fastbreak.models.box_score_hustle import HustleStatistics  # noqa: PLC0415
 
         valid_data["offensiveBoxOuts"] = 10  # 10 + 3 = 13 != boxOuts=5
 
-        with pytest.raises(ValidationError) as exc_info:
-            HustleStatistics.model_validate(valid_data)
-
-        assert "box_outs" in str(exc_info.value)
+        stat = HustleStatistics.model_validate(valid_data)
+        assert stat.offensive_box_outs == 10

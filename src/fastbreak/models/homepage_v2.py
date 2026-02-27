@@ -48,6 +48,7 @@ class HomePageStatStl(HomePageStatPlayer):
     """Steals leaders entry."""
 
     stl: float = Field(alias="STL")
+    fg_pct: float | None = Field(default=None, alias="FG_PCT")
 
 
 class HomePageStatFg3Pct(HomePageStatPlayer):

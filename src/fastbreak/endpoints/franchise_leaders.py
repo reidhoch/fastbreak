@@ -19,12 +19,12 @@ class FranchiseLeaders(Endpoint[FranchiseLeadersResponse]):
     path: ClassVar[str] = "franchiseleaders"
     response_model: ClassVar[type[FranchiseLeadersResponse]] = FranchiseLeadersResponse
 
-    team_id: str
+    team_id: int
     league_id: LeagueID = "00"
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""
         return {
             "LeagueID": self.league_id,
-            "TeamID": self.team_id,
+            "TeamID": str(self.team_id),
         }

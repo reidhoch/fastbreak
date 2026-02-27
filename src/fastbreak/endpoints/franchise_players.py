@@ -21,7 +21,7 @@ class FranchisePlayers(Endpoint[FranchisePlayersResponse]):
     path: ClassVar[str] = "franchiseplayers"
     response_model: ClassVar[type[FranchisePlayersResponse]] = FranchisePlayersResponse
 
-    team_id: str
+    team_id: int
     league_id: LeagueID = "00"
     season_type: SeasonType = "Regular Season"
     per_mode: PerMode = "PerGame"
@@ -30,7 +30,7 @@ class FranchisePlayers(Endpoint[FranchisePlayersResponse]):
         """Return the query parameters for this endpoint."""
         return {
             "LeagueID": self.league_id,
-            "TeamID": self.team_id,
+            "TeamID": str(self.team_id),
             "SeasonType": self.season_type,
             "PerMode": self.per_mode,
         }
