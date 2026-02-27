@@ -653,8 +653,6 @@ async def get_lineup_net_ratings(
         best = lineups[0]
         print(best[0].group_name, best[1])  # "LeBron - AD - ...", 12.4
     """
-    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
-
     season = season or get_season_from_date()
     lineups = await get_lineup_stats(client, team_id=team_id, season=season)
     results: list[tuple[LineupStats, float]] = []
@@ -746,7 +744,6 @@ async def get_team_playtypes(
         iso = next((p for p in plays if p.play_type == "Isolation"), None)
     """
     from fastbreak.endpoints import SynergyPlaytypes  # noqa: PLC0415
-    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
 
     season = season or get_season_from_date()
     response = await client.get(
