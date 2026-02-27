@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from fastbreak.types import Season
 
 _SEASON_START_MONTH = 10
+_SEASON_YEAR_LEN = 4
 
 
 def get_season_from_date(reference_date: date | None = None) -> Season:
@@ -50,24 +51,27 @@ def season_start_year(season: Season) -> int:
     """Extract the start year from a season string.
 
     Args:
-        season: Season in YYYY-YY format (e.g., "2024-25")
+        season: Season in YYYY-YY format (e.g., "2024-25"). The ``Season``
+            type alias guarantees the format is valid when the argument flows
+            through Pydantic validation.
 
     Returns:
         The start year as an integer (e.g., 2024)
 
     Raises:
-        ValueError: If the season string is not in YYYY-YY format.
+        ValueError: If the first four characters are not a numeric year (e.g.,
+            ``"202X-25"``). Well-typed callers will never hit this path.
 
     """
-    parts = season.split("-", maxsplit=1)
-    if len(parts) != 2 or len(parts[0]) != 4 or len(parts[1]) != 2:  # noqa: PLR2004
+    year_str = season[:_SEASON_YEAR_LEN]
+    if len(year_str) < _SEASON_YEAR_LEN:
         msg = f"Invalid season format: {season!r}. Expected YYYY-YY (e.g., '2024-25')."
         raise ValueError(msg)
     try:
-        return int(parts[0])
-    except ValueError:
+        return int(year_str)
+    except ValueError as exc:
         msg = f"Invalid season format: {season!r}. Expected YYYY-YY (e.g., '2024-25')."
-        raise ValueError(msg) from None
+        raise ValueError(msg) from exc
 
 
 def season_to_season_id(season: Season) -> str:

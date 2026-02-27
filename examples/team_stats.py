@@ -32,8 +32,7 @@ async def main() -> None:
         top_lineups = sorted(lineups, key=lambda ln: ln.plus_minus, reverse=True)[:5]
         for lineup in top_lineups:
             print(
-                f"  {lineup.group_name}"
-                f"  {lineup.gp} GP  +/- {lineup.plus_minus:+.1f}"
+                f"  {lineup.group_name}  {lineup.gp} GP  +/- {lineup.plus_minus:+.1f}"
             )
         print()
 
@@ -44,7 +43,9 @@ async def main() -> None:
         pairs = await get_lineup_stats(client, team_id=ind.id, group_quantity=2)
         top_pairs = sorted(pairs, key=lambda ln: ln.min, reverse=True)[:3]
         for pair in top_pairs:
-            print(f"  {pair.group_name}  {pair.min:.0f} min  +/- {pair.plus_minus:+.1f}")
+            print(
+                f"  {pair.group_name}  {pair.min:.0f} min  +/- {pair.plus_minus:+.1f}"
+            )
         print()
 
 

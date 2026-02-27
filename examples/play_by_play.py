@@ -11,7 +11,9 @@ from fastbreak.games import get_games_on_date, get_play_by_play
 async def main() -> None:
     async with NBAClient() as client:
         # Pick yesterday's first game as our example
-        yesterday = (datetime.now(tz=UTC).astimezone().date() - timedelta(days=1)).isoformat()
+        yesterday = (
+            datetime.now(tz=UTC).astimezone().date() - timedelta(days=1)
+        ).isoformat()
         games = await get_games_on_date(client, yesterday)
 
         if not games:

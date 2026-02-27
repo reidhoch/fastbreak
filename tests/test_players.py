@@ -159,6 +159,16 @@ class TestGetPlayer:
 
         assert result is None
 
+    async def test_logs_warning_for_integer_id_not_found(self, mocker: MockerFixture):
+        """A WARNING (not DEBUG) is emitted when an integer player ID is not found."""
+        client = _make_client(mocker)
+        mock_logger = mocker.patch("fastbreak.players.logger")
+
+        await get_player(client, 99999999)
+
+        mock_logger.warning.assert_called_once()
+        mock_logger.debug.assert_not_called()
+
     async def test_returns_none_when_name_not_found(self, mocker: MockerFixture):
         """get_player returns None when no player matches the given name."""
         client = _make_client(mocker, _make_player(mocker, 1, "LeBron", "James"))
@@ -166,6 +176,18 @@ class TestGetPlayer:
         result = await get_player(client, "Nonexistent Player")
 
         assert result is None
+
+    async def test_logs_debug_not_warning_for_string_name_not_found(
+        self, mocker: MockerFixture
+    ):
+        """A DEBUG (not WARNING) is emitted when a string name lookup returns no match."""
+        client = _make_client(mocker, _make_player(mocker, 1, "LeBron", "James"))
+        mock_logger = mocker.patch("fastbreak.players.logger")
+
+        await get_player(client, "Nonexistent Player")
+
+        mock_logger.debug.assert_called_once()
+        mock_logger.warning.assert_not_called()
 
 
 class TestGetPlayerId:
@@ -432,6 +454,21 @@ class TestGetHustleStats:
 
         assert result is None
 
+    async def test_logs_warning_with_response_size_when_player_not_found(
+        self, mocker: MockerFixture
+    ):
+        """A WARNING with total_players_in_response is emitted when the player is absent."""
+        other = mocker.MagicMock()
+        other.player_id = 999
+        client = _make_hustle_client(mocker, [other, other])
+        mock_logger = mocker.patch("fastbreak.players.logger")
+
+        await get_hustle_stats(client, player_id=201939)
+
+        mock_logger.warning.assert_called_once()
+        call_kwargs = mock_logger.warning.call_args.kwargs
+        assert call_kwargs.get("total_players_in_response") == 2
+
     async def test_passes_season_type_to_endpoint(self, mocker: MockerFixture):
         """get_hustle_stats passes season_type to LeagueHustleStatsPlayer."""
         client = _make_hustle_client(mocker, [])
@@ -449,3 +486,47 @@ class TestGetHustleStats:
 
         endpoint = client.get.call_args[0][0]
         assert endpoint.season == "2023-24"
+
+
+def test_get_on_off_splits_exported():
+    """get_on_off_splits is importable from players."""
+    from fastbreak.players import get_on_off_splits  # noqa: PLC0415
+
+    assert callable(get_on_off_splits)
+
+
+def test_get_career_game_logs_exported():
+    """get_career_game_logs is importable from players."""
+    from fastbreak.players import get_career_game_logs  # noqa: PLC0415
+
+    assert callable(get_career_game_logs)
+
+
+def test_get_player_playtypes_exported():
+    from fastbreak.players import get_player_playtypes  # noqa: PLC0415
+
+    assert callable(get_player_playtypes)
+
+
+class TestSeasonIdToSeason:
+    """_season_id_to_season handles both NBA API season_id formats."""
+
+    def test_numeric_format(self):
+        from fastbreak.players import _season_id_to_season  # noqa: PLC0415
+
+        assert _season_id_to_season("22024") == "2024-25"
+
+    def test_numeric_format_older_season(self):
+        from fastbreak.players import _season_id_to_season  # noqa: PLC0415
+
+        assert _season_id_to_season("22020") == "2020-21"
+
+    def test_yyyy_yy_format_passthrough(self):
+        from fastbreak.players import _season_id_to_season  # noqa: PLC0415
+
+        assert _season_id_to_season("2020-21") == "2020-21"
+
+    def test_yyyy_yy_format_other_season(self):
+        from fastbreak.players import _season_id_to_season  # noqa: PLC0415
+
+        assert _season_id_to_season("2024-25") == "2024-25"

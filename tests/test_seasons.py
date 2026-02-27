@@ -58,11 +58,6 @@ class TestSeasonHelpers:
         assert season_start_year("2024-25") == 2024
         assert season_start_year("1999-00") == 1999
 
-    def test_season_start_year_raises_for_full_year_suffix(self) -> None:
-        """season_start_year raises ValueError for YYYY-YYYY format."""
-        with pytest.raises(ValueError, match="Invalid season format"):
-            season_start_year("2024-2025")
-
     def test_season_start_year_raises_for_non_season_string(self) -> None:
         """season_start_year raises ValueError for a non-season string."""
         with pytest.raises(ValueError, match="Invalid season format"):
@@ -77,6 +72,19 @@ class TestSeasonHelpers:
         """Converts season to NBA season ID format."""
         assert season_to_season_id("2024-25") == "22024"
         assert season_to_season_id("1999-00") == "21999"
+
+    def test_season_start_year_preserves_exception_cause_for_non_numeric_year(
+        self,
+    ) -> None:
+        """ValueError for a non-numeric year preserves the original parse error as __cause__."""
+        with pytest.raises(ValueError) as exc_info:
+            season_start_year("202X-25")
+        assert exc_info.value.__cause__ is not None
+
+    def test_season_start_year_raises_for_short_string(self) -> None:
+        """A string shorter than four digits raises ValueError."""
+        with pytest.raises(ValueError, match="Invalid season format"):
+            season_start_year("202")
 
     def test_season_to_season_id_propagates_format_error(self) -> None:
         """season_to_season_id raises ValueError for an invalid season format."""

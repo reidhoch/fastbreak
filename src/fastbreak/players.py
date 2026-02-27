@@ -12,8 +12,10 @@ if TYPE_CHECKING:
     from fastbreak.models import PlayerIndexEntry
     from fastbreak.models.league_hustle_stats_player import LeagueHustlePlayer
     from fastbreak.models.league_leaders import LeagueLeader
+    from fastbreak.models.league_player_on_details import PlayerOnCourtDetail
     from fastbreak.models.player_career_stats import PlayerCareerStatsResponse
     from fastbreak.models.player_game_log import PlayerGameLogEntry
+    from fastbreak.models.synergy_playtypes import PlayerSynergyPlaytype
     from fastbreak.types import PerMode, Season, SeasonType, StatCategoryAbbreviation
 
 
@@ -33,7 +35,8 @@ async def search_players(
         limit: Maximum results to return
 
     Returns:
-        List of matching PlayerIndexEntry objects, sorted by relevance
+        List of matching PlayerIndexEntry objects, sorted by relevance tier,
+        then alphabetically by last name within each tier
 
     Raises:
         ValueError: If limit is less than 1.
@@ -108,7 +111,8 @@ async def get_player(
         for player in response.players:
             if player.person_id == identifier:
                 return player
-        logger.debug("player_not_found", identifier=identifier, season=season)
+        # Integer ID miss is unexpected in normal usage (stale ID?) — log at WARNING
+        logger.warning("player_not_found", identifier=identifier, season=season)
         return None
 
     results = await search_players(client, identifier, season=season, limit=1)
@@ -116,6 +120,7 @@ async def get_player(
         full = f"{results[0].player_first_name} {results[0].player_last_name}"
         if full.lower() == identifier.lower().strip():
             return results[0]
+    # String name miss is expected (typo, partial name) — log at DEBUG to avoid noise
     logger.debug("player_not_found", identifier=identifier, season=season)
     return None
 
@@ -284,5 +289,160 @@ async def get_hustle_stats(
     for player in response.players:
         if player.player_id == player_id:
             return player
-    logger.debug("hustle_stats_not_found", player_id=player_id, season=season)
+    logger.warning(
+        "hustle_stats_not_found",
+        player_id=player_id,
+        season=season,
+        total_players_in_response=len(response.players),
+    )
     return None
+
+
+def _season_id_to_season(season_id: str) -> str:
+    """Convert NBA season_id string to YYYY-YY format.
+
+    Handles two API formats:
+    - "22024" (type digit + 4-digit year) -> "2024-25"
+    - "2020-21" (already YYYY-YY)         -> "2020-21"
+    """
+    if "-" in season_id:
+        return season_id
+    year = int(season_id[1:])
+    return f"{year}-{str(year + 1)[2:]}"
+
+
+async def get_career_game_logs(
+    client: NBAClient,
+    player_id: int,
+    *,
+    season_type: SeasonType = "Regular Season",
+) -> list[PlayerGameLogEntry]:
+    """Return game log entries for every season of a player's career.
+
+    Fetches PlayerCareerStats to discover all seasons played, then calls
+    get_player_game_log for each season concurrently.
+
+    Args:
+        client: NBA API client
+        player_id: NBA player ID
+        season_type: "Regular Season" or "Playoffs"
+
+    Returns:
+        Flat list of GameLogEntry objects across all seasons, in the order
+        returned by get_player_game_log (typically reverse chronological
+        within each season), seasons in the order returned by career stats.
+
+    Examples:
+        entries = await get_career_game_logs(client, player_id=2544)
+        print(f"{len(entries)} games in career")
+    """
+    from fastbreak.endpoints import PlayerCareerStats, PlayerGameLog  # noqa: PLC0415
+
+    career = await client.get(PlayerCareerStats(player_id=player_id))
+    seasons = career.season_totals_regular_season
+    if not seasons:
+        return []
+
+    season_strings = [_season_id_to_season(s.season_id) for s in seasons]
+
+    endpoints = [
+        PlayerGameLog(player_id=player_id, season=s, season_type=season_type)
+        for s in season_strings
+    ]
+    responses = await client.get_many(endpoints)
+    result = []
+    for resp in responses:
+        result.extend(resp.games)
+    return result
+
+
+async def get_on_off_splits(  # noqa: PLR0913
+    client: NBAClient,
+    player_id: int,
+    team_id: int,
+    season: Season | None = None,
+    *,
+    per_mode: PerMode = "PerGame",
+    season_type: SeasonType = "Regular Season",
+) -> dict[str, list[PlayerOnCourtDetail]]:
+    """Return on-court and off-court splits for a player.
+
+    Fetches the LeaguePlayerOnDetails endpoint for the player's team, then
+    partitions rows by court_status == "On" vs "Off".
+
+    Args:
+        client: NBA API client
+        player_id: NBA player ID
+        team_id: NBA team ID the player belongs to
+        season: Season in YYYY-YY format (defaults to current season)
+        per_mode: "PerGame", "Per36", "Totals", etc.
+        season_type: "Regular Season", "Playoffs", etc.
+
+    Returns:
+        Dict with keys "on" and "off", each a list of PlayerOnCourtDetail rows
+        for the given player_id.
+
+    Examples:
+        splits = await get_on_off_splits(client, player_id=2544, team_id=1610612747)
+        on_rows  = splits["on"]
+        off_rows = splits["off"]
+
+    """
+    from fastbreak.endpoints import LeaguePlayerOnDetails  # noqa: PLC0415
+    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    endpoint = LeaguePlayerOnDetails(
+        team_id=team_id,
+        season=season,
+        per_mode=per_mode,
+        season_type=season_type,
+    )
+    response = await client.get(endpoint)
+    rows = [r for r in response.details if r.vs_player_id == player_id]
+    return {
+        "on": [r for r in rows if r.court_status == "On"],
+        "off": [r for r in rows if r.court_status == "Off"],
+    }
+
+
+async def get_player_playtypes(
+    client: NBAClient,
+    player_id: int,
+    season: Season | None = None,
+    *,
+    season_type: SeasonType = "Regular Season",
+    type_grouping: str = "offensive",
+) -> list[PlayerSynergyPlaytype]:
+    """Return play-type breakdown stats for a player.
+
+    Uses the Synergy play-type endpoint, filtered to a single player.
+
+    Args:
+        client: NBA API client
+        player_id: NBA player ID
+        season: Season in YYYY-YY format (defaults to current season)
+        season_type: "Regular Season", "Playoffs", etc.
+        type_grouping: "offensive" or "defensive"
+
+    Returns:
+        List of PlayerSynergyPlaytype rows for this player, one per play type.
+
+    Examples:
+        plays = await get_player_playtypes(client, player_id=2544)
+        for p in sorted(plays, key=lambda x: x.poss, reverse=True):
+            print(p.play_type, p.ppp)
+    """
+    from fastbreak.endpoints import SynergyPlaytypes  # noqa: PLC0415
+    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    response = await client.get(
+        SynergyPlaytypes(
+            player_or_team="P",
+            season_year=season,
+            season_type=season_type,
+            type_grouping=type_grouping,
+        )
+    )
+    return [r for r in response.player_stats if r.player_id == player_id]
