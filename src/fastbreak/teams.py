@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import IntEnum
+from statistics import fmean
 from typing import TYPE_CHECKING
 
 from fastbreak.seasons import get_season_from_date
@@ -19,10 +20,7 @@ if TYPE_CHECKING:
 
 
 class TeamID(IntEnum):
-    """NBA team IDs.
-
-    These are the official team IDs used by the NBA Stats API.
-    """
+    """NBA team IDs."""
 
     # Eastern Conference - Atlantic Division
     CELTICS = 1610612738
@@ -555,7 +553,7 @@ async def get_team_stats(
     season_type: SeasonType = "Regular Season",
     per_mode: PerMode = "PerGame",
 ) -> list[LeagueDashTeamStatsRow]:
-    """Return per-game stats for all teams in the league.
+    """Return league-wide team stats for all teams in the current season.
 
     Args:
         client: NBA API client
@@ -620,7 +618,7 @@ async def get_lineup_stats(
 
 
 def _lineup_net_rtg(plus_minus: float, minutes: float) -> float | None:
-    """Compute lineup net rating (points per 48 minutes at this margin).
+    """Compute lineup net rating: net point differential per 48 minutes (plus_minus / minutes * 48).
 
     Returns None when minutes == 0.
     """
@@ -644,11 +642,11 @@ async def get_lineup_net_ratings(
         client: NBA API client
         team_id: NBA team ID
         season: Season in YYYY-YY format (defaults to current season)
-        min_minutes: Minimum total minutes threshold (filters out tiny samples)
+        min_minutes: Minimum per-game average minutes threshold (filters out tiny samples)
 
     Returns:
         List of (LineupStats, net_rtg) tuples, sorted descending by net_rtg.
-        Lineups with zero minutes are excluded.
+        Lineups averaging fewer than min_minutes minutes per game are excluded (default: 10.0).
 
     Examples:
         lineups = await get_lineup_net_ratings(client, team_id=1610612747)
@@ -690,7 +688,8 @@ async def get_league_averages(
 
     Examples:
         lg = await get_league_averages(client)
-        ts = true_shooting(pts=30, fga=20, fta=5, lg_averages=lg)
+        ts = true_shooting(pts=30, fga=20, fta=5)
+        rel = relative_ts(ts, lg)
     """
     from fastbreak.metrics import LeagueAverages  # noqa: PLC0415
 
@@ -701,27 +700,24 @@ async def get_league_averages(
         msg = "No team stats returned — cannot compute league averages"
         raise ValueError(msg)
 
-    def _mean(vals: list[float]) -> float:
-        return sum(vals) / len(vals)
-
-    lg_fga = _mean([r.fga for r in rows])
-    lg_oreb = _mean([r.oreb for r in rows])
-    lg_tov = _mean([r.tov for r in rows])
-    lg_fta = _mean([r.fta for r in rows])
+    lg_fga = fmean(r.fga for r in rows)
+    lg_oreb = fmean(r.oreb for r in rows)
+    lg_tov = fmean(r.tov for r in rows)
+    lg_fta = fmean(r.fta for r in rows)
 
     return LeagueAverages(
-        lg_pts=_mean([r.pts for r in rows]),
+        lg_pts=fmean(r.pts for r in rows),
         lg_fga=lg_fga,
         lg_fta=lg_fta,
-        lg_ftm=_mean([r.ftm for r in rows]),
+        lg_ftm=fmean(r.ftm for r in rows),
         lg_oreb=lg_oreb,
-        lg_treb=_mean([r.reb for r in rows]),
-        lg_ast=_mean([r.ast for r in rows]),
-        lg_fgm=_mean([r.fgm for r in rows]),
-        lg_fg3m=_mean([r.fg3m for r in rows]),
+        lg_treb=fmean(r.reb for r in rows),
+        lg_ast=fmean(r.ast for r in rows),
+        lg_fgm=fmean(r.fgm for r in rows),
+        lg_fg3m=fmean(r.fg3m for r in rows),
         lg_tov=lg_tov,
-        lg_pf=_mean([r.pf for r in rows]),
-        lg_pace=_mean([r.fga - r.oreb + r.tov + 0.44 * r.fta for r in rows]),
+        lg_pf=fmean(r.pf for r in rows),
+        lg_pace=fmean(r.fga - r.oreb + r.tov + 0.44 * r.fta for r in rows),
     )
 
 

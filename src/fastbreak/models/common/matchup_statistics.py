@@ -8,46 +8,62 @@ from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 class MatchupStatistics(PandasMixin, PolarsMixin, BaseModel):
     """Statistics for a specific player-vs-player defensive matchup."""
 
-    matchupMinutes: str
-    matchupMinutesSort: float = Field(ge=0.0)
-    partialPossessions: float = Field(ge=0.0)
-    percentageDefenderTotalTime: float = Field(ge=0.0, le=1.0)
-    percentageOffensiveTotalTime: float = Field(ge=0.0, le=1.0)
-    percentageTotalTimeBothOn: float = Field(ge=0.0, le=1.0)
-    switchesOn: int = Field(ge=0)
-    playerPoints: int = Field(ge=0)
-    teamPoints: int = Field(ge=0)
-    matchupAssists: int = Field(ge=0)
-    matchupPotentialAssists: int = Field(ge=0)
-    matchupTurnovers: int = Field(ge=0)
-    matchupBlocks: int = Field(ge=0)
-    matchupFieldGoalsMade: int = Field(ge=0)
-    matchupFieldGoalsAttempted: int = Field(ge=0)
-    matchupFieldGoalsPercentage: float = Field(ge=0.0, le=1.0)
-    matchupThreePointersMade: int = Field(ge=0)
-    matchupThreePointersAttempted: int = Field(ge=0)
-    matchupThreePointersPercentage: float = Field(ge=0.0, le=1.0)
-    helpBlocks: int = Field(ge=0)
-    helpFieldGoalsMade: int = Field(ge=0)
-    helpFieldGoalsAttempted: int = Field(ge=0)
-    helpFieldGoalsPercentage: float = Field(ge=0.0, le=1.0)
-    matchupFreeThrowsMade: int = Field(ge=0)
-    matchupFreeThrowsAttempted: int = Field(ge=0)
-    shootingFouls: int = Field(ge=0)
+    matchup_minutes: str = Field(alias="matchupMinutes")
+    matchup_minutes_sort: float = Field(ge=0.0, alias="matchupMinutesSort")
+    partial_possessions: float = Field(ge=0.0, alias="partialPossessions")
+    percentage_defender_total_time: float = Field(
+        ge=0.0, le=1.0, alias="percentageDefenderTotalTime"
+    )
+    percentage_offensive_total_time: float = Field(
+        ge=0.0, le=1.0, alias="percentageOffensiveTotalTime"
+    )
+    percentage_total_time_both_on: float = Field(
+        ge=0.0, le=1.0, alias="percentageTotalTimeBothOn"
+    )
+    switches_on: int = Field(ge=0, alias="switchesOn")
+    player_points: int = Field(ge=0, alias="playerPoints")
+    team_points: int = Field(ge=0, alias="teamPoints")
+    matchup_assists: int = Field(ge=0, alias="matchupAssists")
+    matchup_potential_assists: int = Field(ge=0, alias="matchupPotentialAssists")
+    matchup_turnovers: int = Field(ge=0, alias="matchupTurnovers")
+    matchup_blocks: int = Field(ge=0, alias="matchupBlocks")
+    matchup_field_goals_made: int = Field(ge=0, alias="matchupFieldGoalsMade")
+    matchup_field_goals_attempted: int = Field(ge=0, alias="matchupFieldGoalsAttempted")
+    matchup_field_goals_percentage: float = Field(
+        ge=0.0, le=1.0, alias="matchupFieldGoalsPercentage"
+    )
+    matchup_three_pointers_made: int = Field(ge=0, alias="matchupThreePointersMade")
+    matchup_three_pointers_attempted: int = Field(
+        ge=0, alias="matchupThreePointersAttempted"
+    )
+    matchup_three_pointers_percentage: float = Field(
+        ge=0.0, le=1.0, alias="matchupThreePointersPercentage"
+    )
+    help_blocks: int = Field(ge=0, alias="helpBlocks")
+    help_field_goals_made: int = Field(ge=0, alias="helpFieldGoalsMade")
+    help_field_goals_attempted: int = Field(ge=0, alias="helpFieldGoalsAttempted")
+    help_field_goals_percentage: float = Field(
+        ge=0.0, le=1.0, alias="helpFieldGoalsPercentage"
+    )
+    matchup_free_throws_made: int = Field(ge=0, alias="matchupFreeThrowsMade")
+    matchup_free_throws_attempted: int = Field(ge=0, alias="matchupFreeThrowsAttempted")
+    shooting_fouls: int = Field(ge=0, alias="shootingFouls")
 
     @model_validator(mode="after")
     def check_made_not_exceeding_attempted(self) -> Self:
-        """Validate that made shots do not exceed attempted shots."""
-        if self.matchupFieldGoalsMade > self.matchupFieldGoalsAttempted:
-            msg = f"matchupFieldGoalsMade ({self.matchupFieldGoalsMade}) > matchupFieldGoalsAttempted ({self.matchupFieldGoalsAttempted})"
-            raise ValueError(msg)
-        if self.matchupThreePointersMade > self.matchupThreePointersAttempted:
-            msg = f"matchupThreePointersMade ({self.matchupThreePointersMade}) > matchupThreePointersAttempted ({self.matchupThreePointersAttempted})"
-            raise ValueError(msg)
-        if self.helpFieldGoalsMade > self.helpFieldGoalsAttempted:
-            msg = f"helpFieldGoalsMade ({self.helpFieldGoalsMade}) > helpFieldGoalsAttempted ({self.helpFieldGoalsAttempted})"
-            raise ValueError(msg)
-        if self.matchupFreeThrowsMade > self.matchupFreeThrowsAttempted:
-            msg = f"matchupFreeThrowsMade ({self.matchupFreeThrowsMade}) > matchupFreeThrowsAttempted ({self.matchupFreeThrowsAttempted})"
-            raise ValueError(msg)
+        """Validate made shots do not exceed attempted, and 3P stats are subsets of FG stats."""
+        pairs = [
+            ("matchup_field_goals_made", "matchup_field_goals_attempted"),
+            ("matchup_three_pointers_made", "matchup_three_pointers_attempted"),
+            ("matchup_three_pointers_attempted", "matchup_field_goals_attempted"),
+            ("matchup_three_pointers_made", "matchup_field_goals_made"),
+            ("help_field_goals_made", "help_field_goals_attempted"),
+            ("matchup_free_throws_made", "matchup_free_throws_attempted"),
+        ]
+        for lower_name, upper_name in pairs:
+            lower_val = getattr(self, lower_name)
+            upper_val = getattr(self, upper_name)
+            if lower_val > upper_val:
+                msg = f"{lower_name} ({lower_val}) > {upper_name} ({upper_val})"
+                raise ValueError(msg)
         return self

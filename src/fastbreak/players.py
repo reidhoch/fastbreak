@@ -307,7 +307,17 @@ def _season_id_to_season(season_id: str) -> str:
     """
     if "-" in season_id:
         return season_id
-    year = int(season_id[1:])
+    if len(season_id) < 2:  # noqa: PLR2004
+        msg = f"Cannot parse season_id {season_id!r}: expected 'T+YYYY' format (e.g., '22024')"
+        raise ValueError(msg)
+    raw = season_id[1:]
+    try:
+        year = int(raw)
+    except ValueError as exc:
+        msg = (
+            f"Cannot parse season_id {season_id!r}: year portion {raw!r} is not numeric"
+        )
+        raise ValueError(msg) from exc
     return f"{year}-{str(year + 1)[2:]}"
 
 
@@ -328,7 +338,7 @@ async def get_career_game_logs(
         season_type: "Regular Season" or "Playoffs"
 
     Returns:
-        Flat list of GameLogEntry objects across all seasons, in the order
+        Flat list of PlayerGameLogEntry objects across all seasons, in the order
         returned by get_player_game_log (typically reverse chronological
         within each season), seasons in the order returned by career stats.
 
@@ -339,7 +349,11 @@ async def get_career_game_logs(
     from fastbreak.endpoints import PlayerCareerStats, PlayerGameLog  # noqa: PLC0415
 
     career = await client.get(PlayerCareerStats(player_id=player_id))
-    seasons = career.season_totals_regular_season
+    seasons = (
+        career.season_totals_regular_season
+        if season_type == "Regular Season"
+        else career.season_totals_post_season
+    )
     if not seasons:
         return []
 
@@ -350,10 +364,7 @@ async def get_career_game_logs(
         for s in season_strings
     ]
     responses = await client.get_many(endpoints)
-    result = []
-    for resp in responses:
-        result.extend(resp.games)
-    return result
+    return [game for resp in responses for game in resp.games]
 
 
 async def get_on_off_splits(  # noqa: PLR0913

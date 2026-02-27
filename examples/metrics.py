@@ -71,9 +71,10 @@ def demo_single_line() -> None:
     print("Metrics demo — illustrative triple-double line")
     print("=" * 60)
 
-    # Stat line: 28 pts, 12 reb, 10 ast, 2 stl, 2 blk (on 11-18 FG, 4-5 FT, 2 3P)
+    # Stat line: 28 pts, 12 reb, 10 ast, 2 stl, 2 blk (on 11-18 FG, 2-5 3P, 4-5 FT)
     pts = 28
-    fgm, fga, fg3m = 11, 18, 2
+    fgm, fga = 11, 18
+    fg3m, fg3a = 2, 5
     ftm, fta = 4, 5
     oreb, dreb = 3, 9
     ast, stl, blk = 10, 2, 2
@@ -99,7 +100,7 @@ def demo_single_line() -> None:
     rel_efg = relative_efg(efg, NBA_2024_25)
 
     print(f"  Line:  {pts} pts  {oreb + dreb} reb  {ast} ast  {stl} stl  {blk} blk")
-    print(f"  FG:    {fgm}/{fga}  3P: {fg3m}/{fga}  FT: {ftm}/{fta}")
+    print(f"  FG:    {fgm}/{fga}  3P: {fg3m}/{fg3a}  FT: {ftm}/{fta}")
     print()
     print(f"  Game Score:       {gs:+.1f}   (avg ≈ 10, elite ≈ 30+)")
     print(
@@ -202,12 +203,10 @@ def demo_rate_stats() -> None:
 
     print()
     print("  Notes:")
-    print("    per_36  — normalises to a full starter's workload (36 min baseline)")
-    print("    FTr     — free throw rate (FTA/FGA); > 0.40 indicates a foul-drawer")
-    print("    3PAr    — three-point attempt rate; > 0.50 = perimeter-oriented")
-    print(
-        "    A/TO    — assist-to-turnover; elite playmakers sustain > 3.0 for a season"
-    )
+    print("    per_36  — normalises to 36 min so bench and starter minutes are comparable")
+    print("    FTr     — FTA/FGA; anything above 0.40 and the defense is fouling to stop him")
+    print("    3PAr    — share of FGA that are threes; above 0.50 = lives behind the arc")
+    print("    A/TO    — assists per turnover; good playmakers stay above 2.0, elite above 3.0")
     print()
 
 
@@ -270,10 +269,10 @@ def demo_on_floor_metrics() -> None:
     )
     s = stl_pct(stl=bh_stl, mp=bh_mp, team_mp=team_mp, opp_poss=opp_poss)
 
-    print(f"    Usage%:  {u:.3f}  (≥ 0.25 = primary option, ≥ 0.30 = star)")
-    print(f"    AST%:    {a:.3f}  (share of teammate baskets assisted while on floor)")
-    print(f"    DREB%:   {d:.3f}  (share of available defensive boards grabbed)")
-    print(f"    STL%:    {s:.3f}  (share of opponent possessions ending in a steal)")
+    print(f"    Usage%:  {u:.3f}  (0.25+ = primary option; 0.30+ = star territory)")
+    print(f"    AST%:    {a:.3f}  (teammate baskets he assisted while on floor)")
+    print(f"    DREB%:   {d:.3f}  (his cut of available defensive rebounds)")
+    print(f"    STL%:    {s:.3f}  (opponent possessions he ended with a steal)")
 
     print("\n  === Rim-protecting center (30 min) ===")
     c_mp = 30
@@ -307,9 +306,9 @@ def demo_on_floor_metrics() -> None:
     b_c = blk_pct(blk=c_blk, mp=c_mp, team_mp=team_mp, opp_fg2a=opp_fg2a)
 
     print(f"    Usage%:  {u_c:.3f}")
-    print(f"    OREB%:   {o_c:.3f}  (share of available offensive boards grabbed)")
+    print(f"    OREB%:   {o_c:.3f}  (his cut of available offensive rebounds)")
     print(f"    DREB%:   {d_c:.3f}")
-    print(f"    BLK%:    {b_c:.3f}  (share of opponent 2-pt attempts blocked)")
+    print(f"    BLK%:    {b_c:.3f}  (opponent 2-pt attempts he blocked)")
     print()
 
 

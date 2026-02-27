@@ -530,3 +530,135 @@ class TestSeasonIdToSeason:
         from fastbreak.players import _season_id_to_season  # noqa: PLC0415
 
         assert _season_id_to_season("2024-25") == "2024-25"
+
+    def test_single_char_raises_value_error(self):
+        """A season_id shorter than 2 characters raises ValueError."""
+        from fastbreak.players import _season_id_to_season  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="T\\+YYYY"):
+            _season_id_to_season("2")
+
+    def test_non_numeric_year_raises_value_error(self):
+        """A non-numeric year portion raises ValueError."""
+        from fastbreak.players import _season_id_to_season  # noqa: PLC0415
+
+        with pytest.raises(ValueError, match="not numeric"):
+            _season_id_to_season("2ABCD")
+
+    def test_non_numeric_error_chains_original_exception(self):
+        """The ValueError raised for non-numeric input chains the original error."""
+        from fastbreak.players import _season_id_to_season  # noqa: PLC0415
+
+        with pytest.raises(ValueError) as exc_info:
+            _season_id_to_season("2ABCD")
+
+        assert exc_info.value.__cause__ is not None
+
+
+class TestGetCareerGameLogs:
+    """Tests for get_career_game_logs standalone function."""
+
+    def _make_season(self, mocker: MockerFixture, season_id: str):
+        season = mocker.MagicMock()
+        season.season_id = season_id
+        return season
+
+    def _make_career(self, mocker: MockerFixture, regular_seasons, post_seasons=None):
+        career = mocker.MagicMock()
+        career.season_totals_regular_season = regular_seasons
+        career.season_totals_post_season = post_seasons or []
+        return career
+
+    async def test_returns_empty_when_no_regular_seasons(self, mocker: MockerFixture):
+        """Returns [] without calling get_many when career has no regular seasons."""
+        from fastbreak.players import get_career_game_logs  # noqa: PLC0415
+
+        career = self._make_career(mocker, regular_seasons=[])
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=career)
+        client.get_many = mocker.AsyncMock()
+
+        result = await get_career_game_logs(client, player_id=2544)
+
+        assert result == []
+        client.get_many.assert_not_called()
+
+    async def test_returns_empty_when_no_playoff_seasons(self, mocker: MockerFixture):
+        """Returns [] for Playoffs when season_totals_post_season is empty."""
+        from fastbreak.players import get_career_game_logs  # noqa: PLC0415
+
+        career = self._make_career(mocker, regular_seasons=[], post_seasons=[])
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=career)
+
+        result = await get_career_game_logs(
+            client, player_id=2544, season_type="Playoffs"
+        )
+
+        assert result == []
+
+    async def test_uses_regular_season_totals_by_default(self, mocker: MockerFixture):
+        """Uses season_totals_regular_season when season_type='Regular Season'."""
+        from fastbreak.players import get_career_game_logs  # noqa: PLC0415
+
+        regular = [self._make_season(mocker, "22024")]
+        post = [self._make_season(mocker, "42024"), self._make_season(mocker, "42023")]
+        career = self._make_career(mocker, regular_seasons=regular, post_seasons=post)
+
+        resp = mocker.MagicMock()
+        resp.games = [mocker.MagicMock()]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=career)
+        client.get_many = mocker.AsyncMock(return_value=[resp])
+
+        await get_career_game_logs(client, player_id=2544)
+
+        # Regular has 1 season; post has 2 — verifies regular branch was taken
+        endpoints = client.get_many.call_args[0][0]
+        assert len(endpoints) == 1
+
+    async def test_uses_post_season_totals_for_playoffs(self, mocker: MockerFixture):
+        """Uses season_totals_post_season when season_type='Playoffs'."""
+        from fastbreak.players import get_career_game_logs  # noqa: PLC0415
+
+        regular = [
+            self._make_season(mocker, "22024"),
+            self._make_season(mocker, "22023"),
+        ]
+        post = [self._make_season(mocker, "42024")]
+        career = self._make_career(mocker, regular_seasons=regular, post_seasons=post)
+
+        resp = mocker.MagicMock()
+        resp.games = [mocker.MagicMock()]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=career)
+        client.get_many = mocker.AsyncMock(return_value=[resp])
+
+        await get_career_game_logs(client, player_id=2544, season_type="Playoffs")
+
+        # Post has 1 season; regular has 2 — verifies playoff branch was taken
+        endpoints = client.get_many.call_args[0][0]
+        assert len(endpoints) == 1
+
+    async def test_flattens_games_across_seasons(self, mocker: MockerFixture):
+        """Games from all seasons are concatenated in input order."""
+        from fastbreak.players import get_career_game_logs  # noqa: PLC0415
+
+        seasons = [
+            self._make_season(mocker, "22023"),
+            self._make_season(mocker, "22024"),
+        ]
+        career = self._make_career(mocker, regular_seasons=seasons)
+
+        game1, game2 = mocker.MagicMock(), mocker.MagicMock()
+        resp1, resp2 = mocker.MagicMock(), mocker.MagicMock()
+        resp1.games = [game1]
+        resp2.games = [game2]
+
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=career)
+        client.get_many = mocker.AsyncMock(return_value=[resp1, resp2])
+
+        result = await get_career_game_logs(client, player_id=2544)
+
+        assert result == [game1, game2]

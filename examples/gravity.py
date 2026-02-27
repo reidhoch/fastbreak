@@ -9,7 +9,7 @@ async def get_gravity_leaders() -> None:
         response = await client.get(GravityLeaders(season="2025-26"))
         print("Top 10 Gravity Leaders for Season 2025-26")
         for player in response.leaders[:10]:
-            print(f"{player.FirstName} {player.LastName}: {player.AvgGravityScore}")
+            print(f"{player.FirstName} {player.LastName}: {player.AvgGravityScore:.2f}")
 
 
 asyncio.run(get_gravity_leaders())

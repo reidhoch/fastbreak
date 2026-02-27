@@ -58,7 +58,12 @@ class BoxScoreMatchupsData(PandasMixin, PolarsMixin, BaseModel):
 
 
 class BoxScoreMatchupsResponse(FrozenResponse):
-    """Response from the boxscorematchupsv3 endpoint."""
+    """Response from the boxscorematchupsv3 endpoint (legacy camelCase variant).
+
+    Uses camelCase field names directly (no snake_case aliases). Prefer
+    BoxScoreMatchupsV3Response for new code — it provides the same data with
+    snake_case fields and Pydantic aliases.
+    """
 
     meta: Meta
     boxScoreMatchups: BoxScoreMatchupsData

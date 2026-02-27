@@ -104,7 +104,11 @@ async def get_games_on_date(
     response = await client.get(ScoreboardV3(game_date=game_date))
     scoreboard = response.scoreboard
     if scoreboard is None:
-        logger.warning("scoreboard_missing_from_response", game_date=game_date)
+        logger.warning(
+            "scoreboard_missing_from_response",
+            game_date=game_date,
+            hint="API returned no scoreboard for this date; this may indicate an API error or an off-day",
+        )
         return []
     return scoreboard.games
 
