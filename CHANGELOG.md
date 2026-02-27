@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.6] — 2026-02-27
+
+### 🐛 Bug Fixes
+
+- **`FranchiseLeaders` / `FranchisePlayers`**: `team_id` parameter type corrected from `str` to `int`, consistent with `TeamID` usage across the library
+- **`BoxScoreHustle`**: Removed incorrect partition validator that required `offensive_box_outs + defensive_box_outs == box_outs` — the NBA API does not guarantee this invariant
+
+### 🔧 Improvements
+
+Schema sync — response models updated to match current NBA Stats API fields:
+
+- **`LeagueDashPlayerStats`**: Added `wnba_fantasy_pts` and full set of per-stat rank columns
+- **`LeagueDashPlayerClutch`**: Added `group_set`, `nickname`, `nba_fantasy_pts`, `dd2`, `td3`, `wnba_fantasy_pts`, and full rank column set
+- **`LeagueDashTeamStats`**: Added full set of per-stat rank columns
+- **`HomepageV2`**: Added `fg_pct`, `sum_time_played`
+- **`LeagueDashLineups`**: Added `sum_time_played`
+
+### ⚙️ Tooling
+
+- Pre-commit: added `check-yaml`, `validate-pyproject`, `actionlint`, `no-commit-to-branch`; removed standalone `isort` (consolidated into Ruff)
+- Updated `ruff` to v0.15.4, `validate-pyproject` to v0.25, `actionlint` to v1.7.11
+
 ## [v0.0.5] — 2026-02-27
 
 ### ✨ Features
