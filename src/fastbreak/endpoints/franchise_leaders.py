@@ -12,7 +12,7 @@ class FranchiseLeaders(Endpoint[FranchiseLeadersResponse]):
 
     Args:
         league_id: League identifier ("00" for NBA)
-        team_id: Team identifier (e.g., "1610612747" for Lakers)
+        team_id: Team identifier (e.g., 1610612747 for Lakers)
 
     """
 
