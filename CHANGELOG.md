@@ -21,7 +21,7 @@ Schema sync — response models updated to match current NBA Stats API fields:
 - **`LeagueDashPlayerStats`**: Added `wnba_fantasy_pts` and full set of per-stat rank columns
 - **`LeagueDashPlayerClutch`**: Added `group_set`, `nickname`, `nba_fantasy_pts`, `dd2`, `td3`, `wnba_fantasy_pts`, and full rank column set
 - **`LeagueDashTeamStats`**: Added full set of per-stat rank columns
-- **`HomepageV2`**: Added `fg_pct`, `sum_time_played`
+- **`HomepageV2`**: Added `fg_pct`
 - **`LeagueDashLineups`**: Added `sum_time_played`
 
 ### ⚙️ Tooling
