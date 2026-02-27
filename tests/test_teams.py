@@ -1,5 +1,7 @@
 """Tests for fastbreak.teams utility functions."""
 
+from unittest.mock import MagicMock
+
 import pytest
 from pytest_mock import MockerFixture
 
@@ -596,7 +598,6 @@ class TestGetLineupNetRatings:
 
 
 def _make_team_row(
-    mocker: MockerFixture,
     *,
     pts: float = 110.0,
     fga: float = 85.0,
@@ -609,8 +610,8 @@ def _make_team_row(
     fg3m: float = 12.0,
     tov: float = 14.0,
     pf: float = 20.0,
-) -> MockerFixture:
-    row = mocker.MagicMock()
+) -> MagicMock:
+    row = MagicMock()
     row.pts = pts
     row.fga = fga
     row.fta = fta
@@ -640,7 +641,7 @@ class TestGetLeagueAverages:
 
     async def test_always_requests_per_game_mode(self, mocker: MockerFixture):
         """Always passes per_mode='PerGame' to the underlying endpoint."""
-        row = _make_team_row(mocker)
+        row = _make_team_row()
         response = mocker.MagicMock()
         response.teams = [row]
         client = NBAClient(session=mocker.MagicMock())
@@ -653,7 +654,7 @@ class TestGetLeagueAverages:
 
     async def test_lg_pace_uses_possession_formula(self, mocker: MockerFixture):
         """lg_pace = fga - oreb + tov + 0.44 * fta (Dean Oliver formula)."""
-        row = _make_team_row(mocker, fga=80.0, oreb=8.0, tov=12.0, fta=20.0)
+        row = _make_team_row(fga=80.0, oreb=8.0, tov=12.0, fta=20.0)
         # expected: 80 - 8 + 12 + 0.44 * 20 = 92.8
         response = mocker.MagicMock()
         response.teams = [row]
@@ -670,7 +671,7 @@ class TestGetLeagueAverages:
         """lg_pts equals the mean of team point totals."""
         from fastbreak.metrics import LeagueAverages  # noqa: PLC0415
 
-        row = _make_team_row(mocker, pts=115.0)
+        row = _make_team_row(pts=115.0)
         response = mocker.MagicMock()
         response.teams = [row]
         client = NBAClient(session=mocker.MagicMock())

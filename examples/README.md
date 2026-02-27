@@ -103,7 +103,7 @@ uv run python examples/schedule.py
 
 Advanced player analytics: career game log across all seasons (`get_career_game_logs`),
 on/off court splits (`get_on_off_splits`), and offensive play-type breakdown by possessions
-(`get_player_playtypes`). Uses Tyrese Haliburton as the example player.
+(`get_player_playtypes`). Uses Andrew Nembhard as the example player.
 
 ```bash
 uv run python examples/player_advanced.py
