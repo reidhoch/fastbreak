@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.5] — 2026-02-27
+
+### ✨ Features
+
+**`fastbreak.metrics`** — new pure-Python analytics module for computing advanced statistics from existing model data (no extra API calls):
+- Shooting efficiency: `true_shooting()`, `effective_fg_pct()`, `free_throw_rate()`, `three_point_rate()`
+- Playmaking: `ast_to_tov()`, `ast_pct()`
+- Rebounding: `oreb_pct()`, `dreb_pct()`
+- Defense: `stl_pct()`, `blk_pct()`
+- Composite: `game_score()`, `per_36()`, `usage_pct()`, `per()`, `pace_adjusted_per()`
+- Team ratings: `ortg()`, `drtg()`, `net_rtg()`
+- Relative metrics: `relative_ts()`, `relative_efg()` (vs. league average via `LeagueAverages`)
+- Milestone detection: `is_double_double()`, `is_triple_double()`
+
+**`fastbreak.schedule`** — new schedule helpers:
+- `get_team_schedule()` — fetch a team's full season schedule
+- `days_rest_before_game()` — compute rest days between games
+- `is_back_to_back()` — detect back-to-back games
+
+**`fastbreak.players`** — expanded async helpers for advanced player stat queries
+
+**`fastbreak.teams`** — `get_lineup_net_ratings()` now accepts `int | TeamID` for the `team_id` parameter
+
+**New examples:** `metrics.py`, `player_advanced.py`, `team_advanced.py`, `schedule.py`, `seasons.py`
+
+### 🐛 Bug Fixes
+
+- Corrected inaccuracies in example scripts and cleaned up inline comments
+
+### 🔩 Dependencies
+
+- `ruff` bumped `0.15.2` → `0.15.4` (dev)
+
+### ⚙️ CI
+
+- Publish workflow updated to use `uv`'s native trusted publishing (removes manual OIDC token minting)
+
 ## [v0.0.4] — 2026-02-26
 
 ### ✨ Features
