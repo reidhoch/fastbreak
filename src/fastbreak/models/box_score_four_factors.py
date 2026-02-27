@@ -21,13 +21,17 @@ class FourFactorsPlayer(PandasMixin, PolarsMixin, BaseModel):
 
 
 class FourFactorsTeam(PandasMixin, PolarsMixin, BaseModel):
-    """Team with four factors statistics."""
+    """Team with four factors statistics.
+
+    Note: Some fields are optional because the NBA API returns null values
+    for certain games where this data was not tracked or is not yet available.
+    """
 
     teamId: int
-    teamCity: str
-    teamName: str
-    teamTricode: str
-    teamSlug: str
+    teamCity: str | None = None
+    teamName: str | None = None
+    teamTricode: str | None = None
+    teamSlug: str | None = None
     players: list[FourFactorsPlayer]
     statistics: FourFactorsStatistics
 

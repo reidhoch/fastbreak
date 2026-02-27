@@ -13,10 +13,20 @@ uv run python examples/<example_name>.py
 
 ### [todays_games.py](todays_games.py)
 
-Fetch and display today's NBA games with tip-off times in your local timezone.
+Fetch today's games with tip-off times, yesterday's results, and a full game summary
+(arena, officials, attendance) for the first completed game of the previous day.
 
 ```bash
 uv run python examples/todays_games.py
+```
+
+### [seasons.py](seasons.py)
+
+Demonstrate the three sync season utilities from `fastbreak.seasons` — no API call needed:
+`get_season_from_date`, `season_start_year`, and `season_to_season_id`.
+
+```bash
+uv run python examples/seasons.py
 ```
 
 ### [gravity.py](gravity.py)
@@ -53,13 +63,51 @@ uv run python examples/player_lookup.py
 
 ### [team_lookup.py](team_lookup.py)
 
-Search for teams and fetch game logs using `fastbreak.teams`. Team search is synchronous (no API call needed); game log fetching is async.
+Search for teams and explore the static team registry using `fastbreak.teams`: look up by abbreviation,
+name, city, or numeric ID with `get_team` (returns `TeamInfo`) and `get_team_id` (returns `TeamID`),
+browse all 30 teams via `TEAMS`, filter by conference/division with `teams_by_conference` and
+`teams_by_division`. Also fetches a team's game log (async).
 
 ```bash
 uv run python examples/team_lookup.py
 ```
 
+### [metrics.py](metrics.py)
+
+Compute derived metrics from `fastbreak.metrics` across four pure-computation demos and two live-API demos:
+
+- **Part 1** — basic efficiency: `game_score`, `true_shooting`, `effective_fg_pct`, `relative_ts/efg`, `is_double/triple_double`
+- **Part 2** — rate stats: `per_36`, `free_throw_rate`, `three_point_rate`, `ast_to_tov` across three player archetypes
+- **Part 3** — on-floor impact: `usage_pct`, `ast_pct`, `oreb_pct`, `dreb_pct`, `stl_pct`, `blk_pct` with fabricated team context
+- **Part 4** — full PER pipeline: `pace_adjusted_per` → weighted lg_aPER → `per` for a five-player lineup
+- **Part 5** *(live API)* — Game Score leaderboard for yesterday's games
+- **Part 6** *(live API)* — usage%, AST%, pts/36, and A/TO from real box score data
+- **Part 7** — team ratings: `ortg`, `drtg`, `net_rtg` for blowout and close-game scenarios
+
+```bash
+uv run python examples/metrics.py
+```
+
+### [schedule.py](schedule.py)
+
+Fetch a team's full season schedule using `get_team_schedule`, detect back-to-back games with
+`is_back_to_back`, and inspect rest days between games with `days_rest_before_game`.
+
+```bash
+uv run python examples/schedule.py
+```
+
 ## Advanced Examples
+
+### [player_advanced.py](player_advanced.py)
+
+Advanced player analytics: career game log across all seasons (`get_career_game_logs`),
+on/off court splits (`get_on_off_splits`), and offensive play-type breakdown by possessions
+(`get_player_playtypes`). Uses Tyrese Haliburton as the example player.
+
+```bash
+uv run python examples/player_advanced.py
+```
 
 ### [player_trends.py](player_trends.py)
 
@@ -83,6 +131,16 @@ Fetch team season stats and lineup analysis using `fastbreak.teams`. Covers 5-ma
 
 ```bash
 uv run python examples/team_stats.py
+```
+
+### [team_advanced.py](team_advanced.py)
+
+Advanced team analytics: live league-average stats via `get_league_averages`, offensive
+play-type breakdown with `get_team_playtypes`, and 5-man lineup net ratings from
+`get_lineup_net_ratings`. Uses the Indiana Pacers as the example team.
+
+```bash
+uv run python examples/team_advanced.py
 ```
 
 ### [play_by_play.py](play_by_play.py)

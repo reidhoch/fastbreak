@@ -19,7 +19,11 @@ async def main() -> None:
                 f"  {season.gp} GP"
                 f"  {season.pts} / {season.reb} / {season.ast}"
             )
-        career = stats.career_totals_regular_season[0] if stats.career_totals_regular_season else None
+        career = (
+            stats.career_totals_regular_season[0]
+            if stats.career_totals_regular_season
+            else None
+        )
         if career:
             print(f"  Career: {career.pts} pts  {career.reb} reb  {career.ast} ast")
         print()

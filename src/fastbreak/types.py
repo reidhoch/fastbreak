@@ -23,13 +23,18 @@ def _validate_season(value: str) -> str:
     return value
 
 
-def _validate_iso_date(value: str) -> str:
+def validate_iso_date(value: str) -> str:
     """Validate date is a valid date in YYYY-MM-DD format (e.g., '2025-01-15')."""
+    # First check strict structural format (four-digit year, two-digit month/day, dashes)
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", value):
+        msg = "Date must be in YYYY-MM-DD format (e.g., '2025-01-15')"
+        raise ValueError(msg)
+    # Then confirm it is a real calendar date; preserve the original exc for context
     try:
         _date.fromisoformat(value)
-    except ValueError:
-        msg = "Date must be in YYYY-MM-DD format (e.g., '2025-01-15')"
-        raise ValueError(msg) from None
+    except ValueError as exc:
+        msg = f"Date '{value}' is not a valid calendar date"
+        raise ValueError(msg) from exc  # keep chain: callers can inspect root cause
     return value
 
 
@@ -44,6 +49,7 @@ def _validate_date(value: str) -> str:
         datetime.strptime(value, "%m/%d/%Y")  # noqa: DTZ007
     except ValueError:
         msg = "Date must be a valid date in MM/DD/YYYY format (e.g., '01/15/2025')"
+        # suppress strptime's error to hide format-string internals
         raise ValueError(msg) from None
     return value
 
@@ -80,7 +86,7 @@ Date = Annotated[
 
 ISODate = Annotated[
     str,
-    AfterValidator(_validate_iso_date),
+    AfterValidator(validate_iso_date),
     Field(description="Date in YYYY-MM-DD format (e.g., '2025-01-15')"),
 ]
 

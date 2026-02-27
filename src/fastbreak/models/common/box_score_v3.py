@@ -25,13 +25,17 @@ class BoxScorePlayerV3[T: BaseModel](BoxScorePlayerV3Base):
 
 
 class BoxScoreTeamV3Base(PandasMixin, PolarsMixin, BaseModel):
-    """Base team info for V3 box scores (without players/statistics)."""
+    """Base team info for V3 box scores (without players/statistics).
+
+    Note: Some fields are optional because the NBA API returns null values
+    for certain games where this data was not tracked or is not yet available.
+    """
 
     team_id: int = Field(alias="teamId")
-    team_city: str = Field(alias="teamCity")
-    team_name: str = Field(alias="teamName")
-    team_tricode: str = Field(alias="teamTricode")
-    team_slug: str = Field(alias="teamSlug")
+    team_city: str | None = Field(None, alias="teamCity")
+    team_name: str | None = Field(None, alias="teamName")
+    team_tricode: str | None = Field(None, alias="teamTricode")
+    team_slug: str | None = Field(None, alias="teamSlug")
 
 
 class BoxScoreTeamV3[T: BaseModel](BoxScoreTeamV3Base):

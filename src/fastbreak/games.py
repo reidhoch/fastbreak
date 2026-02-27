@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from typing import TYPE_CHECKING
 
+from fastbreak.logging import logger
 from fastbreak.seasons import get_season_from_date
-from fastbreak.types import _validate_iso_date
+from fastbreak.types import validate_iso_date
 
 if TYPE_CHECKING:
     from fastbreak.clients.nba import NBAClient
@@ -66,6 +67,10 @@ async def get_game_ids(  # noqa: PLR0913
     entries = response.games
     if team_id is not None:
         entries = [e for e in entries if e.team_id == team_id]
+        if not entries:
+            logger.debug(
+                "get_game_ids_team_filter_empty", team_id=team_id, season=season
+            )
     return sorted({entry.game_id for entry in entries})
 
 
@@ -83,7 +88,8 @@ async def get_games_on_date(
         List of ScoreboardGame objects for that date
 
     Raises:
-        ValueError: If game_date is not in YYYY-MM-DD format.
+        ValueError: If game_date is not in YYYY-MM-DD format, or is not a
+            valid calendar date (e.g., "2025-02-30").
 
     Examples:
         games = await get_games_on_date(client, "2025-01-15")
@@ -91,13 +97,14 @@ async def get_games_on_date(
             print(game.game_status_text)
 
     """
-    _validate_iso_date(game_date)
+    validate_iso_date(game_date)
 
     from fastbreak.endpoints import ScoreboardV3  # noqa: PLC0415
 
     response = await client.get(ScoreboardV3(game_date=game_date))
     scoreboard = response.scoreboard
     if scoreboard is None:
+        logger.warning("scoreboard_missing_from_response", game_date=game_date)
         return []
     return scoreboard.games
 
@@ -116,6 +123,23 @@ async def get_todays_games(client: NBAClient) -> list[ScoreboardGame]:
 
     """
     return await get_games_on_date(client, date.today().isoformat())  # noqa: DTZ011
+
+
+async def get_yesterdays_games(client: NBAClient) -> list[ScoreboardGame]:
+    """Return all games that were scheduled for yesterday.
+
+    Args:
+        client: NBA API client
+
+    Returns:
+        List of ScoreboardGame objects for yesterday
+
+    Examples:
+        games = await get_yesterdays_games(client)
+
+    """
+    yesterday = (date.today() - timedelta(days=1)).isoformat()  # noqa: DTZ011
+    return await get_games_on_date(client, yesterday)
 
 
 async def get_game_summary(

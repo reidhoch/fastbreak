@@ -24,13 +24,17 @@ class TraditionalPlayer(PandasMixin, PolarsMixin, BaseModel):
 
 
 class TraditionalTeam(PandasMixin, PolarsMixin, BaseModel):
-    """Team with players and traditional statistics."""
+    """Team with players and traditional statistics.
+
+    Note: Some fields are optional because the NBA API returns null values
+    for certain games where this data was not tracked or is not yet available.
+    """
 
     teamId: int
-    teamCity: str
-    teamName: str
-    teamTricode: str
-    teamSlug: str
+    teamCity: str | None = None
+    teamName: str | None = None
+    teamTricode: str | None = None
+    teamSlug: str | None = None
     players: list[TraditionalPlayer]
     statistics: TraditionalStatistics
     starters: TraditionalGroupStatistics | None = None

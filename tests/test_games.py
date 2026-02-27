@@ -9,6 +9,7 @@ from fastbreak.games import (
     get_games_on_date,
     get_play_by_play,
     get_todays_games,
+    get_yesterdays_games,
 )
 
 
@@ -115,6 +116,21 @@ class TestGetGameIds:
         endpoint = client.get.call_args[0][0]
         assert endpoint.team_id is None
 
+    async def test_logs_debug_when_team_id_filter_yields_no_results(
+        self, mocker: MockerFixture
+    ):
+        """A debug log is emitted when a team_id filter produces an empty result."""
+        client = _make_client(
+            mocker,
+            [{"game_id": "0022400001", "team_id": 2}],
+        )
+        mock_logger = mocker.patch("fastbreak.games.logger", create=True)
+
+        result = await get_game_ids(client, team_id=999)
+
+        assert result == []
+        mock_logger.debug.assert_called_once()
+
     async def test_filters_game_ids_by_team_id_client_side(self, mocker: MockerFixture):
         """get_game_ids filters entries by team_id client-side (API ignores TeamID param)."""
         # API returns all teams' rows — game 3 doesn't involve team 1
@@ -179,6 +195,19 @@ class TestGetGamesOnDate:
 
         assert result == []
 
+    async def test_logs_warning_when_scoreboard_is_none(self, mocker: MockerFixture):
+        """A warning is logged when the API returns a response with no scoreboard key."""
+        response = mocker.MagicMock()
+        response.scoreboard = None
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+        mock_logger = mocker.patch("fastbreak.games.logger", create=True)
+
+        result = await get_games_on_date(client, "2025-07-04")
+
+        assert result == []
+        mock_logger.warning.assert_called_once()
+
     async def test_passes_date_to_endpoint(self, mocker: MockerFixture):
         """get_games_on_date passes the date string to ScoreboardV3."""
         client = _make_scoreboard_client(mocker, [])
@@ -228,8 +257,17 @@ class TestGetGamesOnDate:
         """get_games_on_date raises ValueError for a correctly formatted but invalid date."""
         client = _make_scoreboard_client(mocker, [])
 
-        with pytest.raises(ValueError, match="YYYY-MM-DD"):
+        with pytest.raises(ValueError, match="valid calendar date"):
             await get_games_on_date(client, "2025-13-01")
+
+        client.get.assert_not_called()
+
+    async def test_raises_for_feb_30(self, mocker: MockerFixture):
+        """get_games_on_date raises ValueError for Feb 30, which is structurally valid but not a real date."""
+        client = _make_scoreboard_client(mocker, [])
+
+        with pytest.raises(ValueError, match="valid calendar date"):
+            await get_games_on_date(client, "2025-02-30")
 
         client.get.assert_not_called()
 
@@ -258,6 +296,36 @@ class TestGetTodaysGames:
 
         endpoint = client.get.call_args[0][0]
         assert endpoint.game_date == "2025-02-25"
+
+
+class TestGetYesterdaysGames:
+    """Tests for get_yesterdays_games convenience function."""
+
+    async def test_returns_yesterdays_games(self, mocker: MockerFixture):
+        """get_yesterdays_games returns games from yesterday's scoreboard."""
+        game = mocker.MagicMock()
+        client = _make_scoreboard_client(mocker, [game])
+        mock_date = mocker.patch("fastbreak.games.date")
+        mock_date.today.return_value.__sub__.return_value.isoformat.return_value = (
+            "2025-02-24"
+        )
+
+        result = await get_yesterdays_games(client)
+
+        assert result == [game]
+
+    async def test_passes_yesterdays_date_to_endpoint(self, mocker: MockerFixture):
+        """get_yesterdays_games uses yesterday's date in YYYY-MM-DD format."""
+        client = _make_scoreboard_client(mocker, [])
+        mock_date = mocker.patch("fastbreak.games.date")
+        mock_date.today.return_value.__sub__.return_value.isoformat.return_value = (
+            "2025-02-24"
+        )
+
+        await get_yesterdays_games(client)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.game_date == "2025-02-24"
 
 
 def _make_summary_client(mocker: MockerFixture, summary):
@@ -390,3 +458,10 @@ class TestGetPlayByPlay:
 
         endpoint = client.get.call_args[0][0]
         assert endpoint.game_id == "0022400001"
+
+
+def test_get_yesterdays_games_exported():
+    """get_yesterdays_games is importable from the top-level package."""
+    from fastbreak import get_yesterdays_games  # noqa: PLC0415
+
+    assert callable(get_yesterdays_games)

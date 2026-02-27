@@ -318,8 +318,12 @@ class NBAClient:
             loop = asyncio.get_running_loop()
             loop.add_signal_handler(signal.SIGINT, self._on_signal)
             loop.add_signal_handler(signal.SIGTERM, self._on_signal)
-        except (NotImplementedError, RuntimeError, ValueError):
-            pass
+        except (NotImplementedError, RuntimeError, ValueError) as exc:
+            logger.debug(
+                "signal_handlers_not_installed",
+                reason=str(exc),
+                hint="Signal handling is unavailable on this platform (e.g. Windows, threads).",
+            )
 
     def _remove_signal_handlers(self) -> None:
         """Remove the registered SIGINT and SIGTERM handlers."""
@@ -350,7 +354,8 @@ class NBAClient:
     def _parse_retry_after(self, value: str | None) -> float | None:
         """Parse Retry-After header value to seconds.
 
-        Supports both delta-seconds (e.g., "120") and HTTP-date formats.
+        Handles delta-seconds only (e.g., "120").  HTTP-date format is not
+        implemented; non-numeric values fall back to exponential backoff.
         Returns None if parsing fails.
         """
         if not value:

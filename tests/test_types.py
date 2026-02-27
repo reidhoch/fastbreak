@@ -41,8 +41,8 @@ from fastbreak.types import (
     StatCategoryAbbreviation,
     YesNo,
     _validate_date,
-    _validate_iso_date,
     _validate_season,
+    validate_iso_date,
 )
 
 # =============================================================================
@@ -407,13 +407,13 @@ class TestISODateValidation:
             ISODateModel(date="2025-01-5")
 
     def test_invalid_iso_date_month_overflow(self):
-        """Month 13 raises ValidationError."""
-        with pytest.raises(ValidationError, match="YYYY-MM-DD format"):
+        """Month 13 raises ValidationError with calendar-specific message."""
+        with pytest.raises(ValidationError, match="valid calendar date"):
             ISODateModel(date="2025-13-01")
 
     def test_invalid_iso_date_non_leap_day(self):
-        """Feb 29 in a non-leap year raises ValidationError."""
-        with pytest.raises(ValidationError, match="YYYY-MM-DD format"):
+        """Feb 29 in a non-leap year raises ValidationError with calendar-specific message."""
+        with pytest.raises(ValidationError, match="valid calendar date"):
             ISODateModel(date="2025-02-29")
 
     def test_invalid_iso_date_empty_string(self):
@@ -449,31 +449,42 @@ class TestISODateValidation:
 
 
 class TestISODateValidatorFunction:
-    """Direct tests for _validate_iso_date function."""
+    """Direct tests for validate_iso_date function."""
 
     def test_returns_valid_date_unchanged(self):
         """Valid ISO date is returned unchanged."""
-        assert _validate_iso_date("2025-01-15") == "2025-01-15"
+        assert validate_iso_date("2025-01-15") == "2025-01-15"
 
     def test_raises_value_error_for_mm_dd_yyyy(self):
         """MM/DD/YYYY format raises ValueError."""
         with pytest.raises(ValueError, match="YYYY-MM-DD format"):
-            _validate_iso_date("01/15/2025")
+            validate_iso_date("01/15/2025")
 
     def test_raises_value_error_for_month_overflow(self):
-        """Semantically invalid date raises ValueError."""
-        with pytest.raises(ValueError, match="YYYY-MM-DD format"):
-            _validate_iso_date("2025-13-01")
+        """Semantically invalid date raises ValueError with calendar-specific message."""
+        with pytest.raises(ValueError, match="valid calendar date"):
+            validate_iso_date("2025-13-01")
+
+    def test_raises_specific_message_for_calendar_invalid_date(self):
+        """Structurally-valid but calendar-invalid date gives a distinct error message."""
+        with pytest.raises(ValueError, match="valid calendar date"):
+            validate_iso_date("2025-02-30")
+
+    def test_calendar_invalid_date_preserves_cause_as_chain(self):
+        """ValueError for a calendar-invalid date preserves the original parse error as __cause__."""
+        with pytest.raises(ValueError) as exc_info:
+            validate_iso_date("2025-02-30")
+        assert exc_info.value.__cause__ is not None
 
     @given(data=st.text(max_size=50))
     @settings(max_examples=300)
     def test_never_crashes_on_any_string(self, data):
         """Function should never crash - either return value or raise ValueError."""
         try:
-            result = _validate_iso_date(data)
+            result = validate_iso_date(data)
             assert result == data
         except ValueError as e:
-            assert "YYYY-MM-DD format" in str(e)
+            assert "YYYY-MM-DD format" in str(e) or "valid calendar date" in str(e)
 
 
 # =============================================================================

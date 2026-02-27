@@ -475,3 +475,36 @@ class TestTeamsByDivision:
         """teams_by_division raises ValueError for a plausible but wrong name."""
         with pytest.raises(ValueError, match="Unknown division"):
             teams_by_division("Northern")
+
+
+def test_get_league_averages_exported():
+    """get_league_averages is importable from teams."""
+    from fastbreak.teams import get_league_averages  # noqa: PLC0415
+
+    assert callable(get_league_averages)
+
+
+def test_get_team_playtypes_exported():
+    from fastbreak.teams import get_team_playtypes  # noqa: PLC0415
+
+    assert callable(get_team_playtypes)
+
+
+class TestLineupNetRating:
+    def test_compute_lineup_net_rtg_basic(self):
+        """Pure computation: net_rtg = plus_minus / minutes * 48."""
+        from fastbreak.teams import _lineup_net_rtg  # noqa: PLC0415
+
+        # 10 plus_minus, 100 minutes -> 10/100*48 = 4.8
+        result = _lineup_net_rtg(plus_minus=10.0, minutes=100.0)
+        assert abs(result - 4.8) < 0.001
+
+    def test_compute_lineup_net_rtg_zero_minutes_returns_none(self):
+        from fastbreak.teams import _lineup_net_rtg  # noqa: PLC0415
+
+        assert _lineup_net_rtg(plus_minus=5.0, minutes=0.0) is None
+
+    def test_get_lineup_net_ratings_exported(self):
+        from fastbreak.teams import get_lineup_net_ratings  # noqa: PLC0415
+
+        assert callable(get_lineup_net_ratings)

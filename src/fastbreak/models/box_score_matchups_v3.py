@@ -67,13 +67,17 @@ class MatchupsPlayerV3(PandasMixin, PolarsMixin, BaseModel):
 
 
 class MatchupsTeamV3(PandasMixin, PolarsMixin, BaseModel):
-    """A team with player matchup data in V3 format."""
+    """A team with player matchup data in V3 format.
+
+    Note: Some fields are optional because the NBA API returns null values
+    for certain games where this data was not tracked or is not yet available.
+    """
 
     team_id: int = Field(alias="teamId")
-    team_city: str = Field(alias="teamCity")
-    team_name: str = Field(alias="teamName")
-    team_tricode: str = Field(alias="teamTricode")
-    team_slug: str = Field(alias="teamSlug")
+    team_city: str | None = Field(None, alias="teamCity")
+    team_name: str | None = Field(None, alias="teamName")
+    team_tricode: str | None = Field(None, alias="teamTricode")
+    team_slug: str | None = Field(None, alias="teamSlug")
     players: list[MatchupsPlayerV3]
 
 

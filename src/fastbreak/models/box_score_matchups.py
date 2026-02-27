@@ -33,13 +33,17 @@ class MatchupsPlayer(PandasMixin, PolarsMixin, BaseModel):
 
 
 class MatchupsTeam(PandasMixin, PolarsMixin, BaseModel):
-    """Team with players and their matchups."""
+    """Team with players and their matchups.
+
+    Note: Some fields are optional because the NBA API returns null values
+    for certain games where this data was not tracked or is not yet available.
+    """
 
     teamId: int
-    teamCity: str
-    teamName: str
-    teamTricode: str
-    teamSlug: str
+    teamCity: str | None = None
+    teamName: str | None = None
+    teamTricode: str | None = None
+    teamSlug: str | None = None
     players: list[MatchupsPlayer]
 
 

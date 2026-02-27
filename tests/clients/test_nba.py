@@ -1539,3 +1539,18 @@ class TestNBAClientSignalHandling:
         await client._graceful_shutdown()
 
         assert not current.cancelled()
+
+    def test_install_signal_handlers_logs_debug_on_platform_error(
+        self, mocker: MockerFixture
+    ):
+        """A debug log is emitted when signal handlers cannot be installed."""
+        client = NBAClient(session=mocker.MagicMock())
+        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mocker.patch(
+            "fastbreak.clients.nba.asyncio.get_running_loop",
+            side_effect=NotImplementedError("not supported on this platform"),
+        )
+
+        client._install_signal_handlers()
+
+        mock_logger.debug.assert_called_once()

@@ -10,7 +10,9 @@ from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
     from fastbreak.clients.nba import NBAClient
+    from fastbreak.metrics import LeagueAverages
     from fastbreak.models.league_dash_team_stats import LeagueDashTeamStatsRow
+    from fastbreak.models.synergy_playtypes import TeamSynergyPlaytype
     from fastbreak.models.team_dash_lineups import LineupStats
     from fastbreak.models.team_game_log import TeamGameLogEntry
     from fastbreak.types import Conference, Division, PerMode, Season, SeasonType
@@ -615,3 +617,148 @@ async def get_lineup_stats(
         )
     )
     return response.lineups
+
+
+def _lineup_net_rtg(plus_minus: float, minutes: float) -> float | None:
+    """Compute lineup net rating (points per 48 minutes at this margin).
+
+    Returns None when minutes == 0.
+    """
+    if minutes == 0:
+        return None
+    return plus_minus / minutes * 48
+
+
+async def get_lineup_net_ratings(
+    client: NBAClient,
+    team_id: int,
+    season: Season | None = None,
+    *,
+    min_minutes: float = 10.0,
+) -> list[tuple[LineupStats, float]]:
+    """Return lineups sorted by net rating (best first).
+
+    Wraps get_lineup_stats() and computes net_rtg for each lineup.
+
+    Args:
+        client: NBA API client
+        team_id: NBA team ID
+        season: Season in YYYY-YY format (defaults to current season)
+        min_minutes: Minimum total minutes threshold (filters out tiny samples)
+
+    Returns:
+        List of (LineupStats, net_rtg) tuples, sorted descending by net_rtg.
+        Lineups with zero minutes are excluded.
+
+    Examples:
+        lineups = await get_lineup_net_ratings(client, team_id=1610612747)
+        best = lineups[0]
+        print(best[0].group_name, best[1])  # "LeBron - AD - ...", 12.4
+    """
+    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    lineups = await get_lineup_stats(client, team_id=team_id, season=season)
+    results: list[tuple[LineupStats, float]] = []
+    for lineup in lineups:
+        minutes = lineup.min
+        if minutes < min_minutes:
+            continue
+        nr = _lineup_net_rtg(lineup.plus_minus, minutes)
+        if nr is not None:
+            results.append((lineup, nr))
+    results.sort(key=lambda x: x[1], reverse=True)
+    return results
+
+
+async def get_league_averages(
+    client: NBAClient,
+    season: Season | None = None,
+) -> LeagueAverages:
+    """Return league-average stats for use with metrics functions.
+
+    Aggregates per-game stats across all 30 teams using LeagueDashTeamStats.
+    Pace is estimated as mean possessions per game using the formula:
+    poss = fga - oreb + tov + 0.44 * fta.
+
+    Args:
+        client: NBA API client
+        season: Season in YYYY-YY format (defaults to current season)
+
+    Returns:
+        LeagueAverages dataclass populated with current-season averages
+
+    Examples:
+        lg = await get_league_averages(client)
+        ts = true_shooting(pts=30, fga=20, fta=5, lg_averages=lg)
+    """
+    from fastbreak.metrics import LeagueAverages  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    rows = await get_team_stats(client, season=season, per_mode="PerGame")
+
+    if not rows:
+        msg = "No team stats returned — cannot compute league averages"
+        raise ValueError(msg)
+
+    def _mean(vals: list[float]) -> float:
+        return sum(vals) / len(vals)
+
+    lg_fga = _mean([r.fga for r in rows])
+    lg_oreb = _mean([r.oreb for r in rows])
+    lg_tov = _mean([r.tov for r in rows])
+    lg_fta = _mean([r.fta for r in rows])
+
+    return LeagueAverages(
+        lg_pts=_mean([r.pts for r in rows]),
+        lg_fga=lg_fga,
+        lg_fta=lg_fta,
+        lg_ftm=_mean([r.ftm for r in rows]),
+        lg_oreb=lg_oreb,
+        lg_treb=_mean([r.reb for r in rows]),
+        lg_ast=_mean([r.ast for r in rows]),
+        lg_fgm=_mean([r.fgm for r in rows]),
+        lg_fg3m=_mean([r.fg3m for r in rows]),
+        lg_tov=lg_tov,
+        lg_pf=_mean([r.pf for r in rows]),
+        lg_pace=_mean([r.fga - r.oreb + r.tov + 0.44 * r.fta for r in rows]),
+    )
+
+
+async def get_team_playtypes(
+    client: NBAClient,
+    team_id: int,
+    season: Season | None = None,
+    *,
+    season_type: SeasonType = "Regular Season",
+    type_grouping: str = "offensive",
+) -> list[TeamSynergyPlaytype]:
+    """Return play-type breakdown stats for a team.
+
+    Args:
+        client: NBA API client
+        team_id: NBA team ID
+        season: Season in YYYY-YY format (defaults to current season)
+        season_type: "Regular Season", "Playoffs", etc.
+        type_grouping: "offensive" or "defensive"
+
+    Returns:
+        List of TeamSynergyPlaytype rows for this team, one per play type.
+
+    Examples:
+        plays = await get_team_playtypes(client, team_id=1610612747)
+        iso = next((p for p in plays if p.play_type == "Isolation"), None)
+    """
+    from fastbreak.endpoints import SynergyPlaytypes  # noqa: PLC0415
+    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    response = await client.get(
+        SynergyPlaytypes(
+            player_or_team="T",
+            season_year=season,
+            season_type=season_type,
+            type_grouping=type_grouping,
+        )
+    )
+    return [r for r in response.team_stats if r.team_id == team_id]
