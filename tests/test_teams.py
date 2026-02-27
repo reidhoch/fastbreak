@@ -8,6 +8,8 @@ from fastbreak.teams import (
     TEAMS,
     TeamID,
     TeamInfo,
+    get_league_averages,
+    get_lineup_net_ratings,
     get_lineup_stats,
     get_team,
     get_team_game_log,
@@ -508,3 +510,173 @@ class TestLineupNetRating:
         from fastbreak.teams import get_lineup_net_ratings  # noqa: PLC0415
 
         assert callable(get_lineup_net_ratings)
+
+
+def _make_lineup_net_client(mocker: MockerFixture, lineups: list):
+    """Return a NBAClient whose .get() resolves to a mock TeamDashLineupsResponse."""
+    response = mocker.MagicMock()
+    response.lineups = lineups
+    client = NBAClient(session=mocker.MagicMock())
+    client.get = mocker.AsyncMock(return_value=response)
+    return client
+
+
+class TestGetLineupNetRatings:
+    """Tests for get_lineup_net_ratings standalone function."""
+
+    def _make_lineup(self, mocker: MockerFixture, min: float, plus_minus: float):
+        lineup = mocker.MagicMock()
+        lineup.min = min
+        lineup.plus_minus = plus_minus
+        return lineup
+
+    async def test_excludes_lineups_below_min_minutes(self, mocker: MockerFixture):
+        """Lineups with minutes < min_minutes (default 10.0) are not returned."""
+        lineup_ok = self._make_lineup(mocker, min=15.0, plus_minus=5.0)
+        lineup_low = self._make_lineup(mocker, min=5.0, plus_minus=100.0)
+        client = _make_lineup_net_client(mocker, [lineup_ok, lineup_low])
+
+        result = await get_lineup_net_ratings(client, team_id=1610612747)
+
+        assert len(result) == 1
+        assert result[0][0] is lineup_ok
+
+    async def test_results_sorted_descending_by_net_rating(self, mocker: MockerFixture):
+        """Results are returned best-first (descending net rating)."""
+        lineup_a = self._make_lineup(mocker, min=20.0, plus_minus=10.0)  # 24.0 net rtg
+        lineup_b = self._make_lineup(mocker, min=20.0, plus_minus=5.0)  # 12.0 net rtg
+        client = _make_lineup_net_client(
+            mocker, [lineup_b, lineup_a]
+        )  # b first in input
+
+        result = await get_lineup_net_ratings(client, team_id=1610612747)
+
+        assert result[0][0] is lineup_a  # higher net rating first
+        assert result[1][0] is lineup_b
+
+    async def test_custom_min_minutes_includes_more_lineups(
+        self, mocker: MockerFixture
+    ):
+        """Setting min_minutes=0.0 includes lineups that would otherwise be filtered."""
+        lineup = self._make_lineup(mocker, min=3.0, plus_minus=5.0)
+
+        client_a = _make_lineup_net_client(mocker, [lineup])
+        result_default = await get_lineup_net_ratings(client_a, team_id=1610612747)
+
+        client_b = _make_lineup_net_client(mocker, [lineup])
+        result_zero = await get_lineup_net_ratings(
+            client_b, team_id=1610612747, min_minutes=0.0
+        )
+
+        assert result_default == []
+        assert len(result_zero) == 1
+
+    async def test_excludes_zero_minute_lineups_even_at_min_minutes_zero(
+        self, mocker: MockerFixture
+    ):
+        """Lineups with minutes=0 are excluded because _lineup_net_rtg returns None."""
+        lineup = self._make_lineup(mocker, min=0.0, plus_minus=5.0)
+        client = _make_lineup_net_client(mocker, [lineup])
+
+        result = await get_lineup_net_ratings(
+            client, team_id=1610612747, min_minutes=0.0
+        )
+
+        assert result == []
+
+    async def test_net_rating_value_is_correct(self, mocker: MockerFixture):
+        """The computed net_rtg equals plus_minus / min * 48."""
+        lineup = self._make_lineup(mocker, min=100.0, plus_minus=10.0)
+        client = _make_lineup_net_client(mocker, [lineup])
+
+        result = await get_lineup_net_ratings(client, team_id=1610612747)
+
+        assert len(result) == 1
+        assert abs(result[0][1] - 4.8) < 0.001  # 10 / 100 * 48
+
+
+def _make_team_row(
+    mocker: MockerFixture,
+    *,
+    pts: float = 110.0,
+    fga: float = 85.0,
+    fta: float = 20.0,
+    ftm: float = 16.0,
+    oreb: float = 10.0,
+    reb: float = 42.0,
+    ast: float = 26.0,
+    fgm: float = 38.0,
+    fg3m: float = 12.0,
+    tov: float = 14.0,
+    pf: float = 20.0,
+) -> MockerFixture:
+    row = mocker.MagicMock()
+    row.pts = pts
+    row.fga = fga
+    row.fta = fta
+    row.ftm = ftm
+    row.oreb = oreb
+    row.reb = reb
+    row.ast = ast
+    row.fgm = fgm
+    row.fg3m = fg3m
+    row.tov = tov
+    row.pf = pf
+    return row
+
+
+class TestGetLeagueAverages:
+    """Tests for get_league_averages standalone function."""
+
+    async def test_raises_when_no_team_rows_returned(self, mocker: MockerFixture):
+        """Raises ValueError when get_team_stats returns an empty list."""
+        response = mocker.MagicMock()
+        response.teams = []
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        with pytest.raises(ValueError, match="No team stats returned"):
+            await get_league_averages(client)
+
+    async def test_always_requests_per_game_mode(self, mocker: MockerFixture):
+        """Always passes per_mode='PerGame' to the underlying endpoint."""
+        row = _make_team_row(mocker)
+        response = mocker.MagicMock()
+        response.teams = [row]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        await get_league_averages(client)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.per_mode == "PerGame"
+
+    async def test_lg_pace_uses_possession_formula(self, mocker: MockerFixture):
+        """lg_pace = fga - oreb + tov + 0.44 * fta (Dean Oliver formula)."""
+        row = _make_team_row(mocker, fga=80.0, oreb=8.0, tov=12.0, fta=20.0)
+        # expected: 80 - 8 + 12 + 0.44 * 20 = 92.8
+        response = mocker.MagicMock()
+        response.teams = [row]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_league_averages(client)
+
+        assert abs(result.lg_pace - 92.8) < 0.01
+
+    async def test_returns_league_averages_with_correct_pts(
+        self, mocker: MockerFixture
+    ):
+        """lg_pts equals the mean of team point totals."""
+        from fastbreak.metrics import LeagueAverages  # noqa: PLC0415
+
+        row = _make_team_row(mocker, pts=115.0)
+        response = mocker.MagicMock()
+        response.teams = [row]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_league_averages(client)
+
+        assert isinstance(result, LeagueAverages)
+        assert result.lg_pts == 115.0

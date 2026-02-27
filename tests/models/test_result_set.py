@@ -3,6 +3,7 @@ import pytest
 from fastbreak.models.common.result_set import (
     is_tabular_response,
     named_result_sets_validator,
+    named_tabular_validator,
     parse_result_set,
     parse_result_set_by_name,
     parse_single_result_set,
@@ -376,3 +377,41 @@ class TestNamedResultSetsValidator:
 
         with pytest.raises(ValueError, match="No resultSet named 'Missing'"):
             validator(data)
+
+
+class TestNamedTabularValidator:
+    """Tests for named_tabular_validator factory function."""
+
+    def test_raises_when_result_set_name_not_found(self):
+        """Raises ValueError when the named result set is absent from the response."""
+        validator = named_tabular_validator("items", "MissingName")
+        data = {
+            "resultSets": [
+                {"name": "Other", "headers": [], "rowSet": []},
+            ]
+        }
+
+        with pytest.raises(ValueError, match="MissingName"):
+            validator(data)
+
+    def test_passes_through_non_tabular_data(self):
+        """Returns data unchanged when it is not in tabular format."""
+        validator = named_tabular_validator("items", "SomeName")
+        data = {"items": [{"id": 1}]}
+
+        result = validator(data)
+
+        assert result == {"items": [{"id": 1}]}
+
+    def test_parses_named_result_set_into_field(self):
+        """Parses the named result set rows into the specified field name."""
+        validator = named_tabular_validator("items", "MySet")
+        data = {
+            "resultSets": [
+                {"name": "MySet", "headers": ["id", "name"], "rowSet": [[1, "foo"]]},
+            ]
+        }
+
+        result = validator(data)
+
+        assert result == {"items": [{"id": 1, "name": "foo"}]}

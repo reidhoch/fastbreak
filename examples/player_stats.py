@@ -8,11 +8,11 @@ from fastbreak.players import get_hustle_stats, get_league_leaders, get_player_s
 
 async def main() -> None:
     async with NBAClient() as client:
-        # 1. Career stats for Tyrese Haliburton (season-by-season)
+        # 1. Career stats for Andrew Nembhard (season-by-season)
         print("=" * 60)
-        print("Tyrese Haliburton — career season averages")
+        print("Andrew Nembhard — career season averages")
         print("=" * 60)
-        stats = await get_player_stats(client, player_id=1630169)
+        stats = await get_player_stats(client, player_id=1629614)
         for season in stats.season_totals_regular_season[-5:]:
             print(
                 f"  {season.season_id}  {season.team_abbreviation}"

@@ -51,7 +51,8 @@ class LeagueAverages:
         lg_fg3m:  League average 3-pointers made.
         lg_tov:   League average turnovers.
         lg_pf:    League average personal fouls.
-        lg_pace:  League average pace (possessions per 48 minutes).
+        lg_pace:  Estimated league average possessions per game
+                  (fga - oreb + tov + 0.44*fta), used as the pace denominator in PER.
     """
 
     lg_pts: float
@@ -68,7 +69,7 @@ class LeagueAverages:
     lg_pace: float
 
     def __post_init__(self) -> None:
-        # Non-negativity: auto-discovers all fields so new additions are covered automatically
+        # Non-negativity: auto-discovers all fields so new ones are validated without changes here
         negative = [f.name for f in fields(self) if getattr(self, f.name) < 0]
         if negative:
             vals = ", ".join(f"{n}={getattr(self, n)}" for n in negative)
@@ -151,8 +152,8 @@ def effective_fg_pct(fgm: float, fg3m: float, fga: float) -> float | None:
 
     eFG% = (FGM + 0.5 * FG3M) / FGA
 
-    A made 3-pointer is worth 1.5x a made 2-pointer, so eFG% captures that
-    value in a single shooting efficiency number.
+    A made 3-pointer is worth 1.5x a made 2-pointer, so eFG% gives 3-pointers
+    their fair weight in a single shooting number.
 
     Returns None when FGA is zero.
     """
@@ -244,7 +245,6 @@ def per_36(stat: float, minutes: float) -> float | None:
 
     per_36 = stat * 36 / minutes
 
-    Useful for comparing players who play different amounts of time.
     36 minutes is the conventional baseline (roughly a starter's workload).
 
     Returns None when minutes are zero.
@@ -272,7 +272,7 @@ def is_double_double(
     blk: float,
 ) -> bool:
     """Return True if at least two of the five counting categories reach 10+."""
-    return _count_double_digit_categories(pts, reb, ast, stl, blk) >= 2  # noqa: PLR2004  # noqa: PLR2004
+    return _count_double_digit_categories(pts, reb, ast, stl, blk) >= 2  # noqa: PLR2004
 
 
 def is_triple_double(
@@ -283,7 +283,7 @@ def is_triple_double(
     blk: float,
 ) -> bool:
     """Return True if at least three of the five counting categories reach 10+."""
-    return _count_double_digit_categories(pts, reb, ast, stl, blk) >= 3  # noqa: PLR2004  # noqa: PLR2004
+    return _count_double_digit_categories(pts, reb, ast, stl, blk) >= 3  # noqa: PLR2004
 
 
 def usage_pct(  # noqa: PLR0913
@@ -301,7 +301,7 @@ def usage_pct(  # noqa: PLR0913
     Usage% = (FGA + 0.44*FTA + TOV) * (team_MP/5) / (MP * (team_FGA + 0.44*team_FTA + team_TOV))
 
     The 0.44 FTA multiplier estimates possession cost (same as TS%).
-    Dividing team_MP by 5 converts to per-player-minutes for apples-to-apples comparison.
+    Dividing team_MP by 5 puts team and player minutes on the same per-person scale.
     A usage rate of ~0.20 is average; ~0.30+ is a primary scoring option.
 
     Returns None when player minutes or team possessions are zero.
@@ -340,6 +340,19 @@ def ast_pct(
     return ast / denominator
 
 
+def _possession_pct(
+    stat: float, mp: float, team_mp: float, opportunity: float
+) -> float | None:
+    """Compute a per-possession rate stat: stat * (team_MP/5) / (MP * opportunity).
+
+    Returns None when player minutes or the opportunity count are zero.
+    """
+    denominator = mp * opportunity
+    if denominator == 0:
+        return None
+    return stat * (team_mp / 5) / denominator
+
+
 def oreb_pct(
     oreb: float,
     mp: float,
@@ -356,11 +369,7 @@ def oreb_pct(
 
     Returns None when player minutes or available rebounds are zero.
     """
-    available = team_oreb + opp_dreb
-    denominator = mp * available
-    if denominator == 0:
-        return None
-    return oreb * (team_mp / 5) / denominator
+    return _possession_pct(oreb, mp, team_mp, team_oreb + opp_dreb)
 
 
 def dreb_pct(
@@ -379,11 +388,7 @@ def dreb_pct(
 
     Returns None when player minutes or available rebounds are zero.
     """
-    available = team_dreb + opp_oreb
-    denominator = mp * available
-    if denominator == 0:
-        return None
-    return dreb * (team_mp / 5) / denominator
+    return _possession_pct(dreb, mp, team_mp, team_dreb + opp_oreb)
 
 
 def stl_pct(
@@ -400,10 +405,7 @@ def stl_pct(
 
     Returns None when player minutes or opponent possessions are zero.
     """
-    denominator = mp * opp_poss
-    if denominator == 0:
-        return None
-    return stl * (team_mp / 5) / denominator
+    return _possession_pct(stl, mp, team_mp, opp_poss)
 
 
 def blk_pct(
@@ -422,10 +424,7 @@ def blk_pct(
 
     Returns None when player minutes or opponent 2-point attempts are zero.
     """
-    denominator = mp * opp_fg2a
-    if denominator == 0:
-        return None
-    return blk * (team_mp / 5) / denominator
+    return _possession_pct(blk, mp, team_mp, opp_fg2a)
 
 
 def pace_adjusted_per(  # noqa: PLR0913
@@ -504,8 +503,7 @@ def per(aper: float, lg_aper: float) -> float | None:
 
     PER = aPER * (15 / lg_aPER)
 
-    The result is calibrated so that 15.0 is a league-average performance,
-    roughly 20+ indicates an All-Star level, and 30+ is historically elite.
+    Calibrated so 15.0 is league-average; a 25 PER is a borderline All-Star, 30+ is rare.
 
     Args:
         aper:    Pace-adjusted PER for the player (from :func:`pace_adjusted_per`).
@@ -522,8 +520,7 @@ def per(aper: float, lg_aper: float) -> float | None:
 def relative_ts(player_ts: float | None, lg: LeagueAverages) -> float | None:
     """Player True Shooting% minus league average TS%.
 
-    Positive values indicate above-average shooting efficiency;
-    negative values indicate below-average.
+    Positive means more efficient than league average.
 
     Returns None when ``player_ts`` is None (player had no shot attempts).
     """
@@ -535,8 +532,7 @@ def relative_ts(player_ts: float | None, lg: LeagueAverages) -> float | None:
 def relative_efg(player_efg: float | None, lg: LeagueAverages) -> float | None:
     """Player Effective Field Goal% minus league average eFG%.
 
-    Positive values indicate above-average effective shooting;
-    negative values indicate below-average.
+    Positive means more efficient than league average.
 
     Returns None when ``player_efg`` is None (player had no field goal attempts).
     """

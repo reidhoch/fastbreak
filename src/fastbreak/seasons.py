@@ -38,9 +38,7 @@ def get_season_from_date(reference_date: date | None = None) -> Season:
     """
     ref = reference_date or datetime.now(tz=UTC).date()
 
-    # NBA season starts in October
-    # If we're in Oct-Dec, we're in the season that started this year
-    # If we're in Jan-Sep, we're in the season that started last year
+    # NBA seasons start in October, so Jan-Sep dates belong to the previous year's season
     start_year = ref.year if ref.month >= _SEASON_START_MONTH else ref.year - 1
 
     end_year_short = (start_year + 1) % 100
@@ -78,7 +76,9 @@ def season_to_season_id(season: Season) -> str:
     """Convert a season string to NBA season ID format.
 
     Some endpoints use a season ID format like "22024" where the prefix
-    indicates the season type (2 = regular season).
+    indicates the season type (2 = regular season). This function always
+    produces a regular-season ID (prefix "2"). Playoff or preseason IDs
+    require a different prefix and are not supported here.
 
     Args:
         season: Season in YYYY-YY format (e.g., "2024-25")

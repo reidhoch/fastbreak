@@ -75,7 +75,9 @@ class PlayerOnCourtDetail(PandasMixin, PolarsMixin, BaseModel):
 class LeaguePlayerOnDetailsResponse(FrozenResponse):
     """Response from the league player on details endpoint.
 
-    Contains team statistics when each player is on the court.
+    Contains team statistics split by on-court vs off-court presence for each
+    player. Each player typically has two rows: one for court_status="On" and
+    one for court_status="Off".
     """
 
     details: list[PlayerOnCourtDetail] = Field(default_factory=list)

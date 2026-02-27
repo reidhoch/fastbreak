@@ -1554,3 +1554,18 @@ class TestNBAClientSignalHandling:
         client._install_signal_handlers()
 
         mock_logger.debug.assert_called_once()
+
+    def test_remove_signal_handlers_logs_debug_on_platform_error(
+        self, mocker: MockerFixture
+    ):
+        """A debug log is emitted when signal handlers cannot be removed."""
+        client = NBAClient(session=mocker.MagicMock())
+        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mocker.patch(
+            "fastbreak.clients.nba.asyncio.get_running_loop",
+            side_effect=NotImplementedError("not supported on this platform"),
+        )
+
+        client._remove_signal_handlers()
+
+        mock_logger.debug.assert_called_once()

@@ -984,3 +984,8 @@ class TestOrtgDrtg:
 
         assert net_rtg(ortg_val=None, drtg_val=110.0) is None
         assert net_rtg(ortg_val=110.0, drtg_val=None) is None
+
+    def test_drtg_zero_possessions_returns_none(self):
+        from fastbreak.metrics import drtg  # noqa: PLC0415
+
+        assert drtg(opp_pts=0, fga=0, oreb=0, tov=0, fta=0) is None

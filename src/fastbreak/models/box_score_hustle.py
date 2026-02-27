@@ -1,6 +1,8 @@
 """Models for the box score hustle v2 endpoint."""
 
-from pydantic import BaseModel, Field
+from typing import Self
+
+from pydantic import BaseModel, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.meta import Meta
@@ -11,22 +13,55 @@ class HustleStatistics(BaseModel):
     """Hustle statistics for a player or team."""
 
     minutes: str
-    points: int
-    contested_shots: int = Field(alias="contestedShots")
-    contested_shots_2pt: int = Field(alias="contestedShots2pt")
-    contested_shots_3pt: int = Field(alias="contestedShots3pt")
-    deflections: int
-    charges_drawn: int = Field(alias="chargesDrawn")
-    screen_assists: int = Field(alias="screenAssists")
-    screen_assist_points: int = Field(alias="screenAssistPoints")
-    loose_balls_recovered_offensive: int = Field(alias="looseBallsRecoveredOffensive")
-    loose_balls_recovered_defensive: int = Field(alias="looseBallsRecoveredDefensive")
-    loose_balls_recovered_total: int = Field(alias="looseBallsRecoveredTotal")
-    offensive_box_outs: int = Field(alias="offensiveBoxOuts")
-    defensive_box_outs: int = Field(alias="defensiveBoxOuts")
-    box_out_player_team_rebounds: int = Field(alias="boxOutPlayerTeamRebounds")
-    box_out_player_rebounds: int = Field(alias="boxOutPlayerRebounds")
-    box_outs: int = Field(alias="boxOuts")
+    points: int = Field(ge=0)
+    contested_shots: int = Field(ge=0, alias="contestedShots")
+    contested_shots_2pt: int = Field(ge=0, alias="contestedShots2pt")
+    contested_shots_3pt: int = Field(ge=0, alias="contestedShots3pt")
+    deflections: int = Field(ge=0)
+    charges_drawn: int = Field(ge=0, alias="chargesDrawn")
+    screen_assists: int = Field(ge=0, alias="screenAssists")
+    screen_assist_points: int = Field(ge=0, alias="screenAssistPoints")
+    loose_balls_recovered_offensive: int = Field(
+        ge=0, alias="looseBallsRecoveredOffensive"
+    )
+    loose_balls_recovered_defensive: int = Field(
+        ge=0, alias="looseBallsRecoveredDefensive"
+    )
+    loose_balls_recovered_total: int = Field(ge=0, alias="looseBallsRecoveredTotal")
+    offensive_box_outs: int = Field(ge=0, alias="offensiveBoxOuts")
+    defensive_box_outs: int = Field(ge=0, alias="defensiveBoxOuts")
+    box_out_player_team_rebounds: int = Field(ge=0, alias="boxOutPlayerTeamRebounds")
+    box_out_player_rebounds: int = Field(ge=0, alias="boxOutPlayerRebounds")
+    box_outs: int = Field(ge=0, alias="boxOuts")
+
+    @model_validator(mode="after")
+    def check_partitions(self) -> Self:
+        """Validate that 2pt + 3pt contested shots, loose balls, and box outs sum correctly."""
+        if self.contested_shots_2pt + self.contested_shots_3pt != self.contested_shots:
+            msg = (
+                f"contested_shots_2pt ({self.contested_shots_2pt}) + "
+                f"contested_shots_3pt ({self.contested_shots_3pt}) != "
+                f"contested_shots ({self.contested_shots})"
+            )
+            raise ValueError(msg)
+        if (
+            self.loose_balls_recovered_offensive + self.loose_balls_recovered_defensive
+            != self.loose_balls_recovered_total
+        ):
+            msg = (
+                f"loose_balls_recovered_offensive ({self.loose_balls_recovered_offensive}) + "
+                f"loose_balls_recovered_defensive ({self.loose_balls_recovered_defensive}) != "
+                f"loose_balls_recovered_total ({self.loose_balls_recovered_total})"
+            )
+            raise ValueError(msg)
+        if self.offensive_box_outs + self.defensive_box_outs != self.box_outs:
+            msg = (
+                f"offensive_box_outs ({self.offensive_box_outs}) + "
+                f"defensive_box_outs ({self.defensive_box_outs}) != "
+                f"box_outs ({self.box_outs})"
+            )
+            raise ValueError(msg)
+        return self
 
 
 class HustlePlayer(PandasMixin, PolarsMixin, BaseModel):

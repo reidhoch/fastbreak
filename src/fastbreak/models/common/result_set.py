@@ -46,9 +46,8 @@ ValidatorFunc = Callable[[object], dict[str, Any]]
 def is_tabular_response(data: object) -> TypeGuard[dict[str, Any]]:
     """Check if data is in NBA's tabular resultSets format.
 
-    This is used by model validators to determine whether to transform data
-    or pass it through unchanged. Debug logging helps diagnose when data
-    doesn't match the expected format.
+    Used by model validators to determine whether to transform data
+    or pass it through unchanged.
     """
     if isinstance(data, dict) and "resultSets" in data:
         return True
@@ -193,8 +192,9 @@ def named_tabular_validator(
     """Create a model_validator that parses a named result set into a field.
 
     Like tabular_validator, but looks up the result set by name instead of index.
-    Returns an empty list if the result set is not found, making it safe for
-    APIs that may omit result sets.
+    Raises ValueError if the named result set is not present in the response.
+    Use named_result_sets_validator with ignore_missing=True for result sets
+    that are legitimately optional.
 
     Args:
         field_name: The model field name to populate
@@ -202,6 +202,9 @@ def named_tabular_validator(
 
     Returns:
         A function suitable for use with @model_validator(mode="before")
+
+    Raises:
+        ValueError: If no resultSet with the given name exists in the response.
 
     Example:
         class LeagueDashResponse(BaseModel):
@@ -216,20 +219,8 @@ def named_tabular_validator(
     def validator(data: object) -> dict[str, Any]:
         if not is_tabular_response(data):
             return data  # type: ignore[return-value]
-        try:
-            rows = parse_result_set_by_name(data, result_set_name)
-        except ValueError:
-            available = [rs.get("name") for rs in data.get("resultSets", [])]
-            logger.warning(
-                "result_set_not_found_fallback",
-                field_name=field_name,
-                result_set_name=result_set_name,
-                available_sets=available,
-                hint="Returning empty list as fallback",
-            )
-            return {field_name: []}
-        else:
-            return {field_name: rows or []}
+        rows = parse_result_set_by_name(data, result_set_name)
+        return {field_name: rows}
 
     return validator
 
@@ -347,23 +338,8 @@ def singular_result_set_validator(
 
         result: dict[str, Any] = {}
         for field_name, result_set_name in mappings.items():
-            try:
-                rows = parse_result_set_by_name(wrapped_data, result_set_name)
-            except ValueError:
-                available = [
-                    rs.get("name")
-                    for rs in wrapped_data.get("resultSets", [])
-                    if isinstance(rs, dict)
-                ]
-                logger.warning(
-                    "singular_result_set_not_found",
-                    field_name=field_name,
-                    result_set_name=result_set_name,
-                    available_sets=available,
-                    hint="Returning empty list as fallback",
-                )
-                rows = []
-            result[field_name] = rows or []
+            rows = parse_result_set_by_name(wrapped_data, result_set_name)
+            result[field_name] = rows
         return result
 
     return validator

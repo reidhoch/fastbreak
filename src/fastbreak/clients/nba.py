@@ -59,12 +59,9 @@ class CacheTypeMismatchError(Exception):
 class _TypedResponseCache:
     """Type-safe wrapper around TTLCache for endpoint responses.
 
-    This wrapper encapsulates the type relationship between cache keys
-    (derived from endpoints) and their stored response types, providing
-    type-safe get/set operations without requiring cast() at call sites.
-
-    Stores response type alongside value to enable reliable type checking,
-    since isinstance() alone cannot distinguish between Pydantic model types.
+    Stores the response type alongside each value so get() can type-narrow
+    without cast() at call sites. isinstance() alone can't distinguish between
+    Pydantic model types, so the type is stored explicitly.
     """
 
     def __init__(self, maxsize: int, ttl: int) -> None:
@@ -331,8 +328,12 @@ class NBAClient:
             loop = asyncio.get_running_loop()
             loop.remove_signal_handler(signal.SIGINT)
             loop.remove_signal_handler(signal.SIGTERM)
-        except (NotImplementedError, ValueError, RuntimeError):
-            pass
+        except (NotImplementedError, ValueError, RuntimeError) as exc:
+            logger.debug(
+                "signal_handlers_not_removed",
+                reason=str(exc),
+                hint="Signal handler removal failed (platform doesn't support it or event loop already closed)",
+            )
 
     def _on_signal(self) -> None:
         """Handle SIGINT/SIGTERM by scheduling a graceful shutdown."""

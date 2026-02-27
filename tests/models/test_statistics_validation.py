@@ -347,11 +347,11 @@ class TestMatchupStatisticsValidation:
     def test_valid_data_passes(self, valid_data):
         """Valid matchup statistics should pass validation."""
         stats = MatchupStatistics.model_validate(valid_data)
-        assert stats.matchupFieldGoalsMade == 2
-        assert stats.playerPoints == 6
+        assert stats.matchup_field_goals_made == 2
+        assert stats.player_points == 6
 
     def test_matchup_fg_made_exceeds_attempted_raises(self, valid_data):
-        """matchupFieldGoalsMade > attempted should raise ValidationError."""
+        """matchup_field_goals_made > attempted should raise ValidationError."""
         valid_data["matchupFieldGoalsMade"] = 8
         valid_data["matchupFieldGoalsAttempted"] = 5
 
@@ -359,12 +359,13 @@ class TestMatchupStatisticsValidation:
             MatchupStatistics.model_validate(valid_data)
 
         errors = exc_info.value.errors()
-        assert "matchupFieldGoalsMade (8) > matchupFieldGoalsAttempted (5)" in str(
-            errors[0]["msg"]
+        assert (
+            "matchup_field_goals_made (8) > matchup_field_goals_attempted (5)"
+            in str(errors[0]["msg"])
         )
 
     def test_matchup_three_pointers_made_exceeds_attempted_raises(self, valid_data):
-        """matchupThreePointersMade > attempted should raise ValidationError."""
+        """matchup_three_pointers_made > attempted should raise ValidationError."""
         valid_data["matchupThreePointersMade"] = 5
         valid_data["matchupThreePointersAttempted"] = 2
 
@@ -373,12 +374,12 @@ class TestMatchupStatisticsValidation:
 
         errors = exc_info.value.errors()
         assert (
-            "matchupThreePointersMade (5) > matchupThreePointersAttempted (2)"
+            "matchup_three_pointers_made (5) > matchup_three_pointers_attempted (2)"
             in str(errors[0]["msg"])
         )
 
     def test_help_fg_made_exceeds_attempted_raises(self, valid_data):
-        """helpFieldGoalsMade > attempted should raise ValidationError."""
+        """help_field_goals_made > attempted should raise ValidationError."""
         valid_data["helpFieldGoalsMade"] = 5
         valid_data["helpFieldGoalsAttempted"] = 3
 
@@ -386,12 +387,12 @@ class TestMatchupStatisticsValidation:
             MatchupStatistics.model_validate(valid_data)
 
         errors = exc_info.value.errors()
-        assert "helpFieldGoalsMade (5) > helpFieldGoalsAttempted (3)" in str(
+        assert "help_field_goals_made (5) > help_field_goals_attempted (3)" in str(
             errors[0]["msg"]
         )
 
     def test_matchup_free_throws_made_exceeds_attempted_raises(self, valid_data):
-        """matchupFreeThrowsMade > attempted should raise ValidationError."""
+        """matchup_free_throws_made > attempted should raise ValidationError."""
         valid_data["matchupFreeThrowsMade"] = 4
         valid_data["matchupFreeThrowsAttempted"] = 2
 
@@ -399,8 +400,9 @@ class TestMatchupStatisticsValidation:
             MatchupStatistics.model_validate(valid_data)
 
         errors = exc_info.value.errors()
-        assert "matchupFreeThrowsMade (4) > matchupFreeThrowsAttempted (2)" in str(
-            errors[0]["msg"]
+        assert (
+            "matchup_free_throws_made (4) > matchup_free_throws_attempted (2)"
+            in str(errors[0]["msg"])
         )
 
     def test_all_zero_stats_valid(self, valid_data):
@@ -413,8 +415,37 @@ class TestMatchupStatisticsValidation:
         valid_data["matchupThreePointersPercentage"] = 0.0
 
         stats = MatchupStatistics.model_validate(valid_data)
-        assert stats.matchupFieldGoalsMade == 0
-        assert stats.matchupFieldGoalsAttempted == 0
+        assert stats.matchup_field_goals_made == 0
+        assert stats.matchup_field_goals_attempted == 0
+
+    def test_three_point_attempted_exceeds_fg_attempted_raises(self, valid_data):
+        """matchup_three_pointers_attempted > matchup_field_goals_attempted should raise."""
+        valid_data["matchupThreePointersAttempted"] = (
+            8  # > matchupFieldGoalsAttempted=5
+        )
+        valid_data["matchupThreePointersMade"] = 2
+
+        with pytest.raises(ValidationError) as exc_info:
+            MatchupStatistics.model_validate(valid_data)
+
+        errors = exc_info.value.errors()
+        assert (
+            "matchup_three_pointers_attempted (8) > matchup_field_goals_attempted (5)"
+            in str(errors[0]["msg"])
+        )
+
+    def test_three_point_made_exceeds_fg_made_raises(self, valid_data):
+        """matchup_three_pointers_made > matchup_field_goals_made should raise."""
+        valid_data["matchupThreePointersMade"] = 5  # > matchupFieldGoalsMade=2
+        valid_data["matchupThreePointersAttempted"] = 5
+
+        with pytest.raises(ValidationError) as exc_info:
+            MatchupStatistics.model_validate(valid_data)
+
+        errors = exc_info.value.errors()
+        assert "matchup_three_pointers_made (5) > matchup_field_goals_made (2)" in str(
+            errors[0]["msg"]
+        )
 
 
 class TestFieldConstraints:
@@ -509,3 +540,75 @@ class TestFieldConstraints:
 
         errors = exc_info.value.errors()
         assert any("greater than or equal to 0" in str(e) for e in errors)
+
+
+class TestHustleStatisticsValidation:
+    """Tests for HustleStatistics.check_partitions model validator."""
+
+    @pytest.fixture
+    def valid_data(self):
+        """Return valid hustle statistics data with correct partition sums."""
+        return {
+            "minutes": "28:15",
+            "points": 12,
+            "contestedShots": 5,
+            "contestedShots2pt": 3,
+            "contestedShots3pt": 2,
+            "deflections": 2,
+            "chargesDrawn": 0,
+            "screenAssists": 4,
+            "screenAssistPoints": 8,
+            "looseBallsRecoveredOffensive": 1,
+            "looseBallsRecoveredDefensive": 2,
+            "looseBallsRecoveredTotal": 3,
+            "offensiveBoxOuts": 2,
+            "defensiveBoxOuts": 3,
+            "boxOutPlayerTeamRebounds": 3,
+            "boxOutPlayerRebounds": 2,
+            "boxOuts": 5,
+        }
+
+    def test_valid_data_passes(self, valid_data):
+        """Valid partition sums should pass validation without error."""
+        from fastbreak.models.box_score_hustle import HustleStatistics  # noqa: PLC0415
+
+        stats = HustleStatistics.model_validate(valid_data)
+        assert stats.contested_shots == 5
+        assert (
+            stats.contested_shots_2pt + stats.contested_shots_3pt
+            == stats.contested_shots
+        )
+
+    def test_contested_shots_partition_mismatch_raises(self, valid_data):
+        """contested_shots_2pt + contested_shots_3pt != contested_shots should raise."""
+        from fastbreak.models.box_score_hustle import HustleStatistics  # noqa: PLC0415
+
+        valid_data["contestedShots2pt"] = 4  # 4 + 2 = 6 != contestedShots=5
+
+        with pytest.raises(ValidationError) as exc_info:
+            HustleStatistics.model_validate(valid_data)
+
+        assert "contested_shots_2pt" in str(exc_info.value)
+        assert "contested_shots" in str(exc_info.value)
+
+    def test_loose_balls_partition_mismatch_raises(self, valid_data):
+        """loose_balls_recovered_offensive + defensive != total should raise."""
+        from fastbreak.models.box_score_hustle import HustleStatistics  # noqa: PLC0415
+
+        valid_data["looseBallsRecoveredOffensive"] = 5  # 5 + 2 = 7 != total=3
+
+        with pytest.raises(ValidationError) as exc_info:
+            HustleStatistics.model_validate(valid_data)
+
+        assert "loose_balls_recovered" in str(exc_info.value)
+
+    def test_box_outs_partition_mismatch_raises(self, valid_data):
+        """offensive_box_outs + defensive_box_outs != box_outs should raise."""
+        from fastbreak.models.box_score_hustle import HustleStatistics  # noqa: PLC0415
+
+        valid_data["offensiveBoxOuts"] = 10  # 10 + 3 = 13 != boxOuts=5
+
+        with pytest.raises(ValidationError) as exc_info:
+            HustleStatistics.model_validate(valid_data)
+
+        assert "box_outs" in str(exc_info.value)

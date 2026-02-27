@@ -41,6 +41,7 @@ async def main() -> None:
         )
         if not playtypes:
             print("  No play-type data available.")
+            print("  (Synergy play-type data isn't available through the public API)")
         else:
             sorted_plays = sorted(playtypes, key=lambda p: p.poss, reverse=True)
             print(f"  {'Play Type':<20}  {'Poss':>6}  {'PPP':>5}  {'eFG%':>6}")
@@ -54,7 +55,7 @@ async def main() -> None:
 
         # ── 3. Lineup net ratings ────────────────────────────────────
         print("=" * 60)
-        print(f"{IND.full_name} — top 10 lineups by net rating (min 20 min)")
+        print(f"{IND.full_name} — top 10 lineups by net rating (avg ≥20 min/g)")
         print("=" * 60)
         lineups = await get_lineup_net_ratings(
             client, team_id=int(IND.id), min_minutes=20.0
