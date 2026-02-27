@@ -36,7 +36,7 @@ class HustleStatistics(BaseModel):
 
     @model_validator(mode="after")
     def check_partitions(self) -> Self:
-        """Validate that 2pt + 3pt contested shots, loose balls, and box outs sum correctly."""
+        """Validate that 2pt + 3pt contested shots and loose balls sum correctly."""
         if self.contested_shots_2pt + self.contested_shots_3pt != self.contested_shots:
             msg = (
                 f"contested_shots_2pt ({self.contested_shots_2pt}) + "
@@ -52,13 +52,6 @@ class HustleStatistics(BaseModel):
                 f"loose_balls_recovered_offensive ({self.loose_balls_recovered_offensive}) + "
                 f"loose_balls_recovered_defensive ({self.loose_balls_recovered_defensive}) != "
                 f"loose_balls_recovered_total ({self.loose_balls_recovered_total})"
-            )
-            raise ValueError(msg)
-        if self.offensive_box_outs + self.defensive_box_outs != self.box_outs:
-            msg = (
-                f"offensive_box_outs ({self.offensive_box_outs}) + "
-                f"defensive_box_outs ({self.defensive_box_outs}) != "
-                f"box_outs ({self.box_outs})"
             )
             raise ValueError(msg)
         return self

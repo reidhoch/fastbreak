@@ -109,15 +109,6 @@ ignore_missing_imports = true
 module = ["polars", "polars.*"]
 ignore_missing_imports = true
 
-[tool.isort]
-profile = "black"
-known_first_party = ["fastbreak"]
-line_length = 88
-force_single_line = false
-combine_as_imports = true
-src_paths = ["src", "tests"]
-skip_glob = ["*/_version.py"]
-
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
@@ -130,7 +121,6 @@ addopts = ["-m", "not live_api"]
 dev = [
     "complexipy>=5.1.0",
     "hypothesis>=6.151.4",
-    "isort>=7.0.0",
     "mutmut>=3.3",
     "mypy>=1.19.1",
     "pandas>=3.0.0",

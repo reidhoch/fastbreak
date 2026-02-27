@@ -12,23 +12,25 @@ repos:
       - id: check-shebang-scripts-are-executable
       - id: check-symlinks
       - id: check-toml
+      - id: check-yaml
       - id: debug-statements
       - id: destroyed-symlinks
       - id: end-of-file-fixer
       - id: fix-byte-order-marker
+      - id: no-commit-to-branch
+        args: [--branch, main]
       - id: trailing-whitespace
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: v0.25
+    hooks:
+      - id: validate-pyproject
   - repo: https://github.com/rohaquinlop/complexipy-pre-commit
     rev: v5.1.0
     hooks:
       # Run the cognitive complexity checker.
       - id: complexipy
-  - repo: https://github.com/pycqa/isort
-    rev: 8.0.0
-    hooks:
-      - id: isort
-        name: isort (python)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.15.2"
+    rev: "v0.15.4"
     hooks:
       - id: ruff-check
         args: [--no-cache]
@@ -43,6 +45,10 @@ repos:
           - aiohttp>=3.13
           - types-cachetools>=5.5
           - tenacity>=8.0
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.11
+    hooks:
+      - id: actionlint
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.0
     hooks:
