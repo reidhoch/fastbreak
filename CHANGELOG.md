@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.7] — 2026-02-27
+
+### 📖 Documentation
+
+- Added full API reference docs covering all public modules: `NBAClient`, 100+ endpoint classes, Pydantic response models, and all helper modules (`players`, `teams`, `games`, `schedule`, `seasons`, `metrics`)
+- Added type alias reference, known gotchas, and `docs/index.md` table of contents
+- Added `context7.json` for Context7 MCP integration
+
 ## [v0.0.6] — 2026-02-27
 
 ### 🐛 Bug Fixes
