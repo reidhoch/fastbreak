@@ -68,7 +68,7 @@ Internally uses the `LeagueGameLog` endpoint (team-level), which contains one ro
 |---------------|-------------------|---------------------|-------------|
 | `client`      | `NBAClient`       | required            | Active NBA client |
 | `season`      | `Season \| None`  | current season      | Season in `YYYY-YY` format (e.g., `"2025-26"`). Defaults to the current season. |
-| `season_type` | `SeasonType`      | `"Regular Season"`  | `"Regular Season"`, `"Playoffs"`, `"Pre Season"`, `"All-Star"` |
+| `season_type` | `SeasonType`      | `"Regular Season"`  | `"Regular Season"`, `"Playoffs"`, `"Pre Season"`, `"All Star"` |
 | `team_id`     | `int \| None`     | `None`              | Restrict to one team's games. Pass the integer team ID. |
 | `date_from`   | `Date \| None`    | `None`              | Lower bound, inclusive. Format: `"MM/DD/YYYY"` |
 | `date_to`     | `Date \| None`    | `None`              | Upper bound, inclusive. Format: `"MM/DD/YYYY"` |
