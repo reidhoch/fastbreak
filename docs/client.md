@@ -13,7 +13,7 @@ from fastbreak.endpoints.scoreboard import ScoreboardV2
 
 async def main() -> None:
     async with NBAClient() as client:
-        scoreboard = await client.get(ScoreboardV2(game_date="02/27/2026"))
+        scoreboard = await client.get(ScoreboardV2(game_date="2026-02-27"))
         for game in scoreboard.game_header:
             print(game.game_id, game.home_team_id, game.visitor_team_id)
 
