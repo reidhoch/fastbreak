@@ -37,9 +37,22 @@ Fetch the top 10 gravity leaders for a season. Gravity measures how much defensi
 uv run python examples/gravity.py
 ```
 
+### [standings.py](standings.py)
+
+Display league-wide and conference-filtered standings using `fastbreak.standings`:
+`get_standings` (all 30 teams with win%, streak, conference games back) and
+`get_conference_standings` (East or West, sorted by playoff rank).
+
+```bash
+uv run python examples/standings.py
+```
+
 ### [boxscores.py](boxscores.py)
 
-Fetch box scores for all of yesterday's games using `get_many()` for concurrent requests. Demonstrates the scoreboard → game IDs → box scores pattern.
+Fetch box scores for yesterday's games using the `get_yesterdays_games` convenience helper,
+then demonstrate all four box score flavors via concurrent `get_many()` requests:
+standard (`get_box_scores`), advanced/pace (`get_box_scores_advanced`),
+hustle/effort (`get_box_scores_hustle`), and scoring distribution (`get_box_scores_scoring`).
 
 ```bash
 uv run python examples/boxscores.py
@@ -83,6 +96,7 @@ Compute derived metrics from `fastbreak.metrics` across four pure-computation de
 - **Part 5** *(live API)* — Game Score leaderboard for yesterday's games
 - **Part 6** *(live API)* — usage%, AST%, pts/36, and A/TO from real box score data
 - **Part 7** — team ratings: `ortg`, `drtg`, `net_rtg` for blowout and close-game scenarios
+- **Part 8** — rolling averages: `rolling_avg` over a 10-game sequence with warm-up and DNP handling
 
 ```bash
 uv run python examples/metrics.py
@@ -127,7 +141,8 @@ uv run python examples/player_stats.py
 
 ### [team_stats.py](team_stats.py)
 
-Fetch team season stats and lineup analysis using `fastbreak.teams`. Covers 5-man lineup plus/minus and two-man combination minutes.
+Fetch team season stats, lineup analysis, current roster, and coaching staff using `fastbreak.teams`.
+Covers 5-man lineup plus/minus, two-man combination minutes, `get_team_roster`, and `get_team_coaches`.
 
 ```bash
 uv run python examples/team_stats.py

@@ -52,7 +52,8 @@ async def analyze_player_trends(  # noqa: C901
                     for game in response.scoreboard.games
                     if game.game_status == 3  # noqa: PLR2004
                     and game.game_id is not None
-                    and game.game_id[:3] == "002"  # regular season only (skip All-Star/preseason)
+                    and game.game_id[:3]
+                    == "002"  # regular season only (skip All-Star/preseason)
                 )
             current += timedelta(days=1)
 

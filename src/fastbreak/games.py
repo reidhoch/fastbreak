@@ -11,6 +11,9 @@ from fastbreak.types import validate_iso_date
 
 if TYPE_CHECKING:
     from fastbreak.clients.nba import NBAClient
+    from fastbreak.models.box_score_advanced import BoxScoreAdvancedData
+    from fastbreak.models.box_score_hustle import BoxScoreHustleData
+    from fastbreak.models.box_score_scoring import BoxScoreScoringData
     from fastbreak.models.box_score_summary import BoxScoreSummaryData
     from fastbreak.models.box_score_traditional import BoxScoreTraditionalData
     from fastbreak.models.play_by_play import PlayByPlayAction
@@ -197,6 +200,98 @@ async def get_box_scores(
     return {
         gid: resp.boxScoreTraditional
         for gid, resp in zip(game_ids, responses, strict=True)
+    }
+
+
+async def get_box_scores_advanced(
+    client: NBAClient,
+    game_ids: list[str],
+) -> dict[str, BoxScoreAdvancedData]:
+    """Fetch advanced box scores for multiple games concurrently.
+
+    Args:
+        client: NBA API client
+        game_ids: List of NBA game ID strings
+
+    Returns:
+        Dict mapping game_id -> BoxScoreAdvancedData, in input order
+
+    Examples:
+        ids = await get_game_ids(client, "2024-25")
+        box_scores = await get_box_scores_advanced(client, ids[:5])
+
+    """
+    from fastbreak.endpoints import BoxScoreAdvanced  # noqa: PLC0415
+
+    if not game_ids:
+        return {}
+
+    endpoints = [BoxScoreAdvanced(game_id=gid) for gid in game_ids]
+    responses = await client.get_many(endpoints)
+    return {
+        gid: resp.boxScoreAdvanced
+        for gid, resp in zip(game_ids, responses, strict=True)
+    }
+
+
+async def get_box_scores_hustle(
+    client: NBAClient,
+    game_ids: list[str],
+) -> dict[str, BoxScoreHustleData]:
+    """Fetch hustle box scores for multiple games concurrently.
+
+    Args:
+        client: NBA API client
+        game_ids: List of NBA game ID strings
+
+    Returns:
+        Dict mapping game_id -> BoxScoreHustleData, in input order
+
+    Examples:
+        ids = await get_game_ids(client, "2024-25")
+        box_scores = await get_box_scores_hustle(client, ids[:5])
+
+    """
+    from fastbreak.endpoints import BoxScoreHustle  # noqa: PLC0415
+
+    if not game_ids:
+        return {}
+
+    endpoints = [BoxScoreHustle(game_id=gid) for gid in game_ids]
+    responses = await client.get_many(endpoints)
+    return {
+        gid: resp.box_score_hustle
+        for gid, resp in zip(game_ids, responses, strict=True)
+    }
+
+
+async def get_box_scores_scoring(
+    client: NBAClient,
+    game_ids: list[str],
+) -> dict[str, BoxScoreScoringData]:
+    """Fetch scoring distribution box scores for multiple games concurrently.
+
+    Args:
+        client: NBA API client
+        game_ids: List of NBA game ID strings
+
+    Returns:
+        Dict mapping game_id -> BoxScoreScoringData, in input order
+
+    Examples:
+        ids = await get_game_ids(client, "2024-25")
+        box_scores = await get_box_scores_scoring(client, ids[:5])
+
+    """
+    from fastbreak.endpoints import BoxScoreScoring  # noqa: PLC0415
+
+    if not game_ids:
+        return {}
+
+    endpoints = [BoxScoreScoring(game_id=gid) for gid in game_ids]
+    responses = await client.get_many(endpoints)
+    return {
+        gid: resp.boxScoreScoring for gid, resp in zip(game_ids, responses, strict=True)
     }
 
 

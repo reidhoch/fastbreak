@@ -3,7 +3,13 @@
 import asyncio
 
 from fastbreak.clients import NBAClient
-from fastbreak.teams import get_lineup_stats, get_team_stats, search_teams
+from fastbreak.teams import (
+    get_lineup_stats,
+    get_team_coaches,
+    get_team_roster,
+    get_team_stats,
+    search_teams,
+)
 
 
 async def main() -> None:
@@ -46,6 +52,30 @@ async def main() -> None:
             print(
                 f"  {pair.group_name}  {pair.min:.0f} min  +/- {pair.plus_minus:+.1f}"
             )
+        print()
+
+        # 4. Current roster
+        print("=" * 60)
+        print(f"{ind.full_name} — current roster")
+        print("=" * 60)
+        players = await get_team_roster(client, team_id=ind.id)
+        print(f"  {'#':<4} {'Player':<25} {'Pos':<5} {'Ht':<6} {'Wt':>4}")
+        print("  " + "-" * 48)
+        for p in players:
+            print(
+                f"  {p.num:<4} {p.player:<25}"
+                f" {p.position:<5} {p.height:<6} {p.weight:>4}"
+            )
+        print()
+
+        # 5. Coaching staff
+        print("=" * 60)
+        print(f"{ind.full_name} — coaching staff")
+        print("=" * 60)
+        coaches = await get_team_coaches(client, team_id=ind.id)
+        for c in coaches:
+            role = "Head Coach" if not c.is_assistant else f"Assistant ({c.coach_type})"
+            print(f"  {c.coach_name:<30}  {role}")
         print()
 
 

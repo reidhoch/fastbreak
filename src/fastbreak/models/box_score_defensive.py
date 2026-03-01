@@ -75,8 +75,8 @@ class BoxScoreDefensiveData(BaseModel):
     game_id: str = Field(alias="gameId")
     away_team_id: int = Field(alias="awayTeamId")
     home_team_id: int = Field(alias="homeTeamId")
-    home_team: DefensiveTeam = Field(alias="homeTeam")
-    away_team: DefensiveTeam = Field(alias="awayTeam")
+    home_team: DefensiveTeam | None = Field(default=None, alias="homeTeam")
+    away_team: DefensiveTeam | None = Field(default=None, alias="awayTeam")
 
 
 class BoxScoreDefensiveResponse(FrozenResponse):
