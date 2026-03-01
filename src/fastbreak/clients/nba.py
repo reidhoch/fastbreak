@@ -247,7 +247,7 @@ class NBAClient:
         """Generate a cache key from endpoint path and parameters."""
         params_json = json.dumps(endpoint.params(), sort_keys=True)
         key_data = f"{endpoint.path}:{params_json}"
-        return hashlib.sha256(key_data.encode()).hexdigest()
+        return hashlib.md5(key_data.encode(), usedforsecurity=False).hexdigest()
 
     async def _get_session(self) -> ClientSession:
         async with self._session_lock:
@@ -388,11 +388,11 @@ class NBAClient:
         cache_key = self._make_cache_key(endpoint)
         async with self._cache_lock:
             cached = self._cache.get(cache_key, endpoint.response_model)
-            if cached is not None:
-                await logger.bind(request_id=request_id, endpoint=endpoint.path).adebug(
-                    "cache_hit"
-                )
-            return cache_key, cached
+        if cached is not None:
+            await logger.bind(request_id=request_id, endpoint=endpoint.path).adebug(
+                "cache_hit"
+            )
+        return cache_key, cached
 
     async def _store_in_cache[T: BaseModel](
         self, cache_key: str | None, result: T

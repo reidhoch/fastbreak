@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -10,6 +11,12 @@ if TYPE_CHECKING:
 
 _SEASON_START_MONTH = 10
 _SEASON_YEAR_LEN = 4
+
+
+@lru_cache(maxsize=32)
+def _season_from_date(d: date) -> Season:
+    start_year = d.year if d.month >= _SEASON_START_MONTH else d.year - 1
+    return f"{start_year}-{(start_year + 1) % 100:02d}"
 
 
 def get_season_from_date(reference_date: date | None = None) -> Season:
@@ -36,13 +43,7 @@ def get_season_from_date(reference_date: date | None = None) -> Season:
         '2025-26'
 
     """
-    ref = reference_date or datetime.now(tz=UTC).date()
-
-    # NBA seasons start in October, so Jan-Sep dates belong to the previous year's season
-    start_year = ref.year if ref.month >= _SEASON_START_MONTH else ref.year - 1
-
-    end_year_short = (start_year + 1) % 100
-    return f"{start_year}-{end_year_short:02d}"
+    return _season_from_date(reference_date or datetime.now(tz=UTC).date())
 
 
 def season_start_year(season: Season) -> int:

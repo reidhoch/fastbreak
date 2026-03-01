@@ -19,9 +19,9 @@ class RotationEntry(PandasMixin, PolarsMixin, BaseModel):
     player_last: str = Field(alias="PLAYER_LAST")
     in_time_real: float = Field(alias="IN_TIME_REAL")
     out_time_real: float = Field(alias="OUT_TIME_REAL")
-    player_pts: int = Field(alias="PLAYER_PTS")
-    pt_diff: float = Field(alias="PT_DIFF")
-    usg_pct: float = Field(alias="USG_PCT")
+    player_pts: int | None = Field(alias="PLAYER_PTS")
+    pt_diff: float | None = Field(alias="PT_DIFF")
+    usg_pct: float | None = Field(alias="USG_PCT")
 
 
 class GameRotationResponse(FrozenResponse):

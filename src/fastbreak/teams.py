@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import IntEnum
-from statistics import fmean
 from typing import TYPE_CHECKING
 
 from fastbreak.seasons import get_season_from_date
@@ -366,6 +365,12 @@ _TEAMS_BY_CITY: dict[str, TeamInfo] = {t.city.lower(): t for t in TEAMS.values()
 _VALID_CONFERENCES: frozenset[str] = frozenset({t.conference for t in TEAMS.values()})
 _VALID_DIVISIONS: frozenset[str] = frozenset({t.division for t in TEAMS.values()})
 
+_TEAMS_BY_CONFERENCE: dict[str, list[TeamInfo]] = {}
+_TEAMS_BY_DIVISION: dict[str, list[TeamInfo]] = {}
+for _t in TEAMS.values():
+    _TEAMS_BY_CONFERENCE.setdefault(_t.conference, []).append(_t)
+    _TEAMS_BY_DIVISION.setdefault(_t.division, []).append(_t)
+
 
 def get_team(identifier: int | str) -> TeamInfo | None:
     """Look up team information by ID, abbreviation, name, or city.
@@ -441,7 +446,7 @@ def teams_by_conference(conference: str) -> list[TeamInfo]:
     if conf not in _VALID_CONFERENCES:
         msg = f"Unknown conference: {conference!r}. Expected one of: {sorted(_VALID_CONFERENCES)}"
         raise ValueError(msg)
-    return [t for t in TEAMS.values() if t.conference == conf]
+    return _TEAMS_BY_CONFERENCE.get(conf, [])
 
 
 def teams_by_division(division: str) -> list[TeamInfo]:
@@ -461,7 +466,7 @@ def teams_by_division(division: str) -> list[TeamInfo]:
     if div not in _VALID_DIVISIONS:
         msg = f"Unknown division: {division!r}. Expected one of: {sorted(_VALID_DIVISIONS)}"
         raise ValueError(msg)
-    return [t for t in TEAMS.values() if t.division == div]
+    return _TEAMS_BY_DIVISION.get(div, [])
 
 
 def search_teams(query: str, *, limit: int = 5) -> list[TeamInfo]:
@@ -699,23 +704,33 @@ async def get_league_averages(
         msg = "No team stats returned — cannot compute league averages"
         raise ValueError(msg)
 
-    lg_fga = fmean(r.fga for r in rows)
-    lg_oreb = fmean(r.oreb for r in rows)
-    lg_tov = fmean(r.tov for r in rows)
-    lg_fta = fmean(r.fta for r in rows)
+    n = len(rows)
+    pts = fga = fta = ftm = oreb = reb = ast = fgm = fg3m = tov = pf = 0.0
+    for r in rows:
+        pts += r.pts
+        fga += r.fga
+        fta += r.fta
+        ftm += r.ftm
+        oreb += r.oreb
+        reb += r.reb
+        ast += r.ast
+        fgm += r.fgm
+        fg3m += r.fg3m
+        tov += r.tov
+        pf += r.pf
 
     return LeagueAverages(
-        lg_pts=fmean(r.pts for r in rows),
-        lg_fga=lg_fga,
-        lg_fta=lg_fta,
-        lg_ftm=fmean(r.ftm for r in rows),
-        lg_oreb=lg_oreb,
-        lg_treb=fmean(r.reb for r in rows),
-        lg_ast=fmean(r.ast for r in rows),
-        lg_fgm=fmean(r.fgm for r in rows),
-        lg_fg3m=fmean(r.fg3m for r in rows),
-        lg_tov=lg_tov,
-        lg_pf=fmean(r.pf for r in rows),
+        lg_pts=pts / n,
+        lg_fga=fga / n,
+        lg_fta=fta / n,
+        lg_ftm=ftm / n,
+        lg_oreb=oreb / n,
+        lg_treb=reb / n,
+        lg_ast=ast / n,
+        lg_fgm=fgm / n,
+        lg_fg3m=fg3m / n,
+        lg_tov=tov / n,
+        lg_pf=pf / n,
     )
 
 

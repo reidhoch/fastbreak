@@ -53,6 +53,10 @@ class TestHomepageV2:
         with pytest.raises((AttributeError, ValidationError)):
             endpoint.stat_type = "Advanced"  # type: ignore[misc]
 
+    def test_params_without_season_omits_season_key(self):
+        """params() omits Season key when season is not set."""
+        assert "Season" not in HomepageV2().params()
+
 
 class TestHomepageV2Response:
     """Tests for HomepageV2Response model."""
@@ -150,6 +154,10 @@ class TestHomepageLeaders:
         """HomepageLeaders has correct API path."""
         assert HomepageLeaders().path == "homepageleaders"
 
+    def test_params_without_season_omits_season_key(self):
+        """params() omits Season key when season is not set."""
+        assert "Season" not in HomepageLeaders().params()
+
 
 class TestHomepageLeadersResponse:
     """Tests for HomepageLeadersResponse model."""
@@ -226,6 +234,10 @@ class TestLeadersTiles:
     def test_path_is_correct(self):
         """LeadersTiles has correct API path."""
         assert LeadersTiles().path == "leaderstiles"
+
+    def test_params_without_season_omits_season_key(self):
+        """params() omits Season key when season is not set."""
+        assert "Season" not in LeadersTiles().params()
 
 
 class TestLeadersTilesResponse:
@@ -320,3 +332,11 @@ class TestLeadersTilesResponse:
 
         assert len(response.last_season_high) == 1
         assert response.last_season_high[0].pts == 31.4
+
+    def test_validate_normalized_data_passthrough(self):
+        """model_validate accepts already-normalized data without a resultSet key."""
+        data = {"leaders": [], "all_time_season_high": [], "last_season_high": []}
+        response = LeadersTilesResponse.model_validate(data)
+        assert response.leaders == []
+        assert response.all_time_season_high == []
+        assert response.last_season_high == []

@@ -159,6 +159,17 @@ class TestGetPlayer:
 
         assert result is None
 
+    async def test_returns_none_when_id_not_in_populated_index(
+        self, mocker: MockerFixture
+    ):
+        """get_player returns None when players exist but none match the integer ID."""
+        wrong_player = _make_player(mocker, 111, "LeBron", "James")
+        client = _make_client(mocker, wrong_player)
+
+        result = await get_player(client, 99999999)
+
+        assert result is None
+
     async def test_logs_warning_for_integer_id_not_found(self, mocker: MockerFixture):
         """A WARNING (not DEBUG) is emitted when an integer player ID is not found."""
         client = _make_client(mocker)
@@ -168,6 +179,17 @@ class TestGetPlayer:
 
         mock_logger.warning.assert_called_once()
         mock_logger.debug.assert_not_called()
+
+    async def test_returns_none_for_partial_name_not_exact_match(
+        self, mocker: MockerFixture
+    ):
+        """get_player returns None when search returns a hit but full name isn't exact."""
+        client = _make_client(mocker, _make_player(mocker, 2544, "LeBron", "James"))
+
+        # "LeBron" matches as a prefix, but full name "LeBron James" != "LeBron"
+        result = await get_player(client, "LeBron")
+
+        assert result is None
 
     async def test_returns_none_when_name_not_found(self, mocker: MockerFixture):
         """get_player returns None when no player matches the given name."""
@@ -493,6 +515,47 @@ def test_get_on_off_splits_exported():
     from fastbreak.players import get_on_off_splits  # noqa: PLC0415
 
     assert callable(get_on_off_splits)
+
+
+class TestGetOnOffSplits:
+    """Tests for get_on_off_splits standalone function."""
+
+    async def test_splits_rows_by_court_status(self, mocker: MockerFixture):
+        """get_on_off_splits partitions matching details into 'on' and 'off' lists."""
+        from fastbreak.players import get_on_off_splits  # noqa: PLC0415
+
+        target_id = 2544
+        on_row = mocker.MagicMock(vs_player_id=target_id, court_status="On")
+        off_row = mocker.MagicMock(vs_player_id=target_id, court_status="Off")
+        other_row = mocker.MagicMock(vs_player_id=999, court_status="On")
+
+        response = mocker.MagicMock()
+        response.details = [on_row, off_row, other_row]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_on_off_splits(
+            client, player_id=target_id, team_id=1610612747
+        )
+
+        assert result["on"] == [on_row]
+        assert result["off"] == [off_row]
+
+    async def test_returns_empty_when_player_not_in_details(
+        self, mocker: MockerFixture
+    ):
+        """get_on_off_splits returns empty lists when player_id has no matching rows."""
+        from fastbreak.players import get_on_off_splits  # noqa: PLC0415
+
+        response = mocker.MagicMock()
+        response.details = []
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_on_off_splits(client, player_id=99999, team_id=1610612747)
+
+        assert result["on"] == []
+        assert result["off"] == []
 
 
 def test_get_career_game_logs_exported():

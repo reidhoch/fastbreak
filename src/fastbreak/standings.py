@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from operator import attrgetter
 from typing import TYPE_CHECKING
 
 from fastbreak.seasons import get_season_from_date
@@ -96,6 +97,7 @@ async def get_conference_standings(
         print(east[0].team_name)  # 1-seed
     """
     standings = await get_standings(client, season=season, season_type=season_type)
-    filtered = [s for s in standings if s.conference == conference]
-    filtered.sort(key=lambda s: s.playoff_rank)
-    return filtered
+    return sorted(
+        (s for s in standings if s.conference == conference),
+        key=attrgetter("playoff_rank"),
+    )
