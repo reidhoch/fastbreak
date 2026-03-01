@@ -1,4 +1,9 @@
-"""Tests for box score endpoint instantiation and params."""
+"""Tests for box score endpoint paths.
+
+Construction and params() invariants are covered by the parametrized property
+test in tests/test_models_properties.py. Only the API path ClassVar is checked
+here since it cannot vary and is not exercised by model_strategy().
+"""
 
 import pytest
 
@@ -13,8 +18,6 @@ from fastbreak.endpoints import (
     BoxScoreTraditional,
     BoxScoreUsage,
 )
-
-GAME_ID = "0022500571"
 
 BOX_SCORE_ENDPOINTS = [
     (BoxScoreAdvanced, "boxscoreadvancedv3"),
@@ -31,16 +34,5 @@ BOX_SCORE_ENDPOINTS = [
 
 @pytest.mark.parametrize("endpoint_class,expected_path", BOX_SCORE_ENDPOINTS)
 class TestBoxScoreEndpoints:
-    """Tests for all box score endpoints."""
-
-    def test_init_stores_game_id(self, endpoint_class, expected_path):
-        endpoint = endpoint_class(game_id=GAME_ID)
-        assert endpoint.game_id == GAME_ID
-
-    def test_params_returns_game_id(self, endpoint_class, expected_path):
-        endpoint = endpoint_class(game_id=GAME_ID)
-        assert endpoint.params() == {"GameID": GAME_ID}
-
     def test_path_is_correct(self, endpoint_class, expected_path):
-        endpoint = endpoint_class(game_id=GAME_ID)
-        assert endpoint.path == expected_path
+        assert endpoint_class.path == expected_path

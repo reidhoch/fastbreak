@@ -23,7 +23,7 @@ Examples::
 """
 
 from collections.abc import Sequence
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 from math import pow as fpow
 
 
@@ -69,10 +69,13 @@ class LeagueAverages:
     lg_fg3m: float
     lg_tov: float
     lg_pf: float
+    _pace_denom: float = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
-        # Non-negativity: auto-discovers all fields so new ones are validated without changes here
-        negative = [f.name for f in fields(self) if getattr(self, f.name) < 0]
+        # Non-negativity: skip init=False fields (not yet assigned when this runs)
+        negative = [
+            f.name for f in fields(self) if f.init and getattr(self, f.name) < 0
+        ]
         if negative:
             vals = ", ".join(f"{n}={getattr(self, n)}" for n in negative)
             msg = f"LeagueAverages fields must be non-negative: {vals}"
@@ -93,7 +96,7 @@ class LeagueAverages:
         if self.lg_oreb > self.lg_treb:
             msg = f"lg_oreb ({self.lg_oreb}) cannot exceed lg_treb ({self.lg_treb})"
             raise ValueError(msg)
-        # Compound vop denominator must be positive
+        # Compound vop denominator must be positive; store for reuse in vop and lg_pace
         vop_denom = self.lg_fga - self.lg_oreb + self.lg_tov + 0.44 * self.lg_fta
         if vop_denom <= 0:
             msg = (
@@ -101,13 +104,12 @@ class LeagueAverages:
                 f" must be positive, got {vop_denom}"
             )
             raise ValueError(msg)
+        object.__setattr__(self, "_pace_denom", vop_denom)
 
     @property
     def vop(self) -> float:
         """Value of a Possession = lg_pts / (lg_fga - lg_oreb + lg_tov + 0.44*lg_fta)."""
-        return self.lg_pts / (
-            self.lg_fga - self.lg_oreb + self.lg_tov + 0.44 * self.lg_fta
-        )
+        return self.lg_pts / self._pace_denom
 
     @property
     def drb_pct(self) -> float:
@@ -146,7 +148,7 @@ class LeagueAverages:
         for the same time window.  For a full NBA game this gives approximately the
         same numeric value as "possessions per 48 minutes" (~95-105 for modern teams).
         """
-        return self.lg_fga - self.lg_oreb + self.lg_tov + 0.44 * self.lg_fta
+        return self._pace_denom
 
 
 def true_shooting(pts: float, fga: float, fta: float) -> float | None:
@@ -869,13 +871,21 @@ def rolling_avg(
         raise ValueError(msg)
 
     result: list[float | None] = []
-    for i in range(len(values)):
-        if i + 1 < window:
-            result.append(None)
-            continue
-        segment = values[i - window + 1 : i + 1]
-        if any(v is None for v in segment):
+    window_sum = 0.0
+    none_count = 0
+    for i, val in enumerate(values):
+        if val is None:
+            none_count += 1
+        else:
+            window_sum += val
+        if i >= window:
+            old = values[i - window]
+            if old is None:
+                none_count -= 1
+            else:
+                window_sum -= old
+        if i + 1 < window or none_count > 0:
             result.append(None)
         else:
-            result.append(sum(segment) / window)  # type: ignore[arg-type]
+            result.append(window_sum / window)
     return result

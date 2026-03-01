@@ -68,6 +68,12 @@ def is_tabular_response(data: object) -> TypeGuard[dict[str, Any]]:
     return False
 
 
+def _parse_result_set_rows(result_set: dict[str, Any]) -> list[dict[str, Any]]:
+    headers: list[str] = result_set["headers"]
+    rows: list[list[Any]] = result_set["rowSet"]
+    return [dict(zip(headers, row, strict=True)) for row in rows]
+
+
 def parse_result_set(
     data: dict[str, Any],
     index: int = 0,
@@ -92,11 +98,7 @@ def parse_result_set(
         [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]
 
     """
-    result_set = data["resultSets"][index]
-    headers: list[str] = result_set["headers"]
-    rows: list[list[Any]] = result_set["rowSet"]
-
-    return [dict(zip(headers, row, strict=True)) for row in rows]
+    return _parse_result_set_rows(data["resultSets"][index])
 
 
 def parse_result_set_by_name(
@@ -118,9 +120,7 @@ def parse_result_set_by_name(
     """
     for result_set in data["resultSets"]:
         if result_set.get("name") == name:
-            headers: list[str] = result_set["headers"]
-            rows: list[list[Any]] = result_set["rowSet"]
-            return [dict(zip(headers, row, strict=True)) for row in rows]
+            return _parse_result_set_rows(result_set)
 
     available = [rs.get("name") for rs in data["resultSets"]]
     msg = f"No resultSet named '{name}'. Available: {available}"

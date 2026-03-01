@@ -36,6 +36,29 @@ class TestRotationEntry:
         assert entry.player_pts == 12
         assert entry.pt_diff == 5
 
+    def test_parse_rotation_entry_with_null_stats(self):
+        """RotationEntry accepts None for stats when player hasn't appeared."""
+        data = {
+            "GAME_ID": "0022400001",
+            "TEAM_ID": 1610612747,
+            "TEAM_CITY": "Los Angeles",
+            "TEAM_NAME": "Lakers",
+            "PERSON_ID": 2544,
+            "PLAYER_FIRST": "LeBron",
+            "PLAYER_LAST": "James",
+            "IN_TIME_REAL": 0.0,
+            "OUT_TIME_REAL": 0.0,
+            "PLAYER_PTS": None,
+            "PT_DIFF": None,
+            "USG_PCT": None,
+        }
+
+        entry = RotationEntry.model_validate(data)
+
+        assert entry.player_pts is None
+        assert entry.pt_diff is None
+        assert entry.usg_pct is None
+
 
 class TestGameRotationResponse:
     """Tests for GameRotationResponse model."""

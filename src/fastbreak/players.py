@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from fastbreak.logging import logger
@@ -298,6 +299,7 @@ async def get_hustle_stats(
     return None
 
 
+@lru_cache(maxsize=32)
 def _season_id_to_season(season_id: str) -> str:
     """Convert NBA season_id string to YYYY-YY format.
 
@@ -410,11 +412,12 @@ async def get_on_off_splits(  # noqa: PLR0913
         season_type=season_type,
     )
     response = await client.get(endpoint)
-    rows = [r for r in response.details if r.vs_player_id == player_id]
-    return {
-        "on": [r for r in rows if r.court_status == "On"],
-        "off": [r for r in rows if r.court_status == "Off"],
-    }
+    on: list[PlayerOnCourtDetail] = []
+    off: list[PlayerOnCourtDetail] = []
+    for r in response.details:
+        if r.vs_player_id == player_id:
+            (on if r.court_status == "On" else off).append(r)
+    return {"on": on, "off": off}
 
 
 async def get_player_playtypes(

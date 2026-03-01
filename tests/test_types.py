@@ -228,6 +228,11 @@ class TestSeasonValidatorFunction:
         with pytest.raises(ValueError, match="YYYY-YY format"):
             _validate_season("invalid")
 
+    def test_raises_value_error_for_wrong_suffix(self):
+        """Season with correct format but mismatched year suffix raises ValueError."""
+        with pytest.raises(ValueError, match="suffix should be"):
+            _validate_season("2024-26")
+
     @given(data=st.text(max_size=50))
     @settings(max_examples=300)
     def test_never_crashes_on_any_string(self, data):
