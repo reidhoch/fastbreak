@@ -12,6 +12,7 @@ from fastbreak.seasons import get_season_from_date
 if TYPE_CHECKING:
     from fastbreak.clients.nba import NBAClient
     from fastbreak.metrics import LeagueAverages
+    from fastbreak.models.common_team_roster import Coach, RosterPlayer
     from fastbreak.models.league_dash_team_stats import LeagueDashTeamStatsRow
     from fastbreak.models.synergy_playtypes import TeamSynergyPlaytype
     from fastbreak.models.team_dash_lineups import LineupStats
@@ -715,7 +716,6 @@ async def get_league_averages(
         lg_fg3m=fmean(r.fg3m for r in rows),
         lg_tov=lg_tov,
         lg_pf=fmean(r.pf for r in rows),
-        lg_pace=fmean(r.fga - r.oreb + r.tov + 0.44 * r.fta for r in rows),
     )
 
 
@@ -743,6 +743,14 @@ async def get_team_playtypes(
         plays = await get_team_playtypes(client, team_id=1610612747)
         iso = next((p for p in plays if p.play_type == "Isolation"), None)
     """
+    import warnings  # noqa: PLC0415
+
+    warnings.warn(
+        "SynergyPlaytypes always returns empty on the public NBA Stats API — "
+        "play-type data is restricted. This function will return [].",
+        UserWarning,
+        stacklevel=2,
+    )
     from fastbreak.endpoints import SynergyPlaytypes  # noqa: PLC0415
 
     season = season or get_season_from_date()
@@ -755,3 +763,57 @@ async def get_team_playtypes(
         )
     )
     return [r for r in response.team_stats if r.team_id == team_id]
+
+
+async def get_team_roster(
+    client: NBAClient,
+    team_id: int,
+    season: Season | None = None,
+) -> list[RosterPlayer]:
+    """Return the current roster players for a team.
+
+    Args:
+        client: NBA API client
+        team_id: NBA team ID
+        season: Season in YYYY-YY format (defaults to current season)
+
+    Returns:
+        List of RosterPlayer objects for the team.
+
+    Examples:
+        players = await get_team_roster(client, team_id=1610612754)
+        for p in players:
+            print(p.player, p.position, p.num)
+    """
+    from fastbreak.endpoints import CommonTeamRoster  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    response = await client.get(CommonTeamRoster(team_id=team_id, season=season))
+    return response.players
+
+
+async def get_team_coaches(
+    client: NBAClient,
+    team_id: int,
+    season: Season | None = None,
+) -> list[Coach]:
+    """Return the coaching staff for a team.
+
+    Args:
+        client: NBA API client
+        team_id: NBA team ID
+        season: Season in YYYY-YY format (defaults to current season)
+
+    Returns:
+        List of Coach objects, including head coach and assistants.
+
+    Examples:
+        coaches = await get_team_coaches(client, team_id=1610612754)
+        head = next(c for c in coaches if not c.is_assistant)
+        print(head.coach_name)
+    """
+    from fastbreak.endpoints import CommonTeamRoster  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    response = await client.get(CommonTeamRoster(team_id=team_id, season=season))
+    return response.coaches

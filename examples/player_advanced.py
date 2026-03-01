@@ -50,13 +50,17 @@ async def main() -> None:
 
         if on_rows:
             on = on_rows[0]
-            print(f"  ON  court:  {on.pts:.1f} team pts/g  +/- {on.plus_minus:+.1f}  ({on.w}-{on.losses} record)")
+            print(
+                f"  ON  court:  {on.pts:.1f} team pts/g  +/- {on.plus_minus:+.1f}  ({on.w}-{on.losses} record)"
+            )
         else:
             print("  ON  court:  no data")
 
         if off_rows:
             off = off_rows[0]
-            print(f"  OFF court:  {off.pts:.1f} team pts/g  +/- {off.plus_minus:+.1f}  ({off.w}-{off.losses} record)")
+            print(
+                f"  OFF court:  {off.pts:.1f} team pts/g  +/- {off.plus_minus:+.1f}  ({off.w}-{off.losses} record)"
+            )
         else:
             print("  OFF court:  no data")
         print()

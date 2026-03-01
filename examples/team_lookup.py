@@ -16,7 +16,7 @@ from fastbreak.teams import (
 )
 
 
-async def main() -> None:  # noqa: PLR0915
+async def main() -> None:
     # ── TEAMS — full 30-team registry ───────────────────────────────
     print("=" * 60)
     print("TEAMS — 30-team registry (first 5 alphabetically)")

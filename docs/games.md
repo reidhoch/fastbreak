@@ -12,6 +12,9 @@ from fastbreak.games import (
     get_yesterdays_games,
     get_game_summary,
     get_box_scores,
+    get_box_scores_advanced,
+    get_box_scores_hustle,
+    get_box_scores_scoring,
     get_play_by_play,
 )
 ```
@@ -306,6 +309,206 @@ for game_id, bs in box_scores.items():
         f"{away.teamTricode} @ {home.teamTricode}: "
         f"{away.statistics.points} - {home.statistics.points}"
     )
+```
+
+---
+
+### `get_box_scores_advanced`
+
+```python
+async def get_box_scores_advanced(
+    client: NBAClient,
+    game_ids: list[str],
+) -> dict[str, BoxScoreAdvancedData]
+```
+
+Fetches advanced box scores for multiple games concurrently. Advanced stats include
+pace-adjusted offensive/defensive ratings, usage percentage, true shooting percentage,
+effective field goal percentage, and estimated net rating per player.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `client` | `NBAClient` | Active NBA client |
+| `game_ids` | `list[str]` | List of 10-character game ID strings |
+
+**Returns:** `dict[str, BoxScoreAdvancedData]` — keys are game IDs in the same order as `game_ids`.
+Returns an empty dict if `game_ids` is empty.
+
+Key fields on `BoxScoreAdvancedData`:
+
+| Field | Type | Description |
+|---|---|---|
+| `homeTeam` | `AdvancedTeam` | Home team with players and team-level advanced stats |
+| `awayTeam` | `AdvancedTeam` | Away team |
+
+Key fields on `AdvancedStatistics` (accessed via `player.statistics`):
+
+| Field | Type | Description |
+|---|---|---|
+| `minutes` | `str` | Minutes played as `"MM:SS"` |
+| `offensiveRating` | `float` | Individual offensive rating |
+| `defensiveRating` | `float` | Individual defensive rating |
+| `netRating` | `float` | Net rating (ortg − drtg) |
+| `usagePercentage` | `float` | Usage rate (share of team possessions used) |
+| `trueShootingPercentage` | `float` | TS% |
+| `effectiveFieldGoalPercentage` | `float` | eFG% |
+| `pace` | `float` | Pace (possessions per 40 minutes) |
+| `PIE` | `float` | Player Impact Estimate |
+
+```python
+ids = await get_game_ids(client, "2025-26")
+adv = await get_box_scores_advanced(client, ids[:3])
+for game_id, data in adv.items():
+    for p in data.homeTeam.players + data.awayTeam.players:
+        s = p.statistics
+        if s.minutes and s.minutes > "00:":
+            print(
+                f"{p.firstName} {p.familyName:<20}"
+                f"  ORTG {s.offensiveRating:.1f}"
+                f"  DRTG {s.defensiveRating:.1f}"
+                f"  USG {s.usagePercentage:.3f}"
+            )
+```
+
+---
+
+### `get_box_scores_hustle`
+
+```python
+async def get_box_scores_hustle(
+    client: NBAClient,
+    game_ids: list[str],
+) -> dict[str, BoxScoreHustleData]
+```
+
+Fetches hustle/effort box scores for multiple games concurrently. Hustle stats capture
+effort plays not tracked in traditional box scores: contested shots, deflections,
+screen assists, loose balls recovered, and box outs.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `client` | `NBAClient` | Active NBA client |
+| `game_ids` | `list[str]` | List of 10-character game ID strings |
+
+**Returns:** `dict[str, BoxScoreHustleData]` — keys are game IDs in input order.
+Returns an empty dict if `game_ids` is empty.
+
+Key fields on `BoxScoreHustleData`:
+
+| Field | Type | Description |
+|---|---|---|
+| `home_team` | `HustleTeam` | Home team with players (note: snake_case, unlike other box score models) |
+| `away_team` | `HustleTeam` | Away team |
+
+Key fields on `HustleStatistics` (accessed via `player.statistics`):
+
+| Field | Type | Description |
+|---|---|---|
+| `minutes` | `str` | Minutes played as `"MM:SS"` |
+| `contested_shots` | `int` | Total contested shots |
+| `contested_shots_2pt` | `int` | Contested 2-point shots |
+| `contested_shots_3pt` | `int` | Contested 3-point shots |
+| `deflections` | `int` | Deflections |
+| `charges_drawn` | `int` | Charges drawn |
+| `screen_assists` | `int` | Screen assists |
+| `screen_assist_points` | `int` | Points scored off screen assists |
+| `loose_balls_recovered_total` | `int` | Total loose balls recovered |
+| `box_outs` | `int` | Total box outs |
+
+> **Note:** `BoxScoreHustleData` uses snake_case for team attributes (`home_team`, `away_team`)
+> while `BoxScoreAdvancedData` and `BoxScoreScoringData` use camelCase (`homeTeam`, `awayTeam`).
+> This inconsistency is inherited from the underlying NBA Stats API response structure.
+
+```python
+hustle = await get_box_scores_hustle(client, game_ids[:1])
+data = hustle[game_ids[0]]
+players = data.home_team.players + data.away_team.players
+players.sort(
+    key=lambda p: p.statistics.contested_shots_2pt + p.statistics.contested_shots_3pt,
+    reverse=True,
+)
+for p in players[:5]:
+    s = p.statistics
+    print(
+        f"{p.first_name} {p.family_name:<20}"
+        f"  Con2 {s.contested_shots_2pt}"
+        f"  Con3 {s.contested_shots_3pt}"
+        f"  ScrAst {s.screen_assists}"
+    )
+```
+
+---
+
+### `get_box_scores_scoring`
+
+```python
+async def get_box_scores_scoring(
+    client: NBAClient,
+    game_ids: list[str],
+) -> dict[str, BoxScoreScoringData]
+```
+
+Fetches scoring-distribution box scores for multiple games concurrently. Scoring stats
+break down how a player's field goal attempts and points are distributed across zones:
+paint, mid-range, three-point arc, fast break, and second chance.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `client` | `NBAClient` | Active NBA client |
+| `game_ids` | `list[str]` | List of 10-character game ID strings |
+
+**Returns:** `dict[str, BoxScoreScoringData]` — keys are game IDs in input order.
+Returns an empty dict if `game_ids` is empty.
+
+Key fields on `BoxScoreScoringData`:
+
+| Field | Type | Description |
+|---|---|---|
+| `homeTeam` | `ScoringTeam` | Home team with players |
+| `awayTeam` | `ScoringTeam` | Away team |
+
+Key fields on `ScoringStatistics` (accessed via `player.statistics`). All values are
+**percentages** (0.0–1.0), representing the share of the player's points or attempts
+that came from each zone:
+
+| Field | Type | Description |
+|---|---|---|
+| `minutes` | `str` | Minutes played |
+| `percentageFieldGoalsAttempted2pt` | `float` | Share of FGA that were 2-pointers |
+| `percentageFieldGoalsAttempted3pt` | `float` | Share of FGA that were 3-pointers |
+| `percentagePoints2pt` | `float` | Share of points from 2-point field goals |
+| `percentagePointsMidrange2pt` | `float` | Share of points from mid-range 2s |
+| `percentagePoints3pt` | `float` | Share of points from 3-pointers |
+| `percentagePointsFastBreak` | `float` | Share of points from fast-break possessions |
+| `percentagePointsFreeThrow` | `float` | Share of points from free throws |
+| `percentagePointsOffTurnovers` | `float` | Share of points off turnovers |
+| `percentagePointsPaint` | `float` | Share of points from the paint |
+| `percentageAssisted2pt` | `float` | Share of 2PM that were assisted |
+| `percentageUnassisted2pt` | `float` | Share of 2PM that were unassisted |
+| `percentageAssisted3pt` | `float` | Share of 3PM that were assisted |
+| `percentageUnassisted3pt` | `float` | Share of 3PM that were unassisted |
+
+> **Note:** These are percentage distributions, not point totals. A player with
+> `percentagePointsPaint = 0.60` scored 60% of their points in the paint — not 60 points.
+
+```python
+scoring = await get_box_scores_scoring(client, game_ids[:1])
+data = scoring[game_ids[0]]
+for p in data.homeTeam.players + data.awayTeam.players:
+    s = p.statistics
+    if s.minutes and s.minutes > "00:":
+        print(
+            f"{p.firstName} {p.familyName:<20}"
+            f"  Paint {s.percentagePointsPaint:.1%}"
+            f"  3pt {s.percentagePoints3pt:.1%}"
+            f"  FT {s.percentagePointsFreeThrow:.1%}"
+        )
 ```
 
 ---
