@@ -416,7 +416,10 @@ async def get_on_off_splits(  # noqa: PLR0913
     off: list[PlayerOnCourtDetail] = []
     for r in response.details:
         if r.vs_player_id == player_id:
-            (on if r.court_status == "On" else off).append(r)
+            if r.court_status == "On":
+                on.append(r)
+            elif r.court_status == "Off":
+                off.append(r)
     return {"on": on, "off": off}
 
 

@@ -3,11 +3,7 @@ from fastbreak.models import LeagueStandingsResponse
 
 
 class TestLeagueStandings:
-    """Tests for LeagueStandings endpoint.
-
-    Construction, params(), and frozen-immutability are covered by property
-    tests in tests/test_models_properties.py. Only ClassVar checks remain here.
-    """
+    """Tests for LeagueStandings endpoint ClassVar attributes."""
 
     def test_path_is_correct(self):
         assert LeagueStandings.path == "leaguestandingsv3"

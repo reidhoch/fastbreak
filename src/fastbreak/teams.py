@@ -446,7 +446,7 @@ def teams_by_conference(conference: str) -> list[TeamInfo]:
     if conf not in _VALID_CONFERENCES:
         msg = f"Unknown conference: {conference!r}. Expected one of: {sorted(_VALID_CONFERENCES)}"
         raise ValueError(msg)
-    return _TEAMS_BY_CONFERENCE.get(conf, [])
+    return list(_TEAMS_BY_CONFERENCE.get(conf, []))
 
 
 def teams_by_division(division: str) -> list[TeamInfo]:
@@ -466,7 +466,7 @@ def teams_by_division(division: str) -> list[TeamInfo]:
     if div not in _VALID_DIVISIONS:
         msg = f"Unknown division: {division!r}. Expected one of: {sorted(_VALID_DIVISIONS)}"
         raise ValueError(msg)
-    return _TEAMS_BY_DIVISION.get(div, [])
+    return list(_TEAMS_BY_DIVISION.get(div, []))
 
 
 def search_teams(query: str, *, limit: int = 5) -> list[TeamInfo]:
