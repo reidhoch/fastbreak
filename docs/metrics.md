@@ -12,7 +12,7 @@ from fastbreak.metrics import (
     # Efficiency
     true_shooting, effective_fg_pct, game_score, relative_ts, relative_efg,
     # Rate stats
-    per_36, free_throw_rate, three_point_rate, ast_to_tov,
+    per_36, per_100, free_throw_rate, three_point_rate, ast_to_tov, assist_ratio,
     # Counting / thresholds
     is_double_double, is_triple_double,
     # On-floor impact
@@ -21,6 +21,12 @@ from fastbreak.metrics import (
     pace_adjusted_per, per,
     # Team ratings
     ortg, drtg, net_rtg,
+    # Win metrics
+    offensive_win_shares,
+    # Possession estimate
+    possessions,
+    # Rolling / windowed
+    rolling_avg,
     # League context
     LeagueAverages,
 )
@@ -56,7 +62,6 @@ lg = LeagueAverages(
     lg_fg3m=13.0,
     lg_tov=13.5,
     lg_pf=19.5,
-    lg_pace=97.8,
 )
 ```
 
@@ -79,7 +84,6 @@ across all fields.
 | `lg_fg3m` | League average 3-pointers made |
 | `lg_tov` | League average turnovers |
 | `lg_pf` | League average personal fouls |
-| `lg_pace` | Estimated league average possessions per game (fga - oreb + tov + 0.44·fta) |
 
 ### Computed properties
 
@@ -88,6 +92,7 @@ internally by metric functions but are also available to callers.
 
 | Property | Formula | Description |
 |---|---|---|
+| `lg_pace` | `lg_fga - lg_oreb + lg_tov + 0.44·lg_fta` | Possession estimate (Dean Oliver formula) used as the league pace proxy in PER. Numerically equivalent to possessions per game (~95–105 for modern NBA). Pass `team_pace` using the same formula applied to team totals. |
 | `vop` | `lg_pts / (lg_fga - lg_oreb + lg_tov + 0.44·lg_fta)` | Value of a Possession |
 | `drb_pct` | `(lg_treb - lg_oreb) / lg_treb` | League defensive rebound rate |
 | `factor` | `2/3 - (0.5·(lg_ast/lg_fgm)) / (2·(lg_fgm/lg_ftm))` | Assist factor used in PER |
@@ -99,8 +104,7 @@ internally by metric functions but are also available to callers.
 `__post_init__` raises `ValueError` under the following conditions:
 
 - Any field is negative.
-- Any of the denominator fields (`lg_fga`, `lg_treb`, `lg_fgm`, `lg_ftm`, `lg_pf`,
-  `lg_pace`) is zero.
+- Any of the denominator fields (`lg_fga`, `lg_treb`, `lg_fgm`, `lg_ftm`, `lg_pf`) is zero.
 - `lg_oreb > lg_treb` (offensive rebounds exceed total rebounds).
 - The `vop` compound denominator (`lg_fga - lg_oreb + lg_tov + 0.44·lg_fta`) is not
   positive.
@@ -135,6 +139,44 @@ asyncio.run(main())
 
 Pace is estimated using the Dean Oliver possession formula:
 `poss = fga - oreb + tov + 0.44 * fta`.
+
+---
+
+## FourFactors
+
+```python
+@dataclass(frozen=True, slots=True)
+class FourFactors:
+    efg_pct: float | None
+    tov_pct: float | None
+    oreb_pct: float | None
+    ftr: float | None
+```
+
+Immutable result type returned by `four_factors()`.
+
+### four_factors
+
+```python
+def four_factors(fgm: float, fg3m: float, fga: float, tov: float, fta: float, oreb: float, opp_dreb: float) -> FourFactors
+```
+
+Compute Dean Oliver's Four Factors for a single team performance.
+
+| Factor | Field | Formula |
+|---|---|---|
+| Shooting efficiency | `efg_pct` | `(FGM + 0.5×FG3M) / FGA` |
+| Ball security | `tov_pct` | `TOV / (FGA + 0.44×FTA + TOV)` |
+| Second chances | `oreb_pct` | `OREB / (OREB + opp_DREB)` |
+| Getting to the line | `ftr` | `FTA / FGA` |
+
+Note: `oreb_pct` here is the **team-level** formula (no per-minute correction) — different from the player-level `oreb_pct()` function also in this module.
+
+```python
+ff = four_factors(fgm=40, fg3m=12, fga=88, tov=14, fta=20, oreb=10, opp_dreb=32)
+print(ff.efg_pct)   # 0.523
+print(ff.tov_pct)   # 0.126
+```
 
 ---
 
@@ -175,6 +217,9 @@ True Shooting percentage — shooting efficiency that accounts for all three sho
 The 0.44 multiplier on FTA reflects that not every free-throw trip consumes a full
 possession (e.g., an and-one trip costs roughly 0.44 possessions rather than 1.0).
 
+Values above 1.0 are valid in rare edge cases (player draws many and-one free throws
+on a very small FGA sample). Always check before clamping.
+
 Returns `None` when both `fga` and `fta` are zero.
 
 ```python
@@ -194,6 +239,9 @@ Effective Field Goal percentage — adjusts FG% to give proper credit for 3-poin
 which are worth 1.5× a made 2-pointer.
 
 **Formula:** `eFG% = (fgm + 0.5 * fg3m) / fga`
+
+Values above 1.0 are valid on small samples where a player makes many 3-pointers
+relative to their total attempts (e.g., 3-for-3 from three with 0 two-point attempts).
 
 Returns `None` when `fga` is zero.
 
@@ -288,6 +336,29 @@ reb_per_36 = per_36(stat=8,  minutes=30)  # → 9.6
 
 ---
 
+#### `per_100`
+
+```python
+def per_100(stat: float, poss: float) -> float | None
+```
+
+Normalize a counting stat to a per-100-possessions rate.
+
+`per_100 = stat × 100 / poss`
+
+Prefer per-100 over per-36 when comparing players across eras with different league paces (e.g., 1970s ~105 poss/game vs. 2020s ~100 poss/game).
+
+To get team-level possessions: `possessions(fga, oreb, tov, fta)` from this module.
+
+Returns `None` when possessions are zero.
+
+```python
+pts_per_100 = per_100(stat=25, poss=96.4)  # → 25.934
+reb_per_100 = per_100(stat=10, poss=100)   # → 10.0
+```
+
+---
+
 #### `free_throw_rate`
 
 ```python
@@ -327,6 +398,24 @@ tpar = three_point_rate(fg3a=9, fga=18)  # → 0.5
 
 ---
 
+#### `tov_pct`
+
+```python
+def tov_pct(fga: float, fta: float, tov: float) -> float | None
+```
+
+Turnover percentage — share of possessions ending in a turnover.
+
+`TOV% = TOV / (FGA + 0.44 × FTA + TOV)`
+
+The denominator is Dean Oliver's possession estimate (same 0.44 FTA multiplier as `true_shooting` and `usage_pct`). Together with `effective_fg_pct`, `free_throw_rate`, and the team offensive rebound rate, this completes the Four Factors framework.
+
+Returns a **0–1 fraction** (e.g. `0.126` for 12.6%). This matches the scale used by `FourFactorsStatistics.teamTurnoverPercentage` (from the box score four-factors endpoint). It does **not** match `AdvancedTeamStatistics.estimatedTeamTurnoverPercentage`, which the NBA advanced box-score endpoint returns on a **0–100 scale** (e.g. `12.6`). Multiply by 100 before comparing against that field.
+
+Returns `None` when all three inputs are zero.
+
+---
+
 #### `ast_to_tov`
 
 ```python
@@ -342,6 +431,30 @@ Returns `None` when `tov` is zero to avoid division by zero.
 
 ```python
 ratio = ast_to_tov(ast=9, tov=3)  # → 3.0
+```
+
+---
+
+#### `assist_ratio`
+
+```python
+def assist_ratio(ast: float, fga: float, fta: float, tov: float) -> float | None
+```
+
+Assist Ratio — the percentage of a player's total possessions used that end in an assist.
+Unlike `ast_to_tov`, this accounts for volume by normalising against all possession-ending
+events, not just turnovers.
+
+**Formula:** `AST Ratio = AST / (FGA + 0.44×FTA + AST + TOV) × 100`
+
+The denominator includes field goal attempts, the FTA possession estimate, assists, and
+turnovers — everything that "uses" a possession for or by the player.
+
+Returns `None` when the denominator is zero (no activity at all).
+
+```python
+ratio = assist_ratio(ast=8, fga=0, fta=0, tov=3)   # pure passer: → 72.7
+ratio = assist_ratio(ast=8, fga=18, fta=6, tov=2)  # typical guard
 ```
 
 ---
@@ -567,7 +680,7 @@ fast-paced and slow-paced teams on equal footing.
 | `mp` | Minutes played |
 | `team_ast` | Team assists (same game or period as the player stats) |
 | `team_fgm` | Team field goals made |
-| `team_pace` | Team pace (possessions per 48 minutes) |
+| `team_pace` | Team pace using the same possession formula as `lg.lg_pace`: `fga - oreb + tov + 0.44·fta` applied to team totals |
 | `lg` | `LeagueAverages` for the season |
 
 Returns `None` when `mp`, `team_fgm`, or `team_pace` is zero.
@@ -604,6 +717,28 @@ Returns `None` when `lg_aper` is zero.
 Team ratings use the Dean Oliver possession estimate:
 `possessions = fga - oreb + tov + 0.44 * fta`.
 
+#### `possessions`
+
+```python
+def possessions(fga: float, oreb: float, tov: float, fta: float) -> float
+```
+
+Estimate the number of possessions using Dean Oliver's formula. Accounts for offensive
+rebounds (which extend a possession rather than ending it) and the fractional FTA
+multiplier (not all free-throw trips are standalone possessions).
+
+**Formula:** `poss = fga - oreb + tov + 0.44 × fta`
+
+This function never returns `None` — zero inputs simply produce zero possessions. Use
+the result as the denominator for `per_100`, or pass it to `ortg`/`drtg` implicitly by
+passing the raw counting stats.
+
+```python
+poss = possessions(fga=88, oreb=10, tov=13, fta=22)  # → 103.68
+```
+
+---
+
 #### `ortg`
 
 ```python
@@ -624,14 +759,14 @@ off_rtg = ortg(pts=112, fga=85, oreb=9, tov=13, fta=20)
 #### `drtg`
 
 ```python
-def drtg(opp_pts: float, fga: float, oreb: float, tov: float, fta: float) -> float | None
+def drtg(opp_pts: float, opp_fga: float, opp_oreb: float, opp_tov: float, opp_fta: float) -> float | None
 ```
 
-Defensive Rating — opponent points allowed per 100 of the team's own possessions. Lower
-is better.
+Defensive Rating — opponent points allowed per 100 opponent possessions. Lower is better.
 
-Note: the possession estimate uses the team's own counting stats (fga, oreb, tov, fta),
-not the opponent's, because possessions are assumed to be symmetric over a full game.
+The possession estimate uses the opponent's own counting stats (`opp_fga`, `opp_oreb`,
+`opp_tov`, `opp_fta`), mirroring the way `ortg` uses the team's own counting stats for
+the offensive possession estimate.
 
 Returns `None` when estimated possessions are zero.
 
@@ -651,6 +786,127 @@ Returns `None` when either input is `None`.
 
 ```python
 nr = net_rtg(ortg_val=114.2, drtg_val=110.8)  # → 3.4
+```
+
+---
+
+#### `offensive_win_shares`
+
+```python
+def offensive_win_shares(
+    pts: float, fga: float, fta: float, tov: float, lg: LeagueAverages,
+) -> float | None
+```
+
+Offensive Win Shares — the player's estimated contribution to team wins through offense,
+following the Basketball-Reference method.
+
+**Formula:**
+```
+player_poss        = 0.96 × (fga + tov + 0.44 × fta)
+marginal_offense   = pts − 0.92 × lg.vop × player_poss
+marginal_pts_per_win = 0.32 × lg.lg_pts
+OWS = marginal_offense / marginal_pts_per_win
+```
+
+The `0.96` factor strips out team offensive rebound extensions (which belong to the team,
+not the individual). `0.92 × vop` is the replacement-level threshold — a player must
+generate 8% more value than average replacement level to produce positive win shares.
+
+Returns `None` when `lg.lg_pts` is zero.
+
+```python
+ows = offensive_win_shares(pts=28, fga=18, fta=6, tov=3, lg=lg)  # positive → above replacement
+```
+
+---
+
+#### `pythagorean_win_pct`
+
+```python
+def pythagorean_win_pct(pts: float, opp_pts: float, exp: float = 13.91) -> float | None
+```
+
+Expected win% from point differential (Pythagorean win expectation).
+
+`win% = pts^exp / (pts^exp + opp_pts^exp)`
+
+The default exponent (13.91) is the basketball-specific correction; the original Pythagorean formula uses `exp=2`.
+
+Pairs naturally with `TeamStanding.points_pg` and `TeamStanding.opp_points_pg`:
+
+```python
+expected = pythagorean_win_pct(s.points_pg, s.opp_points_pg)
+luck = s.win_pct - expected   # positive = "lucky", negative = "unlucky"
+```
+
+Returns `None` when both inputs are zero.
+
+---
+
+### Rolling / Windowed
+
+#### `rolling_avg`
+
+```python
+def rolling_avg(
+    values: Sequence[float | None],
+    window: int,
+) -> list[float | None]
+```
+
+Returns a sliding-window average over a sequence of per-game stat values. This is a
+pure function — no API call is needed.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `values` | `Sequence[float \| None]` | Per-game stat values in chronological order. Pass `None` for games where the stat is unavailable (DNP, injury, missing data). |
+| `window` | `int` | Number of consecutive games in each window. Must be ≥ 1. |
+
+**Returns:** `list[float | None]` — same length as `values`. Each position holds the
+mean of the `window` values ending at that position, or `None` in two cases:
+
+| Cause | Description |
+|---|---|
+| Warm-up | Fewer than `window` games have elapsed (positions 0 through `window - 2`) |
+| Propagation | At least one `None` falls within the window |
+
+**Raises:** `ValueError` if `window < 1`.
+
+```python
+from fastbreak.metrics import rolling_avg
+
+pts = [22.0, 18.0, 30.0, None, 25.0, 28.0, 15.0, 24.0]
+avgs_3 = rolling_avg(pts, window=3)
+# [None, None, 23.33, None, None, None, 22.67, 22.33]
+#  ^warm ^warm  ^ok   ^DNP  ^prop ^prop  ^ok    ^ok
+
+avgs_5 = rolling_avg(pts, window=5)
+# [None, None, None, None, None, None, None, None]
+# All None — the DNP at index 3 is inside every 5-game window until index 7
+```
+
+**Common pattern — rolling average from a player game log:**
+
+```python
+from fastbreak.clients import NBAClient
+from fastbreak.metrics import rolling_avg
+from fastbreak.players import get_player_game_log
+
+async def main() -> None:
+    async with NBAClient() as client:
+        games = await get_player_game_log(client, player_id=201939)  # Curry
+
+    # Game log is reverse-chronological; reverse for plotting
+    pts = [float(g.pts) for g in reversed(games)]
+    avgs = rolling_avg(pts, window=5)
+
+    print(f"{'Game':>5}  {'Pts':>5}  {'5-game avg':>10}")
+    for i, (raw, avg) in enumerate(zip(pts, avgs, strict=True), start=1):
+        avg_str = f"{avg:.2f}" if avg is not None else "    warm"
+        print(f"  {i:>5}  {raw:>5.1f}  {avg_str:>10}")
 ```
 
 ---
@@ -677,7 +933,6 @@ lg = LeagueAverages(
     lg_fg3m=13.1,
     lg_tov=13.3,
     lg_pf=19.2,
-    lg_pace=97.6,
 )
 
 # Hypothetical game log: (pts, fga, fta)
@@ -704,12 +959,24 @@ for i, (pts, fga, fta) in enumerate(game_log, 1):
 
 ### Example 2: Full PER pipeline with live API data
 
-This example fetches real data from the API and computes PER for a player's season.
+PER is a two-step calculation:
+
+1. Call `pace_adjusted_per()` for **every** qualifying player in the league to produce an
+   aPER value per player.
+2. Compute the minutes-weighted league-average aPER (`lg_aper`), then call `per()` to
+   normalise each player's aPER to the 15.0 baseline.
+
+Using a single player's own games to compute `lg_aper` is incorrect — it normalises the
+player against themselves, pushing every game's PER toward 15 regardless of quality.
+`lg_aper` must be derived from **all players** for the result to be meaningful.
+
+The example below shows step 1 (computing aPER) for one player. Step 2 requires
+repeating the same loop across all qualified players.
 
 ```python
 import asyncio
 from fastbreak.clients import NBAClient
-from fastbreak.teams import get_league_averages, get_team_stats
+from fastbreak.teams import get_league_averages
 from fastbreak.players import get_player_game_log
 from fastbreak.metrics import pace_adjusted_per, per
 
@@ -721,13 +988,11 @@ async def main():
         lg = await get_league_averages(client)
         log = await get_player_game_log(client, player_id=PLAYER_ID)
 
-    apers = []
-    total_minutes = 0.0
+    apers: list[tuple[float, float]] = []
 
     for game in log:
-        # game_score requires (pts,fgm,fga,ftm,fta,oreb,dreb,stl,ast,blk,pf,tov)
-        # For aPER we also need team_ast, team_fgm, team_pace
-        # Here we use placeholder team stats; in production, join against box score data
+        # For aPER we also need team_ast, team_fgm, team_pace.
+        # Here we use league-average proxies; in production, join against team box scores.
         aper = pace_adjusted_per(
             fgm=game.fgm,
             fga=game.fga,
@@ -749,20 +1014,23 @@ async def main():
         )
         if aper is not None and game.minutes is not None and game.minutes > 0:
             apers.append((aper, game.minutes))
-            total_minutes += game.minutes
 
-    if not apers or total_minutes == 0:
+    if not apers:
         print("Insufficient data")
         return
 
-    # Weighted league-average aPER (simplified: use this player's own weighted mean)
-    # In a full implementation, compute this across ALL players in the league
-    lg_aper = sum(a * m for a, m in apers) / total_minutes
-
+    # Step 1 complete: print aPER per game.
+    print(f"{'Min':>4}  {'aPER':>7}")
     for aper_val, minutes in apers[:5]:
-        player_per = per(aper=aper_val, lg_aper=lg_aper)
-        if player_per is not None:
-            print(f"  {minutes:.0f} min  aPER={aper_val:.3f}  PER={player_per:.1f}")
+        print(f"  {minutes:>4.0f}  {aper_val:>7.3f}")
+
+    # Step 2: to convert aPER → PER you need lg_aper computed across all players:
+    #
+    #   all_apers = [(aper_val, minutes), ...]   # repeat above for every player
+    #   total_mp  = sum(m for _, m in all_apers)
+    #   lg_aper   = sum(a * m for a, m in all_apers) / total_mp
+    #
+    #   player_per = per(aper=aper_val, lg_aper=lg_aper)
 
 asyncio.run(main())
 ```
@@ -775,18 +1043,22 @@ counting stats, using only hardcoded numbers.
 ```python
 from fastbreak.metrics import ortg, drtg, net_rtg
 
-# Example game box score
-team_pts      = 115
-team_fga      = 87
-team_oreb     = 8
-team_tov      = 12
-team_fta      = 24
+# Team's box score
+team_pts  = 115
+team_fga  = 87
+team_oreb = 8
+team_tov  = 12
+team_fta  = 24
 
-opponent_pts  = 108
-# possession estimate uses the team's own counting stats for both sides
+# Opponent's box score (needed for the opponent possession estimate in drtg)
+opp_pts  = 108
+opp_fga  = 85
+opp_oreb = 9
+opp_tov  = 14
+opp_fta  = 20
 
 off_rtg = ortg(pts=team_pts, fga=team_fga, oreb=team_oreb, tov=team_tov, fta=team_fta)
-def_rtg = drtg(opp_pts=opponent_pts, fga=team_fga, oreb=team_oreb, tov=team_tov, fta=team_fta)
+def_rtg = drtg(opp_pts=opp_pts, opp_fga=opp_fga, opp_oreb=opp_oreb, opp_tov=opp_tov, opp_fta=opp_fta)
 net     = net_rtg(off_rtg, def_rtg)
 
 if off_rtg and def_rtg and net:

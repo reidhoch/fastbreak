@@ -74,7 +74,7 @@ ignore = ["COM812", "D", "E501", "N815"]
 
 [tool.ruff.lint.per-file-ignores]
 "example.py" = ["T201"]    # Allow print in example file
-"examples/*.py" = ["T201"] # Allow print in examples directory
+"examples/*.py" = ["T201", "PLR0915"] # Allow print and long functions in examples directory
 
 [tool.ruff.lint.isort]
 known-first-party = ["fastbreak"]

@@ -6,6 +6,8 @@ Part 3 — pure computation: on-floor impact metrics with team context.
 Part 4 — pure computation: full PER calculation (pace-adjusted + normalized).
 Part 5 — live API: game score leaderboard for yesterday's games.
 Part 6 — live API: usage & on-floor impact from real box score data.
+Part 7 — pure computation: team offensive / defensive / net ratings.
+Part 8 — pure computation: rolling averages with DNP and warm-up handling.
 """
 
 import asyncio
@@ -33,6 +35,7 @@ from fastbreak.metrics import (
     per_36,
     relative_efg,
     relative_ts,
+    rolling_avg,
     stl_pct,
     three_point_rate,
     true_shooting,
@@ -56,7 +59,6 @@ NBA_2024_25 = LeagueAverages(
     lg_fg3m=13.0,
     lg_tov=14.0,
     lg_pf=20.0,
-    lg_pace=100.0,
 )
 
 
@@ -203,10 +205,18 @@ def demo_rate_stats() -> None:
 
     print()
     print("  Notes:")
-    print("    per_36  — normalises to 36 min so bench and starter minutes are comparable")
-    print("    FTr     — FTA/FGA; anything above 0.40 and the defense is fouling to stop him")
-    print("    3PAr    — share of FGA that are threes; above 0.50 = lives behind the arc")
-    print("    A/TO    — assists per turnover; good playmakers stay above 2.0, elite above 3.0")
+    print(
+        "    per_36  — normalises to 36 min so bench and starter minutes are comparable"
+    )
+    print(
+        "    FTr     — FTA/FGA; anything above 0.40 and the defense is fouling to stop him"
+    )
+    print(
+        "    3PAr    — share of FGA that are threes; above 0.50 = lives behind the arc"
+    )
+    print(
+        "    A/TO    — assists per turnover; good playmakers stay above 2.0, elite above 3.0"
+    )
     print()
 
 
@@ -563,21 +573,69 @@ def demo_team_ratings() -> None:
     print("Part 7 — Team Offensive / Defensive / Net Rating")
     print("=" * 60)
 
-    # Fabricated game totals for two contrasting performances
-    games: list[tuple[str, float, float, float, float, float, float]] = [
-        # label,    pts, opp_pts, fga, oreb,  tov,  fta
-        ("Blowout win", 130, 108, 90, 12, 14, 22),
-        ("Close loss", 107, 111, 88, 9, 16, 18),
+    # Fabricated game totals for two contrasting performances.
+    # Each row: label, team pts/fga/oreb/tov/fta, opp pts/fga/oreb/tov/fta
+    games: list[tuple[str, float, float, float, float, float, float, float, float, float, float, float]] = [
+        # label,        pts, fga, oreb, tov, fta,  opp_pts, opp_fga, opp_oreb, opp_tov, opp_fta
+        ("Blowout win", 130,  90,   12,  14,  22,     108,      85,        8,      17,      16),
+        ("Close loss",  107,  88,    9,  16,  18,     111,      89,       11,      13,      22),
     ]
 
-    for label, pts, opp_pts, fga, oreb, tov, fta in games:
+    for label, pts, fga, oreb, tov, fta, opp_pts, opp_fga, opp_oreb, opp_tov, opp_fta in games:
         o = ortg(pts=pts, fga=fga, oreb=oreb, tov=tov, fta=fta)
-        d = drtg(opp_pts=opp_pts, fga=fga, oreb=oreb, tov=tov, fta=fta)
+        d = drtg(opp_pts=opp_pts, opp_fga=opp_fga, opp_oreb=opp_oreb, opp_tov=opp_tov, opp_fta=opp_fta)
         n = net_rtg(ortg_val=o, drtg_val=d)
         print(f"\n  {label}:")
         print(f"    ORTG:    {o:.1f}" if o is not None else "    ORTG:    N/A")
         print(f"    DRTG:    {d:.1f}" if d is not None else "    DRTG:    N/A")
         print(f"    Net RTG: {n:+.1f}" if n is not None else "    Net RTG: N/A")
+    print()
+
+
+# ---------------------------------------------------------------------------
+# Part 8: rolling average — no API call required
+# ---------------------------------------------------------------------------
+
+
+def demo_rolling_avg() -> None:
+    """Show rolling_avg over a fabricated 10-game scoring sequence."""
+    print("=" * 60)
+    print("Part 8 — Rolling average over a scoring sequence")
+    print("=" * 60)
+
+    # Fabricated 10-game scoring streak with one missed game (None)
+    pts: list[float | None] = [
+        18.0,
+        22.0,
+        15.0,
+        None,
+        30.0,
+        28.0,
+        12.0,
+        25.0,
+        19.0,
+        24.0,
+    ]
+
+    for window in (3, 5):
+        avgs = rolling_avg(pts, window=window)
+        print(f"\n  {window}-game rolling average:")
+        print(f"  {'Game':>5}  {'Pts':>5}  {'Avg':>7}")
+        print("  " + "-" * 22)
+        for i, (raw, avg) in enumerate(zip(pts, avgs, strict=True), start=1):
+            raw_str = f"{raw:.1f}" if raw is not None else " DNP"
+            if avg is not None:
+                avg_str = f"{avg:.2f}"
+            elif i < window:
+                avg_str = "  warm"  # still in warm-up period
+            else:
+                avg_str = "   n/a"  # None propagated from a DNP within the window
+            print(f"  {i:>5}  {raw_str:>5}  {avg_str:>7}")
+
+    print()
+    print("  Notes:")
+    print("    'warm' = fewer than window games played yet (warm-up period).")
+    print("    'n/a'  = a DNP/missing value within the window propagates None.")
     print()
 
 
@@ -587,6 +645,7 @@ async def main() -> None:
     demo_on_floor_metrics()
     demo_per_calculation()
     demo_team_ratings()
+    demo_rolling_avg()
 
     yesterday = (
         datetime.now(tz=UTC).astimezone().date() - timedelta(days=1)

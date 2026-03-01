@@ -36,4 +36,8 @@ class AdvancedStatistics(PandasMixin, PolarsMixin, BaseModel):
 class AdvancedTeamStatistics(AdvancedStatistics):
     """Advanced statistics for a team in a box score."""
 
+    # NBA advanced box-score endpoint returns this on a 0-100 scale (e.g. 12.6
+    # for 12.6%), unlike FourFactorsStatistics.teamTurnoverPercentage which uses
+    # a 0-1 fraction. metrics.tov_pct() also returns 0-1; multiply by 100 before
+    # comparing against this field.
     estimatedTeamTurnoverPercentage: float = Field(ge=0.0, le=100.0)

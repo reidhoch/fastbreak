@@ -12,13 +12,13 @@ class MatchupStatistics(PandasMixin, PolarsMixin, BaseModel):
     matchup_minutes_sort: float = Field(ge=0.0, alias="matchupMinutesSort")
     partial_possessions: float = Field(ge=0.0, alias="partialPossessions")
     percentage_defender_total_time: float = Field(
-        ge=0.0, le=1.0, alias="percentageDefenderTotalTime"
+        ge=0.0, alias="percentageDefenderTotalTime"
     )
     percentage_offensive_total_time: float = Field(
-        ge=0.0, le=1.0, alias="percentageOffensiveTotalTime"
+        ge=0.0, alias="percentageOffensiveTotalTime"
     )
     percentage_total_time_both_on: float = Field(
-        ge=0.0, le=1.0, alias="percentageTotalTimeBothOn"
+        ge=0.0, alias="percentageTotalTimeBothOn"
     )
     switches_on: int = Field(ge=0, alias="switchesOn")
     player_points: int = Field(ge=0, alias="playerPoints")

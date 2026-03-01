@@ -11,7 +11,7 @@ from fastbreak.players import (
 )
 
 
-async def main() -> None:  # noqa: PLR0915
+async def main() -> None:
     async with NBAClient() as client:
         # 1. Search by partial name — returns closest matches first
         print("=" * 60)

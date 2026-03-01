@@ -12,8 +12,12 @@ class FourFactorsStatistics(PandasMixin, PolarsMixin, BaseModel):
     """
 
     minutes: str
-    effectiveFieldGoalPercentage: float = Field(ge=0.0, le=1.0)
+    # eFG% can exceed 1.0 on small samples with many 3-pointers; no upper bound.
+    effectiveFieldGoalPercentage: float = Field(ge=0.0)
     freeThrowAttemptRate: float = Field(ge=0.0)
+    # Box score four-factors endpoint returns TOV% as a 0-1 fraction (e.g.
+    # 0.126 for 12.6%), unlike AdvancedTeamStatistics.estimatedTeamTurnoverPercentage
+    # which the advanced endpoint returns on a 0-100 scale.
     teamTurnoverPercentage: float = Field(ge=0.0, le=1.0)
     offensiveReboundPercentage: float = Field(ge=0.0, le=1.0)
     oppEffectiveFieldGoalPercentage: float = Field(ge=0.0, le=1.0)

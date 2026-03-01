@@ -444,6 +444,14 @@ async def get_player_playtypes(
         for p in sorted(plays, key=lambda x: x.poss, reverse=True):
             print(p.play_type, p.ppp)
     """
+    import warnings  # noqa: PLC0415
+
+    warnings.warn(
+        "SynergyPlaytypes always returns empty on the public NBA Stats API — "
+        "play-type data is restricted. This function will return [].",
+        UserWarning,
+        stacklevel=2,
+    )
     from fastbreak.endpoints import SynergyPlaytypes  # noqa: PLC0415
     from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
 

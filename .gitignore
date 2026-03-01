@@ -12,6 +12,9 @@ wheels/
 # Auto-generated version file (hatch-vcs)
 src/fastbreak/_version.py
 
+# Plans
+docs/plans/
+
 # Testing and coverage
 .coverage
 htmlcov/
@@ -38,13 +41,14 @@ htmlcov/
 
 # Claude
 .claude/
+CLAUDE.md
+memory/
 
 # Complexipy
 .complexipy_cache/
 
-# CodeQL
+# Static analysis skill outputs (CodeQL + Semgrep)
+static_analysis_*/
 codeql_*.db/
-
-# Semgrep
 semgrep-results-*/
 *.sarif

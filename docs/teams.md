@@ -15,6 +15,7 @@ from fastbreak.teams import (
     # Async API helpers
     get_team_game_log, get_team_stats, get_lineup_stats,
     get_lineup_net_ratings, get_league_averages, get_team_playtypes,
+    get_team_roster, get_team_coaches,
 )
 ```
 
@@ -460,6 +461,101 @@ Returns play-type breakdown stats for a single team, filtered from the full Syne
 | `fgm`             | `float` | Field goals made                       |
 | `fga`             | `float` | Field goals attempted                  |
 | `fgmx`            | `float` | Missed field goals                     |
+
+---
+
+### `get_team_roster`
+
+```python
+async def get_team_roster(
+    client: NBAClient,
+    team_id: int,
+    season: Season | None = None,
+) -> list[RosterPlayer]
+```
+
+Returns the current roster players for a team using the `CommonTeamRoster` endpoint.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `client` | `NBAClient` | required | Active NBA client |
+| `team_id` | `int` | required | NBA team ID |
+| `season` | `Season \| None` | current season | Season in `YYYY-YY` format |
+
+**Returns:** `list[RosterPlayer]`
+
+Key fields on `RosterPlayer`:
+
+| Field | Type | Description |
+|---|---|---|
+| `player_id` | `int` | NBA player ID |
+| `player` | `str` | Player full name |
+| `num` | `str` | Jersey number |
+| `position` | `str` | Position abbreviation (e.g. `"G"`, `"F"`, `"C"`, `"G-F"`) |
+| `height` | `str` | Height string (e.g. `"6-6"`) |
+| `weight` | `str` | Weight in pounds (e.g. `"215"`) |
+| `birth_date` | `str` | Birth date string |
+| `age` | `float` | Age at start of season |
+| `exp` | `str` | Years of NBA experience (`"R"` for rookie) |
+| `school` | `str` | College attended |
+| `how_acquired` | `str \| None` | How the player joined the team |
+
+```python
+players = await get_team_roster(client, team_id=1610612754)
+for p in players:
+    print(f"  #{p.num:<3} {p.player:<25} {p.position:<5} {p.height}  {p.weight} lbs")
+```
+
+---
+
+### `get_team_coaches`
+
+```python
+async def get_team_coaches(
+    client: NBAClient,
+    team_id: int,
+    season: Season | None = None,
+) -> list[Coach]
+```
+
+Returns the coaching staff for a team. Uses the same `CommonTeamRoster` endpoint as
+`get_team_roster()` — both roster and coaches are returned in a single API call.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `client` | `NBAClient` | required | Active NBA client |
+| `team_id` | `int` | required | NBA team ID |
+| `season` | `Season \| None` | current season | Season in `YYYY-YY` format |
+
+**Returns:** `list[Coach]` — includes head coach and all assistant coaches.
+
+Key fields on `Coach`:
+
+| Field | Type | Description |
+|---|---|---|
+| `coach_id` | `int` | Coach ID |
+| `first_name` | `str` | First name |
+| `last_name` | `str` | Last name |
+| `coach_name` | `str` | Full name |
+| `is_assistant` | `int` | `0` = head coach, `1` = assistant |
+| `coach_type` | `str` | Role description (e.g. `"Head Coach"`, `"Assistant Coach"`) |
+| `sort_sequence` | `int \| None` | Display sort order |
+
+```python
+coaches = await get_team_coaches(client, team_id=1610612754)
+for c in coaches:
+    role = "Head Coach" if c.is_assistant == 0 else f"Assistant ({c.coach_type})"
+    print(f"  {c.coach_name:<30}  {role}")
+```
+
+> **Note:** `get_team_roster()` and `get_team_coaches()` each make a separate API request
+> to the same `CommonTeamRoster` endpoint. If you need both the roster and coaching staff,
+> call `CommonTeamRoster` directly once and read both `response.players` and `response.coaches`
+> from the single response.
 
 ---
 

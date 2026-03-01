@@ -681,3 +681,116 @@ class TestGetLeagueAverages:
 
         assert isinstance(result, LeagueAverages)
         assert result.lg_pts == 115.0
+
+
+from fastbreak.teams import get_team_coaches, get_team_roster
+
+
+def _make_roster_client(mocker: MockerFixture, players: list, coaches: list):
+    """Return a NBAClient whose .get() resolves to a mock CommonTeamRosterResponse."""
+    response = mocker.MagicMock()
+    response.players = players
+    response.coaches = coaches
+    client = NBAClient(session=mocker.MagicMock())
+    client.get = mocker.AsyncMock(return_value=response)
+    return client
+
+
+class TestGetTeamRoster:
+    """Tests for get_team_roster()."""
+
+    async def test_returns_player_list(self, mocker: MockerFixture):
+        """get_team_roster returns the players list from the response."""
+        player = mocker.MagicMock()
+        client = _make_roster_client(mocker, [player], [])
+
+        result = await get_team_roster(client, team_id=1610612754)
+
+        assert result == [player]
+
+    async def test_returns_empty_list_when_no_players(self, mocker: MockerFixture):
+        """get_team_roster returns [] when the roster is empty."""
+        client = _make_roster_client(mocker, [], [])
+
+        result = await get_team_roster(client, team_id=1610612754)
+
+        assert result == []
+
+    async def test_passes_team_id_to_endpoint(self, mocker: MockerFixture):
+        """get_team_roster passes team_id to CommonTeamRoster."""
+        client = _make_roster_client(mocker, [], [])
+
+        await get_team_roster(client, team_id=1610612754)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.team_id == 1610612754
+
+    async def test_passes_season_to_endpoint(self, mocker: MockerFixture):
+        """get_team_roster passes season to CommonTeamRoster."""
+        client = _make_roster_client(mocker, [], [])
+
+        await get_team_roster(client, team_id=1610612754, season="2023-24")
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.season == "2023-24"
+
+    async def test_defaults_season_to_current(self, mocker: MockerFixture):
+        """get_team_roster defaults to current season when season is None."""
+        from fastbreak.seasons import get_season_from_date
+
+        client = _make_roster_client(mocker, [], [])
+
+        await get_team_roster(client, team_id=1610612754)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.season == get_season_from_date()
+
+
+class TestGetTeamCoaches:
+    """Tests for get_team_coaches()."""
+
+    async def test_returns_coach_list(self, mocker: MockerFixture):
+        """get_team_coaches returns the coaches list from the response."""
+        coach = mocker.MagicMock()
+        client = _make_roster_client(mocker, [], [coach])
+
+        result = await get_team_coaches(client, team_id=1610612754)
+
+        assert result == [coach]
+
+    async def test_passes_team_id_to_endpoint(self, mocker: MockerFixture):
+        """get_team_coaches passes team_id to CommonTeamRoster."""
+        client = _make_roster_client(mocker, [], [])
+
+        await get_team_coaches(client, team_id=1610612754)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.team_id == 1610612754
+
+    async def test_returns_empty_list_when_no_coaches(self, mocker: MockerFixture):
+        """get_team_coaches returns [] when coaching staff is empty."""
+        client = _make_roster_client(mocker, [], [])
+
+        result = await get_team_coaches(client, team_id=1610612754)
+
+        assert result == []
+
+    async def test_passes_season_to_endpoint(self, mocker: MockerFixture):
+        """get_team_coaches passes season to CommonTeamRoster."""
+        client = _make_roster_client(mocker, [], [])
+
+        await get_team_coaches(client, team_id=1610612754, season="2023-24")
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.season == "2023-24"
+
+    async def test_defaults_season_to_current(self, mocker: MockerFixture):
+        """get_team_coaches defaults to current season when season is None."""
+        from fastbreak.seasons import get_season_from_date
+
+        client = _make_roster_client(mocker, [], [])
+
+        await get_team_coaches(client, team_id=1610612754)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.season == get_season_from_date()
