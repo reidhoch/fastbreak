@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.8] — 2026-03-01
+
+### ✨ Features
+
+**`fastbreak.standings`** — new module for league standings:
+- `get_standings()` — all 30 teams for a season/season type
+- `get_conference_standings()` — single conference, sorted by playoff rank
+- `magic_number()` — clinching magic number for a leading team over a specific opponent
+
+**`fastbreak.metrics`** — expanded analytics:
+- `tov_pct()` — turnover percentage (returns 0–1 fraction, consistent with four-factors endpoint)
+- `FourFactors` dataclass and `four_factors()` — Dean Oliver's four factors in one call
+- `assist_ratio()` — assists per 100 offensive plays (matches NBA v3 box score field)
+- `per_100()` — normalize any counting stat to a per-100-possessions rate
+- `possessions()` — Dean Oliver possession estimate, now public (renamed from `_possessions`)
+- `offensive_win_shares()` — player offensive win shares (Basketball-Reference method)
+- `pythagorean_win_pct()` — Pythagorean win expectation (default exponent: 13.91)
+
+**`fastbreak.games`** — new batch box score helpers:
+- `get_box_scores_advanced()`, `get_box_scores_hustle()`, `get_box_scores_scoring()`
+
+**`fastbreak.teams`** — new roster helpers:
+- `get_team_roster()` — current roster players for a team
+- `get_team_coaches()` — full coaching staff (head coach and assistants)
+
+### 🐛 Bug Fixes
+
+- **`drtg()`**: Fixed to use opponent stats (`opp_fga`, `opp_oreb`, `opp_tov`, `opp_fta`) for the possession estimate — previously used team stats, producing an incorrect denominator
+- **`MatchupStatistics`**: Removed `le=1.0` constraint on `percentageDefenderTotalTime`, `percentageOffensiveTotalTime`, and `percentageTotalTimeBothOn` — the NBA API returns values above 1.0 due to rounding in clock-segment arithmetic
+
+### 🔧 Improvements
+
+- **`LeagueAverages.lg_pace`**: Converted from a constructor parameter to a computed property derived from `lg_fga - lg_oreb + lg_tov + 0.44*lg_fta`, ensuring it stays consistent with the `vop` denominator and other possession estimates
+- **`get_player_playtypes()` / `get_team_playtypes()`**: Now emit a `UserWarning` explaining that the `SynergyPlaytypes` endpoint always returns empty on the public NBA Stats API
+
 ## [v0.0.7] — 2026-02-27
 
 ### 📖 Documentation
