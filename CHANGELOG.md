@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.9] — 2026-03-02
+
+### 🐛 Bug Fixes
+
+- **`RotationEntry`**: `player_pts`, `pt_diff`, and `usg_pct` are now `int | None` / `float | None` — the NBA API returns `null` for these fields when a player logs no time on court
+- **`get_on_off_splits()`**: Rows with an unrecognised `court_status` value are now explicitly ignored (previously the `"off"` bucket could accumulate non-`"Off"` rows)
+- **`teams_by_conference()` / `teams_by_division()`**: Return a copy of the internal lookup list, preventing callers from accidentally mutating the module-level index
+
+### 🔧 Improvements
+
+**`NBAClient` (clients/nba.py):**
+- Cache key generation switched from SHA-256 to MD5 (`usedforsecurity=False`) — faster for non-security hashing
+- Cache-hit log is now emitted *outside* the cache lock, reducing lock hold time under concurrent load
+
+**`LeagueAverages` (metrics.py):**
+- Pace denominator (`lg_fga - lg_oreb + lg_tov + 0.44*lg_fta`) is computed once in `__post_init__` and stored as `_pace_denom`; `vop` and `lg_pace` properties read the cached value instead of re-evaluating on each access
+
+**`rolling_avg()` (metrics.py):**
+- Replaced O(n·w) slice-and-sum with an O(n) sliding window using running `window_sum` and `none_count` accumulators
+
+**`seasons.py`:**
+- Extracted `_season_from_date(d: date)` as a pure helper and decorated it with `@lru_cache(maxsize=32)`; `get_season_from_date()` delegates to it — season lookups for the same date are now free after the first call
+
+**`players.py`:**
+- `_season_id_to_season()` decorated with `@lru_cache(maxsize=32)`, avoiding repeated string parsing in `get_career_game_logs()`
+
+**`teams.py`:**
+- `teams_by_conference()` / `teams_by_division()` are now O(1) lookups backed by pre-built `_TEAMS_BY_CONFERENCE` / `_TEAMS_BY_DIVISION` module-level dicts, replacing O(30) linear scans on every call
+- `get_league_averages()` aggregates all 11 fields in a single loop instead of 11 separate `fmean()` generator passes; removed `statistics.fmean` import
+
+**`standings.py`:**
+- `get_conference_standings()` sort uses `attrgetter("playoff_rank")` instead of a lambda
+
+**`models/common/result_set.py`:**
+- Extracted `_parse_result_set_rows()` helper, eliminating duplicated header/rowSet parsing logic shared by `parse_result_set()` and `parse_result_set_by_name()`
+
+### 🧪 Testing
+
+- **`tests/strategies.py`** — shared [Hypothesis](https://hypothesis.readthedocs.io/) strategy factories for NBA domain types (`Season`, `Date`, `PerMode`, stat values, etc.)
+- **`tests/test_metrics_properties.py`** — property-based tests covering mathematical invariants and edge cases for all metrics functions (`true_shooting`, `rolling_avg`, `pace_adjusted_per`, `pythagorean_win_pct`, and more)
+- **`tests/test_models_properties.py`** — property-based tests for Pydantic model validation and round-trip behaviour
+- **`tests/test_players.py`** — unit tests for player utility functions (`search_players`, `get_player`, `get_on_off_splits`, etc.)
+- **`tests/models/test_game_rotation.py`** — model tests for the game rotation endpoint, including nullable-field cases
+- Extended `tests/endpoints/test_box_scores.py` and `tests/endpoints/test_homepage_endpoints.py`
+
 ## [v0.0.8] — 2026-03-01
 
 ### ✨ Features
