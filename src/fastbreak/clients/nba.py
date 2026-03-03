@@ -289,6 +289,9 @@ class NBAClient(AsyncContextManagerMixin):
                             timeout=SESSION_CLOSE_TIMEOUT,
                             hint="Session close timed out, forcing cleanup",
                         )
+                except Exception:
+                    logger.warning("session_close_error", exc_info=True)
+                    raise
                 finally:
                     self._session = None
 
@@ -326,7 +329,7 @@ class NBAClient(AsyncContextManagerMixin):
                     logger.debug("signal_received", signum=int(signum))
                     cancel_scope.cancel()
                     return
-        except (NotImplementedError, RuntimeError, ValueError) as exc:
+        except (NotImplementedError, OSError, RuntimeError, ValueError) as exc:
             logger.debug(
                 "signal_handlers_not_available",
                 reason=str(exc),

@@ -242,7 +242,7 @@ Fetches multiple endpoints using `anyio` task groups. Results are returned in th
 **Behavior**
 
 - Each request runs inside `get()`, so caching and retries apply to each individual request.
-- When `request_delay > 0`, each task sleeps for that duration before issuing its HTTP request, spreading load over time.
+- When `request_delay > 0`, each task sleeps for that duration before acquiring a concurrency slot, spreading load over time.
 - A batch correlation ID is generated and prepended to each request's `request_id` (`"<batch_id>:<index>"`), making individual requests traceable back to the batch in logs.
 - Progress is logged at DEBUG level every ~10% of completion when `len(endpoints) >= 10`.
 
@@ -324,7 +324,7 @@ client.clear_cache()
 
 ### Cache key generation
 
-The cache key is a SHA-256 hash of `"{endpoint.path}:{json.dumps(endpoint.params(), sort_keys=True)}"`. Two `Endpoint` instances with the same class and the same params will always share a cache entry. The cache is type-safe — if a key were ever to collide across different response types, `CacheTypeMismatchError` is raised rather than returning a silently wrong model.
+The cache key is an MD5 hash of `"{endpoint.path}:{json.dumps(endpoint.params(), sort_keys=True)}"`. Two `Endpoint` instances with the same params always share a cache entry. The cache is type-safe — if a key ever collided across different response types, `CacheTypeMismatchError` is raised rather than silently returning the wrong model.
 
 ---
 
@@ -540,7 +540,7 @@ app.on_cleanup.append(on_cleanup)
 
 ### Platform notes
 
-Signal handler installation may silently fail on Windows and when the event loop runs inside a non-main thread. fastbreak logs these failures at DEBUG level and continues without signal handling rather than raising an exception.
+On Windows and non-main threads, signal handler setup may silently fail. fastbreak logs this at DEBUG and continues without signal handling rather than raising.
 
 ---
 
