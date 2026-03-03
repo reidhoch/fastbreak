@@ -25,8 +25,9 @@ class BoxScoreHustle(GameIdEndpoint[BoxScoreHustleResponse]):
     Example:
         >>> async with NBAClient() as client:
         ...     hustle = await client.get(BoxScoreHustle(game_id="0022400001"))
-        ...     for player in hustle.box_score_hustle.home_team.players:
-        ...         print(f"{player.name_i}: {player.statistics.deflections} deflections")
+        ...     if home_team := hustle.box_score_hustle.home_team:
+        ...         for player in home_team.players:
+        ...             print(f"{player.name_i}: {player.statistics.deflections} deflections")
 
     """
 

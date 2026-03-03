@@ -24,9 +24,10 @@ class BoxScoreDefensive(GameIdEndpoint[BoxScoreDefensiveResponse]):
     Example:
         >>> async with NBAClient() as client:
         ...     defense = await client.get(BoxScoreDefensive(game_id="0022400001"))
-        ...     for player in defense.box_score_defensive.home_team.players:
-        ...         stats = player.statistics
-        ...         print(f"{player.name_i}: {stats.matchup_field_goal_percentage:.1%} opp FG%")
+        ...     if home_team := defense.box_score_defensive.home_team:
+        ...         for player in home_team.players:
+        ...             stats = player.statistics
+        ...             print(f"{player.name_i}: {stats.matchup_field_goal_percentage:.1%} opp FG%")
 
     """
 

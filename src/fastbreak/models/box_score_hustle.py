@@ -93,8 +93,8 @@ class BoxScoreHustleData(BaseModel):
     game_id: str = Field(alias="gameId")
     away_team_id: int = Field(alias="awayTeamId")
     home_team_id: int = Field(alias="homeTeamId")
-    home_team: HustleTeam = Field(alias="homeTeam")
-    away_team: HustleTeam = Field(alias="awayTeam")
+    home_team: HustleTeam | None = Field(default=None, alias="homeTeam")
+    away_team: HustleTeam | None = Field(default=None, alias="awayTeam")
 
 
 class BoxScoreHustleResponse(FrozenResponse):
