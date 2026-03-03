@@ -8,6 +8,7 @@ from fastbreak.metrics import (
     ast_pct,
     ast_to_tov,
     blk_pct,
+    defensive_win_shares,
     dreb_pct,
     effective_fg_pct,
     four_factors,
@@ -20,6 +21,7 @@ from fastbreak.metrics import (
     per,
     per_100,
     per_36,
+    possessions,
     pythagorean_win_pct,
     relative_efg,
     relative_ts,
@@ -29,6 +31,8 @@ from fastbreak.metrics import (
     tov_pct,
     true_shooting,
     usage_pct,
+    win_shares,
+    win_shares_per_48,
 )
 
 
@@ -1350,3 +1354,210 @@ class TestOffensiveWinShares:
             lg_pf=18.0,
         )
         assert offensive_win_shares(pts=20, fga=14, fta=6, tov=2, lg=degenerate) is None
+
+
+# ---------------------------------------------------------------------------
+# Shared inputs for DWS tests — opponent stats align with sample_league so
+# that team_drtg ≈ lg.vop * 100 (a league-average defense scenario).
+# ---------------------------------------------------------------------------
+_DWS_PLAYER = dict(stl=100.0, blk=40.0, dreb=400.0, mp=2460.0, pf=200.0)
+_DWS_TEAM = dict(
+    team_mp=19680.0,
+    team_blk=360.0,
+    team_stl=640.0,
+    team_dreb=2460.0,
+    team_pf=1476.0,
+)
+_DWS_OPP = dict(
+    opp_fga=6970.0,
+    opp_fgm=3280.0,
+    opp_fta=1640.0,
+    opp_ftm=1230.0,
+    opp_tov=984.0,
+    opp_oreb=820.0,
+    opp_pts=8200.0,
+)
+
+
+class TestDefensiveWinShares:
+    """Tests for defensive_win_shares() — BBall-Reference stops-based formula."""
+
+    def test_typical_starter_positive_dws(self, sample_league: LeagueAverages) -> None:
+        """A player with solid defensive stats over a full season has positive DWS."""
+        result = defensive_win_shares(
+            **_DWS_PLAYER, **_DWS_TEAM, **_DWS_OPP, lg=sample_league
+        )
+        assert result is not None
+        assert result > 0
+
+    def test_typical_starter_formula_value(self, sample_league: LeagueAverages) -> None:
+        """Full pipeline: DWS for league-average aligned inputs.
+
+        Opponent stats set equal to sample_league × 82 games so team_drtg
+        equals the league vop * 100.  Expected value derived step-by-step:
+
+        drb_pct  = 2460/(2460+820) = 0.75 (= lg.drb_pct)
+        dfg_pct  = 3280/6970       = 0.4706 (= lg_fg_pct)
+        fmwt     = 0.25
+        stops1   = 100 + 40*0.25*0.1975 + 400*0.75 = 401.975
+        stops2   = (rate_a + rate_b)*mp + pf_stops  ≈ 69.1
+        stop%    ≈ 0.4799
+        team_drtg ≈ 104.38 (= opp_pts/opp_poss * 100)
+        PlayerDRtg ≈ 105.41
+        MargDef  ≈ 71.92
+        DWS      ≈ 71.92 / 32.0 ≈ 2.247
+        """
+        result = defensive_win_shares(
+            **_DWS_PLAYER, **_DWS_TEAM, **_DWS_OPP, lg=sample_league
+        )
+        assert result == pytest.approx(2.247, abs=0.001)
+
+    def test_zero_minutes_returns_none(self, sample_league: LeagueAverages) -> None:
+        """Returns None when the player has zero court time."""
+        result = defensive_win_shares(
+            stl=50.0,
+            blk=20.0,
+            dreb=200.0,
+            mp=0.0,
+            pf=100.0,
+            **_DWS_TEAM,
+            **_DWS_OPP,
+            lg=sample_league,
+        )
+        assert result is None
+
+    def test_more_stops_increases_dws(self, sample_league: LeagueAverages) -> None:
+        """A player with more steals and blocks has higher DWS than one with fewer."""
+        base = defensive_win_shares(
+            **_DWS_PLAYER, **_DWS_TEAM, **_DWS_OPP, lg=sample_league
+        )
+        better = defensive_win_shares(
+            stl=150.0,
+            blk=80.0,
+            dreb=400.0,
+            mp=2460.0,
+            pf=200.0,
+            **_DWS_TEAM,
+            **_DWS_OPP,
+            lg=sample_league,
+        )
+        assert base is not None
+        assert better is not None
+        assert better > base
+
+    def test_formula_components_match_output(
+        self, sample_league: LeagueAverages
+    ) -> None:
+        """Cross-check: inline step-by-step derivation must equal function output."""
+        stl, blk, dreb, mp, pf = 100.0, 40.0, 400.0, 2460.0, 200.0
+        team_mp, team_blk, team_stl = 19680.0, 360.0, 640.0
+        team_dreb, team_pf = 2460.0, 1476.0
+        opp_fga, opp_fgm = 6970.0, 3280.0
+        opp_fta, opp_ftm = 1640.0, 1230.0
+        opp_tov, opp_oreb, opp_pts = 984.0, 820.0, 8200.0
+
+        # --- intermediate values (manual formula walk-through) ---
+        drb_pct_v = team_dreb / (team_dreb + opp_oreb)
+        dfg_pct = opp_fgm / opp_fga
+        lg_fg_pct = sample_league.lg_fgm / sample_league.lg_fga
+        fmwt_num = dfg_pct * (1 - drb_pct_v)
+        fmwt = fmwt_num / (fmwt_num + lg_fg_pct * drb_pct_v)
+
+        stop_factor = 1 - 1.07 * drb_pct_v
+        stops1 = stl + blk * fmwt * stop_factor + dreb * (1 - fmwt)
+
+        rate_a = ((opp_fga - opp_fgm - team_blk) / team_mp) * fmwt * stop_factor
+        rate_b = (opp_tov - team_stl) / team_mp
+        ft_pct = opp_ftm / opp_fta
+        pf_stops = (pf / team_pf) * 0.4 * opp_fta * (1 - ft_pct) ** 2
+        stops2 = (rate_a + rate_b) * mp + pf_stops
+
+        opp_poss = possessions(opp_fga, opp_oreb, opp_tov, opp_fta)
+        stop_pct = (stops1 + stops2) * team_mp / (opp_poss * mp)
+
+        sc_poss_ft = opp_fta * (1 - (1 - ft_pct) ** 2) * 0.4
+        d_pts_per_sc_poss = opp_pts / (opp_fgm + sc_poss_ft)
+
+        team_drtg_v = opp_pts / opp_poss * 100
+        player_drtg = team_drtg_v + 0.2 * (
+            100 * d_pts_per_sc_poss * (1 - stop_pct) - team_drtg_v
+        )
+        marg_def = (
+            (mp / team_mp) * opp_poss * (1.08 * sample_league.vop - player_drtg / 100)
+        )
+        expected = marg_def / (0.32 * sample_league.lg_pts)
+
+        result = defensive_win_shares(
+            **_DWS_PLAYER, **_DWS_TEAM, **_DWS_OPP, lg=sample_league
+        )
+        assert result == pytest.approx(expected, abs=1e-9)
+
+    def test_degenerate_zero_opp_possessions_returns_none(
+        self, sample_league: LeagueAverages
+    ) -> None:
+        """Returns None when opponent possession count is zero (all-zero opp stats)."""
+        result = defensive_win_shares(
+            stl=10.0,
+            blk=5.0,
+            dreb=50.0,
+            mp=240.0,
+            pf=20.0,
+            **_DWS_TEAM,
+            opp_fga=0.0,
+            opp_fgm=0.0,
+            opp_fta=0.0,
+            opp_ftm=0.0,
+            opp_tov=0.0,
+            opp_oreb=0.0,
+            opp_pts=0.0,
+            lg=sample_league,
+        )
+        assert result is None
+
+
+class TestWinShares:
+    """Tests for win_shares() — OWS + DWS combinator."""
+
+    def test_sums_ows_and_dws(self) -> None:
+        """WS is the sum of offensive and defensive win shares."""
+        assert win_shares(4.0, 2.5) == pytest.approx(6.5)
+
+    def test_negative_components_still_sum(self) -> None:
+        """WS can be negative or near-zero for poor performers."""
+        assert win_shares(-1.0, 0.5) == pytest.approx(-0.5)
+
+    def test_ows_none_returns_none(self) -> None:
+        """Returns None when OWS is unavailable (degenerate lg.lg_pts)."""
+        assert win_shares(None, 2.5) is None
+
+    def test_dws_none_returns_none(self) -> None:
+        """Returns None when DWS is unavailable (zero minutes)."""
+        assert win_shares(4.0, None) is None
+
+    def test_both_none_returns_none(self) -> None:
+        """Returns None when both components are unavailable."""
+        assert win_shares(None, None) is None
+
+
+class TestWinSharesPer48:
+    """Tests for win_shares_per_48() — WS normalised to 48 minutes."""
+
+    def test_normalises_to_48_minute_pace(self) -> None:
+        """WS/48 = ws * 48 / mp — a player with 6 WS in 2460 min."""
+        # 6.0 * 48 / 2460 ≈ 0.1171
+        result = win_shares_per_48(ws=6.0, mp=2460.0)
+        assert result == pytest.approx(6.0 * 48 / 2460.0, abs=1e-9)
+
+    def test_zero_minutes_returns_none(self) -> None:
+        """Returns None when mp is zero (no court time)."""
+        assert win_shares_per_48(ws=3.0, mp=0.0) is None
+
+    def test_none_ws_returns_none(self) -> None:
+        """Returns None when WS is None (upstream computation failed)."""
+        assert win_shares_per_48(ws=None, mp=2460.0) is None
+
+    def test_elite_player_value_above_point_two(self) -> None:
+        """Elite WS/48 > 0.200 — 12 WS in 2460 min = 0.234."""
+        result = win_shares_per_48(ws=12.0, mp=2460.0)
+        assert result is not None
+        assert result > 0.200

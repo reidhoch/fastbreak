@@ -97,6 +97,8 @@ Compute derived metrics from `fastbreak.metrics` across four pure-computation de
 - **Part 6** *(live API)* — usage%, AST%, pts/36, and A/TO from real box score data
 - **Part 7** — team ratings: `ortg`, `drtg`, `net_rtg` for blowout and close-game scenarios
 - **Part 8** — rolling averages: `rolling_avg` over a 10-game sequence with warm-up and DNP handling
+- **Part 9** — Win Shares pipeline: `offensive_win_shares` + `defensive_win_shares` → `win_shares` → `win_shares_per_48` for three player archetypes (two-way wing, volume scorer, defensive anchor) with a WS/48 benchmark tier guide
+- **Part 10** *(live API)* — per-game Win Shares leaderboard using real box scores and `get_league_averages`; fetches box scores and league context concurrently, then ranks all players with ≥ 10 minutes by WS/48
 
 ```bash
 uv run python examples/metrics.py

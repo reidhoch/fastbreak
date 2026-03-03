@@ -22,7 +22,8 @@ from fastbreak.metrics import (
     # Team ratings
     ortg, drtg, net_rtg,
     # Win metrics
-    offensive_win_shares,
+    offensive_win_shares, defensive_win_shares,
+    win_shares, win_shares_per_48,
     # Possession estimate
     possessions,
     # Rolling / windowed
@@ -817,6 +818,127 @@ Returns `None` when `lg.lg_pts` is zero.
 
 ```python
 ows = offensive_win_shares(pts=28, fga=18, fta=6, tov=3, lg=lg)  # positive → above replacement
+```
+
+---
+
+#### `defensive_win_shares`
+
+```python
+def defensive_win_shares(
+    stl: float, blk: float, dreb: float, mp: float, pf: float,
+    team_mp: float, team_blk: float, team_stl: float,
+    team_dreb: float, team_pf: float,
+    opp_fga: float, opp_fgm: float, opp_fta: float, opp_ftm: float,
+    opp_tov: float, opp_oreb: float, opp_pts: float,
+    lg: LeagueAverages,
+) -> float | None
+```
+
+Defensive Win Shares — the player's estimated contribution to team wins through defense,
+following the Basketball-Reference stops-based formula.
+
+**Formula overview (5 steps):**
+
+1. **Stops** — individual stops from steals, blocks, defensive rebounds, and a
+   personal-foul share of team-level stops not attributable to a single player.
+2. **Stop%** — `(stops × team_mp) / (opp_poss × mp)` — the fraction of opponent
+   possessions the player stopped while on the floor.
+3. **PlayerDRtg** — blends the team defensive rating toward the player's individual
+   contribution: `team_drtg + 0.2 × (100 × pts_per_sc_poss × (1 − stop_pct) − team_drtg)`.
+   Team defensive rating is computed internally from `opp_pts / opp_poss × 100`.
+4. **MarginalDefense** — `(mp / team_mp) × opp_poss × (1.08 × lg.vop − PlayerDRtg / 100)`.
+   The `1.08` threshold is the replacement-level multiplier (slightly above 1.0 to
+   account for the difficulty of attributing defense individually).
+5. **DWS** — `MarginalDefense / (0.32 × lg_pts)`.
+
+**Arguments:**
+
+| Argument | Description |
+|---|---|
+| `stl` | Player steals |
+| `blk` | Player blocks |
+| `dreb` | Player defensive rebounds |
+| `mp` | Player minutes played |
+| `pf` | Player personal fouls |
+| `team_mp` | Team total player-minutes (5 × 48 × games played) |
+| `team_blk` | Team total blocks |
+| `team_stl` | Team total steals |
+| `team_dreb` | Team total defensive rebounds |
+| `team_pf` | Team total personal fouls |
+| `opp_fga` | Opponent field goal attempts |
+| `opp_fgm` | Opponent field goals made |
+| `opp_fta` | Opponent free throw attempts |
+| `opp_ftm` | Opponent free throws made |
+| `opp_tov` | Opponent turnovers |
+| `opp_oreb` | Opponent offensive rebounds |
+| `opp_pts` | Opponent points scored |
+| `lg` | `LeagueAverages` for the season |
+
+Returns `None` when `mp` is zero, `opp_poss` is zero, or the scoring-possession
+denominator is zero. Can return **negative values** for players whose individual
+defensive rating exceeds `1.08 × lg.vop × 100` (below-replacement defensive efficiency).
+
+```python
+dws = defensive_win_shares(
+    stl=164, blk=82, dreb=410, mp=2870, pf=164,
+    team_mp=19_680, team_blk=410, team_stl=656, team_dreb=2_624, team_pf=1_640,
+    opp_fga=7_380, opp_fgm=3_444, opp_fta=1_804, opp_ftm=1_394,
+    opp_tov=1_148, opp_oreb=820, opp_pts=9_430,
+    lg=lg,
+)
+```
+
+---
+
+#### `win_shares`
+
+```python
+def win_shares(ows: float | None, dws: float | None) -> float | None
+```
+
+Total Win Shares — the sum of offensive and defensive contributions.
+
+**Formula:** `WS = OWS + DWS`
+
+Returns `None` when either component is `None`, consistent with how `net_rtg` handles
+missing ORTG or DRTG. This strict propagation avoids silently dropping one side of the
+formula when data for only half the calculation is available.
+
+```python
+ws = win_shares(ows=4.2, dws=2.1)   # → 6.3
+ws = win_shares(ows=4.2, dws=None)  # → None (DWS unavailable — don't produce a partial result)
+```
+
+---
+
+#### `win_shares_per_48`
+
+```python
+def win_shares_per_48(ws: float | None, mp: float) -> float | None
+```
+
+Win Shares per 48 minutes — WS normalised to a full-game pace, enabling fair comparisons
+across players with different minute loads.
+
+**Formula:** `WS/48 = WS × 48 / MP`
+
+Calibrated so that league-average ≈ 0.100. A useful rule of thumb:
+
+| WS/48 | Context |
+|---|---|
+| < 0.050 | Below average / rotation player |
+| ~0.100 | League average |
+| ~0.150 | Solid starter |
+| ~0.200 | All-Star caliber |
+| 0.250+ | MVP-caliber |
+
+Returns `None` when `ws` is `None` or `mp` is zero.
+
+```python
+ws48 = win_shares_per_48(ws=6.3, mp=2870)   # → ~0.105  (solid starter territory)
+ws48 = win_shares_per_48(ws=None, mp=2870)  # → None
+ws48 = win_shares_per_48(ws=6.3,  mp=0)    # → None
 ```
 
 ---
