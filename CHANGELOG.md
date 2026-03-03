@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.10] - 2026-03-03
+
+### 🐛 Bug Fixes
+
+- **`DefensiveTeam`**: `statistics` is now `DefensiveTeamStatistics | None` — the NBA API returns `null` for this field when no defensive stats are available for a team
+
 ## [v0.0.9] — 2026-03-02
 
 ### 🐛 Bug Fixes
