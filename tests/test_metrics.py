@@ -1426,6 +1426,39 @@ class TestDefensiveWinShares:
         )
         assert result is None
 
+    def test_stop_pct_clamped_when_blocks_exceed_missed_shots(
+        self, sample_league: LeagueAverages
+    ) -> None:
+        """stop_pct is clamped to [0, 1] when team_blk >> (opp_fga - opp_fgm),
+        preventing inflated DWS from an out-of-range stop fraction.
+
+        With team_blk=20 and opp misses=5, the unclamped stop_pct ≈ 5.87 (>1),
+        which inverts the player_drtg formula and inflates DWS to ~0.148.
+        Clamped to 1.0, the result is a small ~0.009 — the correct bounded value.
+        """
+        result = defensive_win_shares(
+            stl=5.0,
+            blk=3.0,
+            dreb=8.0,
+            mp=30.0,
+            pf=2.0,
+            team_mp=240.0,  # single game: 5 players x 48 min
+            team_blk=20.0,  # far exceeds opp misses (opp_fga - opp_fgm = 5)
+            team_stl=8.0,
+            team_dreb=30.0,
+            team_pf=20.0,
+            opp_fga=10.0,
+            opp_fgm=5.0,  # 5 misses; team_blk=20 >> 5 → rate_a < 0 without clamp
+            opp_fta=10.0,
+            opp_ftm=8.0,
+            opp_tov=5.0,
+            opp_oreb=3.0,
+            opp_pts=20.0,
+            lg=sample_league,
+        )
+        assert result is not None
+        assert result < 0.05  # noqa: PLR2004  -- clamped; unclamped would be ~0.148
+
     def test_more_stops_increases_dws(self, sample_league: LeagueAverages) -> None:
         """A player with more steals and blocks has higher DWS than one with fewer."""
         base = defensive_win_shares(
@@ -1509,6 +1542,83 @@ class TestDefensiveWinShares:
             opp_ftm=0.0,
             opp_tov=0.0,
             opp_oreb=0.0,
+            opp_pts=0.0,
+            lg=sample_league,
+        )
+        assert result is None
+
+    def test_zero_team_mp_returns_none(self, sample_league: LeagueAverages) -> None:
+        """Returns None when team minutes are zero (degenerate or missing team data)."""
+        result = defensive_win_shares(
+            **_DWS_PLAYER,
+            team_mp=0.0,
+            team_blk=360.0,
+            team_stl=640.0,
+            team_dreb=2460.0,
+            team_pf=1476.0,
+            **_DWS_OPP,
+            lg=sample_league,
+        )
+        assert result is None
+
+    def test_lg_pts_zero_returns_none(self) -> None:
+        """Returns None when league-average points are zero (invalid league context)."""
+        zero_pts_lg = LeagueAverages(
+            lg_pts=0.0,
+            lg_fga=85.0,
+            lg_fta=20.0,
+            lg_ftm=15.0,
+            lg_oreb=10.0,
+            lg_treb=40.0,
+            lg_ast=24.0,
+            lg_fgm=40.0,
+            lg_fg3m=10.0,
+            lg_tov=12.0,
+            lg_pf=18.0,
+        )
+        result = defensive_win_shares(
+            **_DWS_PLAYER, **_DWS_TEAM, **_DWS_OPP, lg=zero_pts_lg
+        )
+        assert result is None
+
+    def test_poor_defender_returns_negative_dws(
+        self, sample_league: LeagueAverages
+    ) -> None:
+        """Returns a negative value for a player whose defensive rating exceeds
+        1.08 * lg.vop * 100 (below-replacement defensive efficiency)."""
+        result = defensive_win_shares(
+            stl=0.0,
+            blk=0.0,
+            dreb=0.0,
+            mp=2460.0,
+            pf=200.0,
+            **_DWS_TEAM,
+            opp_fga=6970.0,
+            opp_fgm=4500.0,  # very high opponent FG% → bad team defense
+            opp_fta=1640.0,
+            opp_ftm=1400.0,
+            opp_oreb=1200.0,
+            opp_tov=200.0,
+            opp_pts=12000.0,  # high opponent scoring
+            lg=sample_league,
+        )
+        assert result is not None
+        assert result < 0
+
+    def test_zero_scoring_possessions_returns_none(
+        self, sample_league: LeagueAverages
+    ) -> None:
+        """Returns None when sc_poss_denom is zero (no FGM, no FTA) but opp_poss
+        is non-zero (opponent had turnovers), hitting the sc_poss_denom guard."""
+        result = defensive_win_shares(
+            **_DWS_PLAYER,
+            **_DWS_TEAM,
+            opp_fga=50.0,
+            opp_fgm=0.0,  # no field goals made → sc_poss_denom numerator is 0
+            opp_fta=0.0,  # no free throws → sc_poss_ft is 0 → sc_poss_denom == 0
+            opp_ftm=0.0,
+            opp_tov=10.0,  # turnovers keep opp_poss > 0 (possessions check passes)
+            opp_oreb=5.0,
             opp_pts=0.0,
             lg=sample_league,
         )

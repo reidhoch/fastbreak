@@ -440,7 +440,8 @@ async def game_score_leaderboard(date_str: str) -> None:
             print("  No games found.")
             return
 
-        game_ids = [g.game_id for g in games if g.game_id]
+        # Exclude All-Star games (game_id prefix "003") — non-standard tricodes
+        game_ids = [g.game_id for g in games if g.game_id and g.game_id[:3] == "002"]
         print(f"  {len(game_ids)} game(s). Fetching box scores...")
         box_scores = await get_box_scores(client, game_ids)
 
@@ -505,7 +506,8 @@ async def usage_leaderboard(date_str: str) -> None:
             print("  No games found.")
             return
 
-        game_ids = [g.game_id for g in games if g.game_id]
+        # Exclude All-Star games (game_id prefix "003") — non-standard tricodes
+        game_ids = [g.game_id for g in games if g.game_id and g.game_id[:3] == "002"]
         print(f"  {len(game_ids)} game(s). Fetching box scores...")
         box_scores = await get_box_scores(client, game_ids)
 
@@ -728,9 +730,9 @@ def demo_win_shares() -> None:
         if v >= 0.200:  # noqa: PLR2004
             return "All-Star"
         if v >= 0.150:  # noqa: PLR2004
-            return "above avg"
-        if v >= 0.100:  # noqa: PLR2004
             return "solid starter"
+        if v >= 0.100:  # noqa: PLR2004
+            return "lg average"
         return "rotation" if v >= 0.050 else "below avg"  # noqa: PLR2004
 
     def _f2(v: float | None) -> str:
@@ -768,7 +770,7 @@ def demo_win_shares() -> None:
         )
 
     print()
-    print("  WS/48 benchmarks:  0.100+ solid starter · 0.150+ above avg")
+    print("  WS/48 benchmarks:  0.100+ lg average    · 0.150+ solid starter")
     print("                     0.200+ All-Star      · 0.250+ MVP-caliber")
     print()
 
@@ -790,7 +792,8 @@ async def win_shares_leaderboard(date_str: str) -> None:
             print("  No games found.")
             return
 
-        game_ids = [g.game_id for g in games if g.game_id]
+        # Exclude All-Star games (game_id prefix "003") — non-standard tricodes
+        game_ids = [g.game_id for g in games if g.game_id and g.game_id[:3] == "002"]
         print(f"  {len(game_ids)} game(s). Fetching box scores and league averages...")
         box_scores_data, lg = await asyncio.gather(
             get_box_scores(client, game_ids),
