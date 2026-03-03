@@ -312,6 +312,24 @@ class TestNBAClientContextManager:
 
         assert client._session is None
 
+    async def test_context_manager_propagates_body_exception_with_handle_signals(
+        self, mocker: MockerFixture
+    ):
+        """Body exceptions are not wrapped in ExceptionGroup when handle_signals=True."""
+
+        async def never_signals():
+            await anyio.sleep_forever()
+            yield  # pragma: no cover
+
+        mock_receiver = mocker.MagicMock()
+        mock_receiver.__enter__ = mocker.MagicMock(return_value=never_signals())
+        mock_receiver.__exit__ = mocker.MagicMock(return_value=False)
+        mocker.patch("anyio.open_signal_receiver", return_value=mock_receiver)
+
+        with pytest.raises(ValueError, match="body error"):
+            async with NBAClient(handle_signals=True):
+                raise ValueError("body error")
+
 
 class TestNBAClientClose:
     """Tests for close method."""
