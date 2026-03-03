@@ -4,7 +4,7 @@ import anyio
 
 import certifi
 import pytest
-from aiohttp import ClientResponseError, ClientSession, ClientTimeout
+from aiohttp import ClientResponseError, ClientSession, ClientTimeout, DummyCookieJar
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
@@ -231,7 +231,10 @@ class TestNBAClientGetSession:
             connector=mock_connector,
             headers=NBAClient.DEFAULT_HEADERS,
             timeout=client._timeout,
+            cookie_jar=mocker.ANY,
         )
+        _, kwargs = mock_session_cls.call_args
+        assert isinstance(kwargs["cookie_jar"], DummyCookieJar)
         assert result is mock_session
         await client.close()
 
