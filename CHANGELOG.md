@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v0.0.10] - 2026-03-03
+## [v0.0.11] - 2026-03-03
 
 ### 🐛 Bug Fixes
+
+- **`BoxScoreHustleData`**: `home_team` and `away_team` are now `HustleTeam | None` — the NBA API returns `null` for both team objects on certain games (e.g. last game of a season) where hustle data was not tracked; previously this raised a `ValidationError` instead of parsing gracefully
+
+## [v0.0.10] - 2026-03-03
 
 - **`DefensiveTeam`**: `statistics` is now `DefensiveTeamStatistics | None` — the NBA API returns `null` for this field when no defensive stats are available for a team
 
@@ -24,29 +28,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🔧 Improvements
 
 **`NBAClient` (clients/nba.py):**
+
 - Cache key generation switched from SHA-256 to MD5 (`usedforsecurity=False`) — faster for non-security hashing
 - Cache-hit log is now emitted *outside* the cache lock, reducing lock hold time under concurrent load
 
 **`LeagueAverages` (metrics.py):**
+
 - Pace denominator (`lg_fga - lg_oreb + lg_tov + 0.44*lg_fta`) is computed once in `__post_init__` and stored as `_pace_denom`; `vop` and `lg_pace` properties read the cached value instead of re-evaluating on each access
 
 **`rolling_avg()` (metrics.py):**
+
 - Replaced O(n·w) slice-and-sum with an O(n) sliding window using running `window_sum` and `none_count` accumulators
 
 **`seasons.py`:**
+
 - Extracted `_season_from_date(d: date)` as a pure helper and decorated it with `@lru_cache(maxsize=32)`; `get_season_from_date()` delegates to it — season lookups for the same date are now free after the first call
 
 **`players.py`:**
+
 - `_season_id_to_season()` decorated with `@lru_cache(maxsize=32)`, avoiding repeated string parsing in `get_career_game_logs()`
 
 **`teams.py`:**
+
 - `teams_by_conference()` / `teams_by_division()` are now O(1) lookups backed by pre-built `_TEAMS_BY_CONFERENCE` / `_TEAMS_BY_DIVISION` module-level dicts, replacing O(30) linear scans on every call
 - `get_league_averages()` aggregates all 11 fields in a single loop instead of 11 separate `fmean()` generator passes; removed `statistics.fmean` import
 
 **`standings.py`:**
+
 - `get_conference_standings()` sort uses `attrgetter("playoff_rank")` instead of a lambda
 
 **`models/common/result_set.py`:**
+
 - Extracted `_parse_result_set_rows()` helper, eliminating duplicated header/rowSet parsing logic shared by `parse_result_set()` and `parse_result_set_by_name()`
 
 ### 🧪 Testing
@@ -63,11 +75,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### ✨ Features
 
 **`fastbreak.standings`** — new module for league standings:
+
 - `get_standings()` — all 30 teams for a season/season type
 - `get_conference_standings()` — single conference, sorted by playoff rank
 - `magic_number()` — clinching magic number for a leading team over a specific opponent
 
 **`fastbreak.metrics`** — expanded analytics:
+
 - `tov_pct()` — turnover percentage (returns 0–1 fraction, consistent with four-factors endpoint)
 - `FourFactors` dataclass and `four_factors()` — Dean Oliver's four factors in one call
 - `assist_ratio()` — assists per 100 offensive plays (matches NBA v3 box score field)
@@ -77,9 +91,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pythagorean_win_pct()` — Pythagorean win expectation (default exponent: 13.91)
 
 **`fastbreak.games`** — new batch box score helpers:
+
 - `get_box_scores_advanced()`, `get_box_scores_hustle()`, `get_box_scores_scoring()`
 
 **`fastbreak.teams`** — new roster helpers:
+
 - `get_team_roster()` — current roster players for a team
 - `get_team_coaches()` — full coaching staff (head coach and assistants)
 
@@ -128,6 +144,7 @@ Schema sync — response models updated to match current NBA Stats API fields:
 ### ✨ Features
 
 **`fastbreak.metrics`** — new pure-Python analytics module for computing advanced statistics from existing model data (no extra API calls):
+
 - Shooting efficiency: `true_shooting()`, `effective_fg_pct()`, `free_throw_rate()`, `three_point_rate()`
 - Playmaking: `ast_to_tov()`, `ast_pct()`
 - Rebounding: `oreb_pct()`, `dreb_pct()`
@@ -138,6 +155,7 @@ Schema sync — response models updated to match current NBA Stats API fields:
 - Milestone detection: `is_double_double()`, `is_triple_double()`
 
 **`fastbreak.schedule`** — new schedule helpers:
+
 - `get_team_schedule()` — fetch a team's full season schedule
 - `days_rest_before_game()` — compute rest days between games
 - `is_back_to_back()` — detect back-to-back games
@@ -165,6 +183,7 @@ Schema sync — response models updated to match current NBA Stats API fields:
 ### ✨ Features
 
 **Utility Modules** — High-level async helpers for common NBA Stats workflows:
+
 - `fastbreak.players` — `search_players()`, `get_player()`, `get_player_id()`, `get_player_game_log()`, `get_player_stats()`, `get_league_leaders()`, `get_hustle_stats()`
 - `fastbreak.teams` — `get_team()`, `get_team_id()`, `search_teams()`, `teams_by_conference()`, `teams_by_division()`, `get_team_stats()`, `get_team_game_log()`, `get_lineup_stats()`
 - `fastbreak.games` — `get_game_ids()`, `get_game_summary()`, `get_games_on_date()`, `get_todays_games()`, `get_box_scores()`, `get_play_by_play()`

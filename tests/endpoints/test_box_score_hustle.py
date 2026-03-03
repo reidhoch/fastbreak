@@ -286,3 +286,26 @@ class TestBoxScoreHustleResponse:
 
         assert response.box_score_hustle.home_team.players == []
         assert response.box_score_hustle.away_team.players == []
+
+    def test_parse_null_teams(self):
+        """Response handles null homeTeam/awayTeam for pre-game or untracked games."""
+        raw_response = {
+            "meta": {
+                "version": 1,
+                "request": "http://nba.cloud/games/0022301230/boxscorehustle",
+                "time": "2024-04-14T00:00:00.000Z",
+            },
+            "boxScoreHustle": {
+                "gameId": "0022301230",
+                "awayTeamId": 1610612737,
+                "homeTeamId": 1610612738,
+                "homeTeam": None,
+                "awayTeam": None,
+            },
+        }
+
+        response = BoxScoreHustleResponse.model_validate(raw_response)
+
+        assert response.box_score_hustle.game_id == "0022301230"
+        assert response.box_score_hustle.home_team is None
+        assert response.box_score_hustle.away_team is None
