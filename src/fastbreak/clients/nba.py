@@ -1,18 +1,17 @@
-import asyncio
 import hashlib
 import json
 import signal
 import ssl
 import uuid
 import warnings
-from collections.abc import Callable, Sequence
-from types import TracebackType
+from collections.abc import AsyncGenerator, Callable, Sequence
+from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, ClassVar, Self, cast
 
 import anyio
 import certifi
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, TCPConnector
-from anyio import CapacityLimiter, Lock
+from anyio import AsyncContextManagerMixin, CancelScope, CapacityLimiter, Lock
 from cachetools import TTLCache
 from pydantic import BaseModel, ValidationError
 from tenacity import (
@@ -172,7 +171,7 @@ def _make_wait_with_retry_after(
     return wait_func
 
 
-class NBAClient:
+class NBAClient(AsyncContextManagerMixin):
     """Async client for the NBA Stats API."""
 
     BASE_URL = "https://stats.nba.com/stats"
@@ -273,15 +272,14 @@ class NBAClient:
         async with self._session_lock:
             if self._owns_session and self._session is not None:
                 try:
-                    await asyncio.wait_for(
-                        self._session.close(), timeout=SESSION_CLOSE_TIMEOUT
-                    )
-                except TimeoutError:
-                    logger.warning(
-                        "session_close_timeout",
-                        timeout=SESSION_CLOSE_TIMEOUT,
-                        hint="Session close timed out, forcing cleanup",
-                    )
+                    with anyio.move_on_after(SESSION_CLOSE_TIMEOUT) as cancel_scope:
+                        await self._session.close()
+                    if cancel_scope.cancelled_caught:
+                        logger.warning(
+                            "session_close_timeout",
+                            timeout=SESSION_CLOSE_TIMEOUT,
+                            hint="Session close timed out, forcing cleanup",
+                        )
                 finally:
                     self._session = None
 
@@ -294,63 +292,37 @@ class NBAClient:
                 stacklevel=2,
             )
 
-    async def __aenter__(self) -> Self:
-        if self._handle_signals:
-            self._install_signal_handlers()
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        if self._handle_signals:
-            self._remove_signal_handlers()
-        await self.close()
-
-    def _install_signal_handlers(self) -> None:
-        """Register SIGINT and SIGTERM handlers for graceful shutdown."""
+    @asynccontextmanager
+    async def __asynccontextmanager__(self) -> AsyncGenerator[Self]:
         try:
-            loop = asyncio.get_running_loop()
-            loop.add_signal_handler(signal.SIGINT, self._on_signal)
-            loop.add_signal_handler(signal.SIGTERM, self._on_signal)
+            if self._handle_signals:
+                async with anyio.create_task_group() as tg:
+                    tg.start_soon(self._signal_handler_loop, tg.cancel_scope)
+                    try:
+                        yield self
+                    finally:
+                        tg.cancel_scope.cancel()
+            else:
+                yield self
+        finally:
+            await self.close()
+
+    async def _signal_handler_loop(self, cancel_scope: CancelScope) -> None:
+        """Receive SIGINT/SIGTERM and cancel the client scope for graceful shutdown."""
+        try:
+            with anyio.open_signal_receiver(signal.SIGINT, signal.SIGTERM) as signals:
+                async for signum in signals:
+                    # Use sync logger — an await here would be a cancellation point
+                    # between receiving the signal and cancelling the scope.
+                    logger.debug("signal_received", signum=int(signum))
+                    cancel_scope.cancel()
+                    return
         except (NotImplementedError, RuntimeError, ValueError) as exc:
             logger.debug(
-                "signal_handlers_not_installed",
+                "signal_handlers_not_available",
                 reason=str(exc),
                 hint="Signal handling is unavailable on this platform (e.g. Windows, threads).",
             )
-
-    def _remove_signal_handlers(self) -> None:
-        """Remove the registered SIGINT and SIGTERM handlers."""
-        try:
-            loop = asyncio.get_running_loop()
-            loop.remove_signal_handler(signal.SIGINT)
-            loop.remove_signal_handler(signal.SIGTERM)
-        except (NotImplementedError, ValueError, RuntimeError) as exc:
-            logger.debug(
-                "signal_handlers_not_removed",
-                reason=str(exc),
-                hint="Signal handler removal failed (platform doesn't support it or event loop already closed)",
-            )
-
-    def _on_signal(self) -> None:
-        """Handle SIGINT/SIGTERM by scheduling a graceful shutdown."""
-        # Remove handlers immediately to prevent re-entrancy on double Ctrl-C
-        self._remove_signal_handlers()
-        asyncio.get_running_loop().create_task(
-            self._graceful_shutdown(),
-            name="fastbreak-shutdown",
-        )
-
-    async def _graceful_shutdown(self) -> None:
-        """Close open connections then cancel all pending tasks."""
-        await self.close()
-        current = asyncio.current_task()
-        for task in asyncio.all_tasks():
-            if task is not current:
-                task.cancel()
 
     def _parse_retry_after(self, value: str | None) -> float | None:
         """Parse Retry-After header value to seconds.
@@ -552,9 +524,9 @@ class NBAClient:
 
         async def _fetch_with_limiter(index: int, endpoint: Endpoint[T]) -> None:
             nonlocal completed
+            if self._request_delay > 0:
+                await anyio.sleep(self._request_delay)
             async with limiter:
-                if self._request_delay > 0:
-                    await anyio.sleep(self._request_delay)
                 # Use batch_id as prefix for individual request IDs
                 request_id = f"{batch_id}:{index}"
                 results[index] = await self.get(endpoint, request_id=request_id)

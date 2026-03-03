@@ -402,7 +402,6 @@ async def get_on_off_splits(  # noqa: PLR0913
 
     """
     from fastbreak.endpoints import LeaguePlayerOnDetails  # noqa: PLC0415
-    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
 
     season = season or get_season_from_date()
     endpoint = LeaguePlayerOnDetails(
