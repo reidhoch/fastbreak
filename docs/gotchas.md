@@ -188,11 +188,11 @@ When you embed `NBAClient` inside a FastAPI application, an aiohttp web server, 
 
 **Root cause**
 
-By default, `NBAClient` installs `SIGINT` and `SIGTERM` handlers on the running asyncio event loop when it enters the `async with` block (`__aenter__`). These handlers close the HTTP session and cancel all pending tasks on signal receipt — the right behaviour for a standalone script.
+By default, `NBAClient` registers `SIGINT` and `SIGTERM` handlers via `anyio.open_signal_receiver` when it enters the `async with` block. These handlers cancel the client's own task group and close the HTTP session when a signal fires — the right behaviour for a standalone script.
 
-Web frameworks manage their own signal handling and lifecycle. When NBAClient installs its own handlers, it replaces or interferes with the framework's handlers. On shutdown, the framework may lose its SIGTERM handler entirely, leaving it unable to perform its own graceful shutdown (draining in-flight requests, closing database connections, etc.).
+Web frameworks handle their own signals. When NBAClient installs its own, it can step on the framework's handlers. The framework may lose its SIGTERM handler entirely, leaving it unable to drain in-flight requests, close database connections, or shut down cleanly.
 
-`loop.add_signal_handler()` also raises `NotImplementedError` on Windows and `RuntimeError` if called from a non-main thread — both common in web server workers.
+Signal registration also requires the main thread, which web server workers typically don't have.
 
 **Solution**
 
@@ -212,7 +212,6 @@ async def lifespan(app: FastAPI):
     global client
     # Startup — disable signal handling; FastAPI manages its own
     client = NBAClient(cache_ttl=300, handle_signals=False)
-    await client.__aenter__()
     yield
     # Shutdown
     await client.close()

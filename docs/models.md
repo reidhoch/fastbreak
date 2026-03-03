@@ -200,7 +200,7 @@ class LeagueStandingsResponse(FrozenResponse):
 **Input** (using a minimal model to illustrate the transformation — the real `TeamStanding` has 90+ fields):
 ```python
 from pydantic import BaseModel, model_validator
-from fastbreak.models.common.frozen import FrozenResponse
+from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import tabular_validator
 
 class TeamRecord(BaseModel):
