@@ -10,7 +10,13 @@ from typing import TYPE_CHECKING, ClassVar, Self, cast
 
 import anyio
 import certifi
-from aiohttp import ClientResponseError, ClientSession, ClientTimeout, TCPConnector
+from aiohttp import (
+    ClientResponseError,
+    ClientSession,
+    ClientTimeout,
+    DummyCookieJar,
+    TCPConnector,
+)
 from anyio import AsyncContextManagerMixin, CancelScope, CapacityLimiter, Lock
 from cachetools import TTLCache
 from pydantic import BaseModel, ValidationError
@@ -58,9 +64,11 @@ class CacheTypeMismatchError(Exception):
 class _TypedResponseCache:
     """Type-safe wrapper around TTLCache for endpoint responses.
 
-    Stores the response type alongside each value so get() can type-narrow
-    without cast() at call sites. isinstance() alone can't distinguish between
-    Pydantic model types, so the type is stored explicitly.
+    Stores the response type alongside each value so get() can perform an
+    exact type identity check and return a properly-typed T via cast().
+    A TypeVar bound (type[T]) cannot be used with isinstance() for static
+    narrowing, so the stored type is compared with `is` and cast() is used
+    to satisfy the type checker.
     """
 
     def __init__(self, maxsize: int, ttl: int) -> None:
@@ -261,6 +269,7 @@ class NBAClient(AsyncContextManagerMixin):
                     connector=connector,
                     headers=self.DEFAULT_HEADERS,
                     timeout=self._timeout,
+                    cookie_jar=DummyCookieJar(),
                 )
         return self._session
 
@@ -334,7 +343,7 @@ class NBAClient(AsyncContextManagerMixin):
         if not value:
             return None
         try:
-            # Try parsing as integer seconds first (most common)
+            # Try parsing as a number (delta-seconds format, e.g. "120" or "1.5")
             return float(value)
         except ValueError:
             logger.debug(
