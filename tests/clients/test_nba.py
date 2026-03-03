@@ -1,7 +1,6 @@
 import signal
 
 import anyio
-
 import certifi
 import pytest
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, DummyCookieJar
@@ -295,6 +294,24 @@ class TestNBAClientContextManager:
             pass
         external_session.close.assert_not_called()
 
+    async def test_context_manager_with_handle_signals(self, mocker: MockerFixture):
+        """Context manager manages signal handler loop when handle_signals=True."""
+
+        async def never_signals():
+            await anyio.sleep_forever()
+            yield  # pragma: no cover
+
+        mock_receiver = mocker.MagicMock()
+        mock_receiver.__enter__ = mocker.MagicMock(return_value=never_signals())
+        mock_receiver.__exit__ = mocker.MagicMock(return_value=False)
+        mocker.patch("anyio.open_signal_receiver", return_value=mock_receiver)
+
+        client = NBAClient(handle_signals=True)
+        async with client:
+            pass
+
+        assert client._session is None
+
 
 class TestNBAClientClose:
     """Tests for close method."""
@@ -320,6 +337,30 @@ class TestNBAClientClose:
         await client.close()
 
         external_session.close.assert_not_called()
+
+    async def test_close_logs_warning_on_timeout(self, mocker: MockerFixture):
+        """close() logs a warning when session.close() exceeds the timeout."""
+        client = NBAClient()
+        mock_session = mocker.MagicMock(spec=ClientSession)
+        mock_session.close = mocker.AsyncMock()
+        client._session = mock_session
+        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+
+        mock_cancel_scope = mocker.MagicMock()
+        mock_cancel_scope.cancelled_caught = True
+        mock_cm = mocker.MagicMock()
+        mock_cm.__enter__ = mocker.MagicMock(return_value=mock_cancel_scope)
+        mock_cm.__exit__ = mocker.MagicMock(return_value=False)
+        mocker.patch("anyio.move_on_after", return_value=mock_cm)
+
+        await client.close()
+
+        mock_logger.warning.assert_called_once_with(
+            "session_close_timeout",
+            timeout=mocker.ANY,
+            hint="Session close timed out, forcing cleanup",
+        )
+        assert client._session is None
 
 
 # Helper to create mock HTTP responses
