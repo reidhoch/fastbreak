@@ -4,7 +4,7 @@ import signal
 import ssl
 import uuid
 import warnings
-from collections.abc import AsyncGenerator, Callable, Sequence
+from collections.abc import AsyncIterator, Callable, Sequence
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, ClassVar, Self, cast
 
@@ -293,7 +293,7 @@ class NBAClient(AsyncContextManagerMixin):
             )
 
     @asynccontextmanager
-    async def __asynccontextmanager__(self) -> AsyncGenerator[Self]:
+    async def __asynccontextmanager__(self) -> AsyncIterator[Self]:
         try:
             if self._handle_signals:
                 async with anyio.create_task_group() as tg:
