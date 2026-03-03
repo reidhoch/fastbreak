@@ -233,3 +233,41 @@ class TestBoxScoreDefensiveResponse:
         assert response.box_score_defensive.game_id == "0022400999"
         assert response.box_score_defensive.home_team is None
         assert response.box_score_defensive.away_team is None
+
+    def test_parse_null_team_statistics(self):
+        """Response handles null team-level statistics (live/processing games)."""
+        raw_response = {
+            "meta": {
+                "version": 1,
+                "request": "http://nba.cloud/games/0022400001/boxscoredefensive",
+                "time": "2024-01-01T00:00:00.000Z",
+            },
+            "boxScoreDefensive": {
+                "gameId": "0022400001",
+                "awayTeamId": 1610612737,
+                "homeTeamId": 1610612738,
+                "homeTeam": {
+                    "teamId": 1610612738,
+                    "teamCity": "Boston",
+                    "teamName": "Celtics",
+                    "teamTricode": "BOS",
+                    "teamSlug": "celtics",
+                    "players": [],
+                    "statistics": None,
+                },
+                "awayTeam": {
+                    "teamId": 1610612737,
+                    "teamCity": "Atlanta",
+                    "teamName": "Hawks",
+                    "teamTricode": "ATL",
+                    "teamSlug": "hawks",
+                    "players": [],
+                    "statistics": None,
+                },
+            },
+        }
+
+        response = BoxScoreDefensiveResponse.model_validate(raw_response)
+
+        assert response.box_score_defensive.home_team.statistics is None
+        assert response.box_score_defensive.away_team.statistics is None

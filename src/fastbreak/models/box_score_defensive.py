@@ -66,7 +66,7 @@ class DefensiveTeam(PandasMixin, PolarsMixin, BaseModel):
     team_tricode: str | None = Field(None, alias="teamTricode")
     team_slug: str | None = Field(None, alias="teamSlug")
     players: list[DefensivePlayer]
-    statistics: DefensiveTeamStatistics
+    statistics: DefensiveTeamStatistics | None = None
 
 
 class BoxScoreDefensiveData(BaseModel):
