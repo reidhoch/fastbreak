@@ -839,6 +839,153 @@ def pythagorean_win_pct(
     return pts_exp / denominator
 
 
+def defensive_win_shares(  # noqa: PLR0913
+    stl: float,
+    blk: float,
+    dreb: float,
+    mp: float,
+    pf: float,
+    team_mp: float,
+    team_blk: float,
+    team_stl: float,
+    team_dreb: float,
+    team_pf: float,
+    opp_fga: float,
+    opp_fgm: float,
+    opp_fta: float,
+    opp_ftm: float,
+    opp_tov: float,
+    opp_oreb: float,
+    opp_pts: float,
+    lg: LeagueAverages,
+) -> float | None:
+    """Defensive Win Shares — player's estimated contribution to team wins on defense.
+
+    Implements the Basketball-Reference stops-based formula:
+
+    1. Stops (player's estimated defensive stops) from steals, blocks, defensive
+       rebounds, and a share of team-level stops via personal fouls.
+    2. Stop% = player stops * team_mp / (opp_poss * mp)
+    3. Individual defensive rating (PlayerDRtg) derived from team_drtg and Stop%.
+    4. MarginalDefense = (mp / team_mp) * opp_poss * (1.08 * lg.vop - PlayerDRtg/100)
+    5. DWS = MarginalDefense / (0.32 * lg_pts)
+
+    team_drtg is computed internally from opponent stats (opp_pts / opp_poss * 100),
+    so no pre-computed team rating is required.
+
+    Returns None when:
+    - mp == 0 (player did not play)
+    - opp_poss == 0 (degenerate game with no opponent possessions)
+    - opp_fgm + sc_poss_ft == 0 (cannot compute points per scoring possession)
+
+    Can return negative values for players whose individual defensive rating
+    exceeds 1.08 * lg.vop * 100 (i.e., significantly below replacement-level
+    defensive efficiency).
+
+    Args:
+        stl:       Player steals.
+        blk:       Player blocks.
+        dreb:      Player defensive rebounds.
+        mp:        Player minutes played.
+        pf:        Player personal fouls.
+        team_mp:   Team total player-minutes (5 x 48 x games played).
+        team_blk:  Team total blocks.
+        team_stl:  Team total steals.
+        team_dreb: Team total defensive rebounds.
+        team_pf:   Team total personal fouls.
+        opp_fga:   Opponent field goal attempts.
+        opp_fgm:   Opponent field goals made.
+        opp_fta:   Opponent free throw attempts.
+        opp_ftm:   Opponent free throws made.
+        opp_tov:   Opponent turnovers.
+        opp_oreb:  Opponent offensive rebounds.
+        opp_pts:   Opponent points scored.
+        lg:        League-wide season averages.
+    """
+    if mp == 0 or team_mp == 0:
+        return None
+
+    opp_poss = possessions(opp_fga, opp_oreb, opp_tov, opp_fta)
+    if opp_poss == 0:
+        return None
+
+    # --- team-level defensive rates ---
+    drb_pct = team_dreb / (team_dreb + opp_oreb) if (team_dreb + opp_oreb) > 0 else 0.0
+    dfg_pct = opp_fgm / opp_fga if opp_fga > 0 else 0.0
+    lg_fg_pct = lg.lg_fgm / lg.lg_fga  # lg_fga always > 0 (validated in __post_init__)
+
+    # --- FMwt: weight for how much of a missed FG turns into a player stop ---
+    fmwt_num = dfg_pct * (1 - drb_pct)
+    fmwt_den = fmwt_num + lg_fg_pct * drb_pct
+    fmwt = fmwt_num / fmwt_den if fmwt_den > 0 else 0.0
+
+    # --- individual stops ---
+    stop_factor = 1 - 1.07 * drb_pct
+    stops1 = stl + blk * fmwt * stop_factor + dreb * (1 - fmwt)
+
+    rate_a = ((opp_fga - opp_fgm - team_blk) / team_mp) * fmwt * stop_factor
+    rate_b = (opp_tov - team_stl) / team_mp
+    ft_pct = opp_ftm / opp_fta if opp_fta > 0 else 0.0
+    pf_stops = (
+        (pf / team_pf) * 0.4 * opp_fta * (1 - ft_pct) ** 2 if team_pf > 0 else 0.0
+    )
+    stops2 = (rate_a + rate_b) * mp + pf_stops
+
+    # --- stop% and individual defensive rating ---
+    stop_pct = (stops1 + stops2) * team_mp / (opp_poss * mp)
+
+    sc_poss_ft = opp_fta * (1 - (1 - ft_pct) ** 2) * 0.4
+    sc_poss_denom = opp_fgm + sc_poss_ft
+    if sc_poss_denom == 0:
+        return None
+    d_pts_per_sc_poss = opp_pts / sc_poss_denom
+
+    team_drtg = opp_pts / opp_poss * 100
+    player_drtg = team_drtg + 0.2 * (
+        100 * d_pts_per_sc_poss * (1 - stop_pct) - team_drtg
+    )
+
+    # --- marginal defense → DWS ---
+    marg_def = (mp / team_mp) * opp_poss * (1.08 * lg.vop - player_drtg / 100)
+    return marg_def / (0.32 * lg.lg_pts)
+
+
+def win_shares(ows: float | None, dws: float | None) -> float | None:
+    """Total Win Shares — sum of offensive and defensive contributions.
+
+    WS = OWS + DWS
+
+    Returns None when either component is unavailable, consistent with how
+    net_rtg handles missing ORTG or DRTG inputs.
+
+    Args:
+        ows: Offensive Win Shares (from offensive_win_shares()).
+        dws: Defensive Win Shares (from defensive_win_shares()).
+    """
+    if ows is None or dws is None:
+        return None
+    return ows + dws
+
+
+def win_shares_per_48(ws: float | None, mp: float) -> float | None:
+    """Win Shares per 48 minutes — WS normalised to a full-game pace.
+
+    WS/48 = WS * 48 / MP
+
+    Calibrated so that league-average ≈ 0.100; elite players reach 0.200+.
+    Useful for comparing players with different playing-time levels.
+
+    Returns None when ws is None or mp is zero.
+
+    Args:
+        ws: Total Win Shares (from win_shares()).
+        mp: Minutes played (same time window as ws).
+    """
+    if ws is None or mp == 0:
+        return None
+    return ws * 48 / mp
+
+
 def rolling_avg(
     values: Sequence[float | None],
     window: int,

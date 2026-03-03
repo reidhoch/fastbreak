@@ -1,13 +1,15 @@
 """Example: Computing derived metrics with fastbreak.metrics.
 
-Part 1 — pure computation: basic efficiency metrics (no network needed).
-Part 2 — pure computation: rate stats & playmaking ratios.
-Part 3 — pure computation: on-floor impact metrics with team context.
-Part 4 — pure computation: full PER calculation (pace-adjusted + normalized).
-Part 5 — live API: game score leaderboard for yesterday's games.
-Part 6 — live API: usage & on-floor impact from real box score data.
-Part 7 — pure computation: team offensive / defensive / net ratings.
-Part 8 — pure computation: rolling averages with DNP and warm-up handling.
+Part 1  — pure computation: basic efficiency metrics (no network needed).
+Part 2  — pure computation: rate stats & playmaking ratios.
+Part 3  — pure computation: on-floor impact metrics with team context.
+Part 4  — pure computation: full PER calculation (pace-adjusted + normalized).
+Part 5  — live API: game score leaderboard for yesterday's games.
+Part 6  — live API: usage & on-floor impact from real box score data.
+Part 7  — pure computation: team offensive / defensive / net ratings.
+Part 8  — pure computation: rolling averages with DNP and warm-up handling.
+Part 9  — pure computation: Win Shares (OWS + DWS → WS → WS/48) for three archetypes.
+Part 10 — live API: per-game Win Shares leaderboard for yesterday's games.
 """
 
 import asyncio
@@ -20,6 +22,7 @@ from fastbreak.metrics import (
     ast_pct,
     ast_to_tov,
     blk_pct,
+    defensive_win_shares,
     dreb_pct,
     drtg,
     effective_fg_pct,
@@ -28,6 +31,7 @@ from fastbreak.metrics import (
     is_double_double,
     is_triple_double,
     net_rtg,
+    offensive_win_shares,
     oreb_pct,
     ortg,
     pace_adjusted_per,
@@ -40,7 +44,10 @@ from fastbreak.metrics import (
     three_point_rate,
     true_shooting,
     usage_pct,
+    win_shares,
+    win_shares_per_48,
 )
+from fastbreak.teams import get_league_averages
 
 # ---------------------------------------------------------------------------
 # Approximate 2024-25 NBA league averages.
@@ -639,6 +646,236 @@ def demo_rolling_avg() -> None:
     print()
 
 
+# ---------------------------------------------------------------------------
+# Part 9: Win Shares — OWS + DWS → WS → WS/48 — no API call required
+# ---------------------------------------------------------------------------
+
+
+def demo_win_shares() -> None:
+    """Compare OWS, DWS, WS, and WS/48 for three season-level archetypes."""
+    print("=" * 60)
+    print("Part 9 — Win Shares (OWS + DWS → WS → WS/48)")
+    print("=" * 60)
+    print(
+        "  Win Shares estimate how many team wins each player contributed.\n"
+        "  WS/48 normalises to a per-48-minute pace for fair comparisons.\n"
+    )
+
+    # Shared team/opponent context — generic 82-game NBA team.
+    # team_mp = 5 players x 48 min x 82 games.
+    _team = {
+        "team_mp": 19_680,
+        "team_blk": 410,
+        "team_stl": 656,
+        "team_dreb": 2_624,
+        "team_pf": 1_640,
+    }
+    _opp = {
+        "opp_fga": 7_380,
+        "opp_fgm": 3_444,
+        "opp_fta": 1_804,
+        "opp_ftm": 1_394,
+        "opp_tov": 1_148,
+        "opp_oreb": 820,
+        "opp_pts": 9_430,
+    }
+
+    # Three contrasting archetypes — season totals from per-game rates x 82 games.
+    archetypes = [
+        {
+            "name": "Two-way wing  (35 min)",
+            "pts": 2_050,  # 25.0 ppg
+            "fga": 984,    # 12.0 fga/g
+            "fta": 328,    # 4.0  fta/g
+            "tov": 164,    # 2.0  tov/g
+            "stl": 164,    # 2.0  stl/g
+            "blk": 82,     # 1.0  blk/g
+            "dreb": 410,   # 5.0  dreb/g
+            "mp": 2_870,   # 35.0 min/g
+            "pf": 164,     # 2.0  pf/g
+        },
+        {
+            "name": "Volume scorer (36 min)",
+            "pts": 2_296,  # 28.0 ppg
+            "fga": 1_476,  # 18.0 fga/g
+            "fta": 656,    # 8.0  fta/g
+            "tov": 287,    # 3.5  tov/g
+            "stl": 82,     # 1.0  stl/g
+            "blk": 41,     # 0.5  blk/g
+            "dreb": 328,   # 4.0  dreb/g
+            "mp": 2_952,   # 36.0 min/g
+            "pf": 205,     # 2.5  pf/g
+        },
+        {
+            "name": "Def. anchor  (30 min)",
+            "pts": 1_148,  # 14.0 ppg
+            "fga": 738,    # 9.0  fga/g
+            "fta": 410,    # 5.0  fta/g
+            "tov": 82,     # 1.0  tov/g
+            "stl": 66,     # 0.8  stl/g
+            "blk": 246,    # 3.0  blk/g
+            "dreb": 820,   # 10.0 dreb/g
+            "mp": 2_460,   # 30.0 min/g
+            "pf": 164,     # 2.0  pf/g
+        },
+    ]
+
+    def _ws48_tier(v: float | None) -> str:
+        if v is None:
+            return "—"
+        if v >= 0.250:  # noqa: PLR2004
+            return "MVP-caliber"
+        if v >= 0.200:  # noqa: PLR2004
+            return "All-Star"
+        if v >= 0.150:  # noqa: PLR2004
+            return "above avg"
+        if v >= 0.100:  # noqa: PLR2004
+            return "solid starter"
+        return "rotation" if v >= 0.050 else "below avg"  # noqa: PLR2004
+
+    def _f2(v: float | None) -> str:
+        return f"{v:.2f}" if v is not None else " n/a"
+
+    def _f3(v: float | None) -> str:
+        return f"{v:.3f}" if v is not None else "   n/a"
+
+    print(f"  {'Archetype':<26} {'OWS':>5}  {'DWS':>5}  {'WS':>5}  {'WS/48':>6}  Tier")
+    print("  " + "-" * 66)
+
+    for a in archetypes:
+        ows = offensive_win_shares(
+            pts=a["pts"],
+            fga=a["fga"],
+            fta=a["fta"],
+            tov=a["tov"],
+            lg=NBA_2024_25,
+        )
+        dws = defensive_win_shares(
+            stl=a["stl"],
+            blk=a["blk"],
+            dreb=a["dreb"],
+            mp=a["mp"],
+            pf=a["pf"],
+            **_team,
+            **_opp,
+            lg=NBA_2024_25,
+        )
+        ws = win_shares(ows, dws)
+        ws48 = win_shares_per_48(ws, a["mp"])
+        print(
+            f"  {a['name']:<26} {_f2(ows):>5}  {_f2(dws):>5}  {_f2(ws):>5}"
+            f"  {_f3(ws48):>6}  {_ws48_tier(ws48)}"
+        )
+
+    print()
+    print("  WS/48 benchmarks:  0.100+ solid starter · 0.150+ above avg")
+    print("                     0.200+ All-Star      · 0.250+ MVP-caliber")
+    print()
+
+
+# ---------------------------------------------------------------------------
+# Part 10: live API — per-game Win Shares leaderboard for a given date
+# ---------------------------------------------------------------------------
+
+
+async def win_shares_leaderboard(date_str: str) -> None:
+    """Fetch box scores and rank players by single-game Win Shares."""
+    print("=" * 60)
+    print(f"Win Shares leaderboard — {date_str}")
+    print("=" * 60)
+
+    async with NBAClient() as client:
+        games = await get_games_on_date(client, date_str)
+        if not games:
+            print("  No games found.")
+            return
+
+        game_ids = [g.game_id for g in games if g.game_id]
+        print(f"  {len(game_ids)} game(s). Fetching box scores and league averages...")
+        box_scores_data, lg = await asyncio.gather(
+            get_box_scores(client, game_ids),
+            get_league_averages(client),
+        )
+
+    def _f3(v: float | None) -> str:
+        return f"{v:.3f}" if v is not None else "  n/a"
+
+    rows = []
+    for bxs in box_scores_data.values():
+        for team, opp_team in (
+            (bxs.homeTeam, bxs.awayTeam),
+            (bxs.awayTeam, bxs.homeTeam),
+        ):
+            ts = team.statistics
+            opp_ts = opp_team.statistics
+            team_mp = sum(_parse_minutes(p.statistics.minutes) for p in team.players)
+
+            for player in team.players:
+                s = player.statistics
+                mp = _parse_minutes(s.minutes)
+                if mp < 10:  # noqa: PLR2004
+                    continue
+
+                ows = offensive_win_shares(
+                    pts=s.points,
+                    fga=s.fieldGoalsAttempted,
+                    fta=s.freeThrowsAttempted,
+                    tov=s.turnovers,
+                    lg=lg,
+                )
+                dws = defensive_win_shares(
+                    stl=s.steals,
+                    blk=s.blocks,
+                    dreb=s.reboundsDefensive,
+                    mp=mp,
+                    pf=s.foulsPersonal,
+                    team_mp=team_mp,
+                    team_blk=ts.blocks,
+                    team_stl=ts.steals,
+                    team_dreb=ts.reboundsDefensive,
+                    team_pf=ts.foulsPersonal,
+                    opp_fga=opp_ts.fieldGoalsAttempted,
+                    opp_fgm=opp_ts.fieldGoalsMade,
+                    opp_fta=opp_ts.freeThrowsAttempted,
+                    opp_ftm=opp_ts.freeThrowsMade,
+                    opp_tov=opp_ts.turnovers,
+                    opp_oreb=opp_ts.reboundsOffensive,
+                    opp_pts=opp_ts.points,
+                    lg=lg,
+                )
+                ws = win_shares(ows, dws)
+                ws48 = win_shares_per_48(ws, mp)
+                rows.append(
+                    (
+                        f"{player.firstName} {player.familyName}",
+                        team.teamTricode,
+                        mp,
+                        ows,
+                        dws,
+                        ws,
+                        ws48,
+                    )
+                )
+
+    rows.sort(key=lambda r: r[6] if r[6] is not None else float("-inf"), reverse=True)
+    print(
+        f"\n  {'Player':<25} {'Tm':<4} {'MIN':>3}"
+        f"  {'OWS':>6}  {'DWS':>6}  {'WS':>6}  {'WS/48':>6}"
+    )
+    print("  " + "-" * 63)
+    for name, tricode, mp, ows, dws, ws, ws48 in rows[:15]:
+        print(
+            f"  {name:<25} {tricode:<4} {mp:>3}"
+            f"  {_f3(ows):>6}  {_f3(dws):>6}  {_f3(ws):>6}  {_f3(ws48):>6}"
+        )
+    print()
+    print(
+        "  Note: single-game WS is a fraction of a full season's contribution.\n"
+        "  A player with 0.050+ WS in one game made a genuinely significant impact."
+    )
+    print()
+
+
 async def main() -> None:
     demo_single_line()
     demo_rate_stats()
@@ -646,12 +883,14 @@ async def main() -> None:
     demo_per_calculation()
     demo_team_ratings()
     demo_rolling_avg()
+    demo_win_shares()
 
     yesterday = (
         datetime.now(tz=UTC).astimezone().date() - timedelta(days=1)
     ).isoformat()
     await game_score_leaderboard(yesterday)
     await usage_leaderboard(yesterday)
+    await win_shares_leaderboard(yesterday)
 
 
 if __name__ == "__main__":
