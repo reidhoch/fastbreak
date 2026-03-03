@@ -9,7 +9,7 @@ Every request flows through `NBAClient`. You construct an `Endpoint` instance de
 ```python
 import asyncio
 from fastbreak.clients import NBAClient
-from fastbreak.endpoints.scoreboard import ScoreboardV2
+from fastbreak.endpoints.scoreboard_v2 import ScoreboardV2
 
 async def main() -> None:
     async with NBAClient() as client:
