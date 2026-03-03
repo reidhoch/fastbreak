@@ -493,11 +493,11 @@ async with NBAClient(
 
 By default, `NBAClient` registers handlers for `SIGINT` (Ctrl-C) and `SIGTERM` when used as an async context manager. When a signal is received:
 
-1. Signal handlers are removed immediately (prevents re-entrancy on double Ctrl-C).
-2. The aiohttp session is closed cleanly.
-3. All pending asyncio tasks are cancelled.
+1. `anyio.open_signal_receiver` delivers the signal to the handler task.
+2. The handler calls `cancel_scope.cancel()` on the client's task group and returns immediately (preventing re-entrancy on double Ctrl-C).
+3. The `async with NBAClient()` block exits; its `finally` clause closes the aiohttp session gracefully.
 
-This ensures open connections are flushed and resources are freed before the process exits.
+Only the client's own task group scope is cancelled — other tasks running in the application are not affected.
 
 ### Disabling signal handling
 
