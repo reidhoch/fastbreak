@@ -308,12 +308,21 @@ class NBAClient(AsyncContextManagerMixin):
     async def __asynccontextmanager__(self) -> AsyncIterator[Self]:
         try:
             if self._handle_signals:
+                _body_exc: BaseException | None = None
                 async with anyio.create_task_group() as tg:
                     tg.start_soon(self._signal_handler_loop, tg.cancel_scope)
                     try:
                         yield self
+                    except BaseException as exc:  # noqa: BLE001
+                        # Must catch BaseException (not just Exception): anyio's
+                        # CancelledError is a BaseException subclass, and we need to
+                        # prevent ALL body exceptions from being wrapped in ExceptionGroup
+                        # by the task group when _signal_handler_loop is running.
+                        _body_exc = exc
                     finally:
                         tg.cancel_scope.cancel()
+                if _body_exc is not None:
+                    raise _body_exc
             else:
                 yield self
         finally:

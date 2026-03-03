@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.13] - 2026-03-03
+
+### 🐛 Bug Fixes
+
+- **`__asynccontextmanager__`**: Body exceptions were wrapped in `ExceptionGroup` by anyio's task group when `handle_signals=True` — any exception raised inside `async with NBAClient() as client:` (e.g. a request timeout) would escape as `ExceptionGroup` instead of the original exception; fixed by catching body exceptions inside the task group, cancelling the scope, and re-raising outside
+
 ## [v0.0.12] - 2026-03-03
 
 ### 🔧 Improvements
