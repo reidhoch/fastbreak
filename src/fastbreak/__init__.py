@@ -18,6 +18,7 @@ from fastbreak.metrics import (
     ast_pct,
     ast_to_tov,
     blk_pct,
+    defensive_win_shares,
     dreb_pct,
     drtg,
     effective_fg_pct,
@@ -44,6 +45,8 @@ from fastbreak.metrics import (
     tov_pct,
     true_shooting,
     usage_pct,
+    win_shares,
+    win_shares_per_48,
 )
 from fastbreak.players import (
     get_career_game_logs,
@@ -162,6 +165,7 @@ __all__ = [
     "ast_to_tov",
     "blk_pct",
     "days_rest_before_game",
+    "defensive_win_shares",
     "dreb_pct",
     "drtg",
     "effective_fg_pct",
@@ -229,4 +233,6 @@ __all__ = [
     "tov_pct",
     "true_shooting",
     "usage_pct",
+    "win_shares",
+    "win_shares_per_48",
 ]

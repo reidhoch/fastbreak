@@ -875,9 +875,10 @@ following the Basketball-Reference stops-based formula.
 | `opp_pts` | Opponent points scored |
 | `lg` | `LeagueAverages` for the season |
 
-Returns `None` when `mp` is zero, `opp_poss` is zero, or the scoring-possession
-denominator is zero. Can return **negative values** for players whose individual
-defensive rating exceeds `1.08 × lg.vop × 100` (below-replacement defensive efficiency).
+Returns `None` when `mp` is zero, `team_mp` is zero, `opp_poss` is zero, the
+scoring-possession denominator is zero, or `lg.lg_pts` is zero. Can return
+**negative values** for players whose individual defensive rating exceeds
+`1.08 × lg.vop × 100` (below-replacement defensive efficiency).
 
 ```python
 dws = defensive_win_shares(
@@ -936,7 +937,7 @@ Calibrated so that league-average ≈ 0.100. A useful rule of thumb:
 Returns `None` when `ws` is `None` or `mp` is zero.
 
 ```python
-ws48 = win_shares_per_48(ws=6.3, mp=2870)   # → ~0.105  (solid starter territory)
+ws48 = win_shares_per_48(ws=6.3, mp=2870)   # → ~0.105  (league-average territory)
 ws48 = win_shares_per_48(ws=None, mp=2870)  # → None
 ws48 = win_shares_per_48(ws=6.3,  mp=0)    # → None
 ```

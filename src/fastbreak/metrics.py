@@ -875,8 +875,14 @@ def defensive_win_shares(  # noqa: PLR0913
 
     Returns None when:
     - mp == 0 (player did not play)
+    - team_mp == 0 (degenerate or missing team minutes)
     - opp_poss == 0 (degenerate game with no opponent possessions)
     - opp_fgm + sc_poss_ft == 0 (cannot compute points per scoring possession)
+    - lg.lg_pts == 0 (invalid league-average points; cannot normalise DWS)
+
+    stop_pct is clamped to [0, 1] so that single-game inputs (where team_blk can
+    exceed opp missed shots, or a short stint inflates the fraction above 1) do
+    not invert the player_drtg formula and produce unrealistic values.
 
     Can return negative values for players whose individual defensive rating
     exceeds 1.08 * lg.vop * 100 (i.e., significantly below replacement-level
@@ -908,6 +914,8 @@ def defensive_win_shares(  # noqa: PLR0913
     opp_poss = possessions(opp_fga, opp_oreb, opp_tov, opp_fta)
     if opp_poss == 0:
         return None
+    if lg.lg_pts == 0:
+        return None
 
     # --- team-level defensive rates ---
     drb_pct = team_dreb / (team_dreb + opp_oreb) if (team_dreb + opp_oreb) > 0 else 0.0
@@ -932,7 +940,12 @@ def defensive_win_shares(  # noqa: PLR0913
     stops2 = (rate_a + rate_b) * mp + pf_stops
 
     # --- stop% and individual defensive rating ---
+    # Clamp to [0, 1]: single-game inputs can push stop_pct out of range
+    # (e.g. team_blk > opp_fga - opp_fgm makes rate_a negative; large stops1
+    # relative to a short stint makes it > 1). Out-of-range values invert the
+    # player_drtg formula and produce unrealistic DWS.
     stop_pct = (stops1 + stops2) * team_mp / (opp_poss * mp)
+    stop_pct = max(0.0, min(1.0, stop_pct))
 
     sc_poss_ft = opp_fta * (1 - (1 - ft_pct) ** 2) * 0.4
     sc_poss_denom = opp_fgm + sc_poss_ft
