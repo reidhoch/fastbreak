@@ -76,7 +76,7 @@ def _strategy_for_field(
     AfterValidator-constrained string types (Season, ISODate, Date) receive
     their hand-crafted strategy rather than falling back to plain ``st.text``.
     """
-    if strat := _validator_strategy(metadata):
+    if (strat := _validator_strategy(metadata)) is not None:
         return strat
 
     origin = typing.get_origin(ann)
@@ -90,7 +90,7 @@ def _strategy_for_field(
 
     # typing.Annotated — unwrap and check inner metadata for AfterValidators
     if origin is typing.Annotated:
-        if strat := _validator_strategy(args[1:]):
+        if (strat := _validator_strategy(args[1:])) is not None:
             return strat
         return _strategy_for_field(args[0])
 

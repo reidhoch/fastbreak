@@ -1,4 +1,6 @@
-import asyncio
+import signal
+
+import anyio
 
 import certifi
 import pytest
@@ -172,7 +174,6 @@ class TestNBAClientInit:
 class TestNBAClientGetSession:
     """Tests for _get_session method."""
 
-    @pytest.mark.asyncio
     async def test_creates_ssl_context_with_certifi(self, mocker: MockerFixture):
         """_get_session creates SSL context using certifi CA bundle."""
         client = NBAClient()
@@ -190,7 +191,6 @@ class TestNBAClientGetSession:
         mock_ssl.assert_called_once_with(cafile=certifi.where())
         await client.close()
 
-    @pytest.mark.asyncio
     async def test_creates_connector_with_correct_params(self, mocker: MockerFixture):
         """_get_session creates TCPConnector with correct parameters."""
         client = NBAClient()
@@ -213,7 +213,6 @@ class TestNBAClientGetSession:
         )
         await client.close()
 
-    @pytest.mark.asyncio
     async def test_creates_session_with_correct_params(self, mocker: MockerFixture):
         """_get_session creates ClientSession with correct parameters."""
         client = NBAClient()
@@ -236,7 +235,6 @@ class TestNBAClientGetSession:
         assert result is mock_session
         await client.close()
 
-    @pytest.mark.asyncio
     async def test_reuses_existing_session(self, mocker: MockerFixture):
         """_get_session returns existing session if present."""
         mock_session = mocker.MagicMock(spec=ClientSession)
@@ -246,7 +244,6 @@ class TestNBAClientGetSession:
 
         assert session is mock_session
 
-    @pytest.mark.asyncio
     async def test_session_created_only_once(self, mocker: MockerFixture):
         """_get_session only creates session on first call."""
         client = NBAClient()
@@ -269,40 +266,36 @@ class TestNBAClientGetSession:
 class TestNBAClientContextManager:
     """Tests for async context manager protocol."""
 
-    @pytest.mark.asyncio
     async def test_context_manager_enter_returns_self(self):
-        """__aenter__ returns the client instance."""
-        client = NBAClient()
-        result = await client.__aenter__()
-        assert result is client
-        await client.close()
+        """async with NBAClient() yields the client instance."""
+        client_instance = NBAClient(handle_signals=False)
+        async with client_instance as client:
+            assert client is client_instance
 
-    @pytest.mark.asyncio
     async def test_context_manager_closes_owned_session(self, mocker: MockerFixture):
-        """__aexit__ closes session when client owns it."""
-        client = NBAClient()
+        """Context manager closes session when client owns it."""
+        client = NBAClient(handle_signals=False)
         mock_session = mocker.patch.object(client, "_session")
         mock_session.close = mocker.AsyncMock()
         client._owns_session = True
-        await client.__aexit__(None, None, None)
+        async with client:
+            pass
         mock_session.close.assert_called_once()
 
-    @pytest.mark.asyncio
     async def test_context_manager_preserves_external_session(
         self, mocker: MockerFixture
     ):
-        """__aexit__ doesn't close externally provided session."""
+        """Context manager doesn't close externally provided session."""
         external_session = mocker.MagicMock(spec=ClientSession)
         external_session.close = mocker.AsyncMock()
-        client = NBAClient(session=external_session)
-        await client.__aexit__(None, None, None)
+        async with NBAClient(session=external_session, handle_signals=False):
+            pass
         external_session.close.assert_not_called()
 
 
 class TestNBAClientClose:
     """Tests for close method."""
 
-    @pytest.mark.asyncio
     async def test_close_clears_owned_session(self, mocker: MockerFixture):
         """close() sets session to None when owned."""
         client = NBAClient()
@@ -315,7 +308,6 @@ class TestNBAClientClose:
         assert client._session is None
         mock_session.close.assert_called_once()
 
-    @pytest.mark.asyncio
     async def test_close_does_not_close_external_session(self, mocker: MockerFixture):
         """close() doesn't close externally provided session."""
         external_session = mocker.MagicMock(spec=ClientSession)
@@ -356,7 +348,6 @@ def _make_mock_response(
 class TestNBAClientGet:
     """Tests for the get method."""
 
-    @pytest.mark.asyncio
     async def test_get_returns_parsed_response(
         self, mock_play_by_play_response, make_mock_client
     ):
@@ -371,7 +362,6 @@ class TestNBAClientGet:
         assert len(result.game.actions) == 1
         mock_session.get.assert_called_once()
 
-    @pytest.mark.asyncio
     async def test_get_constructs_correct_url(
         self, mock_play_by_play_response, make_mock_client
     ):
@@ -389,7 +379,6 @@ class TestNBAClientGet:
             "StartPeriod": "0",
         }
 
-    @pytest.mark.asyncio
     async def test_get_logs_request_attempt(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
@@ -420,7 +409,6 @@ class TestNBAClientGet:
         assert call_kwargs["url"] == "https://stats.nba.com/stats/playbyplayv3"
         assert call_kwargs["params"] == endpoint.params()
 
-    @pytest.mark.asyncio
     async def test_get_logs_success(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
@@ -442,7 +430,6 @@ class TestNBAClientGet:
         assert len(success_calls) == 1
         assert success_calls[0][1]["attempt"] == 1
 
-    @pytest.mark.asyncio
     async def test_get_logs_rate_limited_on_429(
         self, make_client_response_error, make_mock_client, mocker: MockerFixture
     ):
@@ -476,7 +463,6 @@ class TestNBAClientGet:
         assert call_kwargs["retry_after_raw"] == "30"  # Original header value
         assert call_kwargs["attempt"] == 1
 
-    @pytest.mark.asyncio
     async def test_get_logs_validation_failed(
         self, make_mock_client, mocker: MockerFixture
     ):
@@ -514,7 +500,6 @@ class TestNBAClientGet:
         assert call_kwargs["endpoint"] == "playbyplayv3"
         assert call_kwargs["response_keys"] == ["invalid"]
 
-    @pytest.mark.asyncio
     async def test_get_validation_error_contains_field_info(self, make_mock_client):
         """ValidationError should contain specific field information."""
         # Response missing required 'game' field
@@ -537,7 +522,6 @@ class TestNBAClientGet:
         error_types = [e.get("type") for e in errors]
         assert all(t is not None for t in error_types)
 
-    @pytest.mark.asyncio
     async def test_get_validation_error_is_not_wrapped(self, make_mock_client):
         """ValidationError should be re-raised directly, not wrapped."""
         client, mock_session = make_mock_client(json_data={"wrong": "structure"})
@@ -551,7 +535,6 @@ class TestNBAClientGet:
         # Verify __cause__ is not set (not chained from another exception)
         assert exc_info.value.__cause__ is None
 
-    @pytest.mark.asyncio
     async def test_get_validation_error_log_includes_response_keys(
         self, make_mock_client, mocker: MockerFixture
     ):
@@ -585,7 +568,6 @@ class TestNBAClientGet:
         assert "unexpected_key1" in response_keys
         assert "unexpected_key2" in response_keys
 
-    @pytest.mark.asyncio
     async def test_get_rate_limited_not_logged_for_non_429(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
@@ -615,7 +597,6 @@ class TestNBAClientRetry:
         """Create a successful mock response."""
         return _make_mock_response(mocker, json_data=mock_play_by_play_response)
 
-    @pytest.mark.asyncio
     async def test_retries_on_429(
         self,
         mock_success_response,
@@ -647,7 +628,6 @@ class TestNBAClientRetry:
         assert call_count == 3
         assert isinstance(result, PlayByPlayResponse)
 
-    @pytest.mark.asyncio
     async def test_retries_on_500(
         self,
         mock_success_response,
@@ -679,7 +659,6 @@ class TestNBAClientRetry:
         assert call_count == 2
         assert isinstance(result, PlayByPlayResponse)
 
-    @pytest.mark.asyncio
     async def test_retries_on_timeout(
         self, mock_success_response, mock_play_by_play_response, mocker: MockerFixture
     ):
@@ -711,7 +690,6 @@ class TestNBAClientRetry:
         assert call_count == 2
         assert isinstance(result, PlayByPlayResponse)
 
-    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "status",
         [
@@ -740,7 +718,6 @@ class TestNBAClientRetry:
         assert exc_info.value.status == status
         assert mock_session.get.call_count == 1
 
-    @pytest.mark.asyncio
     async def test_exhausted_retries_raises(
         self, make_client_response_error, mocker: MockerFixture
     ):
@@ -778,7 +755,6 @@ class TestNBAClientRetry:
 class TestNBAClientGetMany:
     """Tests for the get_many batch fetch method."""
 
-    @pytest.mark.asyncio
     async def test_get_many_returns_ordered_results(
         self, mock_play_by_play_response, make_mock_client
     ):
@@ -791,7 +767,6 @@ class TestNBAClientGetMany:
         assert len(results) == 3
         assert all(isinstance(r, PlayByPlayResponse) for r in results)
 
-    @pytest.mark.asyncio
     async def test_get_many_empty_list(self):
         """get_many with empty list returns empty list."""
         client = NBAClient()
@@ -799,7 +774,6 @@ class TestNBAClientGetMany:
         assert results == []
         await client.close()
 
-    @pytest.mark.asyncio
     async def test_get_many_default_concurrency(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
@@ -821,7 +795,6 @@ class TestNBAClientGetMany:
         assert len(bind_calls) == 1
         assert bind_calls[0][1]["concurrency"] == 3
 
-    @pytest.mark.asyncio
     async def test_get_many_custom_concurrency(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
@@ -843,7 +816,6 @@ class TestNBAClientGetMany:
         assert len(bind_calls) == 1
         assert bind_calls[0][1]["concurrency"] == 5
 
-    @pytest.mark.asyncio
     async def test_get_many_logs_batch_start(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
@@ -868,7 +840,6 @@ class TestNBAClientGetMany:
         assert len(bind_calls) == 1
         assert bind_calls[0][1]["total"] == 3
 
-    @pytest.mark.asyncio
     async def test_get_many_logs_batch_complete(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
@@ -890,7 +861,6 @@ class TestNBAClientGetMany:
         assert len(complete_calls) == 1
         assert complete_calls[0][1]["total"] == 3
 
-    @pytest.mark.asyncio
     async def test_get_many_logs_batch_progress_for_large_batches(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
@@ -919,7 +889,6 @@ class TestNBAClientGetMany:
             assert "completed" in call[1]
             assert "total" in call[1]
 
-    @pytest.mark.asyncio
     async def test_get_many_no_progress_for_small_batches(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
@@ -941,21 +910,20 @@ class TestNBAClientGetMany:
         ]
         assert len(progress_calls) == 0
 
-    @pytest.mark.asyncio
     async def test_get_many_respects_concurrency_limit(
         self, mock_play_by_play_response, mocker: MockerFixture
     ):
         """get_many limits concurrent requests via semaphore."""
         concurrent_count = 0
         max_concurrent = 0
-        lock = asyncio.Lock()
+        lock = anyio.Lock()
 
         async def mock_aenter(self):
             nonlocal concurrent_count, max_concurrent
             async with lock:
                 concurrent_count += 1
                 max_concurrent = max(max_concurrent, concurrent_count)
-            await asyncio.sleep(0.01)  # Simulate network delay
+            await anyio.sleep(0.01)  # Simulate network delay
             return self
 
         async def mock_aexit(self, *args):
@@ -984,7 +952,6 @@ class TestNBAClientGetMany:
 
         assert max_concurrent <= 3
 
-    @pytest.mark.asyncio
     async def test_get_many_raises_exception_group_on_error(
         self,
         make_client_response_error,
@@ -1041,7 +1008,6 @@ class TestNBAClientRequestDelay:
         client = NBAClient(request_delay=1)
         assert client._request_delay == 1
 
-    @pytest.mark.asyncio
     async def test_get_many_no_delay_when_zero(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
@@ -1056,11 +1022,10 @@ class TestNBAClientRequestDelay:
         # Should not have called sleep since delay is 0
         mock_sleep.assert_not_called()
 
-    @pytest.mark.asyncio
     async def test_get_many_applies_request_delay(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
-        """get_many sleeps between requests when request_delay > 0."""
+        """get_many sleeps once per request (before the limiter) when request_delay > 0."""
         client, mock_session = make_mock_client(
             json_data=mock_play_by_play_response, request_delay=0.1
         )
@@ -1074,11 +1039,10 @@ class TestNBAClientRequestDelay:
         # Each call should use the configured delay
         mock_sleep.assert_called_with(0.1)
 
-    @pytest.mark.asyncio
     async def test_get_many_delay_called_per_request(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
-        """get_many calls sleep before each request, not just between them."""
+        """get_many calls sleep once per request before the limiter."""
         client, mock_session = make_mock_client(
             json_data=mock_play_by_play_response, request_delay=0.05
         )
@@ -1093,7 +1057,6 @@ class TestNBAClientRequestDelay:
         for call in mock_sleep.call_args_list:
             assert call[0][0] == 0.05
 
-    @pytest.mark.asyncio
     async def test_get_many_delay_with_concurrency(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
@@ -1109,7 +1072,6 @@ class TestNBAClientRequestDelay:
         # Each of the 6 requests should trigger a delay
         assert mock_sleep.call_count == 6
 
-    @pytest.mark.asyncio
     async def test_get_single_does_not_use_delay(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
@@ -1124,7 +1086,6 @@ class TestNBAClientRequestDelay:
         # Single get() should not use the delay
         mock_sleep.assert_not_called()
 
-    @pytest.mark.asyncio
     async def test_get_many_empty_list_no_delay(self, mocker: MockerFixture):
         """get_many with empty list does not call sleep."""
         client = NBAClient(request_delay=0.5)
@@ -1156,7 +1117,6 @@ class TestNBAClientCaching:
         client = NBAClient(cache_ttl=60, cache_maxsize=100)
         assert client.cache_info["maxsize"] == 100
 
-    @pytest.mark.asyncio
     async def test_cache_hit_returns_cached_response(
         self, mock_play_by_play_response, make_mock_client
     ):
@@ -1178,7 +1138,6 @@ class TestNBAClientCaching:
         # Only one actual request should be made
         assert mock_session.get.call_count == 1
 
-    @pytest.mark.asyncio
     async def test_cache_miss_different_params(
         self, mock_play_by_play_response, make_mock_client
     ):
@@ -1225,7 +1184,6 @@ class TestNBAClientCaching:
 class TestNBAClientCorrelationId:
     """Tests for correlation ID / request tracing functionality."""
 
-    @pytest.mark.asyncio
     async def test_get_generates_request_id(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
@@ -1248,7 +1206,6 @@ class TestNBAClientCorrelationId:
 
         uuid.UUID(bind_kwargs["request_id"])
 
-    @pytest.mark.asyncio
     async def test_get_uses_provided_request_id(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
@@ -1266,7 +1223,6 @@ class TestNBAClientCorrelationId:
         bind_kwargs = mock_logger.bind.call_args[1]
         assert bind_kwargs["request_id"] == "custom-request-123"
 
-    @pytest.mark.asyncio
     async def test_get_many_generates_batch_id(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
@@ -1359,7 +1315,6 @@ class TestRetryAfterParsing:
         client = NBAClient()
         assert client._parse_retry_after("not-a-number") is None
 
-    @pytest.mark.asyncio
     async def test_retry_after_used_in_wait_strategy(
         self, make_mock_client, make_client_response_error
     ):
@@ -1458,114 +1413,39 @@ class TestTypedResponseCache:
 
 
 class TestNBAClientSignalHandling:
-    """Tests for NBAClient._on_signal and _graceful_shutdown."""
+    """Tests for NBAClient._signal_handler_loop."""
 
-    async def test_on_signal_removes_signal_handlers(self, mocker: MockerFixture):
-        """_on_signal calls _remove_signal_handlers immediately."""
-        client = NBAClient(session=mocker.MagicMock())
-        client._remove_signal_handlers = mocker.MagicMock()
-        client._graceful_shutdown = mocker.AsyncMock()
-
-        client._on_signal()
-        await asyncio.sleep(0)
-
-        client._remove_signal_handlers.assert_called_once()
-
-    async def test_on_signal_schedules_task_named_fastbreak_shutdown(
+    async def test_signal_handler_loop_cancels_scope_on_signal(
         self, mocker: MockerFixture
     ):
-        """_on_signal creates a task named 'fastbreak-shutdown'."""
+        """_signal_handler_loop cancels the scope when a signal arrives."""
         client = NBAClient(session=mocker.MagicMock())
-        client._remove_signal_handlers = mocker.MagicMock()
-        client._graceful_shutdown = mocker.AsyncMock()
+        mock_scope = mocker.MagicMock(spec=anyio.CancelScope)
 
-        client._on_signal()
+        async def fake_signals():
+            yield signal.SIGINT
 
-        task_names = {t.get_name() for t in asyncio.all_tasks()}
-        assert "fastbreak-shutdown" in task_names
+        mock_receiver = mocker.MagicMock()
+        mock_receiver.__enter__ = mocker.MagicMock(return_value=fake_signals())
+        mock_receiver.__exit__ = mocker.MagicMock(return_value=False)
+        mocker.patch("anyio.open_signal_receiver", return_value=mock_receiver)
 
-        await asyncio.sleep(0)  # let the task complete
+        await client._signal_handler_loop(mock_scope)
 
-    async def test_on_signal_runs_graceful_shutdown(self, mocker: MockerFixture):
-        """_on_signal actually executes _graceful_shutdown via the task."""
-        client = NBAClient(session=mocker.MagicMock())
-        client._remove_signal_handlers = mocker.MagicMock()
-        ran = asyncio.Event()
+        mock_scope.cancel.assert_called_once()
 
-        async def fake_shutdown() -> None:
-            ran.set()
-
-        client._graceful_shutdown = fake_shutdown  # type: ignore[method-assign]
-
-        client._on_signal()
-        await asyncio.sleep(0)
-
-        assert ran.is_set()
-
-    async def test_graceful_shutdown_awaits_close(self, mocker: MockerFixture):
-        """_graceful_shutdown calls close() before cancelling tasks."""
-        client = NBAClient(session=mocker.MagicMock())
-        client.close = mocker.AsyncMock()
-
-        await client._graceful_shutdown()
-
-        client.close.assert_awaited_once()
-
-    async def test_graceful_shutdown_cancels_other_tasks(self, mocker: MockerFixture):
-        """_graceful_shutdown cancels all tasks other than itself."""
-        client = NBAClient(session=mocker.MagicMock())
-        client.close = mocker.AsyncMock()
-
-        async def long_running() -> None:
-            await asyncio.sleep(100)
-
-        other_task = asyncio.create_task(long_running())
-        await asyncio.sleep(0)  # let it start
-
-        await client._graceful_shutdown()
-        await asyncio.sleep(0)  # let cancellation settle
-
-        assert other_task.cancelled()
-
-    async def test_graceful_shutdown_does_not_cancel_current_task(
+    async def test_signal_handler_loop_logs_debug_when_not_supported(
         self, mocker: MockerFixture
     ):
-        """_graceful_shutdown does not cancel the task running the shutdown."""
+        """_signal_handler_loop emits a debug log when signals are not supported."""
         client = NBAClient(session=mocker.MagicMock())
-        client.close = mocker.AsyncMock()
-        current = asyncio.current_task()
-        assert current is not None
-
-        await client._graceful_shutdown()
-
-        assert not current.cancelled()
-
-    def test_install_signal_handlers_logs_debug_on_platform_error(
-        self, mocker: MockerFixture
-    ):
-        """A debug log is emitted when signal handlers cannot be installed."""
-        client = NBAClient(session=mocker.MagicMock())
+        mock_scope = mocker.MagicMock(spec=anyio.CancelScope)
         mock_logger = mocker.patch("fastbreak.clients.nba.logger")
         mocker.patch(
-            "fastbreak.clients.nba.asyncio.get_running_loop",
+            "anyio.open_signal_receiver",
             side_effect=NotImplementedError("not supported on this platform"),
         )
 
-        client._install_signal_handlers()
-
-        mock_logger.debug.assert_called_once()
-
-    def test_remove_signal_handlers_logs_debug_on_platform_error(
-        self, mocker: MockerFixture
-    ):
-        """A debug log is emitted when signal handlers cannot be removed."""
-        client = NBAClient(session=mocker.MagicMock())
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
-        mocker.patch(
-            "fastbreak.clients.nba.asyncio.get_running_loop",
-            side_effect=NotImplementedError("not supported on this platform"),
-        )
-
-        client._remove_signal_handlers()
+        await client._signal_handler_loop(mock_scope)
 
         mock_logger.debug.assert_called_once()
