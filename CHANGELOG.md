@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.0.12] - 2026-03-03
+
+### 🔧 Improvements
+
+**`NBAClient` (clients/nba.py):**
+
+- **Idiomatic anyio throughout** — removed the `asyncio` import; all concurrency primitives now use anyio directly
+  - `NBAClient` inherits from `anyio.AsyncContextManagerMixin` and implements `__asynccontextmanager__()` instead of `__aenter__` / `__aexit__`
+  - Signal handling uses `anyio.open_signal_receiver` in a dedicated task (`_signal_handler_loop`) inside `anyio.create_task_group`; the cancel scope is cancelled on context exit
+  - Session close timeout uses `anyio.move_on_after()` + `cancel_scope.cancelled_caught` instead of `asyncio.wait_for()` + `TimeoutError`
+- **`request_delay` sleeps before acquiring the concurrency slot** — previously ran inside `async with limiter:`, holding a slot during the wait
+- **`DummyCookieJar`** — `ClientSession` is created with `cookie_jar=DummyCookieJar()`; fastbreak doesn't use cookies
+
+### 🐛 Bug Fixes
+
+- **`_signal_handler_loop`**: Added `OSError` to caught exceptions — CPython's `add_signal_handler` can propagate a raw `OSError` (errno ≠ `EINVAL`) from `siginterrupt()`, which previously crashed the client at startup
+- **`close()`**: Exceptions from `session.close()` are now logged at WARNING (with traceback) before propagating; previously they escaped silently
+- **`docs/client.md`**: Cache key was documented as SHA-256; the implementation uses MD5 (`usedforsecurity=False`)
+- **`docs/gotchas.md`**: Removed `await client.__aenter__()` from lifespan example — calling `__aenter__` without `__aexit__` leaves the signal handler task group uncancelled
+
+### 📚 Documentation
+
+- **`docs/client.md`**: Updated signal handling section for anyio; removed asyncio-specific "event loop" terminology; clarified `request_delay` slot-ordering
+- **`docs/gotchas.md`**: Updated root-cause and lifespan example for anyio-based signal handling
+- **`docs/models.md`**: Fixed import path `fastbreak.models.common.frozen` → `fastbreak.models.common.response`
+
 ## [v0.0.11] - 2026-03-03
 
 ### 🐛 Bug Fixes
