@@ -1284,7 +1284,8 @@ missed the line, or if there are no non-`None` games.
 ```python
 pts = [10.0, 25.0, 30.0, 28.0]
 streak_count(pts, 20.0)                        # 3  (last three: 28, 30, 25 all ≥ 20)
-streak_count(pts, 20.0)                        # changes if the most recent game changes
+pts[-1] = 15.0
+streak_count(pts, 20.0)                        # 0  (most recent game is 15 < 20 → streak ends)
 
 # DNPs do not break a streak:
 streak_count([20.0, 25.0, None, 30.0], 20.0)   # 3  (None skipped; 30, 25, 20 all qualify)

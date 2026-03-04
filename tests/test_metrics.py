@@ -2162,7 +2162,11 @@ class TestPercentileRank:
     def test_monotone_in_value(self, values: list[float], v1: float, v2: float) -> None:
         """Higher value → equal or higher percentile rank (non-decreasing)."""
         lo, hi = (v1, v2) if v1 <= v2 else (v2, v1)
-        assert percentile_rank(lo, values) <= percentile_rank(hi, values) + 1e-9  # type: ignore[operator]
+        lo_rank = percentile_rank(lo, values)
+        hi_rank = percentile_rank(hi, values)
+        assert lo_rank is not None
+        assert hi_rank is not None
+        assert lo_rank <= hi_rank + 1e-9
 
     @settings(suppress_health_check=_XDIST)
     @given(
