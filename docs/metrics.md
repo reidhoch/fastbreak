@@ -1044,8 +1044,9 @@ async def main() -> None:
 
 These functions describe the **shape** of a player's output over a sample of games.
 They all accept `Sequence[float | None]` and skip `None` entries (DNP games are excluded
-from the sample rather than counted as zero). All four return `None` when the sequence
-contains no non-`None` values.
+from the sample rather than counted as zero). Most return `None` when the sequence
+contains no non-`None` values; `streak_count` is the exception — it returns `0` rather
+than `None` when there is no data.
 
 Unlike `rolling_avg` — which propagates `None` through windows to preserve
 temporal structure — distribution functions collect all valid values and compute

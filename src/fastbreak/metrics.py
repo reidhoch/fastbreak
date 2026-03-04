@@ -1227,6 +1227,9 @@ def percentile_rank(value: float, reference: Sequence[float | None]) -> float | 
     if not valid:
         return None
     n = len(valid)
+    # Single-element list: below → 0.0, equal or above → 100.0
+    if n == 1:
+        return 100.0 if value >= valid[0] else 0.0
     if value <= valid[0]:
         return 0.0
     if value >= valid[-1]:
@@ -1362,7 +1365,7 @@ def rolling_consistency(
             continue
         mean = sum(floats) / len(floats)
         variance = sum((v - mean) ** 2 for v in floats) / len(floats)
-        result.append(fsqrt(max(0.0, variance)))
+        result.append(fsqrt(variance))
     return result
 
 
@@ -1393,14 +1396,14 @@ def expected_stat(values: Sequence[float | None]) -> float | None:
         pts = [38.0, 14.0, 41.0, 22.0, 35.0, 29.0, 44.0, 18.0]
         expected_stat(pts)  # weighted projection accounting for boom/bust range
     """
-    # All three return None iff `values` has no non-None entries — same
-    # condition.  Percentiles are pinned explicitly to document the PERT
-    # variant (P10/P50/P90) and prevent silent drift if helper defaults change.
-    floor_v = stat_floor(values, percentile=10.0)
-    median_v = stat_median(values)
-    ceil_v = stat_ceiling(values, percentile=90.0)
-    if floor_v is None or median_v is None or ceil_v is None:
+    # Filter and sort once; derive P10/P50/P90 via the shared helper to avoid
+    # the O(3n log n) cost of calling stat_floor/stat_median/stat_ceiling separately.
+    valid = sorted(v for v in values if v is not None)
+    if not valid:
         return None
+    floor_v = _percentile(valid, 10.0)
+    median_v = _percentile(valid, 50.0)
+    ceil_v = _percentile(valid, 90.0)
     return (floor_v + 4.0 * median_v + ceil_v) / 6.0
 
 
