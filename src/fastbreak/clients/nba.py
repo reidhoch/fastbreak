@@ -545,8 +545,6 @@ class NBAClient(AsyncContextManagerMixin):
 
         async def _fetch_with_limiter(index: int, endpoint: Endpoint[T]) -> None:
             nonlocal completed
-            if self._request_delay > 0:
-                await anyio.sleep(self._request_delay)
             async with limiter:
                 # Use batch_id as prefix for individual request IDs
                 request_id = f"{batch_id}:{index}"
@@ -557,6 +555,12 @@ class NBAClient(AsyncContextManagerMixin):
                     and completed % max(1, total // BATCH_PROGRESS_THRESHOLD) == 0
                 ):
                     await log.adebug("batch_progress", completed=completed, total=total)
+                # Sleep inside the slot so the delay is paced per-completion rather
+                # than per-start.  Sleeping outside would cause all tasks to wake
+                # simultaneously and stampede the limiter, making the delay
+                # ineffective for large batches.
+                if self._request_delay > 0:
+                    await anyio.sleep(self._request_delay)
 
         async with anyio.create_task_group() as tg:
             for i, endpoint in enumerate(endpoints):
