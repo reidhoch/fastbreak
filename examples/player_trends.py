@@ -39,7 +39,7 @@ async def analyze_player_trends(
     Returns players sorted by scoring trend (recent vs early performance).
     """
     async with NBAClient(request_delay=1.0) as client:
-        # Step 1: Get all game IDs in the date range — fetch all days in parallel
+        # Step 1: Get all game IDs in the date range — one request per day, serialised
         print(f"Fetching games from {start_date} to {end_date}...")
         dates: list[date] = []
         current = start_date

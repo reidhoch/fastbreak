@@ -1,8 +1,10 @@
 """Tests for derived basketball metrics."""
 
 import pytest
-from hypothesis import given
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
+
+_XDIST = [HealthCheck.differing_executors]
 
 from fastbreak.metrics import (
     FourFactors,
@@ -1749,6 +1751,7 @@ class TestStatFloor:
 
     # --- Property-based tests ---
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
         p=st.floats(min_value=0.0, max_value=100.0),
@@ -1759,6 +1762,7 @@ class TestStatFloor:
         assert result is not None
         assert min(values) - 1e-9 <= result <= max(values) + 1e-9
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
         p1=st.floats(min_value=0.0, max_value=100.0),
@@ -1775,6 +1779,7 @@ class TestStatFloor:
         assert hi is not None
         assert lo <= hi + 1e-9
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         floats=st.lists(_finite_floats, min_size=1, max_size=20),
         nones=st.lists(st.none(), min_size=0, max_size=5),
@@ -1787,11 +1792,13 @@ class TestStatFloor:
         mixed: list[float | None] = [*floats, *nones]
         assert stat_floor(mixed, p) == pytest.approx(stat_floor(floats, p))
 
+    @settings(suppress_health_check=_XDIST)
     @given(values=st.lists(_finite_floats, min_size=1, max_size=30))
     def test_p0_always_equals_minimum(self, values: list[float]) -> None:
         """0th percentile is always the sample minimum."""
         assert stat_floor(values, 0.0) == pytest.approx(min(values))
 
+    @settings(suppress_health_check=_XDIST)
     @given(values=st.lists(_finite_floats, min_size=1, max_size=30))
     def test_p100_always_equals_maximum(self, values: list[float]) -> None:
         """100th percentile is always the sample maximum."""
@@ -1840,6 +1847,7 @@ class TestStatCeiling:
 
     # --- Property-based tests ---
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
         p=st.floats(min_value=0.0, max_value=100.0),
@@ -1850,6 +1858,7 @@ class TestStatCeiling:
         assert result is not None
         assert min(values) - 1e-9 <= result <= max(values) + 1e-9
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
         p1=st.floats(min_value=0.0, max_value=100.0),
@@ -1866,6 +1875,7 @@ class TestStatCeiling:
         assert hi is not None
         assert lo <= hi + 1e-9
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         floats=st.lists(_finite_floats, min_size=1, max_size=20),
         nones=st.lists(st.none(), min_size=0, max_size=5),
@@ -1878,6 +1888,7 @@ class TestStatCeiling:
         mixed: list[float | None] = [*floats, *nones]
         assert stat_ceiling(mixed, p) == pytest.approx(stat_ceiling(floats, p))
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
         floor_p=st.floats(min_value=0.0, max_value=50.0),
@@ -1927,6 +1938,7 @@ class TestStatMedian:
 
     # --- Property-based tests ---
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
     )
@@ -1934,6 +1946,7 @@ class TestStatMedian:
         """stat_median is exactly stat_floor(values, 50.0) — oracle property."""
         assert stat_median(values) == pytest.approx(stat_floor(values, 50.0))
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
     )
@@ -1943,6 +1956,7 @@ class TestStatMedian:
         assert result is not None
         assert min(values) - 1e-9 <= result <= max(values) + 1e-9
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
     )
@@ -1957,6 +1971,7 @@ class TestStatMedian:
         assert floor <= median + 1e-9
         assert median <= ceiling + 1e-9
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         floats=st.lists(_finite_floats, min_size=1, max_size=20),
         nones=st.lists(st.none(), min_size=0, max_size=5),
@@ -2011,6 +2026,7 @@ class TestPropHitRate:
 
     # --- Property-based tests ---
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_maybe_float, min_size=1, max_size=30).filter(
             lambda vs: any(v is not None for v in vs)
@@ -2025,6 +2041,7 @@ class TestPropHitRate:
         assert result is not None
         assert 0.0 <= result <= 1.0
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
         lo=_finite_floats,
@@ -2041,6 +2058,7 @@ class TestPropHitRate:
         assert rate_high is not None
         assert rate_low >= rate_high - 1e-9
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
         offset=st.floats(min_value=0.001, max_value=1e3, allow_nan=False),
@@ -2052,6 +2070,7 @@ class TestPropHitRate:
         rate = prop_hit_rate(values, min(values) - offset)
         assert rate == pytest.approx(1.0)
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
         offset=st.floats(min_value=0.001, max_value=1e3, allow_nan=False),
@@ -2063,6 +2082,7 @@ class TestPropHitRate:
         rate = prop_hit_rate(values, max(values) + offset)
         assert rate == pytest.approx(0.0)
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         floats=st.lists(_finite_floats, min_size=1, max_size=20),
         nones=st.lists(st.none(), min_size=0, max_size=5),
@@ -2122,6 +2142,7 @@ class TestPercentileRank:
 
     # --- Property-based tests ---
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
         value=_finite_floats,
@@ -2132,6 +2153,7 @@ class TestPercentileRank:
         assert result is not None
         assert 0.0 <= result <= 100.0
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
         v1=_finite_floats,
@@ -2142,13 +2164,15 @@ class TestPercentileRank:
         lo, hi = (v1, v2) if v1 <= v2 else (v2, v1)
         assert percentile_rank(lo, values) <= percentile_rank(hi, values) + 1e-9  # type: ignore[operator]
 
+    @settings(suppress_health_check=_XDIST)
     @given(
-        values=st.lists(_finite_floats, min_size=1, max_size=30),
+        values=st.lists(_finite_floats, min_size=2, max_size=30),
     )
     def test_min_value_returns_0(self, values: list[float]) -> None:
-        """Minimum of the reference always has rank 0.0."""
+        """Minimum of the reference always has rank 0.0 (for lists with 2+ elements)."""
         assert percentile_rank(min(values), values) == pytest.approx(0.0)
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=2, max_size=30).filter(
             lambda vs: min(vs) < max(vs)
@@ -2162,6 +2186,7 @@ class TestPercentileRank:
         """
         assert percentile_rank(max(values), values) == pytest.approx(100.0)
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         floats=st.lists(_finite_floats, min_size=1, max_size=20),
         nones=st.lists(st.none(), min_size=0, max_size=5),
@@ -2176,6 +2201,7 @@ class TestPercentileRank:
             percentile_rank(value, floats)
         )
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=2, max_size=20, unique=True),
         p=st.floats(min_value=0.0, max_value=100.0),
@@ -2228,6 +2254,7 @@ class TestStatConsistency:
 
     # --- Property-based tests ---
 
+    @settings(suppress_health_check=_XDIST)
     @given(values=st.lists(_finite_floats, min_size=1, max_size=30))
     def test_always_non_negative(self, values: list[float]) -> None:
         """Standard deviation is never negative."""
@@ -2235,6 +2262,7 @@ class TestStatConsistency:
         assert result is not None
         assert result >= 0.0
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
         constant=st.floats(
@@ -2250,6 +2278,7 @@ class TestStatConsistency:
         assert result is not None
         assert result == pytest.approx(original, abs=1e-6)
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(
             st.floats(
@@ -2271,6 +2300,7 @@ class TestStatConsistency:
         assert result is not None
         assert result == pytest.approx(original * k, abs=1e-4)
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         floats=st.lists(_finite_floats, min_size=1, max_size=20),
         nones=st.lists(st.none(), min_size=0, max_size=5),
@@ -2282,6 +2312,7 @@ class TestStatConsistency:
         mixed: list[float | None] = [*floats, *nones]
         assert stat_consistency(mixed) == pytest.approx(stat_consistency(floats))
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         n=st.integers(min_value=1, max_value=30),
         v=_finite_floats,
@@ -2337,6 +2368,7 @@ class TestStreakCount:
 
     # --- Property-based tests ---
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_maybe_float, min_size=0, max_size=30),
         line=_finite_floats,
@@ -2347,6 +2379,7 @@ class TestStreakCount:
         """Streak is never negative."""
         assert streak_count(values, line) >= 0
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_maybe_float, min_size=0, max_size=30),
         line=_finite_floats,
@@ -2358,6 +2391,7 @@ class TestStreakCount:
         games_played = sum(1 for v in values if v is not None)
         assert streak_count(values, line) <= games_played
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_maybe_float, min_size=1, max_size=30).filter(
             lambda vs: any(v is not None for v in vs)
@@ -2372,6 +2406,7 @@ class TestStreakCount:
         line1, line2 = (lo, hi) if lo <= hi else (hi, lo)
         assert streak_count(values, line1) >= streak_count(values, line2)
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         floats=st.lists(_finite_floats, min_size=1, max_size=20),
         nones=st.lists(st.none(), min_size=0, max_size=5),
@@ -2473,6 +2508,7 @@ class TestRollingConsistency:
 
     # --- Property-based tests ---
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_maybe_float, min_size=0, max_size=30),
         window=st.integers(min_value=1, max_value=10),
@@ -2484,6 +2520,7 @@ class TestRollingConsistency:
         result = rolling_consistency(values, window)
         assert len(result) == len(values)
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_maybe_float, min_size=0, max_size=30),
         window=st.integers(min_value=1, max_value=10),
@@ -2496,6 +2533,7 @@ class TestRollingConsistency:
             if v is not None:
                 assert v >= 0.0
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_maybe_float, min_size=0, max_size=30),
         window=st.integers(min_value=1, max_value=15),
@@ -2508,6 +2546,7 @@ class TestRollingConsistency:
         n_warmup = min(window - 1, len(values))
         assert all(v is None for v in result[:n_warmup])
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=20),
         window=st.integers(min_value=1, max_value=10),
@@ -2517,6 +2556,7 @@ class TestRollingConsistency:
         result = rolling_consistency(values, 1)
         assert all(v == pytest.approx(0.0) for v in result)
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=2, max_size=20),
         window=st.integers(min_value=1, max_value=10),
@@ -2537,6 +2577,7 @@ class TestRollingConsistency:
             else:
                 assert s == pytest.approx(o, abs=1e-4)
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(
             st.floats(
@@ -2561,6 +2602,7 @@ class TestRollingConsistency:
             else:
                 assert s == pytest.approx(o * k, rel=1e-4, abs=1e-6)
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=20),
     )
@@ -2627,6 +2669,7 @@ class TestExpectedStat:
 
     # --- Property-based tests ---
 
+    @settings(suppress_health_check=_XDIST)
     @given(values=st.lists(_finite_floats, min_size=1, max_size=30))
     def test_between_floor_and_ceiling(self, values: list[float]) -> None:
         """Result is always between stat_floor(10th) and stat_ceiling(90th)."""
@@ -2638,6 +2681,7 @@ class TestExpectedStat:
         assert floor_v <= result + 1e-9
         assert result <= ceil_v + 1e-9
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
         constant=st.floats(
@@ -2652,6 +2696,7 @@ class TestExpectedStat:
         assert orig is not None and shifted_result is not None
         assert shifted_result == pytest.approx(orig + constant, abs=1e-4)
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=30),
         k=st.floats(
@@ -2666,6 +2711,7 @@ class TestExpectedStat:
         assert orig is not None and scaled_result is not None
         assert scaled_result == pytest.approx(orig * k, rel=1e-4, abs=1e-6)
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         n=st.integers(min_value=1, max_value=30),
         v=_finite_floats,
@@ -2675,6 +2721,7 @@ class TestExpectedStat:
         result = expected_stat([v] * n)
         assert result == pytest.approx(v, abs=1e-9)
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         floats=st.lists(_finite_floats, min_size=1, max_size=20),
         nones=st.lists(st.none(), min_size=0, max_size=5),
@@ -2747,6 +2794,7 @@ class TestHitRateLastN:
 
     # --- Property-based tests ---
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_maybe_float, min_size=1, max_size=30).filter(
             lambda vs: any(v is not None for v in vs)
@@ -2762,6 +2810,7 @@ class TestHitRateLastN:
         assert result is not None
         assert 0.0 <= result <= 1.0
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_maybe_float, min_size=1, max_size=30).filter(
             lambda vs: any(v is not None for v in vs)
@@ -2780,6 +2829,7 @@ class TestHitRateLastN:
         assert r1 is not None and r2 is not None
         assert r1 >= r2 - 1e-9
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         floats=st.lists(_finite_floats, min_size=1, max_size=20),
         nones=st.lists(st.none(), min_size=0, max_size=5),
@@ -2795,6 +2845,7 @@ class TestHitRateLastN:
             hit_rate_last_n(floats, line, n)
         )
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_finite_floats, min_size=1, max_size=20),
         line=_finite_floats,
@@ -2808,6 +2859,7 @@ class TestHitRateLastN:
             prop_hit_rate(values, line)
         )
 
+    @settings(suppress_health_check=_XDIST)
     @given(
         values=st.lists(_maybe_float, min_size=1, max_size=30).filter(
             lambda vs: any(v is not None for v in vs)
