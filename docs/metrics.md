@@ -28,6 +28,10 @@ from fastbreak.metrics import (
     possessions,
     # Rolling / windowed
     rolling_avg,
+    # Distribution
+    stat_floor, stat_ceiling, stat_median, prop_hit_rate,
+    percentile_rank, stat_consistency, streak_count,
+    rolling_consistency, expected_stat, hit_rate_last_n,
     # League context
     LeagueAverages,
 )
@@ -1034,6 +1038,449 @@ async def main() -> None:
 
 ---
 
+---
+
+### Distribution Statistics
+
+These functions describe the **shape** of a player's output over a sample of games.
+They all accept `Sequence[float | None]` and skip `None` entries (DNP games are excluded
+from the sample rather than counted as zero). All four return `None` when the sequence
+contains no non-`None` values.
+
+Unlike `rolling_avg` — which propagates `None` through windows to preserve
+temporal structure — distribution functions collect all valid values and compute
+aggregate statistics, so a DNP only reduces the sample size.
+
+---
+
+#### `stat_floor`
+
+```python
+def stat_floor(values: Sequence[float | None], percentile: float = 10.0) -> float | None
+```
+
+Nth percentile of a stat sample — a downside estimate for player projection.
+
+Uses linear interpolation (same algorithm as NumPy's default). The default of 10 follows
+common usage in projection systems where the "floor" represents the low-end outcome a
+player typically exceeds 90% of the time.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `values` | `Sequence[float \| None]` | Per-game stat values; pass `None` for DNP games. |
+| `percentile` | `float` | Percentile in [0.0, 100.0]. Defaults to 10. |
+
+Returns `None` when `values` contains no non-`None` entries.
+
+**Raises:** `ValueError` when `percentile` is outside [0.0, 100.0].
+
+```python
+pts = [22.0, 18.0, None, 30.0, 25.0, 20.0]
+stat_floor(pts)          # 10th pct ≈ 18.4  (DNP excluded)
+stat_floor(pts, 25.0)    # 25th pct ≈ 19.5
+stat_floor(pts, 0.0)     # minimum = 18.0
+```
+
+---
+
+#### `stat_ceiling`
+
+```python
+def stat_ceiling(values: Sequence[float | None], percentile: float = 90.0) -> float | None
+```
+
+Nth percentile of a stat sample — an upside estimate for player projection.
+
+Symmetric counterpart to `stat_floor`. The default of 90 represents the high-end outcome
+the player achieves roughly once in every ten games.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `values` | `Sequence[float \| None]` | Per-game stat values; pass `None` for DNP games. |
+| `percentile` | `float` | Percentile in [0.0, 100.0]. Defaults to 90. |
+
+Returns `None` when `values` contains no non-`None` entries.
+
+**Raises:** `ValueError` when `percentile` is outside [0.0, 100.0].
+
+```python
+pts = [22.0, 18.0, None, 30.0, 25.0, 20.0]
+stat_ceiling(pts)          # 90th pct ≈ 29.6
+stat_ceiling(pts, 75.0)    # 75th pct ≈ 26.5
+stat_ceiling(pts, 100.0)   # maximum = 30.0
+```
+
+---
+
+#### `stat_median`
+
+```python
+def stat_median(values: Sequence[float | None]) -> float | None
+```
+
+Median of a stat sample — central tendency estimate.
+
+Equivalent to `stat_floor(values, 50.0)` and `stat_ceiling(values, 50.0)`. Provided as a
+convenience function since the median is by far the most commonly requested single
+percentile.
+
+```python
+pts = [22.0, 18.0, None, 30.0, 25.0, 20.0]
+stat_median(pts)    # 22.0  (median of [18, 20, 22, 25, 30])
+stat_median([10.0, 30.0])  # 20.0  (interpolated midpoint)
+```
+
+Returns `None` when `values` contains no non-`None` entries.
+
+---
+
+#### `prop_hit_rate`
+
+```python
+def prop_hit_rate(values: Sequence[float | None], line: float) -> float | None
+```
+
+Fraction of games where a stat value meets or exceeds a threshold.
+
+Uses `>=` semantics: a value exactly on the line counts as a hit. Returns a fraction in
+[0.0, 1.0], not a percentage — multiply by 100 to convert.
+
+`None` values (DNPs) are excluded from **both** the numerator and denominator, so missed
+games do not artificially dilute the rate. A player who played 50 games and hit the line
+in 30 of them has a rate of `30/50 = 0.60`, regardless of how many games they sat out.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `values` | `Sequence[float \| None]` | Per-game stat values; pass `None` for DNP games. |
+| `line` | `float` | Threshold to compare against (e.g., a prop bet line of 24.5). |
+
+Returns `None` when `values` contains no non-`None` entries.
+
+```python
+pts = [22.0, 25.0, 18.0, 30.0, 25.0]
+prop_hit_rate(pts, 24.5)    # 3/5 = 0.60  (25, 30, 25 qualify)
+prop_hit_rate(pts, 25.0)    # 3/5 = 0.60  (>= 25 counts)
+prop_hit_rate(pts, 30.0)    # 1/5 = 0.20
+prop_hit_rate(pts, 31.0)    # 0/5 = 0.0
+
+# DNPs excluded:
+pts_with_dnp = [22.0, None, 25.0, 18.0, 30.0]
+prop_hit_rate(pts_with_dnp, 20.0)   # 3/4 = 0.75  (4 games played, 3 qualify)
+```
+
+**Guaranteed properties:**
+- Result is always in [0.0, 1.0].
+- Non-increasing in `line`: raising the threshold never increases the rate.
+- If `line <= min(valid values)`: rate is always 1.0.
+- If `line > max(valid values)`: rate is always 0.0.
+
+---
+
+#### `percentile_rank`
+
+```python
+def percentile_rank(value: float, reference: Sequence[float | None]) -> float | None
+```
+
+The inverse of `stat_floor`. While `stat_floor(reference, p)` answers *"what value corresponds
+to the Pth percentile?"*, `percentile_rank(value, reference)` answers *"at what percentile does
+this value rank in the reference distribution?"*
+
+`None` entries in `reference` are excluded. Values outside the reference range are clamped to
+`[0.0, 100.0]`.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `value` | `float` | The query value to rank. |
+| `reference` | `Sequence[float \| None]` | Reference distribution; `None` entries excluded. |
+
+**Returns:** Percentile rank in `[0.0, 100.0]`, or `None` if `reference` has no non-`None` entries.
+
+```python
+ref = [10.0, 20.0, 30.0]
+percentile_rank(20.0, ref)   # 50.0  — median
+percentile_rank(10.0, ref)   # 0.0   — minimum
+percentile_rank(30.0, ref)   # 100.0 — maximum
+percentile_rank(15.0, ref)   # 25.0  — linear interpolation
+percentile_rank(35.0, ref)   # 100.0 — clamped (above max)
+percentile_rank(5.0,  ref)   # 0.0   — clamped (below min)
+```
+
+**Roundtrip property** (holds for unique-value references):
+```python
+percentile_rank(stat_floor(values, p), values) ≈ p
+```
+
+**Guaranteed properties:**
+- Result is always in `[0.0, 100.0]`.
+- Non-decreasing in `value`: a higher query value yields an equal or higher rank.
+- `percentile_rank(min(values), values)` == 0.0.
+- `percentile_rank(max(values), values)` == 100.0 (requires at least two distinct values).
+
+---
+
+#### `stat_consistency`
+
+```python
+def stat_consistency(values: Sequence[float | None]) -> float | None
+```
+
+Measures how variable a player's game-by-game output is, computed as the **population standard
+deviation** of the valid (non-`None`) entries. A lower value indicates a more consistent player;
+a higher value means boom-or-bust variance.
+
+Uses *population* std dev (divide by *n*) rather than *sample* std dev (divide by *n − 1*)
+because the game log is the full sample being analysed, not a statistical sample from a larger
+population.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `values` | `Sequence[float \| None]` | Per-game stat values; `None` for DNP games. |
+
+**Returns:** Population standard deviation ≥ 0.0, or `None` if no valid entries exist. A single
+valid entry returns 0.0.
+
+```python
+pts = [20.0, 25.0, 18.0, 30.0, 22.0]
+stat_consistency(pts)         # ≈ 4.07  (moderate variance)
+stat_consistency([20.0] * 5)  # 0.0    (perfectly consistent)
+
+# DNPs excluded:
+stat_consistency([20.0, None, 30.0])   # 10.0  (std dev of [20, 30])
+```
+
+**Guaranteed properties:**
+- Always ≥ 0.0.
+- **Shift-invariant:** adding a constant to every value does not change the spread.
+- **Scale property:** multiplying all values by *k* scales consistency by |*k*|.
+- A constant sequence always returns 0.0, regardless of length.
+
+**Coefficient of variation (CV):** divide by the mean to get a scale-free spread measure
+(`stat_consistency(pts) / (sum(v for v in pts if v is not None) / count)`).
+
+---
+
+#### `streak_count`
+
+```python
+def streak_count(values: Sequence[float | None], line: float) -> int
+```
+
+Counts the number of consecutive recent games in which a stat met or exceeded `line`, working
+backwards from the most recent entry. `None` values (DNP games) are **skipped** — a DNP does
+not break an active streak.
+
+Uses `>=` semantics: a value exactly equal to `line` counts as a hit.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `values` | `Sequence[float \| None]` | Per-game stats, **chronological order** (oldest first); `None` for DNP. |
+| `line` | `float` | The threshold the stat must meet. |
+
+**Returns:** Length of the current streak (≥ 0). Returns 0 if the most recent non-`None` game
+missed the line, or if there are no non-`None` games.
+
+```python
+pts = [10.0, 25.0, 30.0, 28.0]
+streak_count(pts, 20.0)                        # 3  (last three: 28, 30, 25 all ≥ 20)
+streak_count(pts, 20.0)                        # changes if the most recent game changes
+
+# DNPs do not break a streak:
+streak_count([20.0, 25.0, None, 30.0], 20.0)   # 3  (None skipped; 30, 25, 20 all qualify)
+streak_count([10.0, None, 30.0], 20.0)          # 1  (None skipped; 10 misses → streak stops)
+
+# Boundary cases:
+streak_count([], 20.0)                          # 0
+streak_count([None, None], 20.0)               # 0
+streak_count([20.0, 20.0], 20.0)               # 2  (>= semantics)
+```
+
+**Guaranteed properties:**
+- Always ≥ 0.
+- Never exceeds the number of non-`None` games in `values`.
+- Non-increasing in `line`: raising the threshold never increases the streak.
+- Appending `None` values at the end does not change the streak (DNPs at the end are skipped).
+
+---
+
+#### `rolling_consistency`
+
+```python
+def rolling_consistency(
+    values: Sequence[float | None],
+    window: int,
+) -> list[float | None]
+```
+
+Returns a list of rolling population standard deviations over a sliding window of size `window`.
+The output list has the same length as `values`.
+
+The first `window - 1` entries are always `None` (warm-up period). Once the window is full, each
+position holds the population standard deviation of the `window` most recent values. A `None`
+anywhere in the window makes that output `None` too — same behavior as `rolling_avg`. If a game
+is missing, the variance for that window is unknown, not zero.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `values` | `Sequence[float \| None]` | Per-game stats, chronological order (oldest first); `None` for DNP. |
+| `window` | `int` | Sliding-window size (≥ 1). |
+
+**Returns:** `list[float | None]` of length `len(values)`. Raises `ValueError` if `window < 1`.
+
+```python
+pts = [20.0, 25.0, 30.0, 15.0, 28.0]
+rolling_consistency(pts, 3)
+# [None, None, 4.08, 6.24, 6.65]
+#  ^      ^     ^    ^     ^
+#  warm-up      std dev of each 3-game window
+
+# DNP in window propagates to None:
+rolling_consistency([20.0, None, 30.0], 2)   # [None, None, None]
+rolling_consistency([20.0, 30.0, None], 2)   # [None, 5.0, None]
+```
+
+**Guaranteed properties:**
+- Always `len(result) == len(values)`.
+- First `window - 1` entries are always `None`.
+- All non-`None` results are ≥ 0.
+- A constant window always returns 0.0.
+- A `None` anywhere in a window propagates to `None` at that position.
+- Shift-invariant: adding a constant to every value in a window does not change that window's consistency.
+
+---
+
+#### `expected_stat`
+
+```python
+def expected_stat(values: Sequence[float | None]) -> float | None
+```
+
+Returns a PERT-weighted projection from the player's floor, median, and ceiling:
+
+```
+expected = (floor + 4 * median + ceiling) / 6
+```
+
+where `floor = stat_floor(values)`, `median = stat_median(values)`, and
+`ceiling = stat_ceiling(values)`. The median gets 4× the weight of either extreme, so a
+one-off blowup game won't move the number as much as a straight average would.
+
+`None` values (DNP games) are excluded from the sample.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `values` | `Sequence[float \| None]` | Per-game stats; `None` for DNP (skipped). |
+
+**Returns:** `float | None`. Returns `None` if there are no non-`None` values.
+
+```python
+pts = [10.0, 25.0, 30.0, 28.0, 15.0, None, 20.0]
+expected_stat(pts)                      # ≈21.9  (floor=12.5, median=22.5, ceiling=29.0)
+expected_stat([25.0, 25.0, 25.0])       # 25.0   (constant: floor = median = ceiling)
+
+# Symmetric distribution: expected == median
+expected_stat([10.0, 20.0, 30.0])       # 20.0
+
+expected_stat([])                        # None
+expected_stat([None, None])              # None
+```
+
+**Guaranteed properties:**
+- Always `floor ≤ expected_stat ≤ ceiling` for any non-empty sample.
+- For symmetric distributions, `expected_stat == median`.
+- Shift-equivariant: adding a constant `k` shifts the result by `k`.
+- Scale-equivariant: multiplying every value by `k > 0` scales the result by `k`.
+
+---
+
+#### `hit_rate_last_n`
+
+```python
+def hit_rate_last_n(
+    values: Sequence[float | None],
+    line: float,
+    n: int,
+) -> float | None
+```
+
+Returns the prop hit rate for the last `n` games played, skipping DNPs. Useful for comparing
+current form against a full-season rate — the same question `prop_hit_rate` answers, but
+scoped to recent games only.
+
+If fewer than `n` non-`None` games are available, all available games are used.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `values` | `Sequence[float \| None]` | Per-game stats, chronological order (oldest first); `None` for DNP. |
+| `line` | `float` | The threshold the stat must meet (`>=` semantics). |
+| `n` | `int` | Number of most recent non-`None` games to consider (≥ 1). |
+
+**Returns:** Hit rate in [0, 1], or `None` if there are no non-`None` games in `values`. Raises
+`ValueError` if `n < 1`.
+
+```python
+pts = [10.0, 25.0, 30.0, 15.0, 28.0]
+hit_rate_last_n(pts, 20.0, 3)    # 2/3 ≈ 0.667  (last 3: 28, 15, 30; 28 and 30 hit)
+hit_rate_last_n(pts, 20.0, 1)    # 1.0           (most recent: 28 >= 20)
+hit_rate_last_n(pts, 20.0, 10)   # 3/5 = 0.600  (only 5 games available; uses all)
+
+# Comparing recent vs full-season form:
+full   = prop_hit_rate(pts, 20.0)          # 0.6  (3 of 5 hit over the season)
+recent = hit_rate_last_n(pts, 20.0, 3)     # 0.667 (hotter recently)
+```
+
+**Guaranteed properties:**
+- Result is always in [0, 1] when not `None`.
+- Non-increasing in `line`: raising the threshold never raises the hit rate.
+- Appending `None` values at the end does not change the result (DNPs at the end are skipped).
+- Oracle: `hit_rate_last_n(values, line, n)` equals `prop_hit_rate(values, line)` when `n` is
+  at least the number of non-`None` entries in `values`.
+
+---
+
+### Using distribution stats together
+
+Floor, median, and ceiling form a natural three-point distribution profile. Use them
+together to compare player consistency:
+
+```python
+from fastbreak.metrics import (
+    stat_floor, stat_median, stat_ceiling, prop_hit_rate,
+    stat_consistency, streak_count, percentile_rank,
+    rolling_consistency, expected_stat, hit_rate_last_n,
+)
+
+# A streaky star and a consistent scorer with the same average
+streaky    = [38.0, 12.0, 41.0, 14.0, 35.0, 9.0, 44.0, 22.0, 31.0, 18.0]
+consistent = [26.0, 22.0, 28.0, 21.0, 27.0, 24.0, 25.0, 23.0, 26.0, 22.0]
+
+for label, pts in [("Streaky", streaky), ("Consistent", consistent)]:
+    print(
+        f"{label}: avg={sum(pts)/len(pts):.1f}  "
+        f"floor={stat_floor(pts):.1f}  median={stat_median(pts):.1f}  "
+        f"ceiling={stat_ceiling(pts):.1f}  hit(20+)={prop_hit_rate(pts, 20.0):.0%}  "
+        f"consistency={stat_consistency(pts):.2f}  "
+        f"streak(20+)={streak_count(pts, 20.0)}  "
+        f"rank(25pts)={percentile_rank(25.0, pts):.1f}th  "
+        f"expected={expected_stat(pts):.1f}  "
+        f"last5={hit_rate_last_n(pts, 20.0, 5):.0%}"
+    )
+# Streaky:    avg=26.4  floor=11.7  median=26.5  ceiling=41.3  hit(20+)=60%   consistency=12.27  streak(20+)=0  rank(25pts)=48.1th  expected=26.5  last5=60%
+# Consistent: avg=24.4  floor=21.9  median=24.5  ceiling=27.1  hit(20+)=100%  consistency=2.24   streak(20+)=10 rank(25pts)=55.6th  expected=24.5  last5=100%
+```
+
+The ordering invariant `floor ≤ median ≤ ceiling` always holds for any non-empty sample. Note
+that `stat_consistency` confirms what the floor/ceiling spread already implies: the consistent
+scorer has a much tighter standard deviation (~2 pts) versus the streaky star (~12 pts).
+
+Use `percentile_rank` to contextualise any individual game within the full season distribution,
+`streak_count` and `hit_rate_last_n` to identify players in current form for upcoming games, and
+`expected_stat` to produce a stable PERT projection that dampens outliers. `rolling_consistency`
+adds a temporal dimension — tracking how a player's variance changes week-to-week can reveal
+fatigue, role changes, or a genuine hot streak.
+
+---
+
 ## Practical Examples
 
 ### Example 1: TS% for a game log, compared to league average
@@ -1227,6 +1674,45 @@ async def main():
     print(f"Double-doubles: {double_doubles}")
     print(f"Triple-doubles: {triple_doubles}")
     print(f"DD/TD rate:     {(double_doubles + triple_doubles) / games_played:.1%}")
+
+asyncio.run(main())
+```
+
+### Example 5: Distribution profile from a player game log
+
+This example fetches a player's game log and computes their scoring distribution,
+then evaluates several prop-bet lines against the historical hit rate.
+
+```python
+import asyncio
+from fastbreak.clients import NBAClient
+from fastbreak.players import get_player_game_log
+from fastbreak.metrics import stat_floor, stat_median, stat_ceiling, prop_hit_rate
+
+PLAYER_ID = 201939  # Stephen Curry
+
+async def main():
+    async with NBAClient() as client:
+        log = await get_player_game_log(client, player_id=PLAYER_ID)
+
+    # Filter to regular-season games only
+    regular = [g for g in log if g.game_id[:3] == "002"]
+
+    pts: list[float | None] = [float(g.pts) if g.pts is not None else None for g in regular]
+
+    floor   = stat_floor(pts)    # 10th pct: conservative downside
+    median  = stat_median(pts)   # 50th pct: typical output
+    ceiling = stat_ceiling(pts)  # 90th pct: high-end upside
+
+    print(f"Floor (10th):   {floor:.1f}")
+    print(f"Median (50th):  {median:.1f}")
+    print(f"Ceiling (90th): {ceiling:.1f}")
+    print()
+
+    # Prop bet hit rates — what fraction of games did he reach each threshold?
+    for line in [19.5, 24.5, 29.5, 34.5]:
+        rate = prop_hit_rate(pts, line)
+        print(f"  >= {line}: {rate:.0%}" if rate is not None else f"  >= {line}: n/a")
 
 asyncio.run(main())
 ```

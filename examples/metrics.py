@@ -10,6 +10,10 @@ Part 7  — pure computation: team offensive / defensive / net ratings.
 Part 8  — pure computation: rolling averages with DNP and warm-up handling.
 Part 9  — pure computation: Win Shares (OWS + DWS → WS → WS/48) for three archetypes.
 Part 10 — live API: per-game Win Shares leaderboard for yesterday's games.
+Part 11 — pure computation: distribution stats (floor / median / ceiling / prop hit rate).
+Part 12 — live API: player prop profile from a season game log.
+Part 13 — pure computation: advanced distribution analytics (consistency, streaks, percentile rank).
+Part 14 — pure computation: rolling consistency, expected stat, and recent-form hit rate.
 """
 
 import asyncio
@@ -26,8 +30,10 @@ from fastbreak.metrics import (
     dreb_pct,
     drtg,
     effective_fg_pct,
+    expected_stat,
     free_throw_rate,
     game_score,
+    hit_rate_last_n,
     is_double_double,
     is_triple_double,
     net_rtg,
@@ -37,16 +43,25 @@ from fastbreak.metrics import (
     pace_adjusted_per,
     per,
     per_36,
+    percentile_rank,
+    prop_hit_rate,
     relative_efg,
     relative_ts,
     rolling_avg,
+    rolling_consistency,
+    stat_ceiling,
+    stat_consistency,
+    stat_floor,
+    stat_median,
     stl_pct,
+    streak_count,
     three_point_rate,
     true_shooting,
     usage_pct,
     win_shares,
     win_shares_per_48,
 )
+from fastbreak.players import get_player_game_log
 from fastbreak.teams import get_league_averages
 
 # ---------------------------------------------------------------------------
@@ -584,15 +599,48 @@ def demo_team_ratings() -> None:
 
     # Fabricated game totals for two contrasting performances.
     # Each row: label, team pts/fga/oreb/tov/fta, opp pts/fga/oreb/tov/fta
-    games: list[tuple[str, float, float, float, float, float, float, float, float, float, float, float]] = [
+    games: list[
+        tuple[
+            str,
+            float,
+            float,
+            float,
+            float,
+            float,
+            float,
+            float,
+            float,
+            float,
+            float,
+            float,
+        ]
+    ] = [
         # label,        pts, fga, oreb, tov, fta,  opp_pts, opp_fga, opp_oreb, opp_tov, opp_fta
-        ("Blowout win", 130,  90,   12,  14,  22,     108,      85,        8,      17,      16),
-        ("Close loss",  107,  88,    9,  16,  18,     111,      89,       11,      13,      22),
+        ("Blowout win", 130, 90, 12, 14, 22, 108, 85, 8, 17, 16),
+        ("Close loss", 107, 88, 9, 16, 18, 111, 89, 11, 13, 22),
     ]
 
-    for label, pts, fga, oreb, tov, fta, opp_pts, opp_fga, opp_oreb, opp_tov, opp_fta in games:
+    for (
+        label,
+        pts,
+        fga,
+        oreb,
+        tov,
+        fta,
+        opp_pts,
+        opp_fga,
+        opp_oreb,
+        opp_tov,
+        opp_fta,
+    ) in games:
         o = ortg(pts=pts, fga=fga, oreb=oreb, tov=tov, fta=fta)
-        d = drtg(opp_pts=opp_pts, opp_fga=opp_fga, opp_oreb=opp_oreb, opp_tov=opp_tov, opp_fta=opp_fta)
+        d = drtg(
+            opp_pts=opp_pts,
+            opp_fga=opp_fga,
+            opp_oreb=opp_oreb,
+            opp_tov=opp_tov,
+            opp_fta=opp_fta,
+        )
         n = net_rtg(ortg_val=o, drtg_val=d)
         print(f"\n  {label}:")
         print(f"    ORTG:    {o:.1f}" if o is not None else "    ORTG:    N/A")
@@ -687,38 +735,38 @@ def demo_win_shares() -> None:
         {
             "name": "Two-way wing  (35 min)",
             "pts": 2_050,  # 25.0 ppg
-            "fga": 984,    # 12.0 fga/g
-            "fta": 328,    # 4.0  fta/g
-            "tov": 164,    # 2.0  tov/g
-            "stl": 164,    # 2.0  stl/g
-            "blk": 82,     # 1.0  blk/g
-            "dreb": 410,   # 5.0  dreb/g
-            "mp": 2_870,   # 35.0 min/g
-            "pf": 164,     # 2.0  pf/g
+            "fga": 984,  # 12.0 fga/g
+            "fta": 328,  # 4.0  fta/g
+            "tov": 164,  # 2.0  tov/g
+            "stl": 164,  # 2.0  stl/g
+            "blk": 82,  # 1.0  blk/g
+            "dreb": 410,  # 5.0  dreb/g
+            "mp": 2_870,  # 35.0 min/g
+            "pf": 164,  # 2.0  pf/g
         },
         {
             "name": "Volume scorer (36 min)",
             "pts": 2_296,  # 28.0 ppg
             "fga": 1_476,  # 18.0 fga/g
-            "fta": 656,    # 8.0  fta/g
-            "tov": 287,    # 3.5  tov/g
-            "stl": 82,     # 1.0  stl/g
-            "blk": 41,     # 0.5  blk/g
-            "dreb": 328,   # 4.0  dreb/g
-            "mp": 2_952,   # 36.0 min/g
-            "pf": 205,     # 2.5  pf/g
+            "fta": 656,  # 8.0  fta/g
+            "tov": 287,  # 3.5  tov/g
+            "stl": 82,  # 1.0  stl/g
+            "blk": 41,  # 0.5  blk/g
+            "dreb": 328,  # 4.0  dreb/g
+            "mp": 2_952,  # 36.0 min/g
+            "pf": 205,  # 2.5  pf/g
         },
         {
             "name": "Def. anchor  (30 min)",
             "pts": 1_148,  # 14.0 ppg
-            "fga": 738,    # 9.0  fga/g
-            "fta": 410,    # 5.0  fta/g
-            "tov": 82,     # 1.0  tov/g
-            "stl": 66,     # 0.8  stl/g
-            "blk": 246,    # 3.0  blk/g
-            "dreb": 820,   # 10.0 dreb/g
-            "mp": 2_460,   # 30.0 min/g
-            "pf": 164,     # 2.0  pf/g
+            "fga": 738,  # 9.0  fga/g
+            "fta": 410,  # 5.0  fta/g
+            "tov": 82,  # 1.0  tov/g
+            "stl": 66,  # 0.8  stl/g
+            "blk": 246,  # 3.0  blk/g
+            "dreb": 820,  # 10.0 dreb/g
+            "mp": 2_460,  # 30.0 min/g
+            "pf": 164,  # 2.0  pf/g
         },
     ]
 
@@ -879,6 +927,457 @@ async def win_shares_leaderboard(date_str: str) -> None:
     print()
 
 
+# ---------------------------------------------------------------------------
+# Part 11: distribution stats — no API call required
+# ---------------------------------------------------------------------------
+
+
+def demo_distribution_stats() -> None:
+    """Compare floor/median/ceiling and prop hit rates for three scoring profiles."""
+    print("=" * 60)
+    print("Part 11 — Distribution stats: floor / median / ceiling / prop hit rate")
+    print("=" * 60)
+    print(
+        "  Distribution stats describe the shape of a player's output\n"
+        "  over a sample of games — going beyond the average to capture\n"
+        "  upside, downside, and reliability. DNP games (None) are skipped.\n"
+    )
+
+    # Fabricated 15-game scoring logs for three contrasting archetypes.
+    # None = DNP (did not play) — excluded from the distribution, not counted as 0.
+    profiles: list[dict] = [
+        {
+            "name": "Streaky star  (35 min)",
+            "pts": [
+                38.0,
+                14.0,
+                41.0,
+                22.0,
+                None,
+                35.0,
+                12.0,
+                29.0,
+                44.0,
+                18.0,
+                9.0,
+                31.0,
+                26.0,
+                40.0,
+                20.0,
+            ],
+            "lines": [20.5, 25.5, 30.5],
+        },
+        {
+            "name": "Consistent scorer (32 min)",
+            "pts": [
+                24.0,
+                22.0,
+                26.0,
+                20.0,
+                27.0,
+                23.0,
+                25.0,
+                None,
+                21.0,
+                28.0,
+                22.0,
+                24.0,
+                19.0,
+                26.0,
+                23.0,
+            ],
+            "lines": [20.5, 22.5, 24.5],
+        },
+        {
+            "name": "Bench contributor (22 min)",
+            "pts": [
+                12.0,
+                8.0,
+                15.0,
+                None,
+                11.0,
+                6.0,
+                14.0,
+                9.0,
+                13.0,
+                None,
+                7.0,
+                16.0,
+                10.0,
+                8.0,
+                12.0,
+            ],
+            "lines": [8.5, 10.5, 12.5],
+        },
+    ]
+
+    def _f1(v: float | None) -> str:
+        return f"{v:.1f}" if v is not None else " n/a"
+
+    for profile in profiles:
+        name: str = profile["name"]
+        pts: list[float | None] = profile["pts"]
+        lines: list[float] = profile["lines"]
+
+        valid = [p for p in pts if p is not None]
+        avg = sum(valid) / len(valid) if valid else 0.0
+        dnps = sum(1 for p in pts if p is None)
+
+        floor_v = stat_floor(pts)  # 10th percentile: downside floor
+        median_v = stat_median(pts)  # 50th percentile: central tendency
+        ceil_v = stat_ceiling(pts)  # 90th percentile: upside ceiling
+
+        print(f"  {name}")
+        print(
+            f"    {len(valid)} games played  ({dnps} DNP)  "
+            f"avg={avg:.1f}  range={min(valid):.0f}-{max(valid):.0f}"
+        )
+        print(f"    Floor   (10th pct):  {_f1(floor_v):>5}")
+        print(f"    Median  (50th pct):  {_f1(median_v):>5}")
+        print(f"    Ceiling (90th pct):  {_f1(ceil_v):>5}")
+        print()
+
+        print("    Prop hit rates (>= line):")
+        for line in lines:
+            rate = prop_hit_rate(pts, line)
+            rate_str = f"{rate:.1%}" if rate is not None else " n/a"
+            bar_width = int((rate or 0.0) * 20)
+            bar = "█" * bar_width + "░" * (20 - bar_width)
+            print(f"      >= {line:>4.1f}:  {rate_str:>6}  {bar}")
+        print()
+
+    print(
+        "  Key insight: a consistent scorer and a streaky star can have the\n"
+        "  same average but very different floor/ceiling profiles. The\n"
+        "  consistent scorer is a safer prop-bet play; the streaky star\n"
+        "  is better for tournament formats that reward big games.\n"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Part 12: live API — player prop profile from a season game log
+# ---------------------------------------------------------------------------
+
+
+async def player_prop_profile(player_id: int, player_name: str) -> None:
+    """Fetch a player's game log and compute their scoring distribution profile."""
+    print("=" * 60)
+    print(f"Player prop profile — {player_name}")
+    print("=" * 60)
+
+    async with NBAClient() as client:
+        log = await get_player_game_log(client, player_id=player_id)
+
+    # Filter to regular-season games (game_id prefix "002") — All-Star games
+    # (prefix "003") produce non-standard stats and inflate or deflate distributions.
+    regular = [g for g in log if g.game_id[:3] == "002"]
+
+    if not regular:
+        print("  No regular-season games found.")
+        return
+
+    pts: list[float | None] = [
+        float(g.pts) if g.pts is not None else None for g in regular
+    ]
+    reb: list[float | None] = [
+        float(g.reb) if g.reb is not None else None for g in regular
+    ]
+    ast: list[float | None] = [
+        float(g.ast) if g.ast is not None else None for g in regular
+    ]
+
+    def _dist(
+        values: list[float | None],
+    ) -> tuple[float | None, float | None, float | None]:
+        return stat_floor(values), stat_median(values), stat_ceiling(values)
+
+    def _f1(v: float | None) -> str:
+        return f"{v:.1f}" if v is not None else " n/a"
+
+    games_played = sum(1 for v in pts if v is not None)
+    print(f"  Season sample: {games_played} games played of {len(regular)} scheduled\n")
+
+    print(f"  {'Stat':<6}  {'Floor(10)':>9}  {'Median':>8}  {'Ceiling(90)':>11}")
+    print("  " + "-" * 40)
+    for label, values in [("PTS", pts), ("REB", reb), ("AST", ast)]:
+        f, m, c = _dist(values)
+        print(f"  {label:<6}  {_f1(f):>9}  {_f1(m):>8}  {_f1(c):>11}")
+
+    # Prop hit rates — common market lines for each stat category
+    print()
+    print("  Prop hit rates against typical market lines:")
+    prop_lines: list[tuple[str, list[float | None], list[float]]] = [
+        ("PTS", pts, [19.5, 24.5, 29.5]),
+        ("REB", reb, [5.5, 8.5, 10.5]),
+        ("AST", ast, [4.5, 7.5, 10.5]),
+    ]
+    for label, values, lines in prop_lines:
+        rates = [prop_hit_rate(values, line) for line in lines]
+        rate_strs = "  ".join(
+            f"{line:.1f}→{r:.0%}" if r is not None else f"{line:.1f}→ n/a"
+            for line, r in zip(lines, rates, strict=True)
+        )
+        print(f"    {label:<5} {rate_strs}")
+
+    print()
+    print(
+        "  Note: distributions are built from this season's game log only.\n"
+        "  Use a multi-season window for more stable floor/ceiling estimates."
+    )
+    print()
+
+
+# ---------------------------------------------------------------------------
+# Part 13: pure computation — consistency, streaks, and percentile rank
+# ---------------------------------------------------------------------------
+
+
+def demo_advanced_distribution() -> None:
+    """Showcase stat_consistency, streak_count, and percentile_rank."""
+    print("=" * 60)
+    print("Part 13 — Advanced distribution: consistency / streaks / rank")
+    print("=" * 60)
+
+    # Same three archetypes as Part 11 — reused so the outputs are comparable.
+    profiles: list[dict] = [
+        {
+            "name": "Streaky star  (35 min)",
+            "pts": [
+                38.0,
+                14.0,
+                41.0,
+                22.0,
+                None,
+                35.0,
+                12.0,
+                29.0,
+                44.0,
+                18.0,
+                9.0,
+                31.0,
+                26.0,
+                40.0,
+                20.0,
+            ],
+        },
+        {
+            "name": "Consistent scorer (32 min)",
+            "pts": [
+                24.0,
+                22.0,
+                26.0,
+                20.0,
+                27.0,
+                23.0,
+                25.0,
+                None,
+                21.0,
+                28.0,
+                22.0,
+                24.0,
+                19.0,
+                26.0,
+                23.0,
+            ],
+        },
+        {
+            "name": "Bench contributor (22 min)",
+            "pts": [
+                12.0,
+                8.0,
+                15.0,
+                None,
+                11.0,
+                6.0,
+                14.0,
+                9.0,
+                13.0,
+                None,
+                7.0,
+                16.0,
+                10.0,
+                8.0,
+                12.0,
+            ],
+        },
+    ]
+
+    # ------------------------------------------------------------------ #
+    # Section A: stat_consistency — population std dev of each archetype  #
+    # ------------------------------------------------------------------ #
+    print(
+        "\n  stat_consistency = population std dev of per-game output.\n"
+        "  Lower is more reliable; higher means boom-or-bust variance.\n"
+    )
+    print(f"  {'Player':<28}  {'Avg':>6}  {'Consistency':>11}  {'CV (%)':>7}")
+    print("  " + "-" * 58)
+    for p in profiles:
+        pts: list[float | None] = p["pts"]
+        valid = [v for v in pts if v is not None]
+        avg = sum(valid) / len(valid)
+        cons = stat_consistency(pts)
+        cv = (cons / avg * 100.0) if cons is not None and avg > 0 else None
+        cv_str = f"{cv:.1f}%" if cv is not None else "n/a"
+        cons_str = f"{cons:.2f}" if cons is not None else "n/a"
+        print(f"  {p['name']:<28}  {avg:>6.1f}  {cons_str:>11}  {cv_str:>7}")
+
+    # ------------------------------------------------------------------ #
+    # Section B: streak_count — current active scoring streak             #
+    # ------------------------------------------------------------------ #
+    streak_lines = [15.0, 20.0, 25.0]
+    print("\n  streak_count = consecutive recent games >= line (DNPs skipped).\n")
+    print(f"  {'Player':<28}  " + "  ".join(f">=  {line:.0f}" for line in streak_lines))
+    print("  " + "-" * 58)
+    for p in profiles:
+        pts_vals: list[float | None] = p["pts"]
+        streaks = [str(streak_count(pts_vals, line)) for line in streak_lines]
+        print(f"  {p['name']:<28}  " + "         ".join(f"{s:>4}" for s in streaks))
+
+    # ------------------------------------------------------------------ #
+    # Section C: percentile_rank — where does 25 pts rank in each log?   #
+    # ------------------------------------------------------------------ #
+    query_value = 25.0
+    print(
+        f"\n  percentile_rank(value={query_value:.0f}, reference=season_log)\n"
+        f"  Answers: 'a {query_value:.0f}-pt game would rank in the Nth percentile\n"
+        "  of this player's historical output.'\n"
+    )
+    print(f"  {'Player':<28}  {'Rank':>8}  Interpretation")
+    print("  " + "-" * 58)
+    for p in profiles:
+        pts_vals = p["pts"]
+        rank = percentile_rank(query_value, pts_vals)
+        if rank is None:
+            interp = "no data"
+        elif rank >= 90.0:  # noqa: PLR2004
+            interp = "exceptional game (top 10%)"
+        elif rank >= 75.0:  # noqa: PLR2004
+            interp = "strong game (top quartile)"
+        elif rank >= 50.0:  # noqa: PLR2004
+            interp = "above-average game"
+        elif rank >= 25.0:  # noqa: PLR2004
+            interp = "below-average game"
+        else:
+            interp = "poor game (bottom quartile)"
+        rank_str = f"{rank:.1f}th" if rank is not None else "n/a"
+        print(f"  {p['name']:<28}  {rank_str:>8}  {interp}")
+
+    print()
+    print(
+        "  Combined insight: use stat_consistency to filter for reliable\n"
+        "  targets, streak_count to gauge current form, and percentile_rank\n"
+        "  to contextualise any single game within the season sample.\n"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Part 14: pure computation — rolling consistency, expected stat, recent form
+# ---------------------------------------------------------------------------
+
+
+def demo_recent_form() -> None:
+    """Showcase rolling_consistency, expected_stat, and hit_rate_last_n."""
+    print("=" * 60)
+    print(
+        "Part 14 — Recent form: rolling consistency / PERT projection / last-N hit rate"
+    )
+    print("=" * 60)
+
+    # A 20-game scoring log — starts cold, heats up, then levels off.
+    # None = DNP (did not play).
+    pts: list[float | None] = [
+        12.0,
+        8.0,
+        15.0,
+        None,
+        10.0,  # cold stretch
+        18.0,
+        22.0,
+        None,
+        25.0,
+        20.0,  # improving
+        28.0,
+        31.0,
+        25.0,
+        None,
+        27.0,  # hot stretch
+        24.0,
+        26.0,
+        22.0,
+        28.0,
+        25.0,  # recent games
+    ]
+    games_played = sum(1 for v in pts if v is not None)
+    print(
+        f"\n  20-game log: {games_played} games played  "
+        f"(avg={sum(v for v in pts if v is not None) / games_played:.1f})\n"
+    )
+
+    # ------------------------------------------------------------------ #
+    # Section A: rolling_consistency — is the player more or less erratic? #
+    # ------------------------------------------------------------------ #
+    window = 5
+    rc = rolling_consistency(pts, window)
+
+    print(f"  Rolling consistency (window={window}) — lower = more predictable:")
+    print(f"  {'Game':<6}  {'PTS':>4}  {'RC(5)':>8}")
+    print("  " + "-" * 22)
+    for i, (p, r) in enumerate(zip(pts, rc, strict=True), start=1):
+        pts_str = f"{p:.0f}" if p is not None else "DNP"
+        rc_str = f"{r:.2f}" if r is not None else " n/a"
+        print(f"  {i:<6}  {pts_str:>4}  {rc_str:>8}")
+
+    print()
+    print(
+        "  Key: games 1-5 have higher RC (cold + erratic), games 14-20\n"
+        "  show lower RC as output steadies in the 24-28 range.\n"
+    )
+
+    # ------------------------------------------------------------------ #
+    # Section B: expected_stat — PERT projection for the full season      #
+    # ------------------------------------------------------------------ #
+    exp = expected_stat(pts)
+    floor_v = stat_floor(pts)
+    median_v = stat_median(pts)
+    ceil_v = stat_ceiling(pts)
+
+    print("  expected_stat (PERT projection):")
+    print(f"    Floor  (10th pct):  {floor_v:.1f}")
+    print(f"    Median (50th pct):  {median_v:.1f}")
+    print(f"    Ceiling(90th pct):  {ceil_v:.1f}")
+    print(f"    PERT projection:    {exp:.1f}  ← (floor + 4*median + ceiling) / 6")
+    print(
+        "\n  The PERT value sits between the median and average, pulled\n"
+        "  toward the median to down-weight the cold early games.\n"
+    )
+
+    # ------------------------------------------------------------------ #
+    # Section C: hit_rate_last_n — recent form vs full-season rate         #
+    # ------------------------------------------------------------------ #
+    line = 22.5
+    print(f"  hit_rate_last_n (line >= {line}) — recent form versus season rate:")
+    print(f"  {'Window':<12}  {'Hit rate':>8}  {'Bar':>22}")
+    print("  " + "-" * 46)
+    for n, label in [
+        (3, "Last 3"),
+        (5, "Last 5"),
+        (10, "Last 10"),
+        (games_played, "Full season"),
+    ]:
+        rate = hit_rate_last_n(pts, line, n)
+        rate_str = f"{rate:.0%}" if rate is not None else "n/a"
+        bar_w = int((rate or 0.0) * 20)
+        bar = "█" * bar_w + "░" * (20 - bar_w)
+        print(f"  {label:<12}  {rate_str:>8}  {bar}")
+
+    print()
+    print(
+        "  Compare last-3 (hot recent stretch) vs full-season to spot\n"
+        "  players entering form. A rising last-N rate vs the season\n"
+        "  rate is a strong signal for upcoming games.\n"
+    )
+
+
 async def main() -> None:
     demo_single_line()
     demo_rate_stats()
@@ -887,6 +1386,9 @@ async def main() -> None:
     demo_team_ratings()
     demo_rolling_avg()
     demo_win_shares()
+    demo_distribution_stats()
+    demo_advanced_distribution()
+    demo_recent_form()
 
     yesterday = (
         datetime.now(tz=UTC).astimezone().date() - timedelta(days=1)
@@ -894,6 +1396,7 @@ async def main() -> None:
     await game_score_leaderboard(yesterday)
     await usage_leaderboard(yesterday)
     await win_shares_leaderboard(yesterday)
+    await player_prop_profile(player_id=201939, player_name="Stephen Curry")
 
 
 if __name__ == "__main__":

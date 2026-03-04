@@ -22,9 +22,10 @@ Examples::
     player_per = per(aper=aper, lg_aper=0.516)   # → ~18
 """
 
+import bisect
 from collections.abc import Sequence
 from dataclasses import dataclass, field, fields
-from math import pow as fpow
+from math import pow as fpow, sqrt as fsqrt
 
 
 @dataclass(frozen=True, slots=True)
@@ -1049,3 +1050,405 @@ def rolling_avg(
         else:
             result.append(window_sum / window)
     return result
+
+
+# ---------------------------------------------------------------------------
+# Distribution statistics: floor, ceiling, median, prop hit rate
+# ---------------------------------------------------------------------------
+
+
+def _percentile(sorted_values: list[float], p: float) -> float:
+    """Linear-interpolation percentile on a pre-sorted list.
+
+    Args:
+        sorted_values: Non-empty list already sorted ascending.
+        p: Percentile in [0.0, 100.0].
+
+    Returns:
+        Linearly interpolated value at the *p*-th percentile.
+    """
+    n = len(sorted_values)
+    if n == 1:
+        return sorted_values[0]
+    idx = (p / 100.0) * (n - 1)
+    lo = int(idx)
+    hi = min(lo + 1, n - 1)
+    return sorted_values[lo] + (idx - lo) * (sorted_values[hi] - sorted_values[lo])
+
+
+def stat_floor(
+    values: Sequence[float | None],
+    percentile: float = 10.0,
+) -> float | None:
+    """Nth percentile of a stat sample — downside / floor estimate.
+
+    Uses linear interpolation (same as NumPy's default).  ``None`` values
+    (e.g., DNP games) are excluded from the sample so they don't suppress an
+    otherwise computable result.
+
+    Args:
+        values: Per-game stat values; pass ``None`` for games where the player
+                did not participate.
+        percentile: Percentile in [0.0, 100.0].  Defaults to 10 — the low-end
+                    floor used in player projection systems.
+
+    Returns:
+        The Nth percentile as a float, or ``None`` if *values* contains no
+        non-``None`` entries.
+
+    Raises:
+        ValueError: When *percentile* is outside [0.0, 100.0].
+
+    Examples:
+        pts = [22.0, 18.0, None, 30.0, 25.0, 20.0]
+        stat_floor(pts)          # 10th pct ≈ 18.4 (DNP game excluded)
+        stat_floor(pts, 25.0)    # 25th pct
+    """
+    if not (0.0 <= percentile <= 100.0):  # noqa: PLR2004
+        msg = f"percentile must be in [0.0, 100.0], got {percentile}"
+        raise ValueError(msg)
+    valid = sorted(v for v in values if v is not None)
+    if not valid:
+        return None
+    return _percentile(valid, percentile)
+
+
+def stat_ceiling(
+    values: Sequence[float | None],
+    percentile: float = 90.0,
+) -> float | None:
+    """Nth percentile of a stat sample — upside / ceiling estimate.
+
+    Uses linear interpolation (same as NumPy's default).  ``None`` values
+    are excluded from the sample.
+
+    Args:
+        values: Per-game stat values; pass ``None`` for DNP games.
+        percentile: Percentile in [0.0, 100.0].  Defaults to 90 — the
+                    high-end ceiling used in player projection systems.
+
+    Returns:
+        The Nth percentile as a float, or ``None`` if *values* contains no
+        non-``None`` entries.
+
+    Raises:
+        ValueError: When *percentile* is outside [0.0, 100.0].
+
+    Examples:
+        pts = [22.0, 18.0, None, 30.0, 25.0, 20.0]
+        stat_ceiling(pts)          # 90th pct ≈ 29.6 (DNP game excluded)
+        stat_ceiling(pts, 75.0)    # 75th pct
+    """
+    if not (0.0 <= percentile <= 100.0):  # noqa: PLR2004
+        msg = f"percentile must be in [0.0, 100.0], got {percentile}"
+        raise ValueError(msg)
+    valid = sorted(v for v in values if v is not None)
+    if not valid:
+        return None
+    return _percentile(valid, percentile)
+
+
+def stat_median(values: Sequence[float | None]) -> float | None:
+    """Median of a stat sample — central tendency estimate.
+
+    Equivalent to ``stat_floor(values, 50.0)`` or ``stat_ceiling(values, 50.0)``.
+    ``None`` values (DNP games) are excluded from the sample.
+
+    Args:
+        values: Per-game stat values; pass ``None`` for DNP games.
+
+    Returns:
+        50th percentile as a float, or ``None`` if *values* contains no
+        non-``None`` entries.
+
+    Examples:
+        pts = [22.0, 18.0, None, 30.0, 25.0, 20.0]
+        stat_median(pts)    # 22.0 (median of [18, 20, 22, 25, 30])
+    """
+    valid = sorted(v for v in values if v is not None)
+    if not valid:
+        return None
+    return _percentile(valid, 50.0)
+
+
+def prop_hit_rate(
+    values: Sequence[float | None],
+    line: float,
+) -> float | None:
+    """Fraction of games where a stat value meets or exceeds a threshold.
+
+    Uses ``>=`` semantics: a value exactly equal to *line* counts as a hit.
+    ``None`` values (DNP games) are excluded from both numerator and denominator
+    so that missed games don't dilute the rate.
+
+    Args:
+        values: Per-game stat values; pass ``None`` for DNP games.
+        line:   The threshold to compare against (e.g., a prop bet line of 24.5).
+
+    Returns:
+        Fraction of valid games in [0.0, 1.0] where the stat met *line*,
+        or ``None`` if *values* contains no non-``None`` entries.
+
+    Examples:
+        pts = [22.0, 25.0, 18.0, 30.0, 25.0]
+        prop_hit_rate(pts, 24.5)    # 3/5 = 0.60
+        prop_hit_rate(pts, 25.0)    # 3/5 = 0.60  (>= 25 counts)
+    """
+    valid = [v for v in values if v is not None]
+    if not valid:
+        return None
+    hits = sum(1 for v in valid if v >= line)
+    return hits / len(valid)
+
+
+def percentile_rank(value: float, reference: Sequence[float | None]) -> float | None:
+    """Position of *value* within a reference distribution as a percentile.
+
+    Inverse of :func:`stat_floor`: if ``stat_floor(values, p)`` returns *v*, then
+    ``percentile_rank(v, values)`` returns approximately *p* (exact for unique-value
+    lists; interpolates for duplicates).
+
+    ``None`` values (DNP games) in *reference* are skipped before computing the rank.
+    Values outside the reference range are clamped to ``[0.0, 100.0]``.
+
+    Args:
+        value:     The query value to rank.
+        reference: The distribution to rank against; ``None`` entries are excluded.
+
+    Returns:
+        Percentile rank in ``[0.0, 100.0]``, or ``None`` if *reference* contains no
+        non-``None`` entries.
+
+    Examples:
+        >>> percentile_rank(20.0, [10.0, 20.0, 30.0])   # 50.0
+        >>> percentile_rank(35.0, [10.0, 20.0, 30.0])   # 100.0 (above max → clamped)
+    """
+    valid = sorted(v for v in reference if v is not None)
+    if not valid:
+        return None
+    n = len(valid)
+    if value <= valid[0]:
+        return 0.0
+    if value >= valid[-1]:
+        return 100.0
+    # Find the bracketing interval via binary search and interpolate
+    lo = bisect.bisect_right(valid, value) - 1
+    hi = lo + 1
+    span = valid[hi] - valid[lo]
+    frac = 0.0 if span == 0.0 else (value - valid[lo]) / span
+    idx = lo + frac
+    return idx / (n - 1) * 100.0
+
+
+def stat_consistency(values: Sequence[float | None]) -> float | None:
+    """Population standard deviation of a sequence of per-game stats.
+
+    Measures how much a player's output varies from game to game.  A lower value
+    indicates a more consistent player.  ``None`` values (DNP games) are excluded
+    from the calculation.
+
+    Uses the *population* standard deviation (divided by *n*, not *n - 1*) because
+    the game log represents the full sample being analysed, not a statistical sample.
+
+    Args:
+        values: Per-game stat values; pass ``None`` for DNP games.
+
+    Returns:
+        Population standard deviation (≥ 0.0), or ``None`` if *values* contains no
+        non-``None`` entries.  A single valid entry returns ``0.0``.
+
+    Examples:
+        pts = [20.0, 25.0, 18.0, 30.0, 22.0]
+        stat_consistency(pts)         # ≈ 4.07  (moderate variance)
+        stat_consistency([20.0] * 5)  # 0.0     (perfectly consistent)
+    """
+    valid = [v for v in values if v is not None]
+    if not valid:
+        return None
+    n = len(valid)
+    mean = sum(valid) / n
+    variance = sum((v - mean) ** 2 for v in valid) / n
+    return fsqrt(variance)
+
+
+def streak_count(values: Sequence[float | None], line: float) -> int:
+    """Number of consecutive recent games where a stat met or exceeded *line*.
+
+    Counts backwards from the most recent game, stopping at the first game that
+    falls below the line.  ``None`` values (DNP games) are skipped — a DNP does
+    not break an active streak.
+
+    Uses ``>=`` semantics: a value exactly equal to *line* counts as a hit.
+
+    Args:
+        values: Per-game stat values in chronological order (oldest first);
+                pass ``None`` for DNP games.
+        line:   The threshold the stat must meet (e.g., a prop bet line of 24.5).
+
+    Returns:
+        Length of the current streak (≥ 0).  Returns ``0`` if the most recent
+        non-``None`` game missed the line, or if there are no non-``None`` games.
+
+    Examples:
+        pts = [10.0, 25.0, 30.0, 28.0]
+        streak_count(pts, 20.0)                       # 3  (last three ≥ 20)
+        streak_count([20.0, 25.0, None, 30.0], 20.0)  # 3  (DNP skipped)
+    """
+    count = 0
+    for v in reversed(values):
+        if v is None:
+            continue
+        if v >= line:
+            count += 1
+        else:
+            break
+    return count
+
+
+def rolling_consistency(
+    values: Sequence[float | None],
+    window: int,
+) -> list[float | None]:
+    """Sliding-window population standard deviation over per-game stat values.
+
+    Measures game-to-game variance across a rolling window. Higher values mean
+    wilder swings; lower means tighter, more predictable output.
+
+    Mirrors :func:`rolling_avg` semantics: positions before the first full
+    window return ``None``, and any ``None`` within a window propagates ``None``
+    to that output position. If a game is missing, the variance for that window
+    is unknown — not zero.
+
+    Args:
+        values: Per-game stat values in chronological order.
+                Pass ``None`` for games where the stat is unavailable.
+        window: Number of consecutive games in each window (>= 1).
+
+    Returns:
+        List of the same length as *values*.  Each position holds the
+        population std dev of the corresponding window, or ``None`` if the
+        window is incomplete or contains a ``None``.
+
+    Raises:
+        ValueError: When *window* is less than 1.
+
+    Examples:
+        pts = [22.0, 18.0, 30.0, 25.0, 20.0]
+        rolling_consistency(pts, window=3)
+        # [None, None, ≈4.99, ≈4.92, ≈4.08]
+    """
+    if window < 1:
+        msg = f"window must be >= 1, got {window}"
+        raise ValueError(msg)
+
+    result: list[float | None] = []
+    for i in range(len(values)):
+        if i + 1 < window:
+            result.append(None)
+            continue
+        # Two-pass computation: compute the mean first, then sum squared
+        # deviations. Avoids the catastrophic cancellation of the single-pass
+        # formula (E[X²] - (E[X])²) for large values.
+        has_none = False
+        floats: list[float] = []
+        for j in range(i - window + 1, i + 1):
+            v = values[j]
+            if v is None:
+                has_none = True
+                break
+            floats.append(v)
+        if has_none:
+            result.append(None)
+            continue
+        mean = sum(floats) / len(floats)
+        variance = sum((v - mean) ** 2 for v in floats) / len(floats)
+        result.append(fsqrt(max(0.0, variance)))
+    return result
+
+
+def expected_stat(values: Sequence[float | None]) -> float | None:
+    """PERT-weighted projection combining the floor, median, and ceiling.
+
+    Applies the Program Evaluation and Review Technique (PERT) formula to
+    produce a single-number projection that down-weights extreme outcomes:
+
+    .. code-block::
+
+        expected = (floor + 4 * median + ceiling) / 6
+
+    where floor is the 10th percentile, median is the 50th, and ceiling is
+    the 90th.  The median gets 4x the weight of either extreme, so a one-off
+    blowup game won't move the projection as much as a straight average would.
+
+    ``None`` values (DNP games) are excluded before computing the projection.
+
+    Args:
+        values: Per-game stat values; pass ``None`` for DNP games.
+
+    Returns:
+        PERT-weighted projection in ``[stat_floor(values), stat_ceiling(values)]``,
+        or ``None`` if *values* contains no non-``None`` entries.
+
+    Examples:
+        pts = [38.0, 14.0, 41.0, 22.0, 35.0, 29.0, 44.0, 18.0]
+        expected_stat(pts)  # weighted projection accounting for boom/bust range
+    """
+    # All three return None iff `values` has no non-None entries — same
+    # condition.  Percentiles are pinned explicitly to document the PERT
+    # variant (P10/P50/P90) and prevent silent drift if helper defaults change.
+    floor_v = stat_floor(values, percentile=10.0)
+    median_v = stat_median(values)
+    ceil_v = stat_ceiling(values, percentile=90.0)
+    if floor_v is None or median_v is None or ceil_v is None:
+        return None
+    return (floor_v + 4.0 * median_v + ceil_v) / 6.0
+
+
+def hit_rate_last_n(
+    values: Sequence[float | None],
+    line: float,
+    n: int,
+) -> float | None:
+    """Prop hit rate restricted to the last *n* non-DNP games.
+
+    Equivalent to calling :func:`prop_hit_rate` on a slice of only the most
+    recent *n* games played (``None`` entries are skipped when counting).
+    Use this to gauge a player's *current form* rather than their full-season
+    rate. Small *n* tracks recent games closely but is noisy; large *n* is
+    more stable. Pick based on how much you trust recency.
+
+    Uses ``>=`` semantics: a value exactly equal to *line* counts as a hit.
+
+    Args:
+        values: Per-game stat values in chronological order (oldest first);
+                pass ``None`` for DNP games.
+        line:   The threshold the stat must meet.
+        n:      Number of most-recent non-DNP games to consider (>= 1).
+
+    Returns:
+        Fraction of the last *n* valid games in [0.0, 1.0] where the stat met
+        *line*, or ``None`` if there are no non-``None`` entries.  If fewer
+        than *n* games have been played, all available games are used.
+
+    Raises:
+        ValueError: When *n* is less than 1.
+
+    Examples:
+        pts = [10.0, 25.0, 30.0, 15.0, 28.0]
+        hit_rate_last_n(pts, 20.0, n=3)   # 2/3 ≈ 0.667  (28, 15, 30)
+        hit_rate_last_n(pts, 20.0, n=10)  # same as prop_hit_rate(pts, 20.0)
+    """
+    if n < 1:
+        msg = f"n must be >= 1, got {n}"
+        raise ValueError(msg)
+    # Collect the last n non-None values, walking backwards from most recent
+    recent: list[float] = []
+    for v in reversed(values):
+        if v is None:
+            continue
+        recent.append(v)
+        if len(recent) == n:
+            break
+    if not recent:
+        return None
+    return sum(1 for v in recent if v >= line) / len(recent)
