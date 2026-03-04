@@ -30,7 +30,7 @@ class PlayerTrend:
     total_ppg: float
 
 
-async def analyze_player_trends(  # noqa: C901
+async def analyze_player_trends(
     start_date: date, end_date: date, min_games: int = 2
 ) -> list[PlayerTrend]:
     """
@@ -39,23 +39,26 @@ async def analyze_player_trends(  # noqa: C901
     Returns players sorted by scoring trend (recent vs early performance).
     """
     async with NBAClient(request_delay=1.0) as client:
-        # Step 1: Get all game IDs in the date range
+        # Step 1: Get all game IDs in the date range — fetch all days in parallel
         print(f"Fetching games from {start_date} to {end_date}...")
-        game_ids: list[str] = []
+        dates: list[date] = []
         current = start_date
-
         while current <= end_date:
-            response = await client.get(ScoreboardV3(game_date=current.isoformat()))
-            if response.scoreboard:
-                game_ids.extend(
-                    game.game_id
-                    for game in response.scoreboard.games
-                    if game.game_status == 3  # noqa: PLR2004
-                    and game.game_id is not None
-                    and game.game_id[:3]
-                    == "002"  # regular season only (skip All-Star/preseason)
-                )
+            dates.append(current)
             current += timedelta(days=1)
+
+        scoreboard_endpoints = [ScoreboardV3(game_date=d.isoformat()) for d in dates]
+        scoreboards = await client.get_many(scoreboard_endpoints, max_concurrency=1)
+
+        game_ids: list[str] = [
+            game.game_id
+            for sb in scoreboards
+            if sb.scoreboard
+            for game in sb.scoreboard.games
+            if game.game_status == 3  # noqa: PLR2004
+            and game.game_id is not None
+            and game.game_id[:3] == "002"  # regular season only
+        ]
 
         print(f"Found {len(game_ids)} completed games")
 
@@ -65,7 +68,7 @@ async def analyze_player_trends(  # noqa: C901
         # Step 2: Fetch box scores with limited concurrency to avoid rate limits
         print("Fetching box scores...")
         endpoints = [BoxScoreTraditional(game_id=gid) for gid in game_ids]
-        box_scores = await client.get_many(endpoints, max_concurrency=2)
+        box_scores = await client.get_many(endpoints, max_concurrency=1)
 
         # Step 3: Aggregate player stats
         player_games: dict[int, list[PlayerGame]] = defaultdict(list)
@@ -89,7 +92,7 @@ async def analyze_player_trends(  # noqa: C901
                     player_games[player.personId].append(
                         PlayerGame(
                             name=f"{player.firstName} {player.familyName}",
-                            team=team.teamTricode,
+                            team=team.teamTricode or "",
                             date=game_date,
                             pts=player.statistics.points,
                             reb=player.statistics.reboundsTotal,

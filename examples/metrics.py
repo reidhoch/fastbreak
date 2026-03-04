@@ -1396,7 +1396,7 @@ async def main() -> None:
     await game_score_leaderboard(yesterday)
     await usage_leaderboard(yesterday)
     await win_shares_leaderboard(yesterday)
-    await player_prop_profile(player_id=201939, player_name="Stephen Curry")
+    await player_prop_profile(player_id=1630162, player_name="Anthony Edwards")
 
 
 if __name__ == "__main__":

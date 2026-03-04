@@ -1087,7 +1087,7 @@ class TestNBAClientRequestDelay:
     async def test_get_many_applies_request_delay(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
-        """get_many sleeps once per request (before the limiter) when request_delay > 0."""
+        """get_many sleeps once per request (after the request, inside the slot) when request_delay > 0."""
         client, mock_session = make_mock_client(
             json_data=mock_play_by_play_response, request_delay=0.1
         )
@@ -1104,7 +1104,7 @@ class TestNBAClientRequestDelay:
     async def test_get_many_delay_called_per_request(
         self, mock_play_by_play_response, make_mock_client, mocker: MockerFixture
     ):
-        """get_many calls sleep once per request before the limiter."""
+        """get_many calls sleep once per request, after each completion."""
         client, mock_session = make_mock_client(
             json_data=mock_play_by_play_response, request_delay=0.05
         )
