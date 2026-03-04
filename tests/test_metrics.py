@@ -1,6 +1,8 @@
 """Tests for derived basketball metrics."""
 
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
 from fastbreak.metrics import (
     FourFactors,
@@ -31,6 +33,16 @@ from fastbreak.metrics import (
     tov_pct,
     true_shooting,
     usage_pct,
+    expected_stat,
+    hit_rate_last_n,
+    percentile_rank,
+    prop_hit_rate,
+    rolling_consistency,
+    stat_ceiling,
+    stat_consistency,
+    stat_floor,
+    stat_median,
+    streak_count,
     win_shares,
     win_shares_per_48,
 )
@@ -1671,3 +1683,1140 @@ class TestWinSharesPer48:
         result = win_shares_per_48(ws=12.0, mp=2460.0)
         assert result is not None
         assert result > 0.200
+
+
+# ---------------------------------------------------------------------------
+# Hypothesis strategies shared across distribution tests
+# ---------------------------------------------------------------------------
+
+_finite_floats = st.floats(
+    allow_nan=False, allow_infinity=False, min_value=-1e6, max_value=1e6
+)
+_maybe_float = st.one_of(st.none(), _finite_floats)
+
+
+class TestStatFloor:
+    """Tests for stat_floor() — low-end percentile estimator."""
+
+    def test_empty_sequence_returns_none(self) -> None:
+        """No values → no distribution to compute."""
+        assert stat_floor([]) is None
+
+    def test_all_none_returns_none(self) -> None:
+        """All-DNP games → no valid sample."""
+        assert stat_floor([None, None, None]) is None
+
+    def test_single_value_any_percentile_returns_that_value(self) -> None:
+        """With one data point, every percentile equals that value."""
+        assert stat_floor([20.0], 0.0) == pytest.approx(20.0)
+        assert stat_floor([20.0], 50.0) == pytest.approx(20.0)
+        assert stat_floor([20.0], 100.0) == pytest.approx(20.0)
+
+    def test_default_percentile_is_10(self) -> None:
+        """Default is the 10th percentile — a conservative floor estimate."""
+        # 10 values equally spaced; idx = 0.1*9 = 0.9 → 10 + 0.9*10 = 19.0
+        result = stat_floor(
+            [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0]
+        )
+        assert result == pytest.approx(19.0)
+
+    def test_p0_is_minimum(self) -> None:
+        """0th percentile equals the minimum of the sample."""
+        assert stat_floor([30.0, 10.0, 20.0], 0.0) == pytest.approx(10.0)
+
+    def test_p100_is_maximum(self) -> None:
+        """100th percentile equals the maximum of the sample."""
+        assert stat_floor([30.0, 10.0, 20.0], 100.0) == pytest.approx(30.0)
+
+    def test_p50_matches_median_of_odd_list(self) -> None:
+        """50th percentile of an odd-length sorted list is the middle element."""
+        assert stat_floor([10.0, 20.0, 30.0], 50.0) == pytest.approx(20.0)
+
+    def test_none_values_skipped(self) -> None:
+        """None values (DNPs) are excluded from the sample before computing."""
+        # [None, 10.0, None, 30.0] → same as [10.0, 30.0] → 50th pct = 20.0
+        assert stat_floor([None, 10.0, None, 30.0], 50.0) == pytest.approx(20.0)
+
+    def test_invalid_percentile_below_0_raises(self) -> None:
+        """Percentile below 0.0 is undefined."""
+        with pytest.raises(ValueError, match="percentile"):
+            stat_floor([10.0, 20.0], -1.0)
+
+    def test_invalid_percentile_above_100_raises(self) -> None:
+        """Percentile above 100.0 is undefined."""
+        with pytest.raises(ValueError, match="percentile"):
+            stat_floor([10.0, 20.0], 101.0)
+
+    # --- Property-based tests ---
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+        p=st.floats(min_value=0.0, max_value=100.0),
+    )
+    def test_result_within_min_max_bounds(self, values: list[float], p: float) -> None:
+        """Result is always between the minimum and maximum of the input."""
+        result = stat_floor(values, p)
+        assert result is not None
+        assert min(values) - 1e-9 <= result <= max(values) + 1e-9
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+        p1=st.floats(min_value=0.0, max_value=100.0),
+        p2=st.floats(min_value=0.0, max_value=100.0),
+    )
+    def test_monotone_in_percentile(
+        self, values: list[float], p1: float, p2: float
+    ) -> None:
+        """Higher percentile → equal or higher result (non-decreasing)."""
+        lo_p, hi_p = (p1, p2) if p1 <= p2 else (p2, p1)
+        lo = stat_floor(values, lo_p)
+        hi = stat_floor(values, hi_p)
+        assert lo is not None
+        assert hi is not None
+        assert lo <= hi + 1e-9
+
+    @given(
+        floats=st.lists(_finite_floats, min_size=1, max_size=20),
+        nones=st.lists(st.none(), min_size=0, max_size=5),
+        p=st.floats(min_value=0.0, max_value=100.0),
+    )
+    def test_none_skipping_invariant(
+        self, floats: list[float], nones: list[None], p: float
+    ) -> None:
+        """Inserting None values into the list does not change the result."""
+        mixed: list[float | None] = [*floats, *nones]
+        assert stat_floor(mixed, p) == pytest.approx(stat_floor(floats, p))
+
+    @given(values=st.lists(_finite_floats, min_size=1, max_size=30))
+    def test_p0_always_equals_minimum(self, values: list[float]) -> None:
+        """0th percentile is always the sample minimum."""
+        assert stat_floor(values, 0.0) == pytest.approx(min(values))
+
+    @given(values=st.lists(_finite_floats, min_size=1, max_size=30))
+    def test_p100_always_equals_maximum(self, values: list[float]) -> None:
+        """100th percentile is always the sample maximum."""
+        assert stat_floor(values, 100.0) == pytest.approx(max(values))
+
+
+class TestStatCeiling:
+    """Tests for stat_ceiling() — high-end percentile estimator."""
+
+    def test_empty_sequence_returns_none(self) -> None:
+        """No values → None."""
+        assert stat_ceiling([]) is None
+
+    def test_all_none_returns_none(self) -> None:
+        """All-DNP games → no valid sample."""
+        assert stat_ceiling([None, None]) is None
+
+    def test_default_percentile_is_90(self) -> None:
+        """Default is the 90th percentile — an optimistic upside estimate."""
+        # 10 values equally spaced; idx = 0.9*9 = 8.1 → 90 + 0.1*10 = 91.0
+        result = stat_ceiling(
+            [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0]
+        )
+        assert result == pytest.approx(91.0)
+
+    def test_single_value_returns_that_value(self) -> None:
+        """With one data point, all percentiles equal that value."""
+        assert stat_ceiling([42.0]) == pytest.approx(42.0)
+
+    def test_p100_is_maximum(self) -> None:
+        """100th percentile equals the sample maximum."""
+        assert stat_ceiling([30.0, 10.0, 20.0], 100.0) == pytest.approx(30.0)
+
+    def test_p0_is_minimum(self) -> None:
+        """0th percentile equals the sample minimum."""
+        assert stat_ceiling([30.0, 10.0, 20.0], 0.0) == pytest.approx(10.0)
+
+    def test_none_values_skipped(self) -> None:
+        """None values are excluded before computing the percentile."""
+        assert stat_ceiling([None, 10.0, None, 30.0], 100.0) == pytest.approx(30.0)
+
+    def test_invalid_percentile_raises(self) -> None:
+        """Percentile outside [0, 100] raises ValueError."""
+        with pytest.raises(ValueError, match="percentile"):
+            stat_ceiling([10.0], -0.1)
+
+    # --- Property-based tests ---
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+        p=st.floats(min_value=0.0, max_value=100.0),
+    )
+    def test_result_within_min_max_bounds(self, values: list[float], p: float) -> None:
+        """Result is always between the minimum and maximum of the input."""
+        result = stat_ceiling(values, p)
+        assert result is not None
+        assert min(values) - 1e-9 <= result <= max(values) + 1e-9
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+        p1=st.floats(min_value=0.0, max_value=100.0),
+        p2=st.floats(min_value=0.0, max_value=100.0),
+    )
+    def test_monotone_in_percentile(
+        self, values: list[float], p1: float, p2: float
+    ) -> None:
+        """Higher percentile → equal or higher result (non-decreasing)."""
+        lo_p, hi_p = (p1, p2) if p1 <= p2 else (p2, p1)
+        lo = stat_ceiling(values, lo_p)
+        hi = stat_ceiling(values, hi_p)
+        assert lo is not None
+        assert hi is not None
+        assert lo <= hi + 1e-9
+
+    @given(
+        floats=st.lists(_finite_floats, min_size=1, max_size=20),
+        nones=st.lists(st.none(), min_size=0, max_size=5),
+        p=st.floats(min_value=0.0, max_value=100.0),
+    )
+    def test_none_skipping_invariant(
+        self, floats: list[float], nones: list[None], p: float
+    ) -> None:
+        """Inserting None values into the list does not change the result."""
+        mixed: list[float | None] = [*floats, *nones]
+        assert stat_ceiling(mixed, p) == pytest.approx(stat_ceiling(floats, p))
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+        floor_p=st.floats(min_value=0.0, max_value=50.0),
+        ceiling_p=st.floats(min_value=50.0, max_value=100.0),
+    )
+    def test_floor_le_ceiling_for_same_values(
+        self, values: list[float], floor_p: float, ceiling_p: float
+    ) -> None:
+        """stat_floor at lower percentile ≤ stat_ceiling at higher percentile."""
+        floor = stat_floor(values, floor_p)
+        ceiling = stat_ceiling(values, ceiling_p)
+        assert floor is not None
+        assert ceiling is not None
+        assert floor <= ceiling + 1e-9
+
+
+class TestStatMedian:
+    """Tests for stat_median() — 50th-percentile central tendency."""
+
+    def test_empty_sequence_returns_none(self) -> None:
+        """No values → None."""
+        assert stat_median([]) is None
+
+    def test_all_none_returns_none(self) -> None:
+        """All-DNP games → no valid sample."""
+        assert stat_median([None, None]) is None
+
+    def test_odd_length_sorted_list_returns_middle(self) -> None:
+        """Median of [10, 20, 30] is the middle element 20."""
+        assert stat_median([10.0, 20.0, 30.0]) == pytest.approx(20.0)
+
+    def test_even_length_list_interpolates(self) -> None:
+        """Median of [10, 30] interpolates to midpoint 20."""
+        assert stat_median([10.0, 30.0]) == pytest.approx(20.0)
+
+    def test_single_value_returns_that_value(self) -> None:
+        """Single data point: median is that value."""
+        assert stat_median([15.0]) == pytest.approx(15.0)
+
+    def test_none_values_skipped(self) -> None:
+        """None values are excluded before computing the median."""
+        assert stat_median([None, 10.0, None, 30.0]) == pytest.approx(20.0)
+
+    def test_unsorted_input_still_correct(self) -> None:
+        """Input order does not affect the median."""
+        assert stat_median([30.0, 10.0, 20.0]) == pytest.approx(20.0)
+
+    # --- Property-based tests ---
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+    )
+    def test_oracle_matches_stat_floor_at_50(self, values: list[float]) -> None:
+        """stat_median is exactly stat_floor(values, 50.0) — oracle property."""
+        assert stat_median(values) == pytest.approx(stat_floor(values, 50.0))
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+    )
+    def test_result_within_min_max_bounds(self, values: list[float]) -> None:
+        """Median is always between the minimum and maximum of the sample."""
+        result = stat_median(values)
+        assert result is not None
+        assert min(values) - 1e-9 <= result <= max(values) + 1e-9
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+    )
+    def test_floor_le_median_le_ceiling(self, values: list[float]) -> None:
+        """stat_floor(10%) ≤ stat_median ≤ stat_ceiling(90%) — ordering invariant."""
+        floor = stat_floor(values)
+        median = stat_median(values)
+        ceiling = stat_ceiling(values)
+        assert floor is not None
+        assert median is not None
+        assert ceiling is not None
+        assert floor <= median + 1e-9
+        assert median <= ceiling + 1e-9
+
+    @given(
+        floats=st.lists(_finite_floats, min_size=1, max_size=20),
+        nones=st.lists(st.none(), min_size=0, max_size=5),
+    )
+    def test_none_skipping_invariant(
+        self, floats: list[float], nones: list[None]
+    ) -> None:
+        """Inserting None values into the list does not change the median."""
+        mixed: list[float | None] = [*floats, *nones]
+        assert stat_median(mixed) == pytest.approx(stat_median(floats))
+
+
+class TestPropHitRate:
+    """Tests for prop_hit_rate() — fraction of games meeting a statistical line."""
+
+    def test_empty_sequence_returns_none(self) -> None:
+        """No values → None."""
+        assert prop_hit_rate([], 20.0) is None
+
+    def test_all_none_returns_none(self) -> None:
+        """All-DNP games → no valid sample."""
+        assert prop_hit_rate([None, None], 20.0) is None
+
+    def test_all_values_above_line_returns_one(self) -> None:
+        """Every game meets the line → 100% hit rate."""
+        assert prop_hit_rate([20.0, 25.0, 30.0], 10.0) == pytest.approx(1.0)
+
+    def test_no_values_above_line_returns_zero(self) -> None:
+        """No game meets the line → 0% hit rate."""
+        assert prop_hit_rate([20.0, 25.0, 30.0], 31.0) == pytest.approx(0.0)
+
+    def test_uses_gte_not_gt(self) -> None:
+        """Value exactly on the line counts as a hit (>= semantics)."""
+        assert prop_hit_rate([25.0], 25.0) == pytest.approx(1.0)
+
+    def test_returns_fraction_not_percentage(self) -> None:
+        """Return value is in [0.0, 1.0], not scaled to 0–100."""
+        result = prop_hit_rate([20.0, 25.0, 30.0], 25.0)
+        assert result is not None
+        assert result <= 1.0
+
+    def test_partial_hit_rate(self) -> None:
+        """2 of 3 games meeting line=25 → 2/3."""
+        result = prop_hit_rate([20.0, 25.0, 30.0], 25.0)
+        assert result == pytest.approx(2 / 3)
+
+    def test_none_values_skipped(self) -> None:
+        """None values (DNPs) are excluded from the denominator."""
+        # [20.0, None, 30.0], line=25 → only 30.0 qualifies → 1/2
+        result = prop_hit_rate([20.0, None, 30.0], 25.0)
+        assert result == pytest.approx(0.5)
+
+    # --- Property-based tests ---
+
+    @given(
+        values=st.lists(_maybe_float, min_size=1, max_size=30).filter(
+            lambda vs: any(v is not None for v in vs)
+        ),
+        line=_finite_floats,
+    )
+    def test_result_always_in_0_1(
+        self, values: list[float | None], line: float
+    ) -> None:
+        """Hit rate is always a valid fraction in [0.0, 1.0]."""
+        result = prop_hit_rate(values, line)
+        assert result is not None
+        assert 0.0 <= result <= 1.0
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+        lo=_finite_floats,
+        hi=_finite_floats,
+    )
+    def test_monotone_decreasing_in_line(
+        self, values: list[float], lo: float, hi: float
+    ) -> None:
+        """As the line rises, the hit rate never increases (non-increasing)."""
+        line1, line2 = (lo, hi) if lo <= hi else (hi, lo)
+        rate_low = prop_hit_rate(values, line1)
+        rate_high = prop_hit_rate(values, line2)
+        assert rate_low is not None
+        assert rate_high is not None
+        assert rate_low >= rate_high - 1e-9
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+        offset=st.floats(min_value=0.001, max_value=1e3, allow_nan=False),
+    )
+    def test_line_strictly_below_min_gives_rate_1(
+        self, values: list[float], offset: float
+    ) -> None:
+        """Line below every value → all games qualify → rate == 1.0."""
+        rate = prop_hit_rate(values, min(values) - offset)
+        assert rate == pytest.approx(1.0)
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+        offset=st.floats(min_value=0.001, max_value=1e3, allow_nan=False),
+    )
+    def test_line_strictly_above_max_gives_rate_0(
+        self, values: list[float], offset: float
+    ) -> None:
+        """Line above every value → no game qualifies → rate == 0.0."""
+        rate = prop_hit_rate(values, max(values) + offset)
+        assert rate == pytest.approx(0.0)
+
+    @given(
+        floats=st.lists(_finite_floats, min_size=1, max_size=20),
+        nones=st.lists(st.none(), min_size=0, max_size=5),
+        line=_finite_floats,
+    )
+    def test_none_skipping_invariant(
+        self, floats: list[float], nones: list[None], line: float
+    ) -> None:
+        """Inserting None values does not change the hit rate."""
+        mixed: list[float | None] = [*floats, *nones]
+        assert prop_hit_rate(mixed, line) == pytest.approx(prop_hit_rate(floats, line))
+
+
+class TestPercentileRank:
+    """Tests for percentile_rank() — inverse of _percentile / stat_floor."""
+
+    def test_empty_reference_returns_none(self) -> None:
+        """No reference values → None."""
+        assert percentile_rank(20.0, []) is None
+
+    def test_all_none_reference_returns_none(self) -> None:
+        """All-DNP reference → None."""
+        assert percentile_rank(20.0, [None, None]) is None
+
+    def test_value_at_minimum_returns_0(self) -> None:
+        """Minimum of the reference is the 0th percentile."""
+        assert percentile_rank(10.0, [10.0, 20.0, 30.0]) == pytest.approx(0.0)
+
+    def test_value_at_maximum_returns_100(self) -> None:
+        """Maximum of the reference is the 100th percentile."""
+        assert percentile_rank(30.0, [10.0, 20.0, 30.0]) == pytest.approx(100.0)
+
+    def test_value_at_midpoint_returns_50(self) -> None:
+        """Middle element of a three-value sorted list → 50th percentile."""
+        assert percentile_rank(20.0, [10.0, 20.0, 30.0]) == pytest.approx(50.0)
+
+    def test_interpolated_value(self) -> None:
+        """Value halfway between two reference points → 25th percentile."""
+        # 15.0 is halfway between 10 and 20 in [10, 20, 30]; idx = 0.5, p = 0.5/2*100 = 25
+        assert percentile_rank(15.0, [10.0, 20.0, 30.0]) == pytest.approx(25.0)
+
+    def test_value_below_minimum_returns_0(self) -> None:
+        """Value below the reference minimum → 0th percentile (clamped)."""
+        assert percentile_rank(5.0, [10.0, 20.0, 30.0]) == pytest.approx(0.0)
+
+    def test_value_above_maximum_returns_100(self) -> None:
+        """Value above the reference maximum → 100th percentile (clamped)."""
+        assert percentile_rank(35.0, [10.0, 20.0, 30.0]) == pytest.approx(100.0)
+
+    def test_none_values_skipped(self) -> None:
+        """None entries in reference are excluded before computing the rank."""
+        assert percentile_rank(20.0, [10.0, None, 20.0, 30.0]) == pytest.approx(50.0)
+
+    def test_unsorted_reference_still_correct(self) -> None:
+        """Reference order does not matter — the function sorts internally."""
+        assert percentile_rank(20.0, [30.0, 10.0, 20.0]) == pytest.approx(50.0)
+
+    # --- Property-based tests ---
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+        value=_finite_floats,
+    )
+    def test_result_always_in_0_100(self, values: list[float], value: float) -> None:
+        """Percentile rank is always a valid percentage in [0.0, 100.0]."""
+        result = percentile_rank(value, values)
+        assert result is not None
+        assert 0.0 <= result <= 100.0
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+        v1=_finite_floats,
+        v2=_finite_floats,
+    )
+    def test_monotone_in_value(self, values: list[float], v1: float, v2: float) -> None:
+        """Higher value → equal or higher percentile rank (non-decreasing)."""
+        lo, hi = (v1, v2) if v1 <= v2 else (v2, v1)
+        assert percentile_rank(lo, values) <= percentile_rank(hi, values) + 1e-9  # type: ignore[operator]
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+    )
+    def test_min_value_returns_0(self, values: list[float]) -> None:
+        """Minimum of the reference always has rank 0.0."""
+        assert percentile_rank(min(values), values) == pytest.approx(0.0)
+
+    @given(
+        values=st.lists(_finite_floats, min_size=2, max_size=30).filter(
+            lambda vs: min(vs) < max(vs)
+        ),
+    )
+    def test_max_value_returns_100(self, values: list[float]) -> None:
+        """Maximum of the reference always has rank 100.0.
+
+        Filtered to lists with a non-trivial range (min < max); when all values
+        are equal, min == max and the rank is ambiguous.
+        """
+        assert percentile_rank(max(values), values) == pytest.approx(100.0)
+
+    @given(
+        floats=st.lists(_finite_floats, min_size=1, max_size=20),
+        nones=st.lists(st.none(), min_size=0, max_size=5),
+        value=_finite_floats,
+    )
+    def test_none_skipping_invariant(
+        self, floats: list[float], nones: list[None], value: float
+    ) -> None:
+        """Adding None values to the reference does not change the rank."""
+        mixed: list[float | None] = [*floats, *nones]
+        assert percentile_rank(value, mixed) == pytest.approx(
+            percentile_rank(value, floats)
+        )
+
+    @given(
+        values=st.lists(_finite_floats, min_size=2, max_size=20, unique=True),
+        p=st.floats(min_value=0.0, max_value=100.0),
+    )
+    def test_roundtrip_with_stat_floor(self, values: list[float], p: float) -> None:
+        """percentile_rank(stat_floor(values, p), values) ≈ p — roundtrip property.
+
+        Restricted to unique-value lists: duplicate values make the percentile
+        function many-to-one, breaking the strict inverse relationship.
+        """
+        value = stat_floor(values, p)
+        rank = percentile_rank(value, values)  # type: ignore[arg-type]
+        assert rank == pytest.approx(p, abs=1e-6)
+
+
+class TestStatConsistency:
+    """Tests for stat_consistency() — population standard deviation."""
+
+    def test_empty_sequence_returns_none(self) -> None:
+        """No values → None."""
+        assert stat_consistency([]) is None
+
+    def test_all_none_returns_none(self) -> None:
+        """All-DNP games → no valid sample."""
+        assert stat_consistency([None, None]) is None
+
+    def test_single_value_returns_zero(self) -> None:
+        """Single data point has zero spread by definition."""
+        assert stat_consistency([25.0]) == pytest.approx(0.0)
+
+    def test_constant_sequence_returns_zero(self) -> None:
+        """Identical values have zero standard deviation."""
+        assert stat_consistency([20.0, 20.0, 20.0]) == pytest.approx(0.0)
+
+    def test_known_std_dev(self) -> None:
+        """[10, 20, 30]: mean=20, variance=(100+0+100)/3, std≈8.165."""
+        result = stat_consistency([10.0, 20.0, 30.0])
+        assert result == pytest.approx((200 / 3) ** 0.5, abs=1e-9)
+
+    def test_none_values_skipped(self) -> None:
+        """None values (DNPs) are excluded from the standard deviation."""
+        # [10, None, 30] → same as [10, 30]: mean=20, std=10
+        assert stat_consistency([10.0, None, 30.0]) == pytest.approx(10.0)
+
+    def test_result_is_non_negative(self) -> None:
+        """Standard deviation is always non-negative."""
+        result = stat_consistency([5.0, 15.0, 10.0])
+        assert result is not None
+        assert result >= 0.0
+
+    # --- Property-based tests ---
+
+    @given(values=st.lists(_finite_floats, min_size=1, max_size=30))
+    def test_always_non_negative(self, values: list[float]) -> None:
+        """Standard deviation is never negative."""
+        result = stat_consistency(values)
+        assert result is not None
+        assert result >= 0.0
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+        constant=st.floats(
+            allow_nan=False, allow_infinity=False, min_value=-1e5, max_value=1e5
+        ),
+    )
+    def test_shift_invariant(self, values: list[float], constant: float) -> None:
+        """Adding a constant to every value does not change the spread."""
+        shifted = [v + constant for v in values]
+        original = stat_consistency(values)
+        result = stat_consistency(shifted)
+        assert original is not None
+        assert result is not None
+        assert result == pytest.approx(original, abs=1e-6)
+
+    @given(
+        values=st.lists(
+            st.floats(
+                allow_nan=False, allow_infinity=False, min_value=-1e4, max_value=1e4
+            ),
+            min_size=1,
+            max_size=20,
+        ),
+        k=st.floats(
+            allow_nan=False, allow_infinity=False, min_value=0.01, max_value=100.0
+        ),
+    )
+    def test_scale_property(self, values: list[float], k: float) -> None:
+        """Scaling all values by k scales consistency by |k|."""
+        scaled = [v * k for v in values]
+        original = stat_consistency(values)
+        result = stat_consistency(scaled)
+        assert original is not None
+        assert result is not None
+        assert result == pytest.approx(original * k, abs=1e-4)
+
+    @given(
+        floats=st.lists(_finite_floats, min_size=1, max_size=20),
+        nones=st.lists(st.none(), min_size=0, max_size=5),
+    )
+    def test_none_skipping_invariant(
+        self, floats: list[float], nones: list[None]
+    ) -> None:
+        """Adding None values does not change the standard deviation."""
+        mixed: list[float | None] = [*floats, *nones]
+        assert stat_consistency(mixed) == pytest.approx(stat_consistency(floats))
+
+    @given(
+        n=st.integers(min_value=1, max_value=30),
+        v=_finite_floats,
+    )
+    def test_constant_sequence_always_zero(self, n: int, v: float) -> None:
+        """Any sequence of identical values has zero consistency."""
+        result = stat_consistency([v] * n)
+        assert result is not None
+        assert result == pytest.approx(0.0, abs=1e-9)
+
+
+class TestStreakCount:
+    """Tests for streak_count() — consecutive recent games meeting a line."""
+
+    def test_empty_sequence_returns_zero(self) -> None:
+        """No games → streak of 0."""
+        assert streak_count([], 20.0) == 0
+
+    def test_all_none_returns_zero(self) -> None:
+        """All-DNP season → streak of 0."""
+        assert streak_count([None, None, None], 20.0) == 0
+
+    def test_all_games_hit_returns_count(self) -> None:
+        """Every game meets the line → streak equals games played."""
+        assert streak_count([20.0, 25.0, 30.0], 20.0) == 3
+
+    def test_last_game_misses_returns_zero(self) -> None:
+        """Most recent game below the line → streak is 0."""
+        assert streak_count([25.0, 30.0, 15.0], 20.0) == 0
+
+    def test_streak_uses_gte_not_gt(self) -> None:
+        """Value exactly on the line counts as a hit (>= semantics)."""
+        assert streak_count([20.0, 20.0], 20.0) == 2
+
+    def test_streak_stops_at_miss(self) -> None:
+        """Consecutive hits from the end; stops when a miss is encountered."""
+        assert streak_count([10.0, 25.0, 30.0], 20.0) == 2
+
+    def test_dnp_does_not_break_streak(self) -> None:
+        """None values (DNPs) are skipped — they do not interrupt the streak."""
+        # [20, 25, None, 30] → reversed: 30 hit, None skip, 25 hit, 20 hit → 3
+        assert streak_count([20.0, 25.0, None, 30.0], 20.0) == 3
+
+    def test_dnp_between_miss_and_hit(self) -> None:
+        """DNP between a miss and the current game does not revive a broken streak."""
+        # [10, None, 30] → reversed: 30 hit, None skip, 10 miss → streak = 1
+        assert streak_count([10.0, None, 30.0], 20.0) == 1
+
+    def test_streak_from_middle(self) -> None:
+        """Streak is counted from the most recent game backwards."""
+        # [5, 25, 30, 28] with line=20: reversed: 28→hit, 30→hit, 25→hit, 5→miss → 3
+        assert streak_count([5.0, 25.0, 30.0, 28.0], 20.0) == 3
+
+    # --- Property-based tests ---
+
+    @given(
+        values=st.lists(_maybe_float, min_size=0, max_size=30),
+        line=_finite_floats,
+    )
+    def test_result_always_non_negative(
+        self, values: list[float | None], line: float
+    ) -> None:
+        """Streak is never negative."""
+        assert streak_count(values, line) >= 0
+
+    @given(
+        values=st.lists(_maybe_float, min_size=0, max_size=30),
+        line=_finite_floats,
+    )
+    def test_result_at_most_games_played(
+        self, values: list[float | None], line: float
+    ) -> None:
+        """Streak cannot exceed the number of non-None games in the sequence."""
+        games_played = sum(1 for v in values if v is not None)
+        assert streak_count(values, line) <= games_played
+
+    @given(
+        values=st.lists(_maybe_float, min_size=1, max_size=30).filter(
+            lambda vs: any(v is not None for v in vs)
+        ),
+        lo=_finite_floats,
+        hi=_finite_floats,
+    )
+    def test_monotone_decreasing_in_line(
+        self, values: list[float | None], lo: float, hi: float
+    ) -> None:
+        """Raising the line never increases the streak (non-increasing)."""
+        line1, line2 = (lo, hi) if lo <= hi else (hi, lo)
+        assert streak_count(values, line1) >= streak_count(values, line2)
+
+    @given(
+        floats=st.lists(_finite_floats, min_size=1, max_size=20),
+        nones=st.lists(st.none(), min_size=0, max_size=5),
+        line=_finite_floats,
+    )
+    def test_appending_nones_does_not_change_streak(
+        self, floats: list[float], nones: list[None], line: float
+    ) -> None:
+        """Appending None values at the END does not change the streak length,
+        since DNPs are skipped and the last real game is still the most recent hit/miss.
+        """
+        with_nones: list[float | None] = [*floats, *nones]
+        assert streak_count(with_nones, line) == streak_count(floats, line)
+
+
+class TestRollingConsistency:
+    """Tests for rolling_consistency() — sliding-window population std dev."""
+
+    def test_empty_sequence_returns_empty(self) -> None:
+        """No input → no output."""
+        assert rolling_consistency([], 3) == []
+
+    def test_window_1_all_zeros_for_floats(self) -> None:
+        """Window of 1 has a single element — std dev is always 0.0."""
+        assert rolling_consistency([10.0, 20.0, 30.0], 1) == [
+            pytest.approx(0.0),
+            pytest.approx(0.0),
+            pytest.approx(0.0),
+        ]
+
+    def test_window_1_none_propagates_as_none(self) -> None:
+        """None entries still propagate to None even when window=1."""
+        result = rolling_consistency([10.0, None, 20.0], 1)
+        assert result[0] == pytest.approx(0.0)
+        assert result[1] is None
+        assert result[2] == pytest.approx(0.0)
+
+    def test_warm_up_period_is_none(self) -> None:
+        """First window-1 positions are always None (insufficient data)."""
+        result = rolling_consistency([10.0, 20.0, 30.0, 40.0], 3)
+        assert result[0] is None
+        assert result[1] is None
+        assert result[2] is not None
+        assert result[3] is not None
+
+    def test_none_in_window_propagates_none(self) -> None:
+        """A DNP anywhere in the active window outputs None."""
+        result = rolling_consistency([10.0, None, 30.0], 2)
+        assert result == [None, None, None]
+
+    def test_none_propagation_is_local_to_window(self) -> None:
+        """None contaminates only the windows it falls in; later clean windows recover."""
+        # [10, 20, None, 30, 40], window=2:
+        # i=0: warm-up → None
+        # i=1: [10, 20] → 5.0
+        # i=2: [20, None] → None
+        # i=3: [None, 30] → None
+        # i=4: [30, 40] → 5.0  ← clean window after contamination
+        result = rolling_consistency([10.0, 20.0, None, 30.0, 40.0], 2)
+        assert result[0] is None
+        assert result[1] == pytest.approx(5.0)
+        assert result[2] is None
+        assert result[3] is None
+        assert result[4] == pytest.approx(5.0)
+
+    def test_all_none_returns_all_none(self) -> None:
+        """All-DNP games → all-None output (no valid windows exist)."""
+        assert rolling_consistency([None, None, None], 3) == [None, None, None]
+
+    def test_known_std_dev_three_elements(self) -> None:
+        """[10, 20, 30]: mean=20, var=(100+0+100)/3, std≈8.165."""
+        result = rolling_consistency([10.0, 20.0, 30.0], 3)
+        assert result[0] is None
+        assert result[1] is None
+        assert result[2] == pytest.approx((200 / 3) ** 0.5, abs=1e-9)
+
+    def test_constant_sequence_returns_zeros(self) -> None:
+        """Identical values have zero spread — rolling std dev is always 0.0."""
+        result = rolling_consistency([20.0, 20.0, 20.0, 20.0], 3)
+        assert result[2] == pytest.approx(0.0)
+        assert result[3] == pytest.approx(0.0)
+
+    def test_window_larger_than_length_all_none(self) -> None:
+        """Window bigger than the input → all outputs are None."""
+        assert rolling_consistency([10.0, 20.0], 5) == [None, None]
+
+    def test_invalid_window_raises(self) -> None:
+        """window < 1 must raise ValueError."""
+        with pytest.raises(ValueError, match="window"):
+            rolling_consistency([1.0, 2.0, 3.0], 0)
+
+    def test_two_element_window(self) -> None:
+        """Window=2: std dev of consecutive pairs."""
+        # [10, 30]: mean=20, var=((10-20)²+(30-20)²)/2 = 100, std=10
+        result = rolling_consistency([10.0, 30.0, 10.0], 2)
+        assert result[0] is None
+        assert result[1] == pytest.approx(10.0)
+        assert result[2] == pytest.approx(10.0)
+
+    # --- Property-based tests ---
+
+    @given(
+        values=st.lists(_maybe_float, min_size=0, max_size=30),
+        window=st.integers(min_value=1, max_value=10),
+    )
+    def test_output_length_equals_input_length(
+        self, values: list[float | None], window: int
+    ) -> None:
+        """Output is always the same length as the input."""
+        result = rolling_consistency(values, window)
+        assert len(result) == len(values)
+
+    @given(
+        values=st.lists(_maybe_float, min_size=0, max_size=30),
+        window=st.integers(min_value=1, max_value=10),
+    )
+    def test_non_negative_where_not_none(
+        self, values: list[float | None], window: int
+    ) -> None:
+        """Every non-None output is >= 0.0."""
+        for v in rolling_consistency(values, window):
+            if v is not None:
+                assert v >= 0.0
+
+    @given(
+        values=st.lists(_maybe_float, min_size=0, max_size=30),
+        window=st.integers(min_value=1, max_value=15),
+    )
+    def test_first_entries_are_none(
+        self, values: list[float | None], window: int
+    ) -> None:
+        """The first min(window-1, len) outputs are always None."""
+        result = rolling_consistency(values, window)
+        n_warmup = min(window - 1, len(values))
+        assert all(v is None for v in result[:n_warmup])
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=20),
+        window=st.integers(min_value=1, max_value=10),
+    )
+    def test_window_1_all_zero(self, values: list[float], window: int) -> None:
+        """For window=1, every output is 0.0 (std dev of a single element)."""
+        result = rolling_consistency(values, 1)
+        assert all(v == pytest.approx(0.0) for v in result)
+
+    @given(
+        values=st.lists(_finite_floats, min_size=2, max_size=20),
+        window=st.integers(min_value=1, max_value=10),
+        constant=st.floats(
+            allow_nan=False, allow_infinity=False, min_value=-1e4, max_value=1e4
+        ),
+    )
+    def test_shift_invariant(
+        self, values: list[float], window: int, constant: float
+    ) -> None:
+        """Shifting all values by a constant leaves rolling std dev unchanged."""
+        shifted = [v + constant for v in values]
+        orig = rolling_consistency(values, window)
+        shifted_result = rolling_consistency(shifted, window)
+        for o, s in zip(orig, shifted_result, strict=True):
+            if o is None:
+                assert s is None
+            else:
+                assert s == pytest.approx(o, abs=1e-4)
+
+    @given(
+        values=st.lists(
+            st.floats(
+                allow_nan=False, allow_infinity=False, min_value=-1e3, max_value=1e3
+            ),
+            min_size=2,
+            max_size=20,
+        ),
+        window=st.integers(min_value=1, max_value=10),
+        k=st.floats(
+            allow_nan=False, allow_infinity=False, min_value=0.01, max_value=100.0
+        ),
+    )
+    def test_scale_property(self, values: list[float], window: int, k: float) -> None:
+        """Multiplying all values by k scales rolling consistency by k."""
+        scaled = [v * k for v in values]
+        orig = rolling_consistency(values, window)
+        scaled_result = rolling_consistency(scaled, window)
+        for o, s in zip(orig, scaled_result, strict=True):
+            if o is None:
+                assert s is None
+            else:
+                assert s == pytest.approx(o * k, rel=1e-4, abs=1e-6)
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=20),
+    )
+    def test_oracle_last_entry_vs_stat_consistency(self, values: list[float]) -> None:
+        """rolling_consistency(v, len(v))[-1] == stat_consistency(v) for no-None input."""
+        result = rolling_consistency(values, len(values))
+        expected = stat_consistency(values)
+        assert result[-1] == pytest.approx(expected, abs=1e-9)
+
+
+class TestExpectedStat:
+    """Tests for expected_stat() — PERT-weighted projection from floor/median/ceiling."""
+
+    def test_empty_sequence_returns_none(self) -> None:
+        """No values → None."""
+        assert expected_stat([]) is None
+
+    def test_all_none_returns_none(self) -> None:
+        """All-DNP games → None."""
+        assert expected_stat([None, None]) is None
+
+    def test_single_value_returns_itself(self) -> None:
+        """Single valid entry: floor=median=ceiling=x, PERT=(x+4x+x)/6=x."""
+        assert expected_stat([25.0]) == pytest.approx(25.0)
+
+    def test_constant_sequence_returns_value(self) -> None:
+        """Identical values have floor=median=ceiling=x → PERT=x."""
+        assert expected_stat([20.0, 20.0, 20.0]) == pytest.approx(20.0)
+
+    def test_symmetric_distribution_equals_median(self) -> None:
+        """For symmetric [10, 20, 30]: floor≈12, median=20, ceiling≈28 → PERT=20."""
+        result = expected_stat([10.0, 20.0, 30.0])
+        assert result == pytest.approx(20.0, abs=1e-9)
+
+    def test_pert_formula_arithmetic(self) -> None:
+        """Pins the exact PERT formula: (P10 + 4*P50 + P90) / 6 for [10, 20, 40].
+
+        sorted [10,20,40], n=3:
+          P10 idx=0.2 → 10 + 0.2*10 = 12.0
+          P50 idx=1.0 → 20.0
+          P90 idx=1.8 → 20 + 0.8*20 = 36.0
+          PERT = (12 + 80 + 36) / 6 = 128/6
+        """
+        result = expected_stat([10.0, 20.0, 40.0])
+        assert result == pytest.approx(128.0 / 6.0, abs=1e-9)
+
+    def test_result_between_floor_and_ceiling(self) -> None:
+        """expected_stat is always between stat_floor and stat_ceiling."""
+        pts = [38.0, 14.0, 41.0, 22.0, 35.0, 12.0, 29.0, 44.0, 18.0, 20.0]
+        result = expected_stat(pts)
+        floor_v = stat_floor(pts)
+        ceil_v = stat_ceiling(pts)
+        assert result is not None
+        assert floor_v is not None
+        assert ceil_v is not None
+        assert floor_v <= result <= ceil_v
+
+    def test_none_values_skipped(self) -> None:
+        """DNP games are excluded before computing the projection."""
+        # [20, None, 30] behaves the same as [20, 30]
+        assert expected_stat([20.0, None, 30.0]) == pytest.approx(
+            expected_stat([20.0, 30.0])
+        )
+
+    # --- Property-based tests ---
+
+    @given(values=st.lists(_finite_floats, min_size=1, max_size=30))
+    def test_between_floor_and_ceiling(self, values: list[float]) -> None:
+        """Result is always between stat_floor(10th) and stat_ceiling(90th)."""
+        result = expected_stat(values)
+        assert result is not None
+        floor_v = stat_floor(values)
+        ceil_v = stat_ceiling(values)
+        assert floor_v is not None and ceil_v is not None
+        assert floor_v <= result + 1e-9
+        assert result <= ceil_v + 1e-9
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+        constant=st.floats(
+            allow_nan=False, allow_infinity=False, min_value=-1e5, max_value=1e5
+        ),
+    )
+    def test_shift_equivariant(self, values: list[float], constant: float) -> None:
+        """Adding a constant to all values shifts the projection by that constant."""
+        shifted = [v + constant for v in values]
+        orig = expected_stat(values)
+        shifted_result = expected_stat(shifted)
+        assert orig is not None and shifted_result is not None
+        assert shifted_result == pytest.approx(orig + constant, abs=1e-4)
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=30),
+        k=st.floats(
+            allow_nan=False, allow_infinity=False, min_value=0.01, max_value=100.0
+        ),
+    )
+    def test_scale_equivariant(self, values: list[float], k: float) -> None:
+        """Multiplying all values by k scales the projection by k."""
+        scaled = [v * k for v in values]
+        orig = expected_stat(values)
+        scaled_result = expected_stat(scaled)
+        assert orig is not None and scaled_result is not None
+        assert scaled_result == pytest.approx(orig * k, rel=1e-4, abs=1e-6)
+
+    @given(
+        n=st.integers(min_value=1, max_value=30),
+        v=_finite_floats,
+    )
+    def test_constant_sequence_always_returns_value(self, n: int, v: float) -> None:
+        """Any constant sequence returns that constant."""
+        result = expected_stat([v] * n)
+        assert result == pytest.approx(v, abs=1e-9)
+
+    @given(
+        floats=st.lists(_finite_floats, min_size=1, max_size=20),
+        nones=st.lists(st.none(), min_size=0, max_size=5),
+    )
+    def test_none_skipping_invariant(
+        self, floats: list[float], nones: list[None]
+    ) -> None:
+        """Adding None values does not change the projection."""
+        mixed: list[float | None] = [*floats, *nones]
+        assert expected_stat(mixed) == pytest.approx(expected_stat(floats))
+
+
+class TestHitRateLastN:
+    """Tests for hit_rate_last_n() — prop hit rate restricted to the last n games."""
+
+    def test_empty_sequence_returns_none(self) -> None:
+        """No games → None."""
+        assert hit_rate_last_n([], 20.0, 5) is None
+
+    def test_all_none_returns_none(self) -> None:
+        """All-DNP games → None."""
+        assert hit_rate_last_n([None, None, None], 20.0, 5) is None
+
+    def test_n_1_last_game_hits(self) -> None:
+        """n=1 and the most recent game meets the line → 1.0."""
+        assert hit_rate_last_n([10.0, 25.0], 20.0, 1) == pytest.approx(1.0)
+
+    def test_n_1_last_game_misses(self) -> None:
+        """n=1 and the most recent game misses the line → 0.0."""
+        assert hit_rate_last_n([25.0, 10.0], 20.0, 1) == pytest.approx(0.0)
+
+    def test_ignores_games_older_than_n(self) -> None:
+        """Only the last n non-DNP games are considered."""
+        # Last 2 games: 25, 25 — both hit. First 2: 10, 10 — both miss.
+        assert hit_rate_last_n([10.0, 10.0, 25.0, 25.0], 20.0, 2) == pytest.approx(1.0)
+
+    def test_gte_semantics(self) -> None:
+        """Value exactly on the line counts as a hit (>= semantics)."""
+        assert hit_rate_last_n([20.0, 20.0], 20.0, 2) == pytest.approx(1.0)
+
+    def test_none_values_skipped(self) -> None:
+        """None entries are excluded — a DNP does not count as a miss."""
+        # [None, 25, 30] → last 2 non-None: 30, 25 — both hit
+        assert hit_rate_last_n([None, 25.0, 30.0], 20.0, 2) == pytest.approx(1.0)
+
+    def test_interspersed_nones_skipped_correctly(self) -> None:
+        """DNPs scattered through the log are skipped when collecting the last n games."""
+        # reversed: None→skip, 30→hit(1), None→skip, 10→miss(2) → 1/2
+        assert hit_rate_last_n(
+            [25.0, None, 10.0, None, 30.0], 20.0, 2
+        ) == pytest.approx(0.5)
+
+    def test_n_larger_than_games_played_uses_all(self) -> None:
+        """n > games played → uses all valid games (same as prop_hit_rate)."""
+        pts = [25.0, 30.0]
+        assert hit_rate_last_n(pts, 20.0, 100) == pytest.approx(
+            prop_hit_rate(pts, 20.0)
+        )
+
+    def test_known_rate_last_three(self) -> None:
+        """Last 3 of [10, 25, 30, 15, 28]: reversed non-None = 28, 15, 30 → 2/3."""
+        assert hit_rate_last_n(
+            [10.0, 25.0, 30.0, 15.0, 28.0], 20.0, 3
+        ) == pytest.approx(2 / 3)
+
+    def test_invalid_n_raises(self) -> None:
+        """n < 1 must raise ValueError."""
+        with pytest.raises(ValueError, match="n"):
+            hit_rate_last_n([20.0, 25.0], 20.0, 0)
+
+    # --- Property-based tests ---
+
+    @given(
+        values=st.lists(_maybe_float, min_size=1, max_size=30).filter(
+            lambda vs: any(v is not None for v in vs)
+        ),
+        line=_finite_floats,
+        n=st.integers(min_value=1, max_value=15),
+    )
+    def test_result_in_0_1(
+        self, values: list[float | None], line: float, n: int
+    ) -> None:
+        """Hit rate is always in [0.0, 1.0]."""
+        result = hit_rate_last_n(values, line, n)
+        assert result is not None
+        assert 0.0 <= result <= 1.0
+
+    @given(
+        values=st.lists(_maybe_float, min_size=1, max_size=30).filter(
+            lambda vs: any(v is not None for v in vs)
+        ),
+        lo=_finite_floats,
+        hi=_finite_floats,
+        n=st.integers(min_value=1, max_value=15),
+    )
+    def test_non_increasing_in_line(
+        self, values: list[float | None], lo: float, hi: float, n: int
+    ) -> None:
+        """Raising the line never increases the hit rate (non-increasing in line)."""
+        line1, line2 = (lo, hi) if lo <= hi else (hi, lo)
+        r1 = hit_rate_last_n(values, line1, n)
+        r2 = hit_rate_last_n(values, line2, n)
+        assert r1 is not None and r2 is not None
+        assert r1 >= r2 - 1e-9
+
+    @given(
+        floats=st.lists(_finite_floats, min_size=1, max_size=20),
+        nones=st.lists(st.none(), min_size=0, max_size=5),
+        line=_finite_floats,
+        n=st.integers(min_value=1, max_value=10),
+    )
+    def test_appending_nones_at_end_unchanged(
+        self, floats: list[float], nones: list[None], line: float, n: int
+    ) -> None:
+        """Appending DNPs at the END does not change the last-n rate."""
+        with_nones: list[float | None] = [*floats, *nones]
+        assert hit_rate_last_n(with_nones, line, n) == pytest.approx(
+            hit_rate_last_n(floats, line, n)
+        )
+
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=20),
+        line=_finite_floats,
+    )
+    def test_n_gte_games_played_equals_prop_hit_rate(
+        self, values: list[float], line: float
+    ) -> None:
+        """When n >= games played, hit_rate_last_n == prop_hit_rate (oracle)."""
+        games_played = len(values)  # all values are non-None here
+        assert hit_rate_last_n(values, line, games_played) == pytest.approx(
+            prop_hit_rate(values, line)
+        )
+
+    @given(
+        values=st.lists(_maybe_float, min_size=1, max_size=30).filter(
+            lambda vs: any(v is not None for v in vs)
+        ),
+        line=_finite_floats,
+    )
+    def test_n_1_result_is_binary(
+        self, values: list[float | None], line: float
+    ) -> None:
+        """With n=1, the result can only be 0.0 or 1.0 (single game)."""
+        result = hit_rate_last_n(values, line, 1)
+        assert result in (0.0, 1.0)
