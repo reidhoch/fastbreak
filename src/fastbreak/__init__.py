@@ -88,6 +88,14 @@ from fastbreak.seasons import (
     season_start_year,
     season_to_season_id,
 )
+from fastbreak.shots import (
+    ZoneStats,
+    get_league_shot_zones,
+    get_shot_chart,
+    shot_quality_vs_league,
+    zone_breakdown,
+    zone_fg_pct,
+)
 from fastbreak.standings import (
     get_conference_standings,
     get_standings,
@@ -177,6 +185,7 @@ __all__ = [
     "TeamID",
     "TeamInfo",
     "YesNo",
+    "ZoneStats",
     "__version__",
     "__version_tuple__",
     "assist_ratio",
@@ -207,6 +216,7 @@ __all__ = [
     "get_league_averages",
     "get_league_clutch_leaders",
     "get_league_leaders",
+    "get_league_shot_zones",
     "get_lineup_net_ratings",
     "get_lineup_stats",
     "get_on_off_splits",
@@ -219,6 +229,7 @@ __all__ = [
     "get_player_playtypes",
     "get_player_stats",
     "get_season_from_date",
+    "get_shot_chart",
     "get_standings",
     "get_team",
     "get_team_coaches",
@@ -255,6 +266,7 @@ __all__ = [
     "search_teams",
     "season_start_year",
     "season_to_season_id",
+    "shot_quality_vs_league",
     "stat_ceiling",
     "stat_consistency",
     "stat_floor",
@@ -269,4 +281,6 @@ __all__ = [
     "usage_pct",
     "win_shares",
     "win_shares_per_48",
+    "zone_breakdown",
+    "zone_fg_pct",
 ]

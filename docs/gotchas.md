@@ -482,10 +482,10 @@ Use `CommonPlayerInfo` (via `get_player()` or `get_player_id()`) for player look
 from fastbreak.players import get_player, get_player_id
 
 # Fast — uses CommonPlayerInfo internally
-player = await get_player(client, "Nikola Jokic")
+player = await get_player(client, "Nikola Jokić")
 print(player.team_abbreviation, player.position)
 
-pid = await get_player_id(client, "Nikola Jokic")
+pid = await get_player_id(client, "Nikola Jokić")
 ```
 
 Reserve `PlayerProfileV2` for situations where you specifically need career totals or career highs — it returns more complete historical data but at the cost of a larger response and slower parse time:

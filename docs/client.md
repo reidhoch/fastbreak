@@ -56,7 +56,7 @@ NBAClient(
 | `max_retries` | `int` | `3` | Maximum number of retry attempts for transient failures. The first attempt counts; `max_retries=3` means up to 4 total attempts. |
 | `retry_wait_min` | `float` | `1.0` | Minimum wait in seconds between retries (lower bound for exponential backoff). |
 | `retry_wait_max` | `float` | `10.0` | Maximum wait in seconds between retries (upper bound for exponential backoff, also caps `Retry-After` values). |
-| `request_delay` | `float` | `0.0` | Seconds to sleep before each request inside `get_many()`. Use for proactive rate limiting. Has no effect on `get()`. |
+| `request_delay` | `float` | `0.0` | Seconds to sleep after each request inside `get_many()`, while holding the concurrency slot. Use for proactive rate limiting. Has no effect on `get()`. |
 | `cache_ttl` | `int` | `0` | TTL in seconds for the response cache. `0` disables caching entirely. |
 | `cache_maxsize` | `int` | `256` | Maximum number of responses to keep in the cache. Oldest entries are evicted when full. |
 | `handle_signals` | `bool` | `True` | Register `SIGINT`/`SIGTERM` handlers for graceful shutdown. Set to `False` when the process already manages signal handling (e.g., FastAPI, aiohttp app server). |
@@ -242,7 +242,7 @@ Fetches multiple endpoints using `anyio` task groups. Results are returned in th
 **Behavior**
 
 - Each request runs inside `get()`, so caching and retries apply to each individual request.
-- When `request_delay > 0`, each task sleeps for that duration before acquiring a concurrency slot, spreading load over time.
+- When `request_delay > 0`, each task sleeps for that duration after completing its request, inside the concurrency slot. This paces completions rather than starts — sleeping outside the slot would let all tasks wake simultaneously and stampede the limiter.
 - A batch correlation ID is generated and prepended to each request's `request_id` (`"<batch_id>:<index>"`), making individual requests traceable back to the batch in logs.
 - Progress is logged at DEBUG level every ~10% of completion when `len(endpoints) >= 10`.
 
@@ -460,7 +460,7 @@ When the server returns `HTTP 429` with a `Retry-After: <seconds>` header, fastb
 
 ### Proactive: `request_delay`
 
-Set `request_delay` to introduce a fixed sleep before each request in a `get_many()` batch. This prevents bursting and reduces the chance of triggering rate limits in the first place.
+Set `request_delay` to introduce a fixed sleep after each request in a `get_many()` batch (inside the concurrency slot). This paces completions and reduces the chance of triggering rate limits.
 
 ```python
 # ~60 requests per minute maximum

@@ -404,7 +404,7 @@ async with NBAClient() as client:  # cache_ttl=0, caching disabled
 
 ### Cache key
 
-The cache key is a SHA-256 hash of the endpoint's URL path and its query parameters. Two `LeagueStandings(season="2025-26")` instances will hit the same cache entry. A `LeagueStandings(season="2024-25")` instance will produce a different key.
+The cache key is an MD5 hash of the endpoint's URL path and its query parameters. Two `LeagueStandings(season="2025-26")` instances will hit the same cache entry. A `LeagueStandings(season="2024-25")` instance will produce a different key.
 
 ---
 
