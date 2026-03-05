@@ -280,7 +280,7 @@ class TestBuildClutchProfile:
     def test_score_none_when_below_default_threshold(
         self, mocker: MockerFixture
     ) -> None:
-        """Player with only 5 clutch minutes gets score=None (insufficient sample)."""
+        """Player with only 2 clutch minutes gets score=None (insufficient sample)."""
         overall = _make_stats(mocker)
         clutch = _make_stats(mocker, minutes=2.0)
         profile = build_clutch_profile(1, "Player", "TST", overall, clutch)
