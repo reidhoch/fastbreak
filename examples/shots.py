@@ -77,7 +77,11 @@ async def compare_shot_zones(
             responses[name] = await get_shot_chart(client, player_id=pid, season=season)
         lg_zones = await get_league_shot_zones(client, season=season)
 
-    zone_lookup = {z.shot_zone_basic: z.fg_pct for z in lg_zones}
+    lg_totals: dict[str, tuple[int, int]] = {}
+    for z in lg_zones:
+        fga, fgm = lg_totals.get(z.shot_zone_basic, (0, 0))
+        lg_totals[z.shot_zone_basic] = (fga + z.fga, fgm + z.fgm)
+    zone_lookup = {zone: fgm / fga for zone, (fga, fgm) in lg_totals.items() if fga > 0}
 
     # Collect all zones present across any player, sorted by combined volume
     names = list(player_ids.keys())
