@@ -14,7 +14,7 @@ The `fastbreak.shots` module provides shot chart data with x/y court coordinates
 - [Data Types](#data-types)
   - [ZoneStats](#zonestats)
   - [Shot (model)](#shot-model)
-  - [LeagueWideShotZone (model)](#leaguewideshot-zone-model)
+  - [LeagueWideShotZone (model)](#leaguewideshotzone-model)
 - [Common Patterns](#common-patterns)
 
 ---
@@ -309,6 +309,6 @@ if rim_reg and rim_po and rim_reg.fg_pct and rim_po.fg_pct:
 ## Gotchas
 
 - **`loc_x` / `loc_y` are in tenths of feet.** Divide by 10 before converting to standard court diagrams (which use feet). The three-point line is at `~237–238` units, not ~23.8 feet.
-- **`season` is required for `ShotChartDetail`.** Unlike most endpoints, leaving `season=None` will be resolved to the current season by the helper, but passing an invalid season string will return an empty result set silently.
+- **`season` handling for `ShotChartDetail`.** The underlying NBA `ShotChartDetail` endpoint requires a `season` value, but `get_shot_chart()` will default `season` to the current season if you omit it or pass `season=None`. Passing an invalid season string will still return an empty result set silently.
 - **`context_measure="FGA"` includes all field goal attempts** (2-point and 3-point). Use `"FG3A"` to isolate three-point attempts only. This changes what shots appear in `response.shots` but does **not** affect `response.league_averages`.
 - **Zone names must match exactly** between `Shot.shot_zone_basic` and `LeagueWideShotZone.shot_zone_basic` for `shot_quality_vs_league()` to compute deltas. Both come from the same NBA API field name so they should always match, but unusual zone names (like `"Backcourt"`) may only appear in player data and not in league averages — those zones receive `delta=None`.
