@@ -288,7 +288,17 @@ async def get_league_clutch_leaders(
     Returns:
         List of LeagueDashPlayerClutchRow sorted by plus_minus descending,
         capped at top_n entries.
+
+    Raises:
+        ValueError: If top_n < 1 or min_minutes < 0.
     """
+    if top_n < 1:
+        msg = f"top_n must be >= 1, got {top_n}"
+        raise ValueError(msg)
+    if min_minutes < 0:
+        msg = f"min_minutes must be >= 0, got {min_minutes}"
+        raise ValueError(msg)
+
     from fastbreak.endpoints import LeagueDashPlayerClutch  # noqa: PLC0415
 
     season = season or get_season_from_date()

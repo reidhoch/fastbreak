@@ -54,7 +54,7 @@ A frozen dataclass holding a player's computed clutch performance profile. Built
 | `clutch_plus_minus` | `float` | Plus/minus in clutch situations |
 | `score` | `float \| None` | Composite clutch rating; `None` if below the minutes threshold |
 
-`score` is `None` when `clutch_min < min_threshold` (default 20 minutes) — the sample is considered too small to be reliable.
+`score` is `None` when `clutch_min < min_threshold` (default 5 minutes) — the sample is considered too small to be reliable.
 
 ---
 
@@ -68,7 +68,7 @@ def clutch_score(
     ato_delta: float,
     plus_minus: float,
     clutch_min: float,
-    min_threshold: float = 20.0,
+    min_threshold: float = 5.0,
 ) -> float | None
 ```
 
@@ -92,7 +92,7 @@ Returns `None` when `clutch_min < min_threshold` (insufficient sample).
 | `ato_delta` | `float` | required | Clutch A/TO minus regular-season A/TO |
 | `plus_minus` | `float` | required | Plus/minus in clutch situations |
 | `clutch_min` | `float` | required | Minutes played in clutch situations |
-| `min_threshold` | `float` | `20.0` | Minimum clutch minutes required to compute a score |
+| `min_threshold` | `float` | `5.0` | Minimum clutch minutes required to compute a score |
 
 **Returns** `float | None` — composite score, or `None` if below the minutes threshold
 
@@ -122,7 +122,7 @@ def build_clutch_profile(
     overall: _ClutchStatsLike | None,
     clutch: _ClutchStatsLike | None,
     *,
-    min_threshold: float = 20.0,
+    min_threshold: float = 5.0,
 ) -> ClutchProfile
 ```
 
@@ -139,7 +139,7 @@ Both stats objects must expose `.pts`, `.fga`, `.fta`, `.ast`, `.tov`, `.min`, a
 | `team` | `str` | required | Team abbreviation (stored for display) |
 | `overall` | `_ClutchStatsLike \| None` | required | Full-season stats object, or `None` |
 | `clutch` | `_ClutchStatsLike \| None` | required | Clutch-situation stats object, or `None` |
-| `min_threshold` | `float` | `20.0` | Minimum clutch minutes required to compute a score |
+| `min_threshold` | `float` | `5.0` | Minimum clutch minutes required to compute a score |
 
 **Returns** `ClutchProfile` with all computed delta and composite score fields
 
@@ -194,7 +194,7 @@ async def get_player_clutch_profile(
     team: str = "",
     season: Season | None = None,
     season_type: SeasonType = "Regular Season",
-    min_threshold: float = 20.0,
+    min_threshold: float = 5.0,
 ) -> ClutchProfile | None
 ```
 
@@ -212,7 +212,7 @@ Returns `None` if the player has no qualifying clutch minutes for the season.
 | `team` | `str` | `""` | Team abbreviation (stored on profile) |
 | `season` | `Season \| None` | current season | Season in `YYYY-YY` format |
 | `season_type` | `SeasonType` | `"Regular Season"` | `"Regular Season"`, `"Playoffs"`, etc. |
-| `min_threshold` | `float` | `20.0` | Minimum clutch minutes to compute a composite score |
+| `min_threshold` | `float` | `5.0` | Minimum clutch minutes to compute a composite score |
 
 **Returns** `ClutchProfile | None` — the computed profile, or `None` if the player has no clutch data
 
@@ -514,4 +514,4 @@ The `clutch_score` formula is designed to be interpretable:
 
 A score near **0** is league-average clutch performance. Positive scores indicate better-than-baseline performance in clutch situations; negative scores indicate decline.
 
-The **20-minute minimum** (`min_threshold`) exists because small samples produce noisy results — a player who hits one shot in 2 clutch minutes can have an extreme TS% delta that does not reflect their true ability.
+The **5-minute minimum** (`min_threshold`) exists because small samples produce noisy results — a player who hits one shot in 2 clutch minutes can have an extreme TS% delta that does not reflect their true ability.

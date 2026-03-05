@@ -21,7 +21,7 @@ async def league_clutch_leaders(season: str = "2025-26") -> None:
     async with NBAClient() as client:
         leaders = await get_league_clutch_leaders(
             client,
-            season=season,  # type: ignore[arg-type]
+            season=season,
             min_minutes=_MIN_CLUTCH_MINUTES,
             top_n=10,
         )
@@ -52,7 +52,7 @@ async def player_clutch_profile(player_name: str, season: str = "2025-26") -> No
             client,
             player_id=player_id,
             name=player_name,
-            season=season,  # type: ignore[arg-type]
+            season=season,
             min_threshold=_MIN_CLUTCH_MINUTES,
         )
 
