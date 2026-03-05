@@ -387,10 +387,10 @@ These endpoints return SportVU and second-spectrum tracking data for a player in
 | `ShotChartDetail` | `team_id`, `player_id`, `season`, `season_type`, `context_measure` | Individual shot attempts with x/y coordinates for visualization. `player_id=0` for team-level. `context_measure` can be `"FGA"`, `"FGM"`, `"FG3A"`, etc. Also returns league average percentages by zone | `ShotChartDetailResponse` |
 | `ShotChartLeaguewide` | `season`, `season_type`, `per_mode`, `league_id` | League-average shooting by zone, used as background in shot chart visualizations | `ShotChartLeaguewideResponse` |
 | `ShotChartLineupDetail` | `group_id`, `season`, `season_type`, `context_measure` | Shot chart data for a specific lineup combination | `ShotChartLineupDetailResponse` |
-| `ShotQualityLeaders` | `season`, `season_type`, `league_id` | Leaders in shot quality metrics (expected vs actual shooting efficiency) | `ShotQualityLeadersResponse` |
+| `ShotQualityLeaders` | `season_year`, `season_type`, `league_id` | Leaders in shot quality metrics (expected vs actual shooting efficiency). Note: uses `season_year` (not `season`); defaults to hardcoded `"2024-25"` | `ShotQualityLeadersResponse` |
 | `GravityLeaders` | `season`, `season_type`, `league_id` | Players ranked by gravity — how much defensive attention they attract based on defender proximity | `GravityLeadersResponse` |
 | `DunkScoreLeaders` | `season`, `season_type`, `league_id` | Players ranked by dunk score | `DunkScoreLeadersResponse` |
-| `LeverageLeaders` | `season`, `season_type`, `league_id` | Players ranked by leverage — impact in high-leverage game situations | `LeverageLeadersResponse` |
+| `LeverageLeaders` | `season_year`, `season_type`, `league_id` | Players ranked by leverage — impact in high-leverage game situations. Note: uses `season_year` (not `season`); defaults to hardcoded `"2024-25"` | `LeverageLeadersResponse` |
 
 ---
 
@@ -434,7 +434,7 @@ Draft combine endpoints inherit from `DraftCombineEndpoint` and use `season_year
 | `AllTimeLeadersGrids` | `league_id`, `season_type`, `per_mode`, `top_x` | All-time NBA statistical leaders across multiple categories. `top_x` controls how many leaders to return per category (default 10) | `AllTimeLeadersResponse` |
 | `CommonPlayoffSeries` | `league_id`, `season`, `series_id` | Playoff series matchup data | `CommonPlayoffSeriesResponse` |
 | `IstStandings` | `league_id`, `season` | In-Season Tournament standings | `IstStandingsResponse` |
-| `PlayoffPicture` | `league_id`, `season` | Current playoff picture: seedings, elimination/clinch scenarios | `PlayoffPictureResponse` |
+| `PlayoffPicture` | `league_id`, `season_id` | Current playoff picture: seedings, elimination/clinch scenarios. Note: uses `season_id` in `"2YYYY"` format (e.g., `"22024"` for 2024-25), not `season` | `PlayoffPictureResponse` |
 | `CumeStatsPlayer` | `player_id`, `game_ids`, `league_id`, `season` | Cumulative stats for a player across a list of specific games. Note: `season` uses 4-digit year format (`"2025"`), not `"YYYY-YY"` | `CumeStatsPlayerResponse` |
 | `CumeStatsPlayerGames` | `player_id`, `vs_team_id`, `season`, `league_id` | Games played by a player against a specific opponent | `CumeStatsPlayerGamesResponse` |
 | `CumeStatsTeam` | `team_id`, `game_ids`, `league_id` | Cumulative team stats across a list of specific games | `CumeStatsTeamResponse` |
@@ -475,29 +475,43 @@ async with NBAClient() as client:
 
 ### Batch Requests with `get_many()`
 
+`get_many()` requires all endpoints in the list to share the same response type `T`. Use it to fan out the same endpoint type across multiple inputs (e.g., different game IDs or different players).
+
 ```python
 from fastbreak.clients import NBAClient
-from fastbreak.endpoints import (
-    BoxScoreTraditionalV3,
-    BoxScoreAdvancedV3,
-    BoxScoreSummaryV3,
-)
+from fastbreak.endpoints import BoxScoreTraditionalV3
+
+game_ids = ["0022500571", "0022500572", "0022500573"]
+
+async with NBAClient() as client:
+    # All endpoints have the same response type — correct use of get_many()
+    results = await client.get_many(
+        [BoxScoreTraditionalV3(game_id=gid) for gid in game_ids]
+    )
+
+    for gid, result in zip(game_ids, results):
+        home = result.box_score_traditional.home_team
+        for player in home.players:
+            stats = player.statistics
+            print(f"{gid} — {player.name_i}: {stats.points} pts, {stats.rebounds_total} reb")
+```
+
+For **different endpoint types** on the same game, make individual `get()` calls. These can be run concurrently with `anyio.create_task_group()` if needed:
+
+```python
+from fastbreak.clients import NBAClient
+from fastbreak.endpoints import BoxScoreTraditionalV3, BoxScoreAdvancedV3, BoxScoreSummaryV3
 
 game_id = "0022500571"
 
 async with NBAClient() as client:
-    traditional, advanced, summary = await client.get_many([
-        BoxScoreTraditionalV3(game_id=game_id),
-        BoxScoreAdvancedV3(game_id=game_id),
-        BoxScoreSummaryV3(game_id=game_id),
-    ])
+    # Different response types — use separate get() calls
+    traditional = await client.get(BoxScoreTraditionalV3(game_id=game_id))
+    advanced = await client.get(BoxScoreAdvancedV3(game_id=game_id))
+    summary = await client.get(BoxScoreSummaryV3(game_id=game_id))
 
     game = summary.box_score_summary
     print(f"{game.game_status_text} — {game.arena.arena_name}")
-
-    for player in traditional.box_score_traditional.home_team.players:
-        stats = player.statistics
-        print(f"{player.name_i}: {stats.points} pts, {stats.rebounds_total} reb")
 ```
 
 ### Dashboard Endpoint with Filters

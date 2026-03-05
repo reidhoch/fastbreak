@@ -13,6 +13,7 @@
 | [games.md](games.md) | Game helpers: scoreboard, box scores (traditional, advanced, hustle, scoring), play-by-play, game summary |
 | [schedule.md](schedule.md) | Schedule helper: full season schedule, back-to-back detection, rest day utilities |
 | [clutch.md](clutch.md) | Clutch analysis: `ClutchProfile`, composite score, per-player profiles, league leaders |
+| [shots.md](shots.md) | Shot chart analysis: `ZoneStats`, per-shot coordinates, zone breakdown, delta vs. league average |
 | [metrics.md](metrics.md) | Pure-computation metrics: true shooting, PER, net rating, pace-adjusted stats |
 | [endpoints.md](endpoints.md) | All 100+ endpoint classes: params, response models, type aliases |
 | [models.md](models.md) | Response model patterns: `FrozenResponse`, result set validators, v3 models, DataFrame mixins |

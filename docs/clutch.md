@@ -105,8 +105,8 @@ from fastbreak.clutch import clutch_score
 score = clutch_score(ts_delta=0.05, ato_delta=0.5, plus_minus=3.0, clutch_min=25.0)
 # score = 0.05 * 10 + 0.5 * 3 + 3.0 * 0.5 = 0.5 + 1.5 + 1.5 = 3.5
 
-# Player with fewer than 20 clutch minutes — score suppressed
-score = clutch_score(ts_delta=0.10, ato_delta=1.0, plus_minus=5.0, clutch_min=10.0)
+# Player with fewer than 5 clutch minutes (below min_threshold) — score suppressed
+score = clutch_score(ts_delta=0.10, ato_delta=1.0, plus_minus=5.0, clutch_min=3.0)
 # score is None
 ```
 
@@ -247,7 +247,7 @@ async def main():
         if profile.score is not None:
             print(f"  Composite score: {profile.score:+.2f}")
         else:
-            print(f"  Composite score: N/A (< {20} clutch minutes)")
+            print(f"  Composite score: N/A (< 5 clutch minutes)")
 
 asyncio.run(main())
 ```
@@ -395,7 +395,7 @@ async def clutch_report(client, name: str, season: str) -> None:
         print(f"  {name}: no clutch data")
         return
 
-    score_str = f"{profile.score:+.2f}" if profile.score is not None else "N/A (< 20 min)"
+    score_str = f"{profile.score:+.2f}" if profile.score is not None else "N/A (< 5 min)"
     ts_str = f"{profile.ts_delta:+.3f}" if profile.ts_delta is not None else "N/A"
     ato_str = f"{profile.ato_delta:+.2f}" if profile.ato_delta is not None else "N/A"
     print(
@@ -409,7 +409,7 @@ async def main():
     players = [
         "LeBron James",
         "Stephen Curry",
-        "Nikola Jokic",
+        "Nikola Jokić",
         "Jayson Tatum",
         "Luka Doncic",
     ]
