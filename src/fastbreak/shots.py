@@ -83,24 +83,16 @@ def zone_breakdown(shots: list[Shot]) -> dict[str, ZoneStats]:
         Dict mapping zone name → ZoneStats with fga, fgm, and fg_pct.
         Empty dict when shots is empty.
     """
-    groups: dict[str, list[Shot]] = {}
+    counts: dict[str, tuple[int, int]] = {}
     for shot in shots:
         zone = shot.shot_zone_basic
-        if zone not in groups:
-            groups[zone] = []
-        groups[zone].append(shot)
+        fga, fgm = counts.get(zone, (0, 0))
+        counts[zone] = (fga + 1, fgm + shot.shot_made_flag)
 
-    result: dict[str, ZoneStats] = {}
-    for zone, zone_shots in groups.items():
-        fga = len(zone_shots)
-        fgm = sum(s.shot_made_flag for s in zone_shots)
-        result[zone] = ZoneStats(
-            zone=zone,
-            fga=fga,
-            fgm=fgm,
-            fg_pct=fgm / fga,
-        )
-    return result
+    return {
+        zone: ZoneStats(zone=zone, fga=fga, fgm=fgm, fg_pct=fgm / fga)
+        for zone, (fga, fgm) in counts.items()
+    }
 
 
 def shot_quality_vs_league(
@@ -122,13 +114,22 @@ def shot_quality_vs_league(
         Keys match exactly the zones present in player_shots.
     """
     player_zones = zone_breakdown(player_shots)
+
+    # Aggregate league data by basic zone — the leaguewide endpoint returns one
+    # row per (basic, area, range) combination, so the same shot_zone_basic can
+    # appear multiple times.  Sum fga/fgm across sub-zones and compute a single
+    # weighted FG% per basic zone to avoid silent last-wins overwriting.
+    league_totals: dict[str, tuple[int, int]] = {}
+    for z in league_zones:
+        total_fga, total_fgm = league_totals.get(z.shot_zone_basic, (0, 0))
+        league_totals[z.shot_zone_basic] = (total_fga + z.fga, total_fgm + z.fgm)
     league_lookup: dict[str, float] = {
-        z.shot_zone_basic: z.fg_pct for z in league_zones
+        zone: fgm / fga for zone, (fga, fgm) in league_totals.items() if fga > 0
     }
 
     result: dict[str, float | None] = {}
     for zone, stats in player_zones.items():
-        if stats.fg_pct is None or zone not in league_lookup:
+        if zone not in league_lookup or stats.fg_pct is None:
             result[zone] = None
         else:
             result[zone] = stats.fg_pct - league_lookup[zone]

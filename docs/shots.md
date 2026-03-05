@@ -200,6 +200,8 @@ class ZoneStats:
     fg_pct: float | None  # fgm / fga, or None if fga == 0
 ```
 
+> **Note:** `zone_breakdown()` only emits a `ZoneStats` entry when at least one shot exists in that zone (`fga >= 1`), so `fg_pct` is always a `float` in results returned by `zone_breakdown()`. `None` is only possible on a manually-constructed `ZoneStats(fga=0, ...)`.
+
 ### Shot (model)
 
 Key fields on the `Shot` Pydantic model returned in `ShotChartDetailResponse.shots`:
