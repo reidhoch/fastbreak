@@ -1,4 +1,12 @@
 from fastbreak._version import __version__, __version_tuple__
+from fastbreak.clutch import (
+    ClutchProfile,
+    build_clutch_profile,
+    clutch_score,
+    get_league_clutch_leaders,
+    get_player_clutch_profile,
+    get_player_clutch_stats,
+)
 from fastbreak.games import (
     get_box_scores,
     get_box_scores_advanced,
@@ -136,6 +144,7 @@ from fastbreak.types import (
 
 __all__ = [
     "TEAMS",
+    "ClutchProfile",
     "Conference",
     "ContextMeasure",
     "Date",
@@ -174,6 +183,8 @@ __all__ = [
     "ast_pct",
     "ast_to_tov",
     "blk_pct",
+    "build_clutch_profile",
+    "clutch_score",
     "days_rest_before_game",
     "defensive_win_shares",
     "dreb_pct",
@@ -194,12 +205,15 @@ __all__ = [
     "get_games_on_date",
     "get_hustle_stats",
     "get_league_averages",
+    "get_league_clutch_leaders",
     "get_league_leaders",
     "get_lineup_net_ratings",
     "get_lineup_stats",
     "get_on_off_splits",
     "get_play_by_play",
     "get_player",
+    "get_player_clutch_profile",
+    "get_player_clutch_stats",
     "get_player_game_log",
     "get_player_id",
     "get_player_playtypes",
