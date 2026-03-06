@@ -25,6 +25,7 @@ from fastbreak.metrics import (
     per,
     per_100,
     per_36,
+    per_48,
     possessions,
     pythagorean_win_pct,
     relative_efg,
@@ -384,6 +385,29 @@ class TestPer36:
     def test_zero_stat_returns_zero(self) -> None:
         """Returns 0.0 for a zero stat regardless of minutes."""
         result = per_36(stat=0, minutes=25)
+        assert result == pytest.approx(0.0)
+
+
+class TestPer48:
+    """Tests for per_48() normalization."""
+
+    def test_normalizes_stat_to_48_minutes(self) -> None:
+        """Scales 12 points in 24 minutes to 24 per 48."""
+        result = per_48(stat=12, minutes=24)
+        assert result == pytest.approx(24.0)
+
+    def test_zero_minutes_returns_none(self) -> None:
+        """Returns None when minutes played is zero."""
+        assert per_48(stat=10, minutes=0) is None
+
+    def test_already_at_48_minutes_unchanged(self) -> None:
+        """Stat is unchanged when minutes equal 48."""
+        result = per_48(stat=20, minutes=48)
+        assert result == pytest.approx(20.0)
+
+    def test_zero_stat_returns_zero(self) -> None:
+        """Returns 0.0 for a zero stat regardless of minutes."""
+        result = per_48(stat=0, minutes=30)
         assert result == pytest.approx(0.0)
 
 
