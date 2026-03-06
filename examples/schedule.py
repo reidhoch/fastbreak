@@ -18,9 +18,9 @@ async def main() -> None:
     async with NBAClient() as client:
         # ── 1. Full team schedule ────────────────────────────────────
         print("=" * 60)
-        print("Indiana Pacers — 2024-25 schedule (first 10 games)")
+        print("Indiana Pacers — 2025-26 schedule (first 10 games)")
         print("=" * 60)
-        games = await get_team_schedule(client, team_id=IND_TEAM_ID, season="2024-25")
+        games = await get_team_schedule(client, team_id=IND_TEAM_ID, season="2025-26")
         print(f"  {len(games)} total games scheduled\n")
         for game in games[:10]:
             if not game.game_date_est:
@@ -34,7 +34,7 @@ async def main() -> None:
 
         # ── 2. Back-to-back detection ────────────────────────────────
         print("=" * 60)
-        print("Pacers — back-to-backs in 2024-25")
+        print("Pacers — back-to-backs in 2025-26")
         print("=" * 60)
         # Keep (game, date) pairs together to avoid parallel-list index drift
         valid_games = [
