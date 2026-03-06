@@ -94,7 +94,7 @@ async def main() -> None:
     # Profile a handful of notable players
     # Note: player names must match exactly as stored in the NBA API,
     # including diacritics (e.g. "Nikola Jokić", not "Nikola Jokic")
-    for name in ["LeBron James", "Stephen Curry", "Nikola Jokić"]:
+    for name in ["LeBron James", "Victor Wembanyama", "Nikola Jokić"]:
         await player_clutch_profile(name, season)
 
 

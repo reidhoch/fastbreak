@@ -65,11 +65,11 @@ from fastbreak.players import get_player_game_log
 from fastbreak.teams import get_league_averages
 
 # ---------------------------------------------------------------------------
-# Approximate 2024-25 NBA league averages.
+# Approximate 2025-26 NBA league averages.
 # Swap in real values from LeagueDashTeamStats / LeagueDashPlayerStats for
 # production use.
 # ---------------------------------------------------------------------------
-NBA_2024_25 = LeagueAverages(
+NBA_2025_26 = LeagueAverages(
     lg_pts=115.0,
     lg_fga=90.0,
     lg_fta=22.0,
@@ -120,21 +120,21 @@ def demo_single_line() -> None:
     )
     ts = true_shooting(pts=pts, fga=fga, fta=fta)
     efg = effective_fg_pct(fgm=fgm, fg3m=fg3m, fga=fga)
-    rel_ts = relative_ts(ts, NBA_2024_25)
-    rel_efg = relative_efg(efg, NBA_2024_25)
+    rel_ts = relative_ts(ts, NBA_2025_26)
+    rel_efg = relative_efg(efg, NBA_2025_26)
 
     print(f"  Line:  {pts} pts  {oreb + dreb} reb  {ast} ast  {stl} stl  {blk} blk")
     print(f"  FG:    {fgm}/{fga}  3P: {fg3m}/{fg3a}  FT: {ftm}/{fta}")
     print()
     print(f"  Game Score:       {gs:+.1f}   (avg ≈ 10, elite ≈ 30+)")
     print(
-        f"  True Shooting%:   {ts:.3f}   (league avg {NBA_2024_25.ts:.3f},"
+        f"  True Shooting%:   {ts:.3f}   (league avg {NBA_2025_26.ts:.3f},"
         f" rel {rel_ts:+.3f})"
         if ts is not None and rel_ts is not None
         else "  True Shooting%:   n/a"
     )
     print(
-        f"  Eff. FG%:         {efg:.3f}   (league avg {NBA_2024_25.efg:.3f},"
+        f"  Eff. FG%:         {efg:.3f}   (league avg {NBA_2025_26.efg:.3f},"
         f" rel {rel_efg:+.3f})"
         if efg is not None and rel_efg is not None
         else "  Eff. FG%:         n/a"
@@ -409,7 +409,7 @@ def demo_per_calculation() -> None:
             team_ast=team_ast,
             team_fgm=team_fgm,
             team_pace=team_pace,
-            lg=NBA_2024_25,
+            lg=NBA_2025_26,
         )
         if aper is not None:
             apers.append((name, aper, mp))
@@ -798,7 +798,7 @@ def demo_win_shares() -> None:
             fga=a["fga"],
             fta=a["fta"],
             tov=a["tov"],
-            lg=NBA_2024_25,
+            lg=NBA_2025_26,
         )
         dws = defensive_win_shares(
             stl=a["stl"],
@@ -808,7 +808,7 @@ def demo_win_shares() -> None:
             pf=a["pf"],
             **_team,
             **_opp,
-            lg=NBA_2024_25,
+            lg=NBA_2025_26,
         )
         ws = win_shares(ows, dws)
         ws48 = win_shares_per_48(ws, a["mp"])
