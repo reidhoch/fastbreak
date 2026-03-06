@@ -167,8 +167,9 @@ def xfg_pct(
             player_shots is not re-processed (avoids redundant computation).
 
     Returns:
-        Expected FG% as a float in [0.0, 1.0], or None when player_shots is
-        empty or no player zones match league data.
+        Expected FG% as a float in [0.0, 1.0], or None when the effective
+        player zone breakdown is empty (no shots) or when no player zones
+        match league data.
     """
     _player_zones = (
         player_zones if player_zones is not None else zone_breakdown(player_shots)
