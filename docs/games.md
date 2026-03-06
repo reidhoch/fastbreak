@@ -16,6 +16,8 @@ from fastbreak.games import (
     get_box_scores_hustle,
     get_box_scores_scoring,
     get_play_by_play,
+    game_flow,
+    GameFlowPoint,
 )
 ```
 
@@ -583,6 +585,89 @@ for action in scoring[-5:]:
 
 ---
 
+### `game_flow`
+
+```python
+def game_flow(actions: list[PlayByPlayAction]) -> list[GameFlowPoint]
+```
+
+Build a score-line timeline from a list of play-by-play actions. Filters to scoring events (actions where `scoreHome` and `scoreAway` are both non-empty) and returns them as `GameFlowPoint` objects in the same order as the input.
+
+This is a **pure computation function** — it takes an already-fetched action list and returns a list of data points. No client or network call needed.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `actions` | `list[PlayByPlayAction]` | PBP actions, e.g., from `get_play_by_play()` |
+
+**Returns:** `list[GameFlowPoint]` — one entry per scoring event, chronological. Returns `[]` if no scoring events exist.
+
+**Elapsed time calculation:**
+- Regulation periods (1–4): 12 minutes (720 s) each.
+- Overtime periods (5+): 5 minutes (300 s) each.
+- `elapsed_seconds = period_offset + (period_duration − remaining_seconds)`
+
+```python
+from fastbreak.games import game_flow, get_play_by_play
+
+actions = await get_play_by_play(client, "0022500571")
+flow = game_flow(actions)
+
+# Final score
+if flow:
+    last = flow[-1]
+    print(f"Final: Home {last.score_home} – Away {last.score_away}")
+
+# Largest lead at any point in regulation
+reg = [p for p in flow if p.period <= 4]
+max_lead = max(abs(p.margin) for p in reg) if reg else 0
+print(f"Largest lead (regulation): {max_lead} pts")
+
+# Score at halftime (last scoring event before Q3 tip)
+halftime = [p for p in flow if p.elapsed_seconds <= 1440.0]
+if halftime:
+    ht = halftime[-1]
+    print(f"Halftime: Home {ht.score_home} – Away {ht.score_away}")
+
+# Lead changes
+lead_changes = sum(
+    1 for a, b in zip(flow, flow[1:], strict=False)
+    if (a.margin > 0) != (b.margin > 0) and b.margin != 0
+)
+print(f"Lead changes: {lead_changes}")
+```
+
+---
+
+### `GameFlowPoint`
+
+```python
+@dataclass(frozen=True, slots=True)
+class GameFlowPoint:
+    period: int
+    clock: str
+    elapsed_seconds: float
+    score_home: int
+    score_away: int
+    margin: int
+    description: str
+```
+
+A single scoring event in a game's score-line timeline, returned by `game_flow()`.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `period` | `int` | Period number (1–4 = regulation, 5+ = OT) |
+| `clock` | `str` | Remaining time as ISO 8601 duration, e.g. `"PT04M32.00S"` |
+| `elapsed_seconds` | `float` | Seconds elapsed since tip-off |
+| `score_home` | `int` | Home team cumulative score at this point |
+| `score_away` | `int` | Away team cumulative score at this point |
+| `margin` | `int` | `score_home - score_away` (positive = home leading) |
+| `description` | `str` | Play description text from the API |
+
+---
+
 ## ScoreboardGame fields
 
 `ScoreboardGame` is returned by `get_games_on_date()`, `get_todays_games()`, and `get_yesterdays_games()`. All fields are optional (`... | None`) because the API may omit values for games that have not yet started or for which data is unavailable.
@@ -947,17 +1032,8 @@ actions = game.actions     # list[PlayByPlayAction]
 
 **`game_status` integer values.** On `ScoreboardGame`, `game_status` uses integer codes: `1` = scheduled, `2` = in progress, `3` = final. On `BoxScoreSummaryData`, the equivalent field is `gameStatus` (camelCase, no alias). `game_status_text` / `gameStatusText` provides a human-readable equivalent.
 
-**Period clock format.** `PlayByPlayAction.clock` is an ISO 8601 duration string (e.g., `"PT04M32.00S"`), not a plain `"4:32"` string. Parse it with the standard library if you need arithmetic:
+**Period clock format.** `PlayByPlayAction.clock` is an ISO 8601 duration string (e.g., `"PT04M32.00S"`), not a plain `"4:32"` string. Use `game_flow()` for timeline analysis — it handles the ISO 8601 parsing internally and converts to `elapsed_seconds` from tip-off. If you need raw seconds-remaining arithmetic on individual actions, use `re.match(r"PT(\d+)M([\d.]+)S", clock)`.
 
-```python
-import re
-
-def parse_clock(clock: str) -> float:
-    """Return remaining seconds from an ISO 8601 clock string."""
-    m = re.match(r"PT(\d+)M([\d.]+)S", clock)
-    if not m:
-        return 0.0
-    return int(m.group(1)) * 60 + float(m.group(2))
-```
+**`game_flow` only includes scoring events.** Actions with empty `scoreHome` or `scoreAway` (turnovers, fouls, timeouts, substitutions) are silently skipped. The returned list covers only the moments when the scoreboard changed, which is the most useful subset for score-line analysis.
 
 **Empty lists on off-days.** `get_games_on_date()` returns `[]` when there are no games, including during the off-season. Always guard against empty lists before indexing.

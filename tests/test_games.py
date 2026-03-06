@@ -465,3 +465,344 @@ def test_get_yesterdays_games_exported():
     from fastbreak import get_yesterdays_games  # noqa: PLC0415
 
     assert callable(get_yesterdays_games)
+
+
+def _make_action(
+    *,
+    period: int = 1,
+    clock: str = "PT10M00.00S",
+    score_home: str = "",
+    score_away: str = "",
+    description: str = "Jump Shot",
+    action_type: str = "2pt",
+    action_number: int = 1,
+) -> object:
+    """Minimal PlayByPlayAction with real Pydantic construction for game_flow tests."""
+    from fastbreak.models.play_by_play import PlayByPlayAction
+
+    return PlayByPlayAction(
+        actionNumber=action_number,
+        clock=clock,
+        period=period,
+        teamId=1610612744,
+        teamTricode="GSW",
+        personId=201939,
+        playerName="Stephen Curry",
+        playerNameI="S. Curry",
+        xLegacy=0,
+        yLegacy=0,
+        shotDistance=0,
+        shotResult="Made" if score_home else "",
+        isFieldGoal=1 if score_home else 0,
+        scoreHome=score_home,
+        scoreAway=score_away,
+        pointsTotal=2,
+        location="H",
+        description=description,
+        actionType=action_type,
+        subType="",
+        videoAvailable=0,
+        shotValue=2,
+        actionId=action_number,
+    )
+
+
+class TestParseClock:
+    """Tests for the private _parse_clock() ISO 8601 duration helper."""
+
+    def test_full_period_start(self) -> None:
+        """Start of a 12-minute period (PT12M00.00S) returns 720.0 seconds."""
+        from fastbreak.games import _parse_clock
+
+        assert _parse_clock("PT12M00.00S") == pytest.approx(720.0)
+
+    def test_standard_clock_string(self) -> None:
+        """Typical in-game clock (PT04M32.00S) parses to 272.0 seconds remaining."""
+        from fastbreak.games import _parse_clock
+
+        assert _parse_clock("PT04M32.00S") == pytest.approx(272.0)
+
+    def test_zero_remaining(self) -> None:
+        """End of period (PT00M00.00S) returns 0.0."""
+        from fastbreak.games import _parse_clock
+
+        assert _parse_clock("PT00M00.00S") == pytest.approx(0.0)
+
+    def test_sub_second_precision(self) -> None:
+        """Fractional seconds are preserved (PT01M30.50S → 90.5)."""
+        from fastbreak.games import _parse_clock
+
+        assert _parse_clock("PT01M30.50S") == pytest.approx(90.5)
+
+    def test_malformed_returns_zero(self) -> None:
+        """An unrecognised clock string returns 0.0 rather than raising."""
+        from fastbreak.games import _parse_clock
+
+        assert _parse_clock("") == pytest.approx(0.0)
+        assert _parse_clock("invalid") == pytest.approx(0.0)
+
+    def test_ot_period_start(self) -> None:
+        """Start of a 5-minute OT period (PT05M00.00S) returns 300.0 seconds."""
+        from fastbreak.games import _parse_clock
+
+        assert _parse_clock("PT05M00.00S") == pytest.approx(300.0)
+
+
+class TestGameFlow:
+    """Tests for the pure game_flow() score-line computation function."""
+
+    def test_empty_actions_returns_empty_list(self) -> None:
+        """No actions → no flow points."""
+        from fastbreak.games import game_flow
+
+        assert game_flow([]) == []
+
+    def test_non_scoring_actions_skipped(self) -> None:
+        """Actions with empty scoreHome/scoreAway are skipped."""
+        from fastbreak.games import game_flow
+
+        actions = [_make_action(score_home="", score_away="")]
+        assert game_flow(actions) == []
+
+    def test_single_scoring_event_returns_one_point(self) -> None:
+        """A single scoring action produces exactly one GameFlowPoint."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(period=1, clock="PT10M00.00S", score_home="2", score_away="0")
+        ]
+        assert len(game_flow(actions)) == 1
+
+    def test_returns_game_flow_point_instances(self) -> None:
+        """All items in the result are GameFlowPoint objects."""
+        from fastbreak.games import GameFlowPoint, game_flow
+
+        actions = [
+            _make_action(period=1, clock="PT10M00.00S", score_home="2", score_away="0")
+        ]
+        result = game_flow(actions)
+        assert isinstance(result[0], GameFlowPoint)
+
+    def test_elapsed_seconds_q1_start(self) -> None:
+        """Q1 with 12:00 remaining → elapsed = 0.0 seconds from tip-off."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(period=1, clock="PT12M00.00S", score_home="2", score_away="0")
+        ]
+        assert game_flow(actions)[0].elapsed_seconds == pytest.approx(0.0)
+
+    def test_elapsed_seconds_q1_midpoint(self) -> None:
+        """Q1 with 10:00 remaining → elapsed = 120 seconds."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(period=1, clock="PT10M00.00S", score_home="2", score_away="0")
+        ]
+        assert game_flow(actions)[0].elapsed_seconds == pytest.approx(120.0)
+
+    def test_elapsed_seconds_q2_start(self) -> None:
+        """Q2 with 12:00 remaining → elapsed = 720 seconds (after Q1)."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(
+                period=2, clock="PT12M00.00S", score_home="30", score_away="28"
+            )
+        ]
+        assert game_flow(actions)[0].elapsed_seconds == pytest.approx(720.0)
+
+    def test_elapsed_seconds_end_of_regulation(self) -> None:
+        """Q4 with 0:00 remaining → elapsed = 2880 seconds (48 minutes)."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(
+                period=4, clock="PT00M00.00S", score_home="110", score_away="108"
+            )
+        ]
+        assert game_flow(actions)[0].elapsed_seconds == pytest.approx(2880.0)
+
+    def test_elapsed_seconds_ot_start(self) -> None:
+        """OT period 5 with 5:00 remaining → elapsed = 2880 seconds (start of OT)."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(
+                period=5, clock="PT05M00.00S", score_home="112", score_away="110"
+            )
+        ]
+        assert game_flow(actions)[0].elapsed_seconds == pytest.approx(2880.0)
+
+    def test_elapsed_seconds_ot_midpoint(self) -> None:
+        """OT period 5 with 2:30 remaining → elapsed = 2880 + 150 = 3030 seconds."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(
+                period=5, clock="PT02M30.00S", score_home="118", score_away="115"
+            )
+        ]
+        assert game_flow(actions)[0].elapsed_seconds == pytest.approx(3030.0)
+
+    def test_double_overtime_elapsed(self) -> None:
+        """Period 6 (2OT) with 5:00 remaining → elapsed = 2880 + 300 = 3180 seconds."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(
+                period=6, clock="PT05M00.00S", score_home="125", score_away="122"
+            )
+        ]
+        assert game_flow(actions)[0].elapsed_seconds == pytest.approx(3180.0)
+
+    def test_margin_is_home_minus_away(self) -> None:
+        """margin = score_home - score_away (positive when home leads)."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(
+                period=2, clock="PT06M00.00S", score_home="55", score_away="50"
+            )
+        ]
+        assert game_flow(actions)[0].margin == 5
+
+    def test_margin_negative_when_away_leads(self) -> None:
+        """margin is negative when the away team leads."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(
+                period=3, clock="PT06M00.00S", score_home="70", score_away="78"
+            )
+        ]
+        assert game_flow(actions)[0].margin == -8
+
+    def test_description_preserved(self) -> None:
+        """description from the action is stored on GameFlowPoint."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(
+                period=1,
+                clock="PT10M00.00S",
+                score_home="3",
+                score_away="0",
+                description="Curry 3pt Jump Shot",
+            )
+        ]
+        assert game_flow(actions)[0].description == "Curry 3pt Jump Shot"
+
+    def test_score_values_stored(self) -> None:
+        """score_home and score_away on GameFlowPoint match the action scores."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(period=1, clock="PT08M00.00S", score_home="7", score_away="5")
+        ]
+        point = game_flow(actions)[0]
+        assert point.score_home == 7
+        assert point.score_away == 5
+
+    def test_period_stored(self) -> None:
+        """period is stored on GameFlowPoint."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(
+                period=3, clock="PT06M00.00S", score_home="70", score_away="65"
+            )
+        ]
+        assert game_flow(actions)[0].period == 3
+
+    def test_clock_stored_unchanged(self) -> None:
+        """Original ISO 8601 clock string is stored unchanged."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(
+                period=1, clock="PT06M15.00S", score_home="12", score_away="10"
+            )
+        ]
+        assert game_flow(actions)[0].clock == "PT06M15.00S"
+
+    def test_mixed_scoring_and_non_scoring(self) -> None:
+        """Only scoring actions are included; non-scoring are filtered out."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(
+                period=1,
+                clock="PT11M00.00S",
+                score_home="",
+                score_away="",
+                action_number=1,
+            ),
+            _make_action(
+                period=1,
+                clock="PT10M30.00S",
+                score_home="2",
+                score_away="0",
+                action_number=2,
+            ),
+            _make_action(
+                period=1,
+                clock="PT10M00.00S",
+                score_home="",
+                score_away="",
+                action_number=3,
+            ),
+            _make_action(
+                period=1,
+                clock="PT09M30.00S",
+                score_home="2",
+                score_away="2",
+                action_number=4,
+            ),
+        ]
+        assert len(game_flow(actions)) == 2
+
+    def test_order_preserved(self) -> None:
+        """Points appear in the same order as the input actions."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(
+                period=1,
+                clock="PT10M00.00S",
+                score_home="2",
+                score_away="0",
+                action_number=1,
+            ),
+            _make_action(
+                period=1,
+                clock="PT09M00.00S",
+                score_home="4",
+                score_away="0",
+                action_number=2,
+            ),
+            _make_action(
+                period=1,
+                clock="PT08M00.00S",
+                score_home="4",
+                score_away="2",
+                action_number=3,
+            ),
+        ]
+        result = game_flow(actions)
+        scores = [(p.score_home, p.score_away) for p in result]
+        assert scores == [(2, 0), (4, 0), (4, 2)]
+
+    def test_invalid_score_string_skipped(self) -> None:
+        """Actions with non-integer score strings are skipped gracefully."""
+        from fastbreak.games import game_flow
+
+        actions = [
+            _make_action(
+                period=1,
+                clock="PT10M00.00S",
+                score_home="N/A",
+                score_away="0",
+            )
+        ]
+        assert game_flow(actions) == []

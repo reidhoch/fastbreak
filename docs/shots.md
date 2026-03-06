@@ -11,6 +11,7 @@ The `fastbreak.shots` module provides shot chart data with x/y court coordinates
   - [zone_fg_pct](#zone_fg_pct)
   - [zone_breakdown](#zone_breakdown)
   - [shot_quality_vs_league](#shot_quality_vs_league)
+  - [xfg_pct](#xfg_pct)
 - [Data Types](#data-types)
   - [ZoneStats](#zonestats)
   - [Shot (model)](#shot-model)
@@ -27,7 +28,9 @@ from fastbreak.shots import (
     get_shot_chart,
     get_league_shot_zones,
     zone_breakdown,
+    zone_fg_pct,
     shot_quality_vs_league,
+    xfg_pct,
 )
 
 async with NBAClient() as client:
@@ -187,6 +190,46 @@ deltas = shot_quality_vs_league(response.shots, lg_zones)
 
 ---
 
+### xfg_pct
+
+```python
+def xfg_pct(
+    player_shots: list[Shot],
+    league_zones: list[LeagueWideShotZone],
+    *,
+    player_zones: dict[str, ZoneStats] | None = None,
+) -> float | None
+```
+
+Compute expected FG% (xFG%) based on shot location vs. league zone averages.
+
+xFG% answers "what would a league-average player shoot, given *this player's* shot selection?" A player who takes most shots from the restricted area (league avg ~65%) will have a higher xFG% than one who favours mid-range (league avg ~40%), regardless of whether those shots go in.
+
+The complement `zone_fg_pct(shots) - xfg_pct(shots, lg_zones)` isolates **shot-making skill** from **shot-selection quality**. A positive difference means the player is outperforming the league-average expectation for those shot locations.
+
+- **Positive result**: player takes shots from zones where the league shoots well.
+- **`None`**: no player shots, or no player zones matched league data.
+- Shots from zones absent in `league_zones` are excluded from both numerator and denominator.
+
+Pass `player_zones=zone_breakdown(shots)` when you've already computed the breakdown to avoid redundant work:
+
+```python
+breakdown = zone_breakdown(shots)
+deltas = shot_quality_vs_league(shots, lg_zones, player_zones=breakdown)
+expected = xfg_pct(shots, lg_zones, player_zones=breakdown)
+actual = zone_fg_pct(shots)
+
+if actual is not None and expected is not None:
+    print(f"FG%: {actual:.1%}  xFG%: {expected:.1%}  Shot-making: {actual - expected:+.1%}")
+```
+
+**Invariants verified by tests:**
+- Result is always in `[0.0, 1.0]` when at least one zone matches
+- `None` when shots is empty or no zones match league data
+- Two-zone volume-weighted average equals weighted sum of league rates
+
+---
+
 ## Data Types
 
 ### ZoneStats
@@ -312,3 +355,5 @@ if rim_reg and rim_po and rim_reg.fg_pct and rim_po.fg_pct:
 - **`season` handling for `ShotChartDetail`.** The underlying NBA `ShotChartDetail` endpoint requires a `season` value, but `get_shot_chart()` will default `season` to the current season if you omit it or pass `season=None`. Passing an invalid season string will still return an empty result set silently.
 - **`context_measure="FGA"` includes all field goal attempts** (2-point and 3-point). Use `"FG3A"` to isolate three-point attempts only. This changes what shots appear in `response.shots` but does **not** affect `response.league_averages`.
 - **Zone names must match exactly** between `Shot.shot_zone_basic` and `LeagueWideShotZone.shot_zone_basic` for `shot_quality_vs_league()` to compute deltas. Both come from the same NBA API field name so they should always match, but unusual zone names (like `"Backcourt"`) may only appear in player data and not in league averages — those zones receive `delta=None`.
+- **`xfg_pct` excludes unmatched zones from both numerator and denominator.** If a player has shots from `"Backcourt"` which isn't in league data, those shots don't inflate or deflate xFG%. This means `xfg_pct` operates on the matched subset of shots, not the full shot list. When comparing to `zone_fg_pct(shots)`, be aware they may reflect different shot counts.
+- **Pass `player_zones` to both `xfg_pct` and `shot_quality_vs_league`** to avoid computing `zone_breakdown` twice. Both functions accept a pre-computed `player_zones` dict.

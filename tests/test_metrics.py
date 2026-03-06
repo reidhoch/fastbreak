@@ -7,6 +7,7 @@ from hypothesis import strategies as st
 _XDIST = [HealthCheck.differing_executors]
 
 from fastbreak.metrics import (
+    BPMResult,
     FourFactors,
     LeagueAverages,
     ast_pct,
@@ -22,6 +23,7 @@ from fastbreak.metrics import (
     is_triple_double,
     oreb_pct,
     pace_adjusted_per,
+    bpm,
     per,
     per_100,
     per_36,
@@ -46,6 +48,7 @@ from fastbreak.metrics import (
     stat_floor,
     stat_median,
     streak_count,
+    vorp,
     win_shares,
     win_shares_per_48,
 )
@@ -2900,3 +2903,146 @@ class TestHitRateLastN:
         """With n=1, the result can only be 0.0 or 1.0 (single game)."""
         result = hit_rate_last_n(values, line, 1)
         assert result in (0.0, 1.0)
+
+
+# ─── TestBpm ──────────────────────────────────────────────────────────────────
+
+
+def _bpm_kwargs(**overrides: float) -> dict:
+    """Minimal realistic per-100 inputs for a league-average wing player."""
+    defaults = {
+        "pts": 20.0,
+        "fg3m": 2.0,
+        "ast": 4.0,
+        "tov": 2.5,
+        "orb": 1.0,
+        "drb": 4.0,
+        "stl": 1.5,
+        "blk": 0.5,
+        "pf": 2.5,
+        "fga": 16.0,
+        "fta": 5.0,
+        "pct_team_trb": 0.10,
+        "pct_team_stl": 0.10,
+        "pct_team_pf": 0.10,
+        "pct_team_ast": 0.10,
+        "pct_team_blk": 0.05,
+        "pct_team_pts": 0.20,
+        "listed_position": 3.0,
+        "mp": 500.0,
+    }
+    defaults.update(overrides)
+    return defaults
+
+
+class TestBpm:
+    """Tests for bpm() BPM 2.0 computation."""
+
+    def test_returns_bpm_result(self) -> None:
+        """bpm() returns a BPMResult dataclass."""
+        result = bpm(**_bpm_kwargs())
+        assert isinstance(result, BPMResult)
+
+    def test_zero_mp_returns_none(self) -> None:
+        """No playing time → None."""
+        result = bpm(**_bpm_kwargs(mp=0))
+        assert result is None
+
+    def test_dbpm_equals_total_minus_obpm(self) -> None:
+        """Defensive BPM is always total − offensive."""
+        result = bpm(**_bpm_kwargs())
+        assert result is not None
+        assert result.defensive == pytest.approx(result.total - result.offensive)
+
+    def test_elite_scorer_positive_total(self) -> None:
+        """An elite scorer with great efficiency produces positive total BPM."""
+        result = bpm(**_bpm_kwargs(pts=35.0, fga=20.0, fg3m=4.0, tov=2.0))
+        assert result is not None
+        assert result.total > 0.0
+
+    def test_below_replacement_player_negative_total(self) -> None:
+        """Low-efficiency, high-turnover player scores below replacement level."""
+        result = bpm(**_bpm_kwargs(pts=8.0, fga=18.0, fg3m=0.0, tov=6.0, ast=1.0))
+        assert result is not None
+        assert result.total < -2.0
+
+    def test_position_smoothed_toward_listed_with_low_mp(self) -> None:
+        """With very low mp, position estimate is pulled toward listed_position."""
+        # Guard (pos 1) box stats but listed as C (5.0)
+        guard_stats = dict(
+            pct_team_ast=0.30,  # high AST → guard signal
+            pct_team_trb=0.05,
+            pct_team_stl=0.12,
+            pct_team_pf=0.08,
+            pct_team_blk=0.02,
+        )
+        low_mp = bpm(**_bpm_kwargs(**guard_stats, mp=10.0, listed_position=5.0))
+        high_mp = bpm(**_bpm_kwargs(**guard_stats, mp=2000.0, listed_position=5.0))
+        assert low_mp is not None and high_mp is not None
+        # With low mp the prior (pos=5) pulls position higher → different result
+        assert low_mp.total != pytest.approx(high_mp.total)
+
+    def test_creator_role_increases_obpm_vs_receiver(self) -> None:
+        """A Creator (high AST%, high scoring share) has higher OBPM than a Receiver."""
+        creator = bpm(**_bpm_kwargs(pct_team_ast=0.30, pct_team_pts=0.35))
+        receiver = bpm(**_bpm_kwargs(pct_team_ast=0.02, pct_team_pts=0.05))
+        assert creator is not None and receiver is not None
+        # Creators get a smaller negative role constant for OBPM
+        assert creator.offensive > receiver.offensive
+
+    def test_high_steals_improves_total_bpm(self) -> None:
+        """Higher STL improves total BPM (positive coefficient)."""
+        low_stl = bpm(**_bpm_kwargs(stl=0.5))
+        high_stl = bpm(**_bpm_kwargs(stl=4.0))
+        assert low_stl is not None and high_stl is not None
+        assert high_stl.total > low_stl.total
+
+    def test_high_turnovers_reduces_total_bpm(self) -> None:
+        """Higher TOV reduces total BPM (negative coefficient)."""
+        low_tov = bpm(**_bpm_kwargs(tov=1.0))
+        high_tov = bpm(**_bpm_kwargs(tov=8.0))
+        assert low_tov is not None and high_tov is not None
+        assert high_tov.total < low_tov.total
+
+
+# ─── TestVorp ─────────────────────────────────────────────────────────────────
+
+
+class TestVorp:
+    """Tests for vorp() Value Over Replacement Player computation."""
+
+    def test_league_average_player_positive_vorp(self) -> None:
+        """A league-average player (BPM=0) is above replacement level (-2)."""
+        result = vorp(bpm_total=0.0, poss_pct=0.20, games=82)
+        assert result == pytest.approx(0.4)  # (0 - -2) * 0.20 * 1.0
+
+    def test_replacement_player_returns_zero(self) -> None:
+        """A replacement-level player (BPM = -2.0) produces VORP of 0."""
+        result = vorp(bpm_total=-2.0, poss_pct=0.30, games=82)
+        assert result == pytest.approx(0.0)
+
+    def test_positive_for_above_replacement(self) -> None:
+        """Any player with BPM above -2.0 has positive VORP."""
+        result = vorp(bpm_total=1.0, poss_pct=0.25, games=82)
+        assert result > 0.0
+
+    def test_negative_for_below_replacement(self) -> None:
+        """A player with BPM below -2.0 has negative VORP."""
+        result = vorp(bpm_total=-4.0, poss_pct=0.20, games=82)
+        assert result < 0.0
+
+    def test_scales_with_games_played(self) -> None:
+        """VORP for 41 games is half that of 82 games at the same rate."""
+        full_season = vorp(bpm_total=3.0, poss_pct=0.20, games=82)
+        half_season = vorp(bpm_total=3.0, poss_pct=0.20, games=41)
+        assert half_season == pytest.approx(full_season / 2)
+
+    def test_custom_replacement_level(self) -> None:
+        """Custom replacement_level shifts the baseline."""
+        result = vorp(bpm_total=0.0, poss_pct=0.20, games=82, replacement_level=-3.0)
+        assert result == pytest.approx(0.6)  # (0 - -3) * 0.20 * 1.0
+
+    def test_zero_poss_pct_returns_zero(self) -> None:
+        """Zero possession share (no games played) → VORP of 0."""
+        result = vorp(bpm_total=10.0, poss_pct=0.0, games=82)
+        assert result == pytest.approx(0.0)

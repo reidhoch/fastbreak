@@ -19,6 +19,8 @@ from fastbreak.metrics import (
     usage_pct, ast_pct, oreb_pct, dreb_pct, stl_pct, blk_pct,
     # PER
     pace_adjusted_per, per,
+    # BPM / VORP
+    BPMResult, bpm, vorp,
     # Team ratings
     ortg, drtg, net_rtg,
     # Win metrics
@@ -968,6 +970,124 @@ luck = s.win_pct - expected   # positive = "lucky", negative = "unlucky"
 ```
 
 Returns `None` when both inputs are zero.
+
+---
+
+### BPM and VORP
+
+BPM (Box Plus/Minus) v2.0 estimates a player's contribution in points per 100 possessions above a league-average player. VORP (Value Over Replacement Player) converts BPM into a counting stat proportional to playing time.
+
+Both are pure computation functions — no API call needed beyond fetching a player's per-100 stats and their share of team totals.
+
+```python
+from fastbreak.metrics import BPMResult, bpm, vorp
+```
+
+#### `BPMResult`
+
+```python
+@dataclass(frozen=True, slots=True)
+class BPMResult:
+    total: float      # total BPM (raw, before team adjustment)
+    offensive: float  # OBPM component
+    defensive: float  # DBPM component = total - offensive
+```
+
+A frozen dataclass returned by `bpm()`. Before using these values for comparison, apply a team adjustment so that the minutes-weighted average BPM across all players on a team equals the team's actual efficiency differential. For most comparisons, `defensive` (DBPM) is unaffected by the team constant.
+
+---
+
+#### `bpm`
+
+```python
+def bpm(
+    pts: float, fg3m: float, ast: float, tov: float,
+    orb: float, drb: float, stl: float, blk: float, pf: float,
+    fga: float, fta: float,
+    *,
+    pct_team_trb: float, pct_team_stl: float, pct_team_pf: float,
+    pct_team_ast: float, pct_team_blk: float, pct_team_pts: float,
+    listed_position: float = 3.0,
+    mp: float = 500.0,
+) -> BPMResult | None
+```
+
+Compute raw BPM (Box Plus/Minus v2.0) from per-100-possession stats and team-percentage shares.
+
+The function implements the [Daniel Myers / Basketball Reference BPM 2.0 formula](https://www.basketball-reference.com/about/bpm2.html):
+
+1. **Estimate position** (1=PG → 5=C) from team-rebounding, assist, steal, block, and foul percentages, smoothed against `listed_position` using a 50-minute prior.
+2. **Estimate role** (1=primary creator → 5=off-ball receiver) from team assist and scoring percentages, smoothed against a league-average prior of 4.0.
+3. **Linearly interpolate** coefficient sets between the PG/C and creator/receiver endpoints.
+4. Compute `raw_total` (total BPM) and `raw_obpm` (offensive BPM). `defensive = total − offensive`.
+
+The raw values are **not team-adjusted**. To match Basketball Reference numbers, compute the minutes-weighted average BPM across all players on the team and subtract the constant needed to bring that average in line with the team's actual point differential.
+
+**Parameters:**
+
+| Parameter | Description |
+|---|---|
+| `pts`, `fg3m`, `ast`, `tov`, `orb`, `drb`, `stl`, `blk`, `pf`, `fga`, `fta` | Per-100-possession stat values |
+| `pct_team_trb` | Player's share of team total rebounds |
+| `pct_team_stl` | Player's share of team steals |
+| `pct_team_pf` | Player's share of team personal fouls |
+| `pct_team_ast` | Player's share of team assists |
+| `pct_team_blk` | Player's share of team blocks |
+| `pct_team_pts` | Player's share of team points |
+| `listed_position` | Prior for position estimate (1=PG, 5=C, 3=default) |
+| `mp` | Minutes played (used to weight the position/role prior, default 500) |
+
+**Returns:** `BPMResult` with `total`, `offensive`, `defensive`, or `None` if `mp == 0`.
+
+```python
+from fastbreak.metrics import BPMResult, bpm, vorp
+
+# LeBron James 2008-09 per-100 stats (illustrative)
+result = bpm(
+    pts=30.3, fg3m=1.4, ast=7.7, tov=3.6,
+    orb=1.4, drb=6.7, stl=1.8, blk=1.2, pf=1.8,
+    fga=20.3, fta=8.5,
+    pct_team_trb=0.173, pct_team_stl=0.207, pct_team_pf=0.085,
+    pct_team_ast=0.324, pct_team_blk=0.220, pct_team_pts=0.277,
+    listed_position=3.0, mp=3054,
+)
+# result.total ≈ 16.9 (raw — subtract team adjustment ~8.0 → ~8.9 matches BR 8.5)
+# result.offensive ≈ 11.4 → after adj ~3.4  (BR: 3.3)
+# result.defensive ≈ 5.5                     (BR: 5.2)
+```
+
+---
+
+#### `vorp`
+
+```python
+def vorp(
+    bpm_total: float,
+    poss_pct: float,
+    games: int,
+    *,
+    replacement_level: float = -2.0,
+) -> float
+```
+
+Convert BPM into Value Over Replacement Player — a counting stat proportional to playing time.
+
+```
+VORP = (bpm_total − replacement_level) × poss_pct × (games / 82)
+```
+
+`poss_pct` is the player's fraction of team possessions used — typically `mp / (team_mp / 5)`, which equals `mp * 5 / team_mp`. For a player who played all 82 games at full minutes, `poss_pct ≈ 1.0`.
+
+The default replacement level is `−2.0` (a freely available reserve-quality player). Multiply VORP by 2.7 to get Wins Above Replacement (WAR).
+
+**Returns:** float (never `None` — all inputs are required).
+
+```python
+v = vorp(bpm_total=8.9, poss_pct=0.81, games=81)  # ≈ 10.8
+war = v * 2.7                                       # ≈ 29.2 wins
+```
+
+**Gotcha:** Pass the **team-adjusted** `bpm_total`, not the raw value from `bpm()`. Raw BPM is not comparable across teams.
 
 ---
 

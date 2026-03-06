@@ -17,6 +17,7 @@ from fastbreak.shots import (
     get_league_shot_zones,
     get_shot_chart,
     shot_quality_vs_league,
+    xfg_pct,
     zone_breakdown,
     zone_fg_pct,
 )
@@ -510,3 +511,90 @@ class TestGetLeagueShotZones:
         result = await get_league_shot_zones(client)
 
         assert result == []
+
+
+# ─── TestXfgPct ───────────────────────────────────────────────────────────────
+
+
+class TestXfgPct:
+    """Tests for the pure xfg_pct() expected-FG% computation function."""
+
+    def test_empty_player_shots_returns_none(self) -> None:
+        """No player shots → expected FG% is undefined (returns None)."""
+        lg = [_make_league_zone(zone="Mid-Range", fgm=400, fga=1000)]
+        assert xfg_pct([], lg) is None
+
+    def test_single_zone_uses_league_average(self) -> None:
+        """xFG% for shots from one zone equals that zone's league average."""
+        shots = [_make_shot(zone="Mid-Range")] * 10
+        lg = [_make_league_zone(zone="Mid-Range", fgm=400, fga=1000)]  # 40% league
+        result = xfg_pct(shots, lg)
+        assert result == pytest.approx(0.4)
+
+    def test_two_zones_volume_weighted(self) -> None:
+        """xFG% is the FGA-weighted average of per-zone league rates."""
+        # 10 shots from RA (60% league) + 10 from Mid-Range (40% league) → 50%
+        shots = [_make_shot(zone="Restricted Area")] * 10 + [
+            _make_shot(zone="Mid-Range")
+        ] * 10
+        lg = [
+            _make_league_zone(zone="Restricted Area", fgm=600, fga=1000),
+            _make_league_zone(zone="Mid-Range", fgm=400, fga=1000),
+        ]
+        result = xfg_pct(shots, lg)
+        assert result == pytest.approx(0.5)
+
+    def test_uneven_zone_volume_weights_toward_heavier_zone(self) -> None:
+        """More shots from a zone pull xFG% toward that zone's league rate."""
+        # 1 shot RA (60%), 9 shots Mid-Range (40%) → 0.42
+        shots = [_make_shot(zone="Restricted Area")] * 1 + [
+            _make_shot(zone="Mid-Range")
+        ] * 9
+        lg = [
+            _make_league_zone(zone="Restricted Area", fgm=600, fga=1000),
+            _make_league_zone(zone="Mid-Range", fgm=400, fga=1000),
+        ]
+        result = xfg_pct(shots, lg)
+        assert result == pytest.approx(0.42)
+
+    def test_zone_missing_from_league_data_excluded(self) -> None:
+        """Shots from a zone not in league data are excluded from xFG%."""
+        shots = [_make_shot(zone="Backcourt", made=1)]
+        lg = [_make_league_zone(zone="Mid-Range")]
+        assert xfg_pct(shots, lg) is None
+
+    def test_partial_zone_match_uses_only_matched_shots(self) -> None:
+        """Unmatched zones are dropped; xFG% is computed over matched shots only."""
+        shots = [_make_shot(zone="Mid-Range")] * 5 + [_make_shot(zone="Backcourt")] * 5
+        lg = [_make_league_zone(zone="Mid-Range", fgm=400, fga=1000)]  # 40%
+        result = xfg_pct(shots, lg)
+        assert result == pytest.approx(0.4)
+
+    def test_precomputed_player_zones_accepted(self) -> None:
+        """Passing player_zones= skips re-processing player_shots."""
+        shots = [_make_shot(zone="Mid-Range")] * 10
+        precomputed = zone_breakdown(shots)
+        lg = [_make_league_zone(zone="Mid-Range", fgm=400, fga=1000)]
+        result = xfg_pct([], lg, player_zones=precomputed)
+        assert result == pytest.approx(0.4)
+
+    def test_actual_minus_xfg_isolates_shot_making(self) -> None:
+        """actual_fg_pct - xfg_pct > 0 means above-average shot-making."""
+        # Player shoots 60% from a zone where league averages 40%
+        shots = [_make_shot(zone="Mid-Range", made=1)] * 6 + [
+            _make_shot(zone="Mid-Range", made=0)
+        ] * 4
+        lg = [_make_league_zone(zone="Mid-Range", fgm=400, fga=1000)]
+        actual = zone_fg_pct(shots)
+        expected = xfg_pct(shots, lg)
+        assert actual is not None and expected is not None
+        assert actual - expected == pytest.approx(0.2)
+
+    @settings(suppress_health_check=_XDIST)
+    @given(shots=_shot_list(min_size=1, max_size=50))
+    def test_result_in_unit_interval(self, shots: list) -> None:
+        """xFG% is always in [0.0, 1.0] for any non-empty matched shot list."""
+        lg = [_make_league_zone(zone=z) for z in _ZONES]
+        result = xfg_pct(shots, lg)
+        assert result is not None
+        assert 0.0 <= result <= 1.0
