@@ -405,5 +405,5 @@ for row in top:
 
 - **`PlayerDashPtShots` uses `str` fields internally.** `player_id` and `last_n_games` are stored as strings in the `PlayerDashPtShots` endpoint (unlike all other tracking endpoints which use `int`). The helper `get_player_shots` accepts `int` from callers and converts internally — this is transparent to users.
 - **`pct_plusminus` in shot defense is opponent-centric.** A negative value means the opponent shoots *below* their normal FG% with this player defending — which is good. Don't invert the sign.
-- **Tracking data requires sufficient sample.** Players with limited minutes in a given segment may return empty result sets (not HTTP errors) rather than partial data. Check `response.overall is not None` before processing.
+- **Tracking data requires sufficient sample.** Players with limited minutes in a given segment may return empty result sets (not HTTP errors) rather than partial data. For endpoints with an optional `overall` row (rebounds), check `if reb.overall is not None:` before using it. For endpoints that expose lists of rows (shots, passes, shot defense), check for emptiness instead — e.g., `if response.general_shooting:` or `if response.defending_shots:`.
 - **`per_mode="Totals"` vs. `"PerGame"`.** Passing stats scale differently under totals vs. per-game. For most comparisons use `"PerGame"` (the default).
