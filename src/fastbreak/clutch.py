@@ -26,7 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
-from fastbreak.metrics import ast_to_tov, true_shooting
+from fastbreak.metrics import ast_to_tov, stat_delta, true_shooting
 from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
@@ -159,16 +159,8 @@ def build_clutch_profile(  # noqa: PLR0913
         clutch_min = clutch.min
         clutch_plus_minus = clutch.plus_minus
 
-    ts_delta: float | None = (
-        clutch_ts - regular_ts
-        if regular_ts is not None and clutch_ts is not None
-        else None
-    )
-    ato_delta: float | None = (
-        clutch_ato - regular_ato
-        if regular_ato is not None and clutch_ato is not None
-        else None
-    )
+    ts_delta = stat_delta(clutch_ts, regular_ts)
+    ato_delta = stat_delta(clutch_ato, regular_ato)
 
     score: float | None = None
     if ts_delta is not None and ato_delta is not None:

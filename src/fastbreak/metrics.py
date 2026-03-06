@@ -662,6 +662,30 @@ def per(aper: float, lg_aper: float) -> float | None:
     return aper * (15 / lg_aper)
 
 
+def stat_delta(a: float | None, b: float | None) -> float | None:
+    """Compute the difference between two stat values (a - b).
+
+    Returns ``None`` if either value is ``None``.  Useful for comparing the
+    same stat across two contexts (e.g., home FG% vs. road FG%, clutch TS%
+    vs. regular-season TS%) without manually handling the None-guard each time.
+
+    Args:
+        a: First stat value.
+        b: Second stat value.
+
+    Returns:
+        ``a - b`` if both are non-``None``, else ``None``.
+
+    Examples::
+
+        stat_delta(0.48, 0.41)   # → 0.07
+        stat_delta(None, 0.41)   # → None
+    """
+    if a is None or b is None:
+        return None
+    return a - b
+
+
 def relative_ts(player_ts: float | None, lg: LeagueAverages) -> float | None:
     """Player True Shooting% minus league average TS%.
 
@@ -669,9 +693,7 @@ def relative_ts(player_ts: float | None, lg: LeagueAverages) -> float | None:
 
     Returns None when ``player_ts`` is None (player had no shot attempts).
     """
-    if player_ts is None:
-        return None
-    return player_ts - lg.ts
+    return stat_delta(player_ts, lg.ts)
 
 
 def relative_efg(player_efg: float | None, lg: LeagueAverages) -> float | None:
@@ -681,9 +703,7 @@ def relative_efg(player_efg: float | None, lg: LeagueAverages) -> float | None:
 
     Returns None when ``player_efg`` is None (player had no field goal attempts).
     """
-    if player_efg is None:
-        return None
-    return player_efg - lg.efg
+    return stat_delta(player_efg, lg.efg)
 
 
 def possessions(fga: float, oreb: float, tov: float, fta: float) -> float:
@@ -763,9 +783,7 @@ def net_rtg(ortg_val: float | None, drtg_val: float | None) -> float | None:
     Returns:
         Net rating, or None if either input is None.
     """
-    if ortg_val is None or drtg_val is None:
-        return None
-    return ortg_val - drtg_val
+    return stat_delta(ortg_val, drtg_val)
 
 
 def offensive_win_shares(
