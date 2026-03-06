@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.0] - 2026-03-06
+
+### ✨ New Modules
+
+- **`fastbreak.shots`** — Shot chart analysis: `zone_breakdown()`, `zone_fg_pct()`, `shot_quality_vs_league()`, and `xfg_pct()` (expected FG% based on shot-zone selection vs. league averages). `Shot.loc_x` / `loc_y` are in tenths of feet.
+- **`fastbreak.clutch`** — Clutch performance analysis: `get_player_clutch_profile()`, `get_league_clutch_leaders()`, `build_clutch_profile()`, and `clutch_score()`. Clutch defined as last 5 minutes with score within ±5 points.
+- **`fastbreak.tracking`** — Tracking stats helpers covering shots, passes, rebounds, and shot defense from NBA Stats hustle/tracking endpoints.
+- **`fastbreak.splits`** — Per-split stat analysis; `stat_delta()` centralized in `fastbreak.metrics`.
+
+### 🔧 Improvements
+
+**`fastbreak.metrics`:**
+
+- **BPM 2.0** (`bpm()`) — Box Plus/Minus per Myers / Basketball Reference. Returns `BPMResult(total, offensive, defensive)`. All stats per-100 team possessions; raw output requires a team adjustment constant before comparing across players.
+- **VORP** (`vorp()`) — Value Over Replacement Player scaled to an 82-game season. Multiply by 2.7 for approximate Wins Above Replacement.
+- **Defensive Win Shares** (`defensive_win_shares()`)
+- **10 distribution and trend analytics** — `stat_floor()`, `stat_ceiling()`, `stat_median()`, `prop_hit_rate()`, `hit_rate_last_n()`, `rolling_consistency()`, `expected_stat()`, `percentile_rank()`, `streak_count()`, `stat_consistency()`
+
+**`fastbreak.games`:**
+
+- **`game_flow()`** — Builds a `list[GameFlowPoint]` scoring timeline from play-by-play actions.
+
+**`fastbreak.models.common.result_set`:**
+
+- **`named_result_sets_validator`** and **`named_tabular_validator`** — new helpers for parsing named NBA Stats result sets without boilerplate `model_validator` logic.
+
+**`fastbreak.clients.NBAClient`:**
+
+- **`request_delay`** — now sleeps *inside* the `CapacityLimiter` slot in `get_many()`, correctly pacing completions at `max_concurrency / request_delay` req/s.
+
+### 🐛 Bug Fixes
+
+- **`request_delay`**: Previously slept *outside* the capacity limiter, causing all tasks to wake simultaneously and stampede the limiter.
+
+### 📚 Documentation
+
+- Expanded docs for `shots`, `metrics`, and `games` modules.
+- Fixed `xfg_pct()` docstring: `None` return condition now correctly describes both empty zone breakdown and no matching league data cases.
+- Fixed VORP inline example approximation in `docs/metrics.md` (`≈ 10.8` → `≈ 8.7`; WAR `≈ 29.2` → `≈ 23.5`).
+
 ## [v0.0.13] - 2026-03-03
 
 ### 🐛 Bug Fixes
