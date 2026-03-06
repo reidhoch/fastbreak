@@ -156,6 +156,19 @@ class DashboardEndpoint[T: BaseModel](Endpoint[T]):
     game_segment: GameSegment | None = None
     shot_clock_range: ShotClockRange | None = None
 
+    # Map of optional attributes to API parameter names (defined once per class)
+    _OPTIONAL_PARAMS: ClassVar[dict[str, str]] = {
+        "outcome": "Outcome",
+        "location": "Location",
+        "season_segment": "SeasonSegment",
+        "date_from": "DateFrom",
+        "date_to": "DateTo",
+        "vs_conference": "VsConference",
+        "vs_division": "VsDivision",
+        "game_segment": "GameSegment",
+        "shot_clock_range": "ShotClockRange",
+    }
+
     def _base_params(self) -> dict[str, str]:
         """Build common parameters shared by all dashboard endpoints."""
         result: dict[str, str] = {
@@ -174,20 +187,7 @@ class DashboardEndpoint[T: BaseModel](Endpoint[T]):
             "LastNGames": str(self.last_n_games),
         }
 
-        # Map of optional attributes to API parameter names
-        optional_params = {
-            "outcome": "Outcome",
-            "location": "Location",
-            "season_segment": "SeasonSegment",
-            "date_from": "DateFrom",
-            "date_to": "DateTo",
-            "vs_conference": "VsConference",
-            "vs_division": "VsDivision",
-            "game_segment": "GameSegment",
-            "shot_clock_range": "ShotClockRange",
-        }
-
-        for attr, param_name in optional_params.items():
+        for attr, param_name in self._OPTIONAL_PARAMS.items():
             value = getattr(self, attr)
             if value is not None:
                 result[param_name] = value

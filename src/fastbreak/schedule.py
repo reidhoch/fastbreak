@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from fastbreak.logging import logger
+from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
     from datetime import date
@@ -50,6 +51,11 @@ def is_back_to_back(game_dates: list[date], game_index: int) -> bool:
     return rest == 0
 
 
+_SORT_LAST: str = (
+    "9999-99-99"  # invalid ISO date, sorts lexicographically after all real dates
+)
+
+
 def _schedule_sort_key(g: ScheduledGame) -> str:
     """Return the sort key for a scheduled game; games missing a date sort last."""
     if g.game_date_est is None:
@@ -58,7 +64,7 @@ def _schedule_sort_key(g: ScheduledGame) -> str:
             game_id=getattr(g, "game_id", "unknown"),
             hint="Game has no game_date_est; sorting to end of schedule",
         )
-        return "9999-99-99"  # invalid ISO date, sorts lexicographically after all real dates
+        return _SORT_LAST
     return g.game_date_est
 
 
@@ -95,7 +101,6 @@ async def get_team_schedule(
         games = await get_team_schedule(client, 1610612747, "2024-25")
     """
     from fastbreak.endpoints import ScheduleLeagueV2  # noqa: PLC0415
-    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
 
     season = season or get_season_from_date()
     response = await client.get(ScheduleLeagueV2(season=season))

@@ -2,8 +2,11 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.cume_stats_team import CumeStatsTeamResponse
+from fastbreak.seasons import get_current_season_year
 from fastbreak.types import LeagueID, SeasonType
 
 
@@ -24,7 +27,7 @@ class CumeStatsTeam(Endpoint[CumeStatsTeamResponse]):
 
     team_id: int
     league_id: LeagueID = "00"
-    season: str = "2025"
+    season: str = Field(default_factory=get_current_season_year)
     season_type: SeasonType = "Regular Season"
     game_ids: str = ""
 

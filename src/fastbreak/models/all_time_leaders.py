@@ -7,8 +7,8 @@ from pydantic import BaseModel, Field, model_validator
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
+    build_parsed_result_set_lookup,
     is_tabular_response,
-    parse_result_set_by_name,
 )
 
 
@@ -74,10 +74,11 @@ class AllTimeLeadersResponse(FrozenResponse):
             "FT_PCTLeaders": ("ft_pct_leaders", "FT_PCT", "FT_PCT_RANK"),
         }
 
+        rs_lookup = build_parsed_result_set_lookup(data)
         result: dict[str, list[dict[str, Any]]] = {}
 
         for rs_name, (field_name, stat_col, rank_col) in categories.items():
-            rows = parse_result_set_by_name(data, rs_name)
+            rows = rs_lookup.get(rs_name, [])
             result[field_name] = [
                 {
                     "PLAYER_ID": row["PLAYER_ID"],

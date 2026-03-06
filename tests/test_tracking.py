@@ -58,7 +58,7 @@ class TestGetPlayerShots:
 
         endpoint = client.get.call_args[0][0]
         assert isinstance(endpoint, PlayerDashPtShots)
-        assert endpoint.player_id == "201939"
+        assert endpoint.player_id == 201939
 
     async def test_season_type_defaults_to_regular_season(
         self, mocker: MockerFixture
@@ -82,7 +82,7 @@ class TestGetPlayerShots:
 
         endpoint = client.get.call_args[0][0]
         assert isinstance(endpoint, PlayerDashPtShots)
-        assert endpoint.last_n_games == "10"
+        assert endpoint.last_n_games == 10
 
 
 # ─── get_player_passes ────────────────────────────────────────────────────────

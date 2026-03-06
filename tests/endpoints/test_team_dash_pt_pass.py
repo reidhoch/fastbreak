@@ -115,14 +115,14 @@ class TestTeamDashPtPass:
         assert "Location" not in params
         assert "SeasonSegment" not in params
 
-    def test_params_includes_empty_date_strings(self):
-        """params() includes empty strings for date params when not set."""
+    def test_params_excludes_unset_date_filters(self):
+        """params() omits date filter keys when not set."""
         endpoint = TeamDashPtPass(team_id=1610612747)
 
         params = endpoint.params()
 
-        assert params["DateFrom"] == ""
-        assert params["DateTo"] == ""
+        assert "DateFrom" not in params
+        assert "DateTo" not in params
 
     def test_params_includes_date_values(self):
         """params() includes date values when set."""

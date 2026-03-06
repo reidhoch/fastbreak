@@ -100,11 +100,11 @@ async def get_player_shots(  # noqa: PLR0913
     season = season or get_season_from_date()
     return await client.get(
         PlayerDashPtShots(
-            player_id=str(player_id),
+            player_id=player_id,
             season=season,
             season_type=season_type,
             per_mode=per_mode,
-            last_n_games=str(last_n_games),
+            last_n_games=last_n_games,
         )
     )
 
@@ -365,37 +365,20 @@ async def get_player_tracking_profile(  # noqa: PLR0913
     )
 
     season = season or get_season_from_date()
+    params: dict[str, Any] = {
+        "player_id": player_id,
+        "season": season,
+        "season_type": season_type,
+        "per_mode": per_mode,
+        "last_n_games": last_n_games,
+    }
 
     results: list[Any] = await client.get_many(
         [
-            PlayerDashPtShots(
-                player_id=str(player_id),
-                season=season,
-                season_type=season_type,
-                per_mode=per_mode,
-                last_n_games=str(last_n_games),
-            ),
-            PlayerDashPtPass(
-                player_id=player_id,
-                season=season,
-                season_type=season_type,
-                per_mode=per_mode,
-                last_n_games=last_n_games,
-            ),
-            PlayerDashPtReb(
-                player_id=player_id,
-                season=season,
-                season_type=season_type,
-                per_mode=per_mode,
-                last_n_games=last_n_games,
-            ),
-            PlayerDashPtShotDefend(
-                player_id=player_id,
-                season=season,
-                season_type=season_type,
-                per_mode=per_mode,
-                last_n_games=last_n_games,
-            ),
+            PlayerDashPtShots(**params),
+            PlayerDashPtPass(**params),
+            PlayerDashPtReb(**params),
+            PlayerDashPtShotDefend(**params),
         ]
     )
 
@@ -445,30 +428,19 @@ async def get_team_tracking_profile(  # noqa: PLR0913
     )
 
     season = season or get_season_from_date()
+    params: dict[str, Any] = {
+        "team_id": team_id,
+        "season": season,
+        "season_type": season_type,
+        "per_mode": per_mode,
+        "last_n_games": last_n_games,
+    }
 
     results: list[Any] = await client.get_many(
         [
-            TeamDashPtShots(
-                team_id=team_id,
-                season=season,
-                season_type=season_type,
-                per_mode=per_mode,
-                last_n_games=last_n_games,
-            ),
-            TeamDashPtPass(
-                team_id=team_id,
-                season=season,
-                season_type=season_type,
-                per_mode=per_mode,
-                last_n_games=last_n_games,
-            ),
-            TeamDashPtReb(
-                team_id=team_id,
-                season=season,
-                season_type=season_type,
-                per_mode=per_mode,
-                last_n_games=last_n_games,
-            ),
+            TeamDashPtShots(**params),
+            TeamDashPtPass(**params),
+            TeamDashPtReb(**params),
         ]
     )
 

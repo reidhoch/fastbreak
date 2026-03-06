@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
+from fastbreak.metrics import LeagueAverages, per_48
 from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
     from fastbreak.clients.nba import NBAClient
-    from fastbreak.metrics import LeagueAverages
     from fastbreak.models.common_team_roster import Coach, RosterPlayer
     from fastbreak.models.league_dash_team_stats import LeagueDashTeamStatsRow
     from fastbreak.models.synergy_playtypes import TeamSynergyPlaytype
@@ -624,13 +625,8 @@ async def get_lineup_stats(
 
 
 def _lineup_net_rtg(plus_minus: float, minutes: float) -> float | None:
-    """Compute lineup net rating: net point differential per 48 minutes (plus_minus / minutes * 48).
-
-    Returns None when minutes == 0.
-    """
-    if minutes == 0:
-        return None
-    return plus_minus / minutes * 48
+    """Compute lineup net rating: net point differential per 48 minutes."""
+    return per_48(plus_minus, minutes)
 
 
 async def get_lineup_net_ratings(
@@ -695,8 +691,6 @@ async def get_league_averages(
         ts = true_shooting(pts=30, fga=20, fta=5)
         rel = relative_ts(ts, lg)
     """
-    from fastbreak.metrics import LeagueAverages  # noqa: PLC0415
-
     season = season or get_season_from_date()
     rows = await get_team_stats(client, season=season, per_mode="PerGame")
 
@@ -758,15 +752,12 @@ async def get_team_playtypes(
         plays = await get_team_playtypes(client, team_id=1610612747)
         iso = next((p for p in plays if p.play_type == "Isolation"), None)
     """
-    import warnings  # noqa: PLC0415
-
-    warnings.warn(
-        "SynergyPlaytypes always returns empty on the public NBA Stats API — "
-        "play-type data is restricted. This function will return [].",
-        UserWarning,
-        stacklevel=2,
-    )
     from fastbreak.endpoints import SynergyPlaytypes  # noqa: PLC0415
+    from fastbreak.endpoints.synergy_playtypes import (  # noqa: PLC0415
+        SYNERGY_RESTRICTED_WARNING,
+    )
+
+    warnings.warn(SYNERGY_RESTRICTED_WARNING, UserWarning, stacklevel=2)
 
     season = season or get_season_from_date()
     response = await client.get(
@@ -832,3 +823,33 @@ async def get_team_coaches(
     season = season or get_season_from_date()
     response = await client.get(CommonTeamRoster(team_id=team_id, season=season))
     return response.coaches
+
+
+async def get_team_roster_and_coaches(
+    client: NBAClient,
+    team_id: int,
+    season: Season | None = None,
+) -> tuple[list[RosterPlayer], list[Coach]]:
+    """Return both the roster and coaching staff for a team in a single API call.
+
+    Callers that need both players and coaches should prefer this function over
+    calling :func:`get_team_roster` and :func:`get_team_coaches` separately, as
+    it avoids a second round-trip to the same endpoint.
+
+    Args:
+        client: NBA API client
+        team_id: NBA team ID
+        season: Season in YYYY-YY format (defaults to current season)
+
+    Returns:
+        Tuple of (players, coaches).
+
+    Examples:
+        players, coaches = await get_team_roster_and_coaches(client, team_id=1610612754)
+        head = next(c for c in coaches if not c.is_assistant)
+    """
+    from fastbreak.endpoints import CommonTeamRoster  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    response = await client.get(CommonTeamRoster(team_id=team_id, season=season))
+    return response.players, response.coaches

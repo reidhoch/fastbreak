@@ -88,17 +88,17 @@ class TeamDashPtShots(Endpoint[TeamDashPtShotsResponse]):
             "OpponentTeamID": str(self.opponent_team_id),
             "Period": str(self.period),
             "LastNGames": str(self.last_n_games),
-            "DateFrom": self.date_from or "",
-            "DateTo": self.date_to or "",
-            "Outcome": self.outcome or "",
-            "Location": self.location or "",
-            "GameSegment": self.game_segment or "",
         }
 
         optional_params = {
+            "outcome": "Outcome",
+            "location": "Location",
             "season_segment": "SeasonSegment",
+            "date_from": "DateFrom",
+            "date_to": "DateTo",
             "vs_conference": "VsConference",
             "vs_division": "VsDivision",
+            "game_segment": "GameSegment",
         }
 
         for attr, param_name in optional_params.items():

@@ -75,16 +75,15 @@ class TestTeamDashPtRebOptionalParams:
         assert params["DateFrom"] == "10/01/2024"
         assert params["DateTo"] == "12/31/2024"
 
-    def test_params_defaults_to_empty(self):
-        """TeamDashPtReb params has empty date defaults."""
+    def test_params_excludes_unset_dates(self):
+        """TeamDashPtReb params omits date keys when not set."""
         endpoint = TeamDashPtReb(
             team_id="1610612737",
             season="2024-25",
         )
         params = endpoint.params()
-        # These default to empty string, not excluded
-        assert params["DateFrom"] == ""
-        assert params["DateTo"] == ""
+        assert "DateFrom" not in params
+        assert "DateTo" not in params
 
     def test_params_with_season_segment(self):
         """TeamDashPtReb params includes optional season_segment when set."""
@@ -112,16 +111,15 @@ class TestTeamDashPtShotsOptionalParams:
         assert params["DateFrom"] == "10/01/2024"
         assert params["DateTo"] == "12/31/2024"
 
-    def test_params_defaults_to_empty(self):
-        """TeamDashPtShots params has empty date defaults."""
+    def test_params_excludes_unset_dates(self):
+        """TeamDashPtShots params omits date keys when not set."""
         endpoint = TeamDashPtShots(
             team_id="1610612737",
             season="2024-25",
         )
         params = endpoint.params()
-        # These default to empty string, not excluded
-        assert params["DateFrom"] == ""
-        assert params["DateTo"] == ""
+        assert "DateFrom" not in params
+        assert "DateTo" not in params
 
     def test_params_with_season_segment(self):
         """TeamDashPtShots params includes optional season_segment when set."""

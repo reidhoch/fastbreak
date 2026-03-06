@@ -52,17 +52,17 @@ def is_tabular_response(data: object) -> TypeGuard[dict[str, Any]]:
     if isinstance(data, dict) and "resultSets" in data:
         return True
 
-    # Log at debug level to help diagnose passthrough scenarios
+    # Log at debug level to help diagnose passthrough scenarios.
+    # Keep arguments cheap — passthrough is the hot path (Pydantic calls this
+    # validator during nested model reconstruction on already-transformed dicts).
     if isinstance(data, dict):
         logger.debug(
             "validator_passthrough_missing_key",
-            keys=list(data.keys())[:10],
             hint="Expected 'resultSets' key for tabular format",
         )
     else:
         logger.debug(
             "validator_passthrough_wrong_type",
-            actual_type=type(data).__name__,
             hint="Expected dict with 'resultSets' key",
         )
     return False
@@ -225,24 +225,50 @@ def named_tabular_validator(
     return validator
 
 
-def _parse_mapping_value(
+def _build_result_set_lookup(
     data: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    """Build a name → result_set lookup dict for O(1) access by name."""
+    return {rs["name"]: rs for rs in data["resultSets"] if "name" in rs}
+
+
+def build_parsed_result_set_lookup(
+    data: dict[str, Any],
+) -> dict[str, list[dict[str, Any]]]:
+    """Build a name → parsed rows lookup dict for O(1) access by name.
+
+    Use this when a validator needs to access multiple named result sets from
+    the same response.  Building the lookup once is O(n+m) vs calling
+    ``parse_result_set_by_name`` in a loop which is O(n*m).
+
+    Args:
+        data: Raw API response containing resultSets
+
+    Returns:
+        Dict mapping result set name → list of row dicts (headers as keys)
+
+    """
+    return {
+        rs["name"]: _parse_result_set_rows(rs)
+        for rs in data["resultSets"]
+        if "name" in rs
+    }
+
+
+def _resolve_field_rows(
+    rs_lookup: dict[str, Any],
     result_set_name: str,
     *,
-    is_single: bool,
     ignore_missing: bool,
-) -> list[dict[str, Any]] | dict[str, Any] | None:
-    """Parse a single result set mapping, handling missing result sets."""
-    try:
-        rows = parse_result_set_by_name(data, result_set_name)
-    except ValueError:
+) -> list[dict[str, Any]]:
+    rs = rs_lookup.get(result_set_name)
+    if rs is None:
         if not ignore_missing:
-            raise
-        rows = []
-
-    if is_single:
-        return rows[0] if rows else None
-    return rows
+            available = list(rs_lookup)
+            msg = f"No resultSet named '{result_set_name}'. Available: {available}"
+            raise ValueError(msg)
+        return []
+    return _parse_result_set_rows(rs)
 
 
 def named_result_sets_validator(
@@ -284,17 +310,16 @@ def named_result_sets_validator(
         if not is_tabular_response(data):
             return data  # type: ignore[return-value]
 
+        rs_lookup = _build_result_set_lookup(data)
         result: dict[str, Any] = {}
         for field_name, mapping in mappings.items():
             result_set_name, is_single = (
                 (mapping, False) if isinstance(mapping, str) else mapping
             )
-            result[field_name] = _parse_mapping_value(
-                data,
-                result_set_name,
-                is_single=is_single,
-                ignore_missing=ignore_missing,
+            rows = _resolve_field_rows(
+                rs_lookup, result_set_name, ignore_missing=ignore_missing
             )
+            result[field_name] = (rows[0] if rows else None) if is_single else rows
         return result
 
     return validator
@@ -336,10 +361,15 @@ def singular_result_set_validator(
         # Convert singular to plural format for parsing
         wrapped_data: dict[str, Any] = {"resultSets": data["resultSet"]}
 
+        rs_lookup = _build_result_set_lookup(wrapped_data)
         result: dict[str, Any] = {}
         for field_name, result_set_name in mappings.items():
-            rows = parse_result_set_by_name(wrapped_data, result_set_name)
-            result[field_name] = rows
+            rs = rs_lookup.get(result_set_name)
+            if rs is None:
+                available = list(rs_lookup)
+                msg = f"No resultSet named '{result_set_name}'. Available: {available}"
+                raise ValueError(msg)
+            result[field_name] = _parse_result_set_rows(rs)
         return result
 
     return validator

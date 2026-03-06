@@ -7,7 +7,20 @@ from pydantic import Field
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.player_dash_pt_shots import PlayerDashPtShotsResponse
 from fastbreak.seasons import get_season_from_date
-from fastbreak.types import Date, LeagueID, PerMode, Season, SeasonType
+from fastbreak.types import (
+    Conference,
+    Date,
+    Division,
+    GameSegment,
+    LeagueID,
+    Location,
+    Outcome,
+    Period,
+    PerMode,
+    Season,
+    SeasonSegment,
+    SeasonType,
+)
 
 
 class PlayerDashPtShots(Endpoint[PlayerDashPtShotsResponse]):
@@ -44,46 +57,58 @@ class PlayerDashPtShots(Endpoint[PlayerDashPtShotsResponse]):
     )
 
     # Required parameters
-    player_id: str
+    player_id: int
     league_id: LeagueID = "00"
     season: Season = Field(default_factory=get_season_from_date)
     season_type: SeasonType = "Regular Season"
     per_mode: PerMode = "PerGame"
 
-    # Optional filters with defaults that the API requires
-    team_id: str = "0"
-    outcome: str = ""
-    location: str = ""
-    month: str = "0"
-    season_segment: str = ""
+    # Always-sent filters with defaults
+    team_id: int = 0
+    month: int = 0
+    opponent_team_id: int = 0
+    period: Period = 0
+    last_n_games: int = 0
+
+    # Optional filters
+    outcome: Outcome | None = None
+    location: Location | None = None
+    season_segment: SeasonSegment | None = None
     date_from: Date | None = None
     date_to: Date | None = None
-    opponent_team_id: str = "0"
-    vs_conference: str = ""
-    vs_division: str = ""
-    game_segment: str = ""
-    period: str = "0"
-    last_n_games: str = "0"
+    vs_conference: Conference | None = None
+    vs_division: Division | None = None
+    game_segment: GameSegment | None = None
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""
-        return {
-            "PlayerID": self.player_id,
+        result: dict[str, str] = {
+            "PlayerID": str(self.player_id),
             "LeagueID": self.league_id,
             "Season": self.season,
             "SeasonType": self.season_type,
             "PerMode": self.per_mode,
-            "TeamID": self.team_id,
-            "Outcome": self.outcome,
-            "Location": self.location,
-            "Month": self.month,
-            "SeasonSegment": self.season_segment,
-            "DateFrom": self.date_from or "",
-            "DateTo": self.date_to or "",
-            "OpponentTeamID": self.opponent_team_id,
-            "VsConference": self.vs_conference,
-            "VsDivision": self.vs_division,
-            "GameSegment": self.game_segment,
-            "Period": self.period,
-            "LastNGames": self.last_n_games,
+            "TeamID": str(self.team_id),
+            "Month": str(self.month),
+            "OpponentTeamID": str(self.opponent_team_id),
+            "Period": str(self.period),
+            "LastNGames": str(self.last_n_games),
         }
+
+        optional_params = {
+            "outcome": "Outcome",
+            "location": "Location",
+            "season_segment": "SeasonSegment",
+            "date_from": "DateFrom",
+            "date_to": "DateTo",
+            "vs_conference": "VsConference",
+            "vs_division": "VsDivision",
+            "game_segment": "GameSegment",
+        }
+
+        for attr, param_name in optional_params.items():
+            value = getattr(self, attr)
+            if value is not None:
+                result[param_name] = value
+
+        return result

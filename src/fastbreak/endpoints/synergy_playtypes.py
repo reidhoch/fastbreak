@@ -2,8 +2,11 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.synergy_playtypes import SynergyPlaytypesResponse
+from fastbreak.seasons import get_season_from_date
 from fastbreak.types import (
     LeagueID,
     PerMode,
@@ -37,7 +40,7 @@ class SynergyPlaytypes(Endpoint[SynergyPlaytypesResponse]):
     response_model: ClassVar[type[SynergyPlaytypesResponse]] = SynergyPlaytypesResponse
 
     league_id: LeagueID = "00"
-    season_year: Season = "2024-25"
+    season_year: Season = Field(default_factory=get_season_from_date)
     season_type: SeasonType = "Regular Season"
     per_mode: PerMode = "PerGame"
     player_or_team: PlayerOrTeamAbbreviation = "P"
@@ -62,3 +65,12 @@ class SynergyPlaytypes(Endpoint[SynergyPlaytypesResponse]):
             result["TypeGrouping"] = self.type_grouping
 
         return result
+
+
+# Public warning message for callers that wrap this endpoint.
+# Synergy data is restricted on the public NBA Stats API — this endpoint
+# always returns 0 rows regardless of parameters.
+SYNERGY_RESTRICTED_WARNING = (
+    "SynergyPlaytypes always returns empty on the public NBA Stats API — "
+    "play-type data is restricted. This function will return []."
+)

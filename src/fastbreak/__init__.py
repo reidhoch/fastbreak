@@ -44,6 +44,7 @@ from fastbreak.metrics import (
     pace_adjusted_per,
     per,
     per_36,
+    per_48,
     per_100,
     percentile_rank,
     possessions,
@@ -86,6 +87,7 @@ from fastbreak.schedule import (
 )
 from fastbreak.seasons import (
     get_season_from_date,
+    season_id_to_season,
     season_start_year,
     season_to_season_id,
 )
@@ -124,6 +126,7 @@ from fastbreak.teams import (
     get_team_id,
     get_team_playtypes,
     get_team_roster,
+    get_team_roster_and_coaches,
     get_team_stats,
     search_teams,
     teams_by_conference,
@@ -276,6 +279,7 @@ __all__ = [
     "get_team_playtypes",
     "get_team_rebounds",
     "get_team_roster",
+    "get_team_roster_and_coaches",
     "get_team_schedule",
     "get_team_shots",
     "get_team_stats",
@@ -294,6 +298,7 @@ __all__ = [
     "pace_adjusted_per",
     "per",
     "per_36",
+    "per_48",
     "per_100",
     "percentile_rank",
     "possessions",
@@ -305,6 +310,7 @@ __all__ = [
     "rolling_consistency",
     "search_players",
     "search_teams",
+    "season_id_to_season",
     "season_start_year",
     "season_to_season_id",
     "shot_quality_vs_league",

@@ -10,6 +10,9 @@ from fastbreak.seasons import get_season_from_date
 from fastbreak.types import validate_iso_date
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+    from typing import Any
+
     from fastbreak.clients.nba import NBAClient
     from fastbreak.models.box_score_advanced import BoxScoreAdvancedData
     from fastbreak.models.box_score_hustle import BoxScoreHustleData
@@ -172,6 +175,20 @@ async def get_game_summary(
     return response.boxScoreSummary
 
 
+async def _batch_box_scores[T](
+    client: NBAClient,
+    game_ids: list[str],
+    endpoint_cls: type[Any],
+    accessor: Callable[[Any], T],
+) -> dict[str, T]:
+    """Batch-fetch box score data for multiple games and return as a dict."""
+    if not game_ids:
+        return {}
+    endpoints = [endpoint_cls(game_id=gid) for gid in game_ids]
+    responses = await client.get_many(endpoints)
+    return {gid: accessor(resp) for gid, resp in zip(game_ids, responses, strict=True)}
+
+
 async def get_box_scores(
     client: NBAClient,
     game_ids: list[str],
@@ -192,15 +209,9 @@ async def get_box_scores(
     """
     from fastbreak.endpoints import BoxScoreTraditional  # noqa: PLC0415
 
-    if not game_ids:
-        return {}
-
-    endpoints = [BoxScoreTraditional(game_id=gid) for gid in game_ids]
-    responses = await client.get_many(endpoints)
-    return {
-        gid: resp.boxScoreTraditional
-        for gid, resp in zip(game_ids, responses, strict=True)
-    }
+    return await _batch_box_scores(
+        client, game_ids, BoxScoreTraditional, lambda r: r.boxScoreTraditional
+    )
 
 
 async def get_box_scores_advanced(
@@ -223,15 +234,9 @@ async def get_box_scores_advanced(
     """
     from fastbreak.endpoints import BoxScoreAdvanced  # noqa: PLC0415
 
-    if not game_ids:
-        return {}
-
-    endpoints = [BoxScoreAdvanced(game_id=gid) for gid in game_ids]
-    responses = await client.get_many(endpoints)
-    return {
-        gid: resp.boxScoreAdvanced
-        for gid, resp in zip(game_ids, responses, strict=True)
-    }
+    return await _batch_box_scores(
+        client, game_ids, BoxScoreAdvanced, lambda r: r.boxScoreAdvanced
+    )
 
 
 async def get_box_scores_hustle(
@@ -254,15 +259,9 @@ async def get_box_scores_hustle(
     """
     from fastbreak.endpoints import BoxScoreHustle  # noqa: PLC0415
 
-    if not game_ids:
-        return {}
-
-    endpoints = [BoxScoreHustle(game_id=gid) for gid in game_ids]
-    responses = await client.get_many(endpoints)
-    return {
-        gid: resp.box_score_hustle
-        for gid, resp in zip(game_ids, responses, strict=True)
-    }
+    return await _batch_box_scores(
+        client, game_ids, BoxScoreHustle, lambda r: r.box_score_hustle
+    )
 
 
 async def get_box_scores_scoring(
@@ -285,14 +284,9 @@ async def get_box_scores_scoring(
     """
     from fastbreak.endpoints import BoxScoreScoring  # noqa: PLC0415
 
-    if not game_ids:
-        return {}
-
-    endpoints = [BoxScoreScoring(game_id=gid) for gid in game_ids]
-    responses = await client.get_many(endpoints)
-    return {
-        gid: resp.boxScoreScoring for gid, resp in zip(game_ids, responses, strict=True)
-    }
+    return await _batch_box_scores(
+        client, game_ids, BoxScoreScoring, lambda r: r.boxScoreScoring
+    )
 
 
 async def get_play_by_play(

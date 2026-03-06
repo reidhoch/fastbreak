@@ -98,6 +98,8 @@ def zone_breakdown(shots: list[Shot]) -> dict[str, ZoneStats]:
 def shot_quality_vs_league(
     player_shots: list[Shot],
     league_zones: list[LeagueWideShotZone],
+    *,
+    player_zones: dict[str, ZoneStats] | None = None,
 ) -> dict[str, float | None]:
     """Compute per-zone FG% delta vs. league average.
 
@@ -108,12 +110,16 @@ def shot_quality_vs_league(
     Args:
         player_shots: Shot objects from ShotChartDetailResponse.
         league_zones: League-wide zone averages from ShotChartLeaguewideResponse.
+        player_zones: Pre-computed zone breakdown from zone_breakdown(). If provided,
+            player_shots is not re-processed (avoids redundant computation).
 
     Returns:
         Dict mapping zone name → delta (float or None).
         Keys match exactly the zones present in player_shots.
     """
-    player_zones = zone_breakdown(player_shots)
+    _player_zones = (
+        player_zones if player_zones is not None else zone_breakdown(player_shots)
+    )
 
     # Aggregate league data by basic zone — the leaguewide endpoint returns one
     # row per (basic, area, range) combination, so the same shot_zone_basic can
@@ -128,7 +134,7 @@ def shot_quality_vs_league(
     }
 
     result: dict[str, float | None] = {}
-    for zone, stats in player_zones.items():
+    for zone, stats in _player_zones.items():
         if zone not in league_lookup or stats.fg_pct is None:
             result[zone] = None
         else:

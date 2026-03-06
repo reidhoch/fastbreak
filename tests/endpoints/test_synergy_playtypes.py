@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import SynergyPlaytypes
 from fastbreak.models import SynergyPlaytypesResponse
+from fastbreak.seasons import get_season_from_date
 
 
 class TestSynergyPlaytypes:
@@ -13,7 +14,7 @@ class TestSynergyPlaytypes:
         endpoint = SynergyPlaytypes()
 
         assert endpoint.league_id == "00"
-        assert endpoint.season_year == "2024-25"
+        assert endpoint.season_year == get_season_from_date()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.per_mode == "PerGame"
         assert endpoint.player_or_team == "P"

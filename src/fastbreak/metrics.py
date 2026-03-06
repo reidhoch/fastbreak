@@ -381,6 +381,21 @@ def per_36(stat: float, minutes: float) -> float | None:
     return stat * 36 / minutes
 
 
+def per_48(stat: float, minutes: float) -> float | None:
+    """Normalize a counting stat to a per-48-minute pace.
+
+    per_48 = stat * 48 / minutes
+
+    48 minutes is one full NBA game. Use this for net rating and lineup
+    efficiency stats that are conventionally reported per 48 minutes.
+
+    Returns None when minutes are zero.
+    """
+    if minutes == 0:
+        return None
+    return stat * 48 / minutes
+
+
 def per_100(stat: float, poss: float) -> float | None:
     """Normalize a counting stat to a per-100-possessions rate.
 
