@@ -5,6 +5,7 @@ from datetime import date
 import pytest
 
 from fastbreak.seasons import (
+    get_current_season_year,
     get_season_from_date,
     season_start_year,
     season_to_season_id,
@@ -90,3 +91,19 @@ class TestSeasonHelpers:
         """season_to_season_id raises ValueError for an invalid season format."""
         with pytest.raises(ValueError, match="Invalid season format"):
             season_to_season_id("invalid")
+
+
+class TestGetCurrentSeasonYear:
+    """Tests for get_current_season_year()."""
+
+    def test_returns_four_digit_string(self) -> None:
+        """Returns a 4-digit year string."""
+        result = get_current_season_year()
+        assert len(result) == 4
+        assert result.isdigit()
+
+    def test_consistent_with_get_season_from_date(self) -> None:
+        """Year matches the start year of the current season."""
+        season = get_season_from_date()
+        expected_year = str(season_start_year(season))
+        assert get_current_season_year() == expected_year
