@@ -23,11 +23,11 @@ from datetime import UTC, datetime, timedelta
 from fastbreak.clients import NBAClient
 from fastbreak.games import get_box_scores, get_games_on_date
 from fastbreak.metrics import (
-    BPMResult,
     LeagueAverages,
     ast_pct,
     ast_to_tov,
     blk_pct,
+    bpm,
     defensive_win_shares,
     dreb_pct,
     drtg,
@@ -44,7 +44,6 @@ from fastbreak.metrics import (
     ortg,
     pace_adjusted_per,
     per,
-    bpm,
     per_36,
     percentile_rank,
     prop_hit_rate,

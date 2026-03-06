@@ -1083,8 +1083,8 @@ The default replacement level is `−2.0` (a freely available reserve-quality pl
 **Returns:** float (never `None` — all inputs are required).
 
 ```python
-v = vorp(bpm_total=8.9, poss_pct=0.81, games=81)  # ≈ 10.8
-war = v * 2.7                                       # ≈ 29.2 wins
+v = vorp(bpm_total=8.9, poss_pct=0.81, games=81)  # ≈ 8.7
+war = v * 2.7                                       # ≈ 23.5 wins
 ```
 
 **Gotcha:** Pass the **team-adjusted** `bpm_total`, not the raw value from `bpm()`. Raw BPM is not comparable across teams.
