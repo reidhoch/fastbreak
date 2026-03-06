@@ -142,6 +142,59 @@ def shot_quality_vs_league(
     return result
 
 
+def xfg_pct(
+    player_shots: list[Shot],
+    league_zones: list[LeagueWideShotZone],
+    *,
+    player_zones: dict[str, ZoneStats] | None = None,
+) -> float | None:
+    """Compute expected FG% based on shot location vs. league zone averages.
+
+    xFG% answers "what would an average player shoot, given this player's shot
+    selection?"  A player taking most shots from the restricted area (where the
+    league shoots ~65%) will have a higher xFG% than one taking most shots from
+    mid-range (league ~40%), independent of whether those individual shots go in.
+
+    The complement ``zone_fg_pct(player_shots) - xfg_pct(...)`` isolates
+    shot-making skill from shot-selection quality.  Shots from zones with no
+    matching league data are excluded from both the numerator and denominator.
+
+    Args:
+        player_shots: Shot objects from ShotChartDetailResponse.
+        league_zones: League-wide zone averages from ShotChartLeaguewideResponse.
+        player_zones: Pre-computed zone breakdown from zone_breakdown(). If provided,
+            player_shots is not re-processed (avoids redundant computation).
+
+    Returns:
+        Expected FG% as a float in [0.0, 1.0], or None when player_shots is
+        empty or no player zones match league data.
+    """
+    _player_zones = (
+        player_zones if player_zones is not None else zone_breakdown(player_shots)
+    )
+    if not _player_zones:
+        return None
+
+    # Aggregate league FG% by basic zone — same sub-zone aggregation as
+    # shot_quality_vs_league (one leaguewide row per basic/area/range combo).
+    league_totals: dict[str, tuple[int, int]] = {}
+    for z in league_zones:
+        total_fga, total_fgm = league_totals.get(z.shot_zone_basic, (0, 0))
+        league_totals[z.shot_zone_basic] = (total_fga + z.fga, total_fgm + z.fgm)
+    league_lookup: dict[str, float] = {
+        zone: fgm / fga for zone, (fga, fgm) in league_totals.items() if fga > 0
+    }
+
+    expected_fgm = 0.0
+    matched_fga = 0
+    for zone, stats in _player_zones.items():
+        if zone in league_lookup:
+            expected_fgm += stats.fga * league_lookup[zone]
+            matched_fga += stats.fga
+
+    return expected_fgm / matched_fga if matched_fga > 0 else None
+
+
 async def get_shot_chart(  # noqa: PLR0913
     client: NBAClient,
     player_id: int,

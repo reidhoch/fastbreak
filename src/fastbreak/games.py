@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import TYPE_CHECKING
 
@@ -312,3 +314,117 @@ async def get_play_by_play(
 
     response = await client.get(PlayByPlay(game_id=game_id))
     return response.game.actions
+
+
+@dataclass(frozen=True, slots=True)
+class GameFlowPoint:
+    """Score state after a scoring event in a game.
+
+    Attributes:
+        period: Period number (1-4 for regulation, 5+ for overtime).
+        clock: Remaining time in the period as an ISO 8601 duration
+            (e.g., ``"PT04M32.00S"``).
+        elapsed_seconds: Seconds elapsed since tip-off. Regulation periods
+            are 12 minutes (720 s) each; overtime periods are 5 minutes
+            (300 s) each.
+        score_home: Home team cumulative score at this point.
+        score_away: Away team cumulative score at this point.
+        margin: ``score_home - score_away`` (positive = home leading).
+        description: Play description from the API.
+    """
+
+    period: int
+    clock: str
+    elapsed_seconds: float
+    score_home: int
+    score_away: int
+    margin: int
+    description: str
+
+
+_CLOCK_RE = re.compile(r"PT(\d+)M([\d.]+)S")
+_REGULATION_PERIODS = 4  # Q1-Q4
+_REGULATION_PERIOD_SECONDS = 720  # 12 minutes
+_OT_PERIOD_SECONDS = 300  # 5 minutes
+
+
+def _parse_clock(clock: str) -> float:
+    """Return remaining seconds in the current period from an ISO 8601 duration."""
+    m = _CLOCK_RE.match(clock)
+    if not m:
+        return 0.0
+    return int(m.group(1)) * 60 + float(m.group(2))
+
+
+def game_flow(actions: list[PlayByPlayAction]) -> list[GameFlowPoint]:
+    """Build a score-line timeline from a list of play-by-play actions.
+
+    Filters to scoring events (actions where both ``scoreHome`` and
+    ``scoreAway`` are non-empty strings), converts each to a
+    :class:`GameFlowPoint`, and returns them in the order they appear in
+    ``actions`` (typically chronological by ``actionNumber``).
+
+    Elapsed time is computed from period and remaining clock:
+
+    - Regulation periods (1-4): 12 minutes (720 seconds) each.
+    - Overtime periods (5+): 5 minutes (300 seconds) each.
+
+    Args:
+        actions: List of PlayByPlayAction objects, e.g., from
+            :func:`get_play_by_play`.
+
+    Returns:
+        List of :class:`GameFlowPoint` objects, one per scoring event,
+        in chronological order. Returns an empty list if ``actions``
+        contains no scoring events.
+
+    Examples:
+        actions = await get_play_by_play(client, "0022500571")
+        flow = game_flow(actions)
+
+        # Largest lead at any point in regulation
+        reg = [p for p in flow if p.period <= 4]
+        max_lead = max(abs(p.margin) for p in reg) if reg else 0
+
+        # Final score
+        if flow:
+            last = flow[-1]
+            print(f"Home {last.score_home} - Away {last.score_away}")
+
+    """
+    result: list[GameFlowPoint] = []
+    for action in actions:
+        if not action.scoreHome or not action.scoreAway:
+            continue
+        try:
+            score_home = int(action.scoreHome)
+            score_away = int(action.scoreAway)
+        except ValueError:
+            continue
+
+        period = action.period
+        remaining = _parse_clock(action.clock)
+        if period <= _REGULATION_PERIODS:
+            period_offset = (period - 1) * _REGULATION_PERIOD_SECONDS
+            period_duration = _REGULATION_PERIOD_SECONDS
+        else:
+            period_offset = (
+                _REGULATION_PERIODS * _REGULATION_PERIOD_SECONDS
+                + (period - _REGULATION_PERIODS - 1) * _OT_PERIOD_SECONDS
+            )
+            period_duration = _OT_PERIOD_SECONDS
+
+        elapsed = period_offset + (period_duration - remaining)
+        result.append(
+            GameFlowPoint(
+                period=period,
+                clock=action.clock,
+                elapsed_seconds=elapsed,
+                score_home=score_home,
+                score_away=score_away,
+                margin=score_home - score_away,
+                description=action.description,
+            )
+        )
+
+    return result

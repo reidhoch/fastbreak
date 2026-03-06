@@ -260,6 +260,31 @@ class FourFactors:
     ftr: float | None
 
 
+@dataclass(frozen=True, slots=True)
+class BPMResult:
+    """Box Plus/Minus 2.0 results (Myers, Basketball Reference).
+
+    All values are in points per 100 team possessions relative to
+    league average (0.0 = league average, positive = above average).
+
+    The *raw* BPM returned by :func:`bpm` does not include the team
+    adjustment.  To fully reproduce Basketball Reference's published
+    numbers, add the team adjustment constant to ``total`` and
+    ``offensive`` (and recompute ``defensive``) so that the
+    minutes-weighted sum of all players on a roster equals the team's
+    observed adjusted efficiency differential.
+
+    Attributes:
+        total:     Total BPM (offensive + defensive combined).
+        offensive: Offensive BPM (OBPM).
+        defensive: Defensive BPM (DBPM = total - offensive).
+    """
+
+    total: float
+    offensive: float
+    defensive: float
+
+
 def four_factors(  # noqa: PLR0913
     fgm: float,
     fg3m: float,
@@ -675,6 +700,185 @@ def per(aper: float, lg_aper: float) -> float | None:
     if lg_aper == 0:
         return None
     return aper * (15 / lg_aper)
+
+
+def bpm(  # noqa: PLR0913
+    pts: float,
+    fg3m: float,
+    ast: float,
+    tov: float,
+    orb: float,
+    drb: float,
+    stl: float,
+    blk: float,
+    pf: float,
+    fga: float,
+    fta: float,
+    *,
+    pct_team_trb: float,
+    pct_team_stl: float,
+    pct_team_pf: float,
+    pct_team_ast: float,
+    pct_team_blk: float,
+    pct_team_pts: float,
+    listed_position: float = 3.0,
+    mp: float = 500.0,
+) -> BPMResult | None:
+    """Compute Box Plus/Minus 2.0 (raw, without team adjustment).
+
+    Implements Daniel Myers' BPM 2.0 formula (Basketball Reference).
+    Position (1=PG -> 5=C) and offensive role (1=Creator -> 5=Receiver)
+    are estimated from team-percentage inputs using the BPM regressions,
+    then smoothed against a prior: 50 minutes at ``listed_position`` for
+    position, and 50 minutes at role 4.0 (off-ball scorer) for role.
+
+    All counting stats must be **per-100 team possessions**.  Team
+    percentages are the player's share of team counting stats while on
+    court (0-1 scale).
+
+    The returned values do **not** include the team adjustment constant --
+    that requires the full roster and is applied externally so the
+    minutes-weighted team total equals the team's adjusted efficiency
+    differential.
+
+    Args:
+        pts:             Points per 100 team possessions.
+        fg3m:            Three-pointers made per 100.
+        ast:             Assists per 100.
+        tov:             Turnovers per 100.
+        orb:             Offensive rebounds per 100.
+        drb:             Defensive rebounds per 100.
+        stl:             Steals per 100.
+        blk:             Blocks per 100.
+        pf:              Personal fouls per 100.
+        fga:             Field goal attempts per 100.
+        fta:             Free throw attempts per 100.
+        pct_team_trb:    Player's fraction of team total rebounds (0-1).
+        pct_team_stl:    Player's fraction of team steals (0-1).
+        pct_team_pf:     Player's fraction of team personal fouls (0-1).
+        pct_team_ast:    Player's fraction of team assists (0-1).
+        pct_team_blk:    Player's fraction of team blocks (0-1).
+        pct_team_pts:    Player's fraction of team points (0-1), used as
+                         a proxy for % of team threshold points in the
+                         role regression.
+        listed_position: Positional designation (1=PG, 2=SG, 3=SF,
+                         4=PF, 5=C).  Anchors the position estimate
+                         against small samples.  Default 3.0 (neutral).
+        mp:              Minutes played; governs how heavily the
+                         box-score estimates are trusted vs. priors.
+                         Higher mp -> estimates weighted more.
+
+    Returns:
+        :class:`BPMResult` with raw total, offensive, and defensive BPM,
+        or ``None`` when ``mp`` is zero (no playing time).
+    """
+    if mp == 0:
+        return None
+
+    # ── Step 1: Estimate position (1=PG, 5=C) ─────────────────────────────
+    raw_pos = (
+        2.130
+        + 8.668 * pct_team_trb
+        - 2.486 * pct_team_stl
+        + 0.992 * pct_team_pf
+        - 3.536 * pct_team_ast
+        + 1.667 * pct_team_blk
+    )
+    position = (raw_pos * mp + listed_position * 50.0) / (mp + 50.0)
+    position = max(1.0, min(5.0, position))
+
+    # ── Step 2: Estimate offensive role (1=Creator, 5=Receiver) ───────────
+    # Creator: high AST%, high share of team scoring (self-created).
+    raw_role = 6.00 - 6.642 * pct_team_ast - 8.544 * pct_team_pts
+    role = (raw_role * mp + 4.0 * 50.0) / (mp + 50.0)
+    role = max(1.0, min(5.0, role))
+
+    # ── Step 3: Position/role coefficient interpolators ────────────────────
+    def _pos(c1: float, c5: float) -> float:
+        return c1 + (position - 1.0) / 4.0 * (c5 - c1)
+
+    def _role(c1: float, c5: float) -> float:
+        return c1 + (role - 1.0) / 4.0 * (c5 - c1)
+
+    # ── Step 4: Additive position/role constants ───────────────────────────
+    # Position constant: linear from constant at pos=1 to 0.0 at pos>=3.
+    pos_factor = max(0.0, 3.0 - position) / 2.0
+    pos_const_bpm = -0.818 * pos_factor
+    pos_const_obpm = -1.698 * pos_factor
+
+    # Role constant: linear from -C at role=1 to +C at role=5 (0 at role=3).
+    role_const_bpm = -2.774 + (role - 1.0) / 4.0 * 5.548
+    role_const_obpm = -0.860 + (role - 1.0) / 4.0 * 1.720
+
+    # ── Step 5: Raw Total BPM ──────────────────────────────────────────────
+    raw_total = (
+        0.860 * pts
+        + 0.389 * fg3m
+        + _pos(0.580, 1.034) * ast
+        - 0.964 * tov
+        + _pos(0.613, 0.181) * orb
+        + _pos(0.116, 0.181) * drb
+        + _pos(1.369, 1.008) * stl
+        + _pos(1.327, 0.703) * blk
+        - 0.367 * pf
+        + _role(-0.560, -0.780) * fga
+        + _role(-0.246, -0.343) * fta
+        + pos_const_bpm
+        + role_const_bpm
+    )
+
+    # ── Step 6: Raw OBPM ───────────────────────────────────────────────────
+    raw_obpm = (
+        0.605 * pts
+        + 0.477 * fg3m
+        + 0.476 * ast  # uniform across positions for OBPM
+        + _pos(-0.579, -0.882) * tov
+        + _pos(0.606, 0.422) * orb
+        + _pos(-0.112, 0.103) * drb
+        + _pos(0.177, 0.294) * stl
+        + _pos(0.725, 0.097) * blk
+        - 0.439 * pf
+        + _role(-0.330, -0.472) * fga
+        + _role(-0.145, -0.208) * fta
+        + pos_const_obpm
+        + role_const_obpm
+    )
+
+    return BPMResult(
+        total=raw_total,
+        offensive=raw_obpm,
+        defensive=raw_total - raw_obpm,
+    )
+
+
+def vorp(
+    bpm_total: float,
+    poss_pct: float,
+    games: int,
+    *,
+    replacement_level: float = -2.0,
+) -> float:
+    """Compute Value Over Replacement Player (VORP).
+
+    VORP = (BPM - replacement_level) * poss_pct * (games / 82)
+
+    Measures a player's total contribution relative to a freely-available
+    replacement-level player, scaled to an 82-game season.  Multiply by
+    2.7 to convert to approximate wins above replacement.
+
+    Args:
+        bpm_total:         Total BPM (from :func:`bpm`).
+        poss_pct:          Fraction of team possessions the player
+                           participated in -- typically
+                           ``mp / (team_games * 48)``.
+        games:             Team games played.
+        replacement_level: BPM of a replacement-level player.
+                           Defaults to -2.0 per Myers BPM 2.0.
+
+    Returns:
+        VORP as a float.  Positive means above replacement level.
+    """
+    return (bpm_total - replacement_level) * poss_pct * (games / 82)
 
 
 def stat_delta(a: float | None, b: float | None) -> float | None:

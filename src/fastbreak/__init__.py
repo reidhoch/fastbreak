@@ -8,6 +8,8 @@ from fastbreak.clutch import (
     get_player_clutch_stats,
 )
 from fastbreak.games import (
+    GameFlowPoint,
+    game_flow,
     get_box_scores,
     get_box_scores_advanced,
     get_box_scores_hustle,
@@ -20,12 +22,14 @@ from fastbreak.games import (
     get_yesterdays_games,
 )
 from fastbreak.metrics import (
+    BPMResult,
     FourFactors,
     LeagueAverages,
     assist_ratio,
     ast_pct,
     ast_to_tov,
     blk_pct,
+    bpm,
     defensive_win_shares,
     dreb_pct,
     drtg,
@@ -65,6 +69,7 @@ from fastbreak.metrics import (
     tov_pct,
     true_shooting,
     usage_pct,
+    vorp,
     win_shares,
     win_shares_per_48,
 )
@@ -96,6 +101,7 @@ from fastbreak.shots import (
     get_league_shot_zones,
     get_shot_chart,
     shot_quality_vs_league,
+    xfg_pct,
     zone_breakdown,
     zone_fg_pct,
 )
@@ -178,6 +184,7 @@ from fastbreak.types import (
 
 __all__ = [
     "TEAMS",
+    "BPMResult",
     "ClutchProfile",
     "Conference",
     "ContextMeasure",
@@ -185,6 +192,7 @@ __all__ = [
     "DistanceRange",
     "Division",
     "FourFactors",
+    "GameFlowPoint",
     "GameSegment",
     "ISODate",
     "LeagueAverages",
@@ -221,6 +229,7 @@ __all__ = [
     "ast_pct",
     "ast_to_tov",
     "blk_pct",
+    "bpm",
     "build_clutch_profile",
     "clutch_score",
     "days_rest_before_game",
@@ -231,6 +240,7 @@ __all__ = [
     "expected_stat",
     "four_factors",
     "free_throw_rate",
+    "game_flow",
     "game_score",
     "get_box_scores",
     "get_box_scores_advanced",
@@ -327,8 +337,10 @@ __all__ = [
     "tov_pct",
     "true_shooting",
     "usage_pct",
+    "vorp",
     "win_shares",
     "win_shares_per_48",
+    "xfg_pct",
     "zone_breakdown",
     "zone_fg_pct",
 ]

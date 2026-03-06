@@ -1,7 +1,7 @@
 """Shot chart analysis examples.
 
 Demonstrates per-shot coordinate data, zone efficiency breakdowns,
-and delta vs. league-average shooting by zone.
+delta vs. league-average shooting by zone, and expected FG% (xFG%).
 
 Run:
     uv run python examples/shots.py
@@ -16,12 +16,14 @@ from fastbreak.shots import (
     get_league_shot_zones,
     get_shot_chart,
     shot_quality_vs_league,
+    xfg_pct,
     zone_breakdown,
+    zone_fg_pct,
 )
 
 
 async def player_shot_zones(player_name: str, season: str | None = None) -> None:
-    """Print zone-by-zone FG% and delta vs. league average for a player."""
+    """Print zone-by-zone FG%, delta vs. league average, and xFG% for a player."""
     season = season or get_season_from_date()
 
     async with NBAClient() as client:
@@ -39,10 +41,20 @@ async def player_shot_zones(player_name: str, season: str | None = None) -> None
         return
 
     breakdown = zone_breakdown(shots)
-    deltas = shot_quality_vs_league(shots, lg_zones)
+    deltas = shot_quality_vs_league(shots, lg_zones, player_zones=breakdown)
+
+    # xFG%: expected FG% given shot selection — "what would a league-average
+    # player shoot from the same locations?"
+    expected = xfg_pct(shots, lg_zones, player_zones=breakdown)
+    actual = zone_fg_pct(shots)
+    making_delta = (actual - expected) if actual is not None and expected is not None else None
 
     print(f"\nShot Zone Breakdown — {player_name} ({season})")
     print(f"Total shots: {len(shots)}")
+    if expected is not None and actual is not None:
+        print(f"Overall FG%: {actual:.1%}  |  xFG%: {expected:.1%}  |  "
+              f"Shot-making: {making_delta:+.1%}")
+        print("  (xFG% = expected FG% from shot locations; positive shot-making = above average)")
     print("-" * 62)
     print(f"{'Zone':<28} {'FGM':>4} {'FGA':>4} {'FG%':>6}  {'vs Lg':>7}")
     print("-" * 62)
