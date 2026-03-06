@@ -289,8 +289,10 @@ road = next((s for s in splits.by_location if s.group_value == "Road"), None)
 
 fg_delta = stat_delta(home.fg_pct if home else None, road.fg_pct if road else None)
 pts_delta = stat_delta(home.pts if home else None, road.pts if road else None)
-print(f"FG% home/road edge: {fg_delta:+.3f}")
-print(f"PTS home/road edge: {pts_delta:+.1f}")
+fg_delta_str = f"{fg_delta:+.3f}" if fg_delta is not None else "N/A"
+pts_delta_str = f"{pts_delta:+.1f}" if pts_delta is not None else "N/A"
+print(f"FG% home/road edge: {fg_delta_str}")
+print(f"PTS home/road edge: {pts_delta_str}")
 ```
 
 ### Is the player heating up or cooling off?
@@ -304,7 +306,9 @@ async with NBAClient() as client:
 if last_n.last_5 and last_n.overall:
     pts_trend = stat_delta(last_n.last_5.pts, last_n.overall.pts)
     fg_trend = stat_delta(last_n.last_5.fg_pct, last_n.overall.fg_pct)
-    print(f"L5 vs season:  {pts_trend:+.1f} PTS  {fg_trend:+.3f} FG%")
+    pts_trend_str = f"{pts_trend:+.1f} PTS" if pts_trend is not None else "N/A PTS"
+    fg_trend_str = f"{fg_trend:+.3f} FG%" if fg_trend is not None else "N/A FG%"
+    print(f"L5 vs season:  {pts_trend_str}  {fg_trend_str}")
 ```
 
 ### Shot area efficiency

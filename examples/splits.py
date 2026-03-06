@@ -53,7 +53,10 @@ async def player_situational_splits(
         for label, row in [("Home", home), ("Road", road)]:
             fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "  N/A"
             print(f"  {label:<8} {row.gp:>4} {fg_str:>6} {row.pts:>6.1f} {row.plus_minus:>+6.1f}")
-        print(f"  {'Delta':<8} {'':>4} {fg_delta:>+.3f}  {pts_delta:>+6.1f} {pm_delta:>+6.1f}")  # type: ignore[str-format]
+        fg_delta_str = f"{fg_delta:+.3f}" if fg_delta is not None else "  N/A"
+        pts_delta_str = f"{pts_delta:>+6.1f}" if pts_delta is not None else "   N/A"
+        pm_delta_str = f"{pm_delta:>+6.1f}" if pm_delta is not None else "   N/A"
+        print(f"  {'Delta':<8} {'':>4} {fg_delta_str:>6}  {pts_delta_str}  {pm_delta_str}")
 
     # Wins vs Losses
     wins = next((s for s in splits.by_wins_losses if "W" in str(s.group_value)), None)
@@ -112,8 +115,12 @@ async def player_recent_form(player_name: str, season: str | None = None) -> Non
     if last_n.overall and last_n.last_5:
         pts_trend = stat_delta(last_n.last_5.pts, last_n.overall.pts)
         fg_trend = stat_delta(last_n.last_5.fg_pct, last_n.overall.fg_pct)
-        direction = "↑ heating up" if pts_trend and pts_trend > 0 else "↓ cooling off"
-        print(f"\n  L5 vs season: {pts_trend:+.1f} PTS  {fg_trend:+.3f} FG%  {direction}")  # type: ignore[str-format]
+        if pts_trend is None and fg_trend is None:
+            return
+        direction = "↑ heating up" if pts_trend is not None and pts_trend > 0 else "↓ cooling off"
+        pts_trend_str = f"{pts_trend:+.1f} PTS" if pts_trend is not None else "   N/A PTS"
+        fg_trend_str = f"{fg_trend:+.3f} FG%" if fg_trend is not None else "   N/A FG%"
+        print(f"\n  L5 vs season: {pts_trend_str}  {fg_trend_str}  {direction}")
 
 
 async def player_shooting_breakdown(
