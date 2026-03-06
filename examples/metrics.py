@@ -14,7 +14,7 @@ Part 11 — pure computation: distribution stats (floor / median / ceiling / pro
 Part 12 — live API: player prop profile from a season game log.
 Part 13 — pure computation: advanced distribution analytics (consistency, streaks, percentile rank).
 Part 14 — pure computation: rolling consistency, expected stat, and recent-form hit rate.
-Part 15 — pure computation: Box Plus/Minus 2.0 (BPM / OBPM / DBPM) + VORP — LeBron James 2008-09.
+Part 15 — pure computation: Box Plus/Minus 2.0 (BPM / OBPM / DBPM) + VORP — LeBron James 2009-10.
 """
 
 import asyncio

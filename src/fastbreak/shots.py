@@ -95,6 +95,17 @@ def zone_breakdown(shots: list[Shot]) -> dict[str, ZoneStats]:
     }
 
 
+def _league_zone_fg_lookup(
+    league_zones: list[LeagueWideShotZone],
+) -> dict[str, float]:
+    """Return a zone -> FG% dict aggregated from leaguewide sub-zone rows."""
+    totals: dict[str, tuple[int, int]] = {}
+    for z in league_zones:
+        fga, fgm = totals.get(z.shot_zone_basic, (0, 0))
+        totals[z.shot_zone_basic] = (fga + z.fga, fgm + z.fgm)
+    return {zone: fgm / fga for zone, (fga, fgm) in totals.items() if fga > 0}
+
+
 def shot_quality_vs_league(
     player_shots: list[Shot],
     league_zones: list[LeagueWideShotZone],
@@ -121,17 +132,7 @@ def shot_quality_vs_league(
         player_zones if player_zones is not None else zone_breakdown(player_shots)
     )
 
-    # Aggregate league data by basic zone — the leaguewide endpoint returns one
-    # row per (basic, area, range) combination, so the same shot_zone_basic can
-    # appear multiple times.  Sum fga/fgm across sub-zones and compute a single
-    # weighted FG% per basic zone to avoid silent last-wins overwriting.
-    league_totals: dict[str, tuple[int, int]] = {}
-    for z in league_zones:
-        total_fga, total_fgm = league_totals.get(z.shot_zone_basic, (0, 0))
-        league_totals[z.shot_zone_basic] = (total_fga + z.fga, total_fgm + z.fgm)
-    league_lookup: dict[str, float] = {
-        zone: fgm / fga for zone, (fga, fgm) in league_totals.items() if fga > 0
-    }
+    league_lookup = _league_zone_fg_lookup(league_zones)
 
     result: dict[str, float | None] = {}
     for zone, stats in _player_zones.items():
@@ -175,15 +176,7 @@ def xfg_pct(
     if not _player_zones:
         return None
 
-    # Aggregate league FG% by basic zone — same sub-zone aggregation as
-    # shot_quality_vs_league (one leaguewide row per basic/area/range combo).
-    league_totals: dict[str, tuple[int, int]] = {}
-    for z in league_zones:
-        total_fga, total_fgm = league_totals.get(z.shot_zone_basic, (0, 0))
-        league_totals[z.shot_zone_basic] = (total_fga + z.fga, total_fgm + z.fgm)
-    league_lookup: dict[str, float] = {
-        zone: fgm / fga for zone, (fga, fgm) in league_totals.items() if fga > 0
-    }
+    league_lookup = _league_zone_fg_lookup(league_zones)
 
     expected_fgm = 0.0
     matched_fga = 0

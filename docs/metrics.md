@@ -1042,18 +1042,18 @@ The raw values are **not team-adjusted**. To match Basketball Reference numbers,
 ```python
 from fastbreak.metrics import BPMResult, bpm, vorp
 
-# LeBron James 2008-09 per-100 stats (illustrative)
+# LeBron James 2009-10 per-100 stats (Cleveland Cavaliers, first MVP season)
 result = bpm(
-    pts=30.3, fg3m=1.4, ast=7.7, tov=3.6,
-    orb=1.4, drb=6.7, stl=1.8, blk=1.2, pf=1.8,
-    fga=20.3, fta=8.5,
-    pct_team_trb=0.173, pct_team_stl=0.207, pct_team_pf=0.085,
-    pct_team_ast=0.324, pct_team_blk=0.220, pct_team_pts=0.277,
-    listed_position=3.0, mp=3054,
+    pts=34.3, fg3m=1.6, ast=9.8, tov=3.9,
+    orb=1.4, drb=7.3, stl=1.9, blk=1.1, pf=2.5,
+    fga=26.5, fta=10.2,
+    pct_team_trb=0.168, pct_team_stl=0.203, pct_team_pf=0.108,
+    pct_team_ast=0.406, pct_team_blk=0.192, pct_team_pts=0.291,
+    listed_position=3.0, mp=2966,
 )
-# result.total ≈ 16.9 (raw — subtract team adjustment ~8.0 → ~8.9 matches BR 8.5)
-# result.offensive ≈ 11.4 → after adj ~3.4  (BR: 3.3)
-# result.defensive ≈ 5.5                     (BR: 5.2)
+# result.total + (-7.0) ≈ +10.8  (BR published: +10.8)
+# result.offensive + (-7.0) ≈ +6.5  (BR published: +6.5)
+# result.defensive ≈ +4.3            (BR published: +4.3)
 ```
 
 ---

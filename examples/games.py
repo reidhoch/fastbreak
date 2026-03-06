@@ -14,8 +14,8 @@ from datetime import UTC, datetime, timedelta
 from fastbreak.clients import NBAClient
 from fastbreak.games import game_flow, get_games_on_date, get_play_by_play
 
-_CLOSE_GAME_MARGIN = 5  # points — within this margin counts as "close"
-_Q4_FINAL_2MIN_ELAPSED = 2760  # seconds — 4 regulation periods (4 * 720) minus 2 min (120)
+_CLOSE_GAME_MARGIN = 5   # points — within this margin counts as "close"
+_CLOSE_GAME_WINDOW = 120  # seconds — final 2 minutes of the game
 
 
 async def game_flow_summary(
@@ -70,11 +70,11 @@ async def game_flow_summary(
     ties = sum(1 for p in flow if p.margin == 0)
     print(f"  Lead changes: {lead_changes}   Ties: {ties}")
 
-    # Close finish: scoring events inside the final 2 min of regulation within 5 pts
+    # Close finish: scoring events in the final 2 min of the game within 5 pts.
+    # Uses elapsed_seconds so this works for regulation and OT games.
     close_late = [
         p for p in flow
-        if p.period == 4  # noqa: PLR2004
-        and p.elapsed_seconds >= _Q4_FINAL_2MIN_ELAPSED
+        if p.elapsed_seconds >= last.elapsed_seconds - _CLOSE_GAME_WINDOW
         and abs(p.margin) <= _CLOSE_GAME_MARGIN
     ]
     if close_late:
@@ -85,7 +85,7 @@ async def game_flow_summary(
         )
 
     # Final 5 scoring plays
-    print(f"  Last 5 plays:")
+    print("  Last 5 plays:")
     for point in flow[-5:]:
         period_label = f"Q{point.period}" if point.period <= 4 else f"OT{point.period - 4}"  # noqa: PLR2004
         margin_str = f"+{point.margin}" if point.margin > 0 else str(point.margin)

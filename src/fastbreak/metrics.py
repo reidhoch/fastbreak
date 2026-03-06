@@ -770,9 +770,9 @@ def bpm(  # noqa: PLR0913
 
     Returns:
         :class:`BPMResult` with raw total, offensive, and defensive BPM,
-        or ``None`` when ``mp`` is zero (no playing time).
+        or ``None`` when ``mp`` is zero or negative (no playing time).
     """
-    if mp == 0:
+    if mp <= 0:
         return None
 
     # ── Step 1: Estimate position (1=PG, 5=C) ─────────────────────────────
@@ -870,7 +870,10 @@ def vorp(
         bpm_total:         Total BPM (from :func:`bpm`).
         poss_pct:          Fraction of team possessions the player
                            participated in -- typically
-                           ``mp / (team_games * 48)``.
+                           ``mp / (team_games * 48)``, where
+                           ``team_games * 48`` approximates total
+                           team minutes divided by 5 (five players
+                           on court).
         games:             Team games played.
         replacement_level: BPM of a replacement-level player.
                            Defaults to -2.0 per Myers BPM 2.0.
