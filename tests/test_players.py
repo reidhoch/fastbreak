@@ -595,7 +595,7 @@ class TestSeasonIdToSeason:
         assert season_id_to_season("2024-25") == "2024-25"
 
     def test_single_char_raises_value_error(self):
-        """A season_id shorter than 2 characters raises ValueError."""
+        """A season_id shorter than 5 characters raises ValueError."""
         from fastbreak.seasons import season_id_to_season
 
         with pytest.raises(ValueError, match="T\\+YYYY"):

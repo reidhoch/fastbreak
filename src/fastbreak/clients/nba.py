@@ -515,7 +515,6 @@ class NBAClient(AsyncContextManagerMixin):
             A list of parsed responses in the same order as the input endpoints.
 
         Raises:
-            TypeError: If any item in endpoints is not an Endpoint instance.
             ExceptionGroup: If any request fails, contains all exceptions.
 
         Example:
