@@ -606,7 +606,7 @@ This is a **pure computation function** — it takes an already-fetched action l
 **Elapsed time calculation:**
 - Regulation periods (1–4): 12 minutes (720 s) each.
 - Overtime periods (5+): 5 minutes (300 s) each.
-- `elapsed_seconds = period_offset + (period_duration − remaining_seconds)`
+- `elapsed_seconds = period_offset + (period_duration - remaining_seconds)`
 
 ```python
 from fastbreak.games import game_flow, get_play_by_play

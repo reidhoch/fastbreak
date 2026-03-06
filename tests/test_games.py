@@ -1,5 +1,12 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pytest
 from pytest_mock import MockerFixture
+
+if TYPE_CHECKING:
+    from fastbreak.models.play_by_play import PlayByPlayAction
 
 from fastbreak.clients.nba import NBAClient
 from fastbreak.games import (
@@ -476,7 +483,7 @@ def _make_action(
     description: str = "Jump Shot",
     action_type: str = "2pt",
     action_number: int = 1,
-) -> object:
+) -> PlayByPlayAction:
     """Minimal PlayByPlayAction with real Pydantic construction for game_flow tests."""
     from fastbreak.models.play_by_play import PlayByPlayAction
 
