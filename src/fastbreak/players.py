@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from functools import lru_cache
+import warnings
 from typing import TYPE_CHECKING
 
 from fastbreak.logging import logger
-from fastbreak.seasons import get_season_from_date
+from fastbreak.seasons import get_season_from_date, season_id_to_season
 
 if TYPE_CHECKING:
     from fastbreak.clients.nba import NBAClient
@@ -299,30 +299,6 @@ async def get_hustle_stats(
     return None
 
 
-@lru_cache(maxsize=32)
-def _season_id_to_season(season_id: str) -> str:
-    """Convert NBA season_id string to YYYY-YY format.
-
-    Handles two API formats:
-    - "22024" (type digit + 4-digit year) -> "2024-25"
-    - "2020-21" (already YYYY-YY)         -> "2020-21"
-    """
-    if "-" in season_id:
-        return season_id
-    if len(season_id) < 2:  # noqa: PLR2004
-        msg = f"Cannot parse season_id {season_id!r}: expected 'T+YYYY' format (e.g., '22024')"
-        raise ValueError(msg)
-    raw = season_id[1:]
-    try:
-        year = int(raw)
-    except ValueError as exc:
-        msg = (
-            f"Cannot parse season_id {season_id!r}: year portion {raw!r} is not numeric"
-        )
-        raise ValueError(msg) from exc
-    return f"{year}-{str(year + 1)[2:]}"
-
-
 async def get_career_game_logs(
     client: NBAClient,
     player_id: int,
@@ -359,7 +335,7 @@ async def get_career_game_logs(
     if not seasons:
         return []
 
-    season_strings = [_season_id_to_season(s.season_id) for s in seasons]
+    season_strings = [season_id_to_season(s.season_id) for s in seasons]
 
     endpoints = [
         PlayerGameLog(player_id=player_id, season=s, season_type=season_type)
@@ -449,16 +425,12 @@ async def get_player_playtypes(
         for p in sorted(plays, key=lambda x: x.poss, reverse=True):
             print(p.play_type, p.ppp)
     """
-    import warnings  # noqa: PLC0415
-
-    warnings.warn(
-        "SynergyPlaytypes always returns empty on the public NBA Stats API — "
-        "play-type data is restricted. This function will return [].",
-        UserWarning,
-        stacklevel=2,
-    )
     from fastbreak.endpoints import SynergyPlaytypes  # noqa: PLC0415
-    from fastbreak.seasons import get_season_from_date  # noqa: PLC0415
+    from fastbreak.endpoints.synergy_playtypes import (  # noqa: PLC0415
+        SYNERGY_RESTRICTED_WARNING,
+    )
+
+    warnings.warn(SYNERGY_RESTRICTED_WARNING, UserWarning, stacklevel=2)
 
     season = season or get_season_from_date()
     response = await client.get(

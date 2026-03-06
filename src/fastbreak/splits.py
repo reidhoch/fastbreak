@@ -296,44 +296,21 @@ async def get_player_splits_profile(  # noqa: PLR0913
     )
 
     season = season or get_season_from_date()
+    params: dict[str, Any] = {
+        "player_id": player_id,
+        "season": season,
+        "season_type": season_type,
+        "per_mode": per_mode,
+        "last_n_games": last_n_games,
+    }
 
     results: list[Any] = await client.get_many(
         [
-            PlayerDashboardByGameSplits(
-                player_id=player_id,
-                season=season,
-                season_type=season_type,
-                per_mode=per_mode,
-                last_n_games=last_n_games,
-            ),
-            PlayerDashboardByGeneralSplits(
-                player_id=player_id,
-                season=season,
-                season_type=season_type,
-                per_mode=per_mode,
-                last_n_games=last_n_games,
-            ),
-            PlayerDashboardByShootingSplits(
-                player_id=player_id,
-                season=season,
-                season_type=season_type,
-                per_mode=per_mode,
-                last_n_games=last_n_games,
-            ),
-            PlayerDashboardByLastNGames(
-                player_id=player_id,
-                season=season,
-                season_type=season_type,
-                per_mode=per_mode,
-                last_n_games=last_n_games,
-            ),
-            PlayerDashboardByTeamPerformance(
-                player_id=player_id,
-                season=season,
-                season_type=season_type,
-                per_mode=per_mode,
-                last_n_games=last_n_games,
-            ),
+            PlayerDashboardByGameSplits(**params),
+            PlayerDashboardByGeneralSplits(**params),
+            PlayerDashboardByShootingSplits(**params),
+            PlayerDashboardByLastNGames(**params),
+            PlayerDashboardByTeamPerformance(**params),
         ]
     )
 

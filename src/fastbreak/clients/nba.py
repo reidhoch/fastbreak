@@ -429,6 +429,7 @@ class NBAClient(AsyncContextManagerMixin):
             reraise=True,
         )
 
+        params = endpoint.params()
         async for attempt in retry:
             with attempt:
                 attempt_num = attempt.retry_state.attempt_number
@@ -436,10 +437,10 @@ class NBAClient(AsyncContextManagerMixin):
                     "request_attempt",
                     attempt=attempt_num,
                     url=url,
-                    params=endpoint.params(),
+                    params=params,
                 )
 
-                async with session.get(url, params=endpoint.params()) as resp:
+                async with session.get(url, params=params) as resp:
                     await self._handle_rate_limit(
                         resp, log, attempt_num, retry_after_state
                     )
@@ -524,12 +525,6 @@ class NBAClient(AsyncContextManagerMixin):
         """
         if not endpoints:
             return []
-
-        # Validate all items are Endpoint instances
-        for i, ep in enumerate(endpoints):
-            if not isinstance(ep, Endpoint):
-                msg = f"Item at index {i} is not an Endpoint instance: {type(ep).__name__}"
-                raise TypeError(msg)
 
         # Generate batch correlation ID
         batch_id = str(uuid.uuid4())

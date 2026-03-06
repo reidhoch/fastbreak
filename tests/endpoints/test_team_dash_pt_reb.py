@@ -117,17 +117,17 @@ class TestTeamDashPtReb:
         assert params["Location"] == "Home"
         assert params["GameSegment"] == "First Half"
 
-    def test_params_includes_empty_strings_for_unset(self):
-        """params() includes empty strings for certain params when not set."""
+    def test_params_excludes_unset_optional_filters(self):
+        """params() omits optional filter keys when not set."""
         endpoint = TeamDashPtReb(team_id=1610612747)
 
         params = endpoint.params()
 
-        assert params["DateFrom"] == ""
-        assert params["DateTo"] == ""
-        assert params["Outcome"] == ""
-        assert params["Location"] == ""
-        assert params["GameSegment"] == ""
+        assert "DateFrom" not in params
+        assert "DateTo" not in params
+        assert "Outcome" not in params
+        assert "Location" not in params
+        assert "GameSegment" not in params
 
     def test_params_excludes_none_values(self):
         """params() excludes None optional parameters."""

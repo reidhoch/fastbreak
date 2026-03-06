@@ -15,7 +15,7 @@ class VideoStatus(Endpoint[VideoStatusResponse]):
 
     Args:
         league_id: League identifier ("00" for NBA, "10" for WNBA, "15" for G-League)
-        game_date: Date to check video status for (MM/DD/YYYY format)
+        game_date: Date to check video status for (MM/DD/YYYY format, optional)
 
     """
 
@@ -23,11 +23,11 @@ class VideoStatus(Endpoint[VideoStatusResponse]):
     response_model: ClassVar[type[VideoStatusResponse]] = VideoStatusResponse
 
     league_id: LeagueID = "00"
-    game_date: str = ""
+    game_date: str | None = None
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""
-        return {
-            "LeagueID": self.league_id,
-            "GameDate": self.game_date,
-        }
+        result: dict[str, str] = {"LeagueID": self.league_id}
+        if self.game_date is not None:
+            result["GameDate"] = self.game_date
+        return result

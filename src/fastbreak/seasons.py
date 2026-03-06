@@ -46,6 +46,20 @@ def get_season_from_date(reference_date: date | None = None) -> Season:
     return _season_from_date(reference_date or datetime.now(tz=UTC).date())
 
 
+def get_current_season_year() -> str:
+    """Return the current NBA season start year as a YYYY string.
+
+    Used for endpoints that accept season in YYYY format rather than YYYY-YY
+    (e.g., CumeStats endpoints). Returns ``"2025"`` when the current season is
+    ``"2025-26"``.
+
+    Returns:
+        Season start year as a 4-digit string (e.g., ``"2025"``).
+
+    """
+    return str(season_start_year(get_season_from_date()))
+
+
 def season_start_year(season: Season) -> int:
     """Extract the start year from a season string.
 
@@ -90,3 +104,39 @@ def season_to_season_id(season: Season) -> str:
     """
     start_year = season_start_year(season)
     return f"2{start_year}"
+
+
+@lru_cache(maxsize=32)
+def season_id_to_season(season_id: str) -> str:
+    """Convert an NBA season_id string to YYYY-YY format.
+
+    Inverse of ``season_to_season_id``. Handles two API formats:
+
+    - ``"22024"`` (type digit + 4-digit year) → ``"2024-25"``
+    - ``"2024-25"`` (already YYYY-YY) → ``"2024-25"``
+
+    Args:
+        season_id: NBA season ID string (e.g., "22024") or YYYY-YY season
+            string (e.g., "2024-25").
+
+    Returns:
+        Season string in YYYY-YY format (e.g., "2024-25").
+
+    Raises:
+        ValueError: If the season_id cannot be parsed.
+
+    """
+    if "-" in season_id:
+        return season_id
+    if len(season_id) < 5:  # noqa: PLR2004
+        msg = f"Cannot parse season_id {season_id!r}: expected 'T+YYYY' format (e.g., '22024')"
+        raise ValueError(msg)
+    raw = season_id[1:]
+    try:
+        year = int(raw)
+    except ValueError as exc:
+        msg = (
+            f"Cannot parse season_id {season_id!r}: year portion {raw!r} is not numeric"
+        )
+        raise ValueError(msg) from exc
+    return f"{year}-{str(year + 1)[2:]}"

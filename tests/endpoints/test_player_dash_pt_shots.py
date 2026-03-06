@@ -13,22 +13,22 @@ class TestPlayerDashPtShots:
 
     def test_init_with_defaults(self):
         """PlayerDashPtShots uses sensible defaults."""
-        endpoint = PlayerDashPtShots(player_id="2544")
+        endpoint = PlayerDashPtShots(player_id=2544)
 
-        assert endpoint.player_id == "2544"
+        assert endpoint.player_id == 2544
         assert endpoint.league_id == "00"
         assert endpoint.season == get_season_from_date()
         assert endpoint.per_mode == "PerGame"
 
     def test_init_with_player_id(self):
         """PlayerDashPtShots accepts player_id."""
-        endpoint = PlayerDashPtShots(player_id="203999")
+        endpoint = PlayerDashPtShots(player_id=203999)
 
-        assert endpoint.player_id == "203999"
+        assert endpoint.player_id == 203999
 
     def test_params_with_required_only(self):
         """params() returns all parameters including defaults."""
-        endpoint = PlayerDashPtShots(player_id="203999")
+        endpoint = PlayerDashPtShots(player_id=203999)
 
         params = endpoint.params()
 
@@ -39,19 +39,19 @@ class TestPlayerDashPtShots:
 
     def test_path_is_correct(self):
         """PlayerDashPtShots has correct API path."""
-        endpoint = PlayerDashPtShots(player_id="2544")
+        endpoint = PlayerDashPtShots(player_id=2544)
 
         assert endpoint.path == "playerdashptshots"
 
     def test_response_model_is_correct(self):
         """PlayerDashPtShots uses correct response model."""
-        endpoint = PlayerDashPtShots(player_id="2544")
+        endpoint = PlayerDashPtShots(player_id=2544)
 
         assert endpoint.response_model is PlayerDashPtShotsResponse
 
     def test_endpoint_is_frozen(self):
         """PlayerDashPtShots is immutable (frozen dataclass)."""
-        endpoint = PlayerDashPtShots(player_id="2544")
+        endpoint = PlayerDashPtShots(player_id=2544)
 
         with pytest.raises((AttributeError, ValidationError)):
             endpoint.season = "2023-24"  # type: ignore[misc]

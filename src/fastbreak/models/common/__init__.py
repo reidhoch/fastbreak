@@ -32,6 +32,7 @@ from fastbreak.models.common.player_track_statistics import PlayerTrackStatistic
 from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import (
     ValidatorFunc,
+    build_parsed_result_set_lookup,
     is_tabular_response,
     named_result_sets_validator,
     parse_result_set,
@@ -79,6 +80,7 @@ __all__ = [
     "UsageStatistics",
     # Parsing
     "ValidatorFunc",
+    "build_parsed_result_set_lookup",
     "is_tabular_response",
     "named_result_sets_validator",
     "parse_result_set",

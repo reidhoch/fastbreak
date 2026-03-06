@@ -572,48 +572,48 @@ def test_get_player_playtypes_exported():
 
 
 class TestSeasonIdToSeason:
-    """_season_id_to_season handles both NBA API season_id formats."""
+    """season_id_to_season handles both NBA API season_id formats."""
 
     def test_numeric_format(self):
-        from fastbreak.players import _season_id_to_season  # noqa: PLC0415
+        from fastbreak.seasons import season_id_to_season
 
-        assert _season_id_to_season("22024") == "2024-25"
+        assert season_id_to_season("22024") == "2024-25"
 
     def test_numeric_format_older_season(self):
-        from fastbreak.players import _season_id_to_season  # noqa: PLC0415
+        from fastbreak.seasons import season_id_to_season
 
-        assert _season_id_to_season("22020") == "2020-21"
+        assert season_id_to_season("22020") == "2020-21"
 
     def test_yyyy_yy_format_passthrough(self):
-        from fastbreak.players import _season_id_to_season  # noqa: PLC0415
+        from fastbreak.seasons import season_id_to_season
 
-        assert _season_id_to_season("2020-21") == "2020-21"
+        assert season_id_to_season("2020-21") == "2020-21"
 
     def test_yyyy_yy_format_other_season(self):
-        from fastbreak.players import _season_id_to_season  # noqa: PLC0415
+        from fastbreak.seasons import season_id_to_season
 
-        assert _season_id_to_season("2024-25") == "2024-25"
+        assert season_id_to_season("2024-25") == "2024-25"
 
     def test_single_char_raises_value_error(self):
         """A season_id shorter than 2 characters raises ValueError."""
-        from fastbreak.players import _season_id_to_season  # noqa: PLC0415
+        from fastbreak.seasons import season_id_to_season
 
         with pytest.raises(ValueError, match="T\\+YYYY"):
-            _season_id_to_season("2")
+            season_id_to_season("2")
 
     def test_non_numeric_year_raises_value_error(self):
         """A non-numeric year portion raises ValueError."""
-        from fastbreak.players import _season_id_to_season  # noqa: PLC0415
+        from fastbreak.seasons import season_id_to_season
 
         with pytest.raises(ValueError, match="not numeric"):
-            _season_id_to_season("2ABCD")
+            season_id_to_season("2ABCD")
 
     def test_non_numeric_error_chains_original_exception(self):
         """The ValueError raised for non-numeric input chains the original error."""
-        from fastbreak.players import _season_id_to_season  # noqa: PLC0415
+        from fastbreak.seasons import season_id_to_season
 
         with pytest.raises(ValueError) as exc_info:
-            _season_id_to_season("2ABCD")
+            season_id_to_season("2ABCD")
 
         assert exc_info.value.__cause__ is not None
 

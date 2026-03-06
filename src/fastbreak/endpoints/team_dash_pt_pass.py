@@ -81,14 +81,14 @@ class TeamDashPtPass(Endpoint[TeamDashPtPassResponse]):
             "Month": str(self.month),
             "OpponentTeamID": str(self.opponent_team_id),
             "LastNGames": str(self.last_n_games),
-            "DateFrom": self.date_from or "",
-            "DateTo": self.date_to or "",
         }
 
         optional_params = {
             "outcome": "Outcome",
             "location": "Location",
             "season_segment": "SeasonSegment",
+            "date_from": "DateFrom",
+            "date_to": "DateTo",
             "vs_conference": "VsConference",
             "vs_division": "VsDivision",
         }

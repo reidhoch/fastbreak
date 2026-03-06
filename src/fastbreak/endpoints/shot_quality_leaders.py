@@ -2,8 +2,11 @@
 
 from typing import ClassVar
 
+from pydantic import Field
+
 from fastbreak.endpoints.base import Endpoint
 from fastbreak.models.shot_quality_leaders import ShotQualityLeadersResponse
+from fastbreak.seasons import get_season_from_date
 from fastbreak.types import LeagueID, Season, SeasonType
 
 
@@ -29,7 +32,7 @@ class ShotQualityLeaders(Endpoint[ShotQualityLeadersResponse]):
 
     league_id: LeagueID = "00"
     season_type: SeasonType = "Regular Season"
-    season_year: Season = "2024-25"
+    season_year: Season = Field(default_factory=get_season_from_date)
 
     def params(self) -> dict[str, str]:
         """Return the query parameters for this endpoint."""

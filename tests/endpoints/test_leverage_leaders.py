@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints import LeverageLeaders
 from fastbreak.models import LeverageLeadersResponse
+from fastbreak.seasons import get_season_from_date
 
 
 class TestLeverageLeaders:
@@ -14,7 +15,7 @@ class TestLeverageLeaders:
 
         assert endpoint.league_id == "00"
         assert endpoint.season_type == "Regular Season"
-        assert endpoint.season_year == "2024-25"
+        assert endpoint.season_year == get_season_from_date()
 
     def test_init_with_custom_league_id(self):
         """LeverageLeaders accepts custom league_id."""
