@@ -214,3 +214,105 @@ class TestGetTeamSchedule:
         result = await get_team_schedule(client, team_id=1)
 
         assert result == [game_earlier, game_later]
+
+
+class TestHaversineMiles:
+    """Tests for the _haversine_miles helper."""
+
+    def test_same_point_is_zero(self):
+        from fastbreak.schedule import _haversine_miles
+
+        assert _haversine_miles(40.75, -73.99, 40.75, -73.99) == 0.0
+
+    def test_la_to_boston_approx(self):
+        """LAX → BOS great-circle is roughly 2,600 miles."""
+        from fastbreak.schedule import _haversine_miles
+
+        miles = _haversine_miles(34.043, -118.267, 42.366, -71.062)
+        assert 2550 < miles < 2650
+
+
+class TestTravelDistance:
+    """Tests for the travel_distance function."""
+
+    def _make_game(
+        self,
+        game_id: str,
+        arena_city: str | None,
+        arena_state: str | None,
+    ) -> MagicMock:
+        g = MagicMock()
+        g.game_id = game_id
+        g.arena_city = arena_city
+        g.arena_state = arena_state
+        return g
+
+    def test_returns_none_for_first_game(self):
+        from fastbreak.schedule import travel_distance
+
+        games = [self._make_game("001", "Los Angeles", "CA")]
+        assert travel_distance(games, "001") is None
+
+    def test_returns_none_when_game_id_not_found(self):
+        from fastbreak.schedule import travel_distance
+
+        games = [self._make_game("001", "Los Angeles", "CA")]
+        assert travel_distance(games, "999") is None
+
+    def test_returns_none_when_arena_city_missing(self):
+        from fastbreak.schedule import travel_distance
+
+        games = [
+            self._make_game("001", "Los Angeles", "CA"),
+            self._make_game("002", None, "MA"),
+        ]
+        assert travel_distance(games, "002") is None
+
+    def test_returns_none_when_city_not_in_lookup(self):
+        """Neutral-site or unrecognised city returns None."""
+        from fastbreak.schedule import travel_distance
+
+        games = [
+            self._make_game("001", "Los Angeles", "CA"),
+            self._make_game("002", "London", "ENG"),
+        ]
+        assert travel_distance(games, "002") is None
+
+    def test_la_to_boston_miles_and_tz(self):
+        """LA → Boston: ~2,600 miles, +3h east."""
+        from fastbreak.schedule import TravelLeg, travel_distance
+
+        games = [
+            self._make_game("001", "Los Angeles", "CA"),
+            self._make_game("002", "Boston", "MA"),
+        ]
+        result = travel_distance(games, "002")
+        assert isinstance(result, TravelLeg)
+        assert 2550 < result.miles < 2650
+        assert result.tz_shift == 3
+
+    def test_boston_to_la_miles_and_tz(self):
+        """Boston → LA: same distance, -3h west."""
+        from fastbreak.schedule import travel_distance
+
+        games = [
+            self._make_game("001", "Boston", "MA"),
+            self._make_game("002", "Los Angeles", "CA"),
+        ]
+        result = travel_distance(games, "002")
+        assert result is not None
+        assert 2550 < result.miles < 2650
+        assert result.tz_shift == -3
+
+    def test_same_arena_is_zero_miles_zero_tz(self):
+        """Home game after home game: 0 miles, 0 tz shift."""
+        from fastbreak.schedule import travel_distance
+
+        games = [
+            self._make_game("001", "Boston", "MA"),
+            self._make_game("002", "Boston", "MA"),
+        ]
+        result = travel_distance(games, "002")
+        assert result is not None
+        assert result.miles == 0.0
+        assert result.tz_shift == 0
