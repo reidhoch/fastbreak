@@ -1308,8 +1308,10 @@ def ewma(
         values: Per-game stat values in chronological order (oldest first).
                 Pass ``None`` for games where the stat is unavailable (DNP).
         span:   Effective window size (>= 1).  Larger values produce a
-                smoother, slower-reacting average.  Equivalent to
-                ``pandas.Series.ewm(span=span).mean()``.
+                smoother, slower-reacting average.  Uses the same recursive
+                update as ``pandas.Series(values).ewm(span=span, adjust=False,
+                ignore_na=True).mean()``, but preserves ``None`` entries in
+                the output list.
 
     Returns:
         List of the same length as *values*.  Each position holds the EWA
