@@ -19,6 +19,11 @@ if _ind_id is None:
 IND_TEAM_ID: int = int(_ind_id)
 
 
+def _tricode(team: object) -> str:
+    """Return team tricode or '???' for missing team data."""
+    return getattr(team, "team_tricode", "???")
+
+
 async def main() -> None:
     async with NBAClient() as client:
         # ── 1. Full team schedule ────────────────────────────────────
@@ -31,8 +36,8 @@ async def main() -> None:
             if not game.game_date_est:
                 continue
             game_date = game.game_date_est[:10]
-            away = game.away_team.team_tricode if game.away_team else "???"
-            home = game.home_team.team_tricode if game.home_team else "???"
+            away = _tricode(game.away_team)
+            home = _tricode(game.home_team)
             status = game.game_status_text or ""
             print(f"  {game_date}  {away} @ {home}  {status}")
         print()
@@ -58,8 +63,8 @@ async def main() -> None:
         for i, d in back_to_backs[:5]:
             rest = days_rest_before_game(game_dates, i)
             game, _ = valid_games[i]
-            away = game.away_team.team_tricode if game.away_team else "???"
-            home = game.home_team.team_tricode if game.home_team else "???"
+            away = _tricode(game.away_team)
+            home = _tricode(game.home_team)
             print(f"  Game {i + 1:3d}  {d}  {away} @ {home}  ({rest} days rest)")
         print()
 
@@ -70,8 +75,8 @@ async def main() -> None:
         for i in range(min(5, len(game_dates))):
             rest = days_rest_before_game(game_dates, i)
             game, d = valid_games[i]
-            away = game.away_team.team_tricode if game.away_team else "???"
-            home = game.home_team.team_tricode if game.home_team else "???"
+            away = _tricode(game.away_team)
+            home = _tricode(game.home_team)
             rest_str = str(rest) if rest is not None else "first game"
             print(f"  Game {i + 1}  {d}  {away} @ {home}  rest={rest_str}")
         print()
@@ -86,8 +91,8 @@ async def main() -> None:
             if not game.game_id:
                 continue
             leg = all_legs.get(game.game_id)
-            away = game.away_team.team_tricode if game.away_team else "???"
-            home = game.home_team.team_tricode if game.home_team else "???"
+            away = _tricode(game.away_team)
+            home = _tricode(game.home_team)
             matchup = f"{away} @ {home}"
             if leg is None:
                 travel_str = "n/a (first game or neutral site)"
@@ -112,8 +117,8 @@ async def main() -> None:
         if away_legs:
             hardest = max(away_legs, key=lambda t: t[1].miles)
             g, leg = hardest
-            away = g.away_team.team_tricode if g.away_team else "???"
-            home = g.home_team.team_tricode if g.home_team else "???"
+            away = _tricode(g.away_team)
+            home = _tricode(g.home_team)
             print(f"  {(g.game_date_est or '')[:10]}  {away} @ {home}")
             print(f"  {leg.miles:.0f} miles, tz shift {leg.tz_shift:+d}h")
         print()

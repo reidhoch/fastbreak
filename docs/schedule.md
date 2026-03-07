@@ -6,7 +6,7 @@
 
 - `get_team_schedule` is **async** — it calls the NBA Stats API and requires an `NBAClient` instance.
 - `is_back_to_back` and `days_rest_before_game` are **sync** — they operate on a `list[datetime.date]` extracted from the schedule and require no additional API calls.
-- `travel_distance` is **sync** — it operates directly on the `list[ScheduledGame]` returned by `get_team_schedule` and requires no additional API calls.
+- `travel_distance` and `travel_distances` are **sync** — they operate directly on the `list[ScheduledGame]` returned by `get_team_schedule` and require no additional API calls. Use `travel_distances` when computing legs for many games to avoid O(n²) behaviour.
 
 The async function fetches the full league schedule from the `ScheduleLeagueV2` endpoint and filters it down to the games that involve the requested team. The sync helpers accept the resulting data so you can run rest-day and travel analysis without additional API calls.
 
@@ -16,6 +16,7 @@ from fastbreak.schedule import (
     is_back_to_back,
     days_rest_before_game,
     travel_distance,
+    travel_distances,
     TravelLeg,
 )
 ```
@@ -190,6 +191,47 @@ async def main():
         else:
             direction = "→E" if leg.tz_shift > 0 else "←W" if leg.tz_shift < 0 else "  "
             print(f"  {date_str}  {away} @ {home}  {leg.miles:>6.0f} mi  {direction}  tz {leg.tz_shift:+d}h")
+
+asyncio.run(main())
+```
+
+---
+
+### `travel_distances(games) -> dict[str, TravelLeg | None]`
+
+Processes a team's full schedule in a single **O(n) pass** and returns a mapping of `game_id → TravelLeg`. Use this instead of calling `travel_distance` in a loop.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `games` | `list[ScheduledGame]` | Team's sorted schedule from `get_team_schedule` |
+
+**Returns**
+
+`dict[str, TravelLeg | None]` — one entry per game that has a non-`None` `game_id`. The value is `None` for the first game, games with missing arena data, or unrecognised cities. Games with `game_id is None` are omitted entirely.
+
+```python
+import asyncio
+from fastbreak.clients import NBAClient
+from fastbreak.schedule import get_team_schedule, travel_distances
+
+async def main():
+    async with NBAClient() as client:
+        games = await get_team_schedule(client, team_id=1610612754)  # Pacers
+
+    legs = travel_distances(games)
+
+    # Filter to away games only (Pacers traveled TO these arenas)
+    away_games = [g for g in games if g.away_team and g.away_team.team_id == 1610612754]
+    for game in away_games:
+        if not game.game_id:
+            continue
+        leg = legs.get(game.game_id)
+        away = game.away_team.team_tricode if game.away_team else "?"
+        home = game.home_team.team_tricode if game.home_team else "?"
+        if leg:
+            print(f"  {(game.game_date_est or '')[:10]}  {away} @ {home}  {leg.miles:.0f} mi  tz {leg.tz_shift:+d}h")
 
 asyncio.run(main())
 ```
@@ -382,13 +424,13 @@ asyncio.run(main())
 
 ### Travel distance for a road trip stretch
 
-Combine `travel_distance` with `is_back_to_back` to identify the most punishing stretches: long-distance travel into a back-to-back.
+Combine `travel_distances` with `is_back_to_back` to identify the most punishing stretches: long-distance travel into a back-to-back. `travel_distances` processes the full schedule in one pass so the loop stays O(n).
 
 ```python
 import asyncio
 from datetime import date
 from fastbreak.clients import NBAClient
-from fastbreak.schedule import days_rest_before_game, get_team_schedule, travel_distance
+from fastbreak.schedule import days_rest_before_game, get_team_schedule, travel_distances
 
 async def main():
     async with NBAClient() as client:
@@ -396,17 +438,18 @@ async def main():
 
     dated_games = [g for g in games if g.game_date_est]
     dates = [date.fromisoformat(g.game_date_est[:10]) for g in dated_games]
+    legs = travel_distances(games)
 
     print("Hard travel legs (back-to-back AND 1,000+ miles):")
     for i, game in enumerate(dated_games):
         if not game.game_id:
             continue
         rest = days_rest_before_game(dates, i)
-        leg = travel_distance(games, game.game_id)
+        leg = legs.get(game.game_id)
         if rest == 0 and leg is not None and leg.miles >= 1000:
             away = game.away_team.team_tricode if game.away_team else "?"
             home = game.home_team.team_tricode if game.home_team else "?"
-            print(f"  {game.game_date_est[:10]}  {away} @ {home}  {leg.miles:.0f} mi  tz {leg.tz_shift:+d}h")
+            print(f"  {(game.game_date_est or '')[:10]}  {away} @ {home}  {leg.miles:.0f} mi  tz {leg.tz_shift:+d}h")
 
 asyncio.run(main())
 ```
