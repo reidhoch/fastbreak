@@ -191,16 +191,42 @@ def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> floa
     return 2 * _EARTH_RADIUS_MILES * math.asin(math.sqrt(a))
 
 
+def _compute_leg(current: ScheduledGame, previous: ScheduledGame) -> TravelLeg | None:
+    """Compute a TravelLeg between two consecutive ScheduledGames.
+
+    Returns None if either game has missing arena data or an unrecognised city.
+    """
+    if (
+        current.arena_city is None
+        or current.arena_state is None
+        or previous.arena_city is None
+        or previous.arena_state is None
+    ):
+        return None
+
+    origin = _ARENA_COORDS.get((previous.arena_city, previous.arena_state))
+    dest = _ARENA_COORDS.get((current.arena_city, current.arena_state))
+    if origin is None or dest is None:
+        return None
+
+    miles = _haversine_miles(origin[0], origin[1], dest[0], dest[1])
+    tz_shift = dest[2] - origin[2]
+    return TravelLeg(miles=miles, tz_shift=tz_shift)
+
+
 def travel_distance(
     games: list[ScheduledGame],
     game_id: str,
 ) -> TravelLeg | None:
-    """Return travel distance and time-zone shift for a game leg.
+    """Return travel distance and time-zone shift for a single game leg.
 
     Locates *game_id* in *games* (the team's sorted schedule from
     :func:`get_team_schedule`), then computes the great-circle distance in
     miles between that game's arena and the arena of the immediately preceding
     game in the schedule.
+
+    For computing legs across many games prefer :func:`travel_distances`, which
+    processes the full schedule in a single O(n) pass.
 
     Args:
         games:   Team's schedule sorted chronologically, as returned by
@@ -225,23 +251,36 @@ def travel_distance(
     idx = next((i for i, g in enumerate(games) if g.game_id == game_id), None)
     if idx is None or idx == 0:
         return None
+    return _compute_leg(games[idx], games[idx - 1])
 
-    current = games[idx]
-    previous = games[idx - 1]
 
-    if (
-        current.arena_city is None
-        or current.arena_state is None
-        or previous.arena_city is None
-        or previous.arena_state is None
-    ):
-        return None
+def travel_distances(
+    games: list[ScheduledGame],
+) -> dict[str, TravelLeg | None]:
+    """Return travel legs for all games in a team's sorted schedule.
 
-    origin = _ARENA_COORDS.get((previous.arena_city, previous.arena_state))
-    dest = _ARENA_COORDS.get((current.arena_city, current.arena_state))
-    if origin is None or dest is None:
-        return None
+    Processes the schedule in a single O(n) pass.  Use this instead of
+    calling :func:`travel_distance` in a loop to avoid O(n²) behaviour.
 
-    miles = _haversine_miles(origin[0], origin[1], dest[0], dest[1])
-    tz_shift = dest[2] - origin[2]
-    return TravelLeg(miles=miles, tz_shift=tz_shift)
+    Args:
+        games: Team's schedule sorted chronologically, as returned by
+               :func:`get_team_schedule`.
+
+    Returns:
+        Dict mapping each game's ``game_id`` to its :class:`TravelLeg`, or
+        ``None`` for the first game, games with missing arena data, or
+        unrecognised cities.  Games with a ``None`` ``game_id`` are omitted.
+
+    Examples:
+        schedule = await get_team_schedule(client, team_id=1610612747)
+        legs = travel_distances(schedule)
+        for game in schedule:
+            if game.game_id:
+                leg = legs.get(game.game_id)
+    """
+    result: dict[str, TravelLeg | None] = {}
+    for i, game in enumerate(games):
+        if game.game_id is None:
+            continue
+        result[game.game_id] = None if i == 0 else _compute_leg(game, games[i - 1])
+    return result

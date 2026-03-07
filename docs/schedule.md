@@ -5,9 +5,10 @@
 `fastbreak.schedule` provides an async schedule fetcher and sync utility functions for rest-day and travel analysis.
 
 - `get_team_schedule` is **async** — it calls the NBA Stats API and requires an `NBAClient` instance.
-- `is_back_to_back`, `days_rest_before_game`, and `travel_distance` are **sync** — they operate on the list returned by `get_team_schedule` and require no additional API calls.
+- `is_back_to_back` and `days_rest_before_game` are **sync** — they operate on a `list[datetime.date]` extracted from the schedule and require no additional API calls.
+- `travel_distance` is **sync** — it operates directly on the `list[ScheduledGame]` returned by `get_team_schedule` and requires no additional API calls.
 
-The async function fetches the full league schedule from the `ScheduleLeagueV2` endpoint and filters it down to the games that involve the requested team. The sync helpers accept the resulting list so you can run rest-day and travel analysis without additional API calls.
+The async function fetches the full league schedule from the `ScheduleLeagueV2` endpoint and filters it down to the games that involve the requested team. The sync helpers accept the resulting data so you can run rest-day and travel analysis without additional API calls.
 
 ```python
 from fastbreak.schedule import (
@@ -166,7 +167,7 @@ Returns the great-circle travel distance and time-zone shift for a single game l
 
 `tz_shift` is computed from standard-time UTC offsets, so it reflects the *structural* direction of travel year-round. DST does not affect the relative shift between two US cities — both shift by the same hour — except for Phoenix (Arizona does not observe DST).
 
-**Range:** `tz_shift` is always in `{-3, -2, -1, 0, +1, +2, +3}` across all 30 NBA arenas (Pacific UTC−8 to Eastern/Atlantic UTC−5).
+**Range:** `tz_shift` is always in `{-3, -2, -1, 0, +1, +2, +3}` across all 30 NBA arenas (Pacific (UTC−8) to Eastern (UTC−5)).
 
 ```python
 import asyncio
@@ -183,11 +184,12 @@ async def main():
         leg = travel_distance(games, game.game_id)
         away = game.away_team.team_tricode if game.away_team else "?"
         home = game.home_team.team_tricode if game.home_team else "?"
+        date_str = (game.game_date_est or "")[:10]
         if leg is None:
-            print(f"  {game.game_date_est[:10]}  {away} @ {home}  —  opener / neutral site")
+            print(f"  {date_str}  {away} @ {home}  —  opener / neutral site")
         else:
-            direction = "→E" if leg.tz_shift > 0 else "→W" if leg.tz_shift < 0 else "  "
-            print(f"  {game.game_date_est[:10]}  {away} @ {home}  {leg.miles:>6.0f} mi  {direction}  tz {leg.tz_shift:+d}h")
+            direction = "→E" if leg.tz_shift > 0 else "←W" if leg.tz_shift < 0 else "  "
+            print(f"  {date_str}  {away} @ {home}  {leg.miles:>6.0f} mi  {direction}  tz {leg.tz_shift:+d}h")
 
 asyncio.run(main())
 ```
