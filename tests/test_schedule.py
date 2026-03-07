@@ -216,6 +216,19 @@ class TestGetTeamSchedule:
         assert result == [game_earlier, game_later]
 
 
+def _make_arena_game(
+    game_id: str | None,
+    arena_city: str | None,
+    arena_state: str | None,
+) -> MagicMock:
+    """Build a MagicMock ScheduledGame with arena location fields set."""
+    g = MagicMock()
+    g.game_id = game_id
+    g.arena_city = arena_city
+    g.arena_state = arena_state
+    return g
+
+
 class TestHaversineMiles:
     """Tests for the _haversine_miles helper."""
 
@@ -241,11 +254,7 @@ class TestTravelDistance:
         arena_city: str | None,
         arena_state: str | None,
     ) -> MagicMock:
-        g = MagicMock()
-        g.game_id = game_id
-        g.arena_city = arena_city
-        g.arena_state = arena_state
-        return g
+        return _make_arena_game(game_id, arena_city, arena_state)
 
     def test_returns_none_for_first_game(self):
         from fastbreak.schedule import travel_distance
@@ -324,11 +333,7 @@ class TestTravelDistances:
     def _make_game(
         self, game_id: str | None, city: str | None, state: str | None
     ) -> MagicMock:
-        g = MagicMock()
-        g.game_id = game_id
-        g.arena_city = city
-        g.arena_state = state
-        return g
+        return _make_arena_game(game_id, city, state)
 
     def test_empty_list_returns_empty_dict(self):
         from fastbreak.schedule import travel_distances

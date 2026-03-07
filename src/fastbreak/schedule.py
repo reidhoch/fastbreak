@@ -188,7 +188,7 @@ def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> floa
         math.sin(dphi / 2) ** 2
         + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
     )
-    return 2 * _EARTH_RADIUS_MILES * math.asin(math.sqrt(a))
+    return 2 * _EARTH_RADIUS_MILES * math.asin(min(1.0, math.sqrt(a)))
 
 
 def _compute_leg(current: ScheduledGame, previous: ScheduledGame) -> TravelLeg | None:
@@ -209,9 +209,12 @@ def _compute_leg(current: ScheduledGame, previous: ScheduledGame) -> TravelLeg |
     if origin is None or dest is None:
         return None
 
-    miles = _haversine_miles(origin[0], origin[1], dest[0], dest[1])
-    tz_shift = dest[2] - origin[2]
-    return TravelLeg(miles=miles, tz_shift=tz_shift)
+    orig_lat, orig_lon, orig_tz = origin
+    dest_lat, dest_lon, dest_tz = dest
+    return TravelLeg(
+        miles=_haversine_miles(orig_lat, orig_lon, dest_lat, dest_lon),
+        tz_shift=dest_tz - orig_tz,
+    )
 
 
 def travel_distance(
@@ -281,6 +284,10 @@ def travel_distances(
     result: dict[str, TravelLeg | None] = {}
     for i, game in enumerate(games):
         if game.game_id is None:
+            # Game has no ID (cancelled / placeholder); skip the result entry but
+            # keep it as the implicit predecessor so the next game's leg reflects
+            # the correct arena-to-arena chain.  In practice these games also lack
+            # arena_city / arena_state, so _compute_leg returns None for the next leg.
             continue
         result[game.game_id] = None if i == 0 else _compute_leg(game, games[i - 1])
     return result
