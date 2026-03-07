@@ -1283,7 +1283,7 @@ class TestEwma:
         assert result[3] == pytest.approx(25.0)  # 0.5*25 + 0.5*25
         assert result[4] == pytest.approx(22.5)  # 0.5*20 + 0.5*25
 
-    def test_first_value_initialises_ewa(self) -> None:
+    def test_first_value_initialises_ewma(self) -> None:
         """First non-None value seeds the running average, not None."""
         result = ewma([10.0, 10.0], span=5)
         assert result[0] == pytest.approx(10.0)
@@ -1841,6 +1841,8 @@ class TestEwmaProperties:
         for i, val in enumerate(values):
             if val is None:
                 assert result[i] is None
+            else:
+                assert result[i] is not None
 
     @settings(suppress_health_check=_XDIST)
     @given(
