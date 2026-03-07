@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from fastbreak.logging import logger
@@ -117,3 +119,129 @@ async def get_team_schedule(
     team_games = _collect_team_games(response.league_schedule, team_id)
     team_games.sort(key=_schedule_sort_key)
     return team_games
+
+
+@dataclass(frozen=True, slots=True)
+class TravelLeg:
+    """Distance and time-zone shift for a single team travel leg.
+
+    Attributes:
+        miles:    Great-circle distance in miles between the two arenas.
+        tz_shift: Time-zone shift in hours.  Positive = traveling east
+                  (e.g. LA → Boston = +3); negative = traveling west.
+                  Based on standard-time UTC offsets — DST does not affect
+                  the *relative* shift between two US cities (both shift by
+                  the same hour), except for Phoenix (AZ, no DST) vs
+                  Mountain-time cities in summer.
+    """
+
+    miles: float
+    tz_shift: int
+
+
+# (arena_city, arena_state) → (latitude, longitude, utc_std_offset)
+# Keys match the arenaCity / arenaState values returned by the NBA Stats API.
+# Both LA teams share Crypto.com Arena; Brooklyn and New York are separate.
+type ArenaCoord = tuple[float, float, int]
+
+_ARENA_COORDS: dict[tuple[str, str], ArenaCoord] = {
+    ("Atlanta", "GA"): (33.7573, -84.3963, -5),  # State Farm Arena
+    ("Boston", "MA"): (42.3662, -71.0621, -5),  # TD Garden
+    ("Brooklyn", "NY"): (40.6826, -73.9754, -5),  # Barclays Center
+    ("Charlotte", "NC"): (35.2251, -80.8392, -5),  # Spectrum Center
+    ("Chicago", "IL"): (41.8807, -87.6742, -6),  # United Center
+    ("Cleveland", "OH"): (41.4965, -81.6882, -5),  # Rocket Mortgage Fieldhouse
+    ("Dallas", "TX"): (32.7905, -96.8103, -6),  # American Airlines Center
+    ("Denver", "CO"): (39.7487, -105.0076, -7),  # Ball Arena
+    ("Detroit", "MI"): (42.3410, -83.0554, -5),  # Little Caesars Arena
+    ("Houston", "TX"): (29.7508, -95.3621, -6),  # Toyota Center
+    ("Indianapolis", "IN"): (39.7640, -86.1555, -5),  # Gainbridge Fieldhouse
+    ("Los Angeles", "CA"): (34.0430, -118.2673, -8),  # Crypto.com Arena (LAL + LAC)
+    ("Memphis", "TN"): (35.1383, -90.0505, -6),  # FedExForum
+    ("Miami", "FL"): (25.7814, -80.1870, -5),  # Kaseya Center
+    ("Milwaukee", "WI"): (43.0450, -87.9178, -6),  # Fiserv Forum
+    ("Minneapolis", "MN"): (44.9795, -93.2760, -6),  # Target Center
+    ("New Orleans", "LA"): (29.9490, -90.0821, -6),  # Smoothie King Center
+    ("New York", "NY"): (40.7505, -73.9934, -5),  # Madison Square Garden
+    ("Oklahoma City", "OK"): (35.4634, -97.5151, -6),  # Paycom Center
+    ("Orlando", "FL"): (28.5392, -81.3837, -5),  # Kia Center
+    ("Philadelphia", "PA"): (39.9012, -75.1720, -5),  # Wells Fargo Center
+    ("Phoenix", "AZ"): (33.4457, -112.0712, -7),  # Footprint Center (no DST)
+    ("Portland", "OR"): (45.5316, -122.6668, -8),  # Moda Center
+    ("Sacramento", "CA"): (38.5802, -121.4996, -8),  # Golden 1 Center
+    ("Salt Lake City", "UT"): (40.7683, -111.9011, -7),  # Delta Center
+    ("San Antonio", "TX"): (29.4270, -98.4375, -6),  # Frost Bank Center
+    ("San Francisco", "CA"): (37.7680, -122.3877, -8),  # Chase Center
+    ("Toronto", "ON"): (43.6435, -79.3791, -5),  # Scotiabank Arena
+    ("Washington", "DC"): (38.8981, -77.0209, -5),  # Capital One Arena
+}
+
+_EARTH_RADIUS_MILES: float = 3_958.8
+
+
+def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Return great-circle distance in miles between two (lat, lon) points."""
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = (
+        math.sin(dphi / 2) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    )
+    return 2 * _EARTH_RADIUS_MILES * math.asin(math.sqrt(a))
+
+
+def travel_distance(
+    games: list[ScheduledGame],
+    game_id: str,
+) -> TravelLeg | None:
+    """Return travel distance and time-zone shift for a game leg.
+
+    Locates *game_id* in *games* (the team's sorted schedule from
+    :func:`get_team_schedule`), then computes the great-circle distance in
+    miles between that game's arena and the arena of the immediately preceding
+    game in the schedule.
+
+    Args:
+        games:   Team's schedule sorted chronologically, as returned by
+                 :func:`get_team_schedule`.
+        game_id: NBA game ID of the destination game.
+
+    Returns:
+        :class:`TravelLeg` with ``miles`` (great-circle) and ``tz_shift``
+        (hours east = positive, hours west = negative), or ``None`` when:
+
+        - *game_id* is the team's first game (no prior leg),
+        - *game_id* is not found in *games*,
+        - either game's ``arena_city`` / ``arena_state`` is missing, or
+        - a city is not in :data:`_ARENA_COORDS` (e.g. neutral-site games).
+
+    Examples:
+        schedule = await get_team_schedule(client, team_id=1610612747)
+        leg = travel_distance(schedule, game_id="0022500131")
+        if leg:
+            print(f"{leg.miles:.0f} mi, {leg.tz_shift:+d}h")
+    """
+    idx = next((i for i, g in enumerate(games) if g.game_id == game_id), None)
+    if idx is None or idx == 0:
+        return None
+
+    current = games[idx]
+    previous = games[idx - 1]
+
+    if (
+        current.arena_city is None
+        or current.arena_state is None
+        or previous.arena_city is None
+        or previous.arena_state is None
+    ):
+        return None
+
+    origin = _ARENA_COORDS.get((previous.arena_city, previous.arena_state))
+    dest = _ARENA_COORDS.get((current.arena_city, current.arena_state))
+    if origin is None or dest is None:
+        return None
+
+    miles = _haversine_miles(origin[0], origin[1], dest[0], dest[1])
+    tz_shift = dest[2] - origin[2]
+    return TravelLeg(miles=miles, tz_shift=tz_shift)

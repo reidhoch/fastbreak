@@ -2,15 +2,21 @@
 
 ## Overview
 
-`fastbreak.schedule` provides an async schedule fetcher and sync utility functions for rest-day analysis.
+`fastbreak.schedule` provides an async schedule fetcher and sync utility functions for rest-day and travel analysis.
 
 - `get_team_schedule` is **async** — it calls the NBA Stats API and requires an `NBAClient` instance.
-- `is_back_to_back` and `days_rest_before_game` are **sync** — they operate on a plain `list[datetime.date]` and require no client or network access.
+- `is_back_to_back`, `days_rest_before_game`, and `travel_distance` are **sync** — they operate on the list returned by `get_team_schedule` and require no additional API calls.
 
-The async function fetches the full league schedule from the `ScheduleLeagueV2` endpoint and filters it down to the games that involve the requested team. The sync helpers accept the resulting list of dates so you can run rest-day analysis without additional API calls.
+The async function fetches the full league schedule from the `ScheduleLeagueV2` endpoint and filters it down to the games that involve the requested team. The sync helpers accept the resulting list so you can run rest-day and travel analysis without additional API calls.
 
 ```python
-from fastbreak.schedule import get_team_schedule, is_back_to_back, days_rest_before_game
+from fastbreak.schedule import (
+    get_team_schedule,
+    is_back_to_back,
+    days_rest_before_game,
+    travel_distance,
+    TravelLeg,
+)
 ```
 
 ---
@@ -128,6 +134,62 @@ dates = [date(2025, 1, 14), date(2025, 1, 15), date(2025, 1, 17)]
 is_back_to_back(dates, 0)  # False — first game of season
 is_back_to_back(dates, 1)  # True  — played Jan 14, playing again Jan 15
 is_back_to_back(dates, 2)  # False — one day off
+```
+
+---
+
+### `travel_distance(games, game_id) -> TravelLeg | None`
+
+Returns the great-circle travel distance and time-zone shift for a single game leg — from the previous game's arena to the given game's arena.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `games` | `list[ScheduledGame]` | Team's sorted schedule from `get_team_schedule` |
+| `game_id` | `str` | NBA game ID of the destination game |
+
+**Returns**
+
+`TravelLeg` (see below) or `None` when:
+- `game_id` is the team's first game of the season (no prior leg),
+- `game_id` is not found in `games`,
+- either game's `arena_city` / `arena_state` is `None`, or
+- the city is not in the built-in arena lookup (e.g. neutral-site international games).
+
+**`TravelLeg` fields**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `miles` | `float` | Great-circle distance in miles between the two arenas |
+| `tz_shift` | `int` | Time-zone shift in hours: positive = eastward travel, negative = westward, `0` = same time zone |
+
+`tz_shift` is computed from standard-time UTC offsets, so it reflects the *structural* direction of travel year-round. DST does not affect the relative shift between two US cities — both shift by the same hour — except for Phoenix (Arizona does not observe DST).
+
+**Range:** `tz_shift` is always in `{-3, -2, -1, 0, +1, +2, +3}` across all 30 NBA arenas (Pacific UTC−8 to Eastern/Atlantic UTC−5).
+
+```python
+import asyncio
+from fastbreak.clients import NBAClient
+from fastbreak.schedule import get_team_schedule, travel_distance
+
+async def main():
+    async with NBAClient() as client:
+        games = await get_team_schedule(client, team_id=1610612754)  # Pacers
+
+    for game in games[:10]:
+        if not game.game_id:
+            continue
+        leg = travel_distance(games, game.game_id)
+        away = game.away_team.team_tricode if game.away_team else "?"
+        home = game.home_team.team_tricode if game.home_team else "?"
+        if leg is None:
+            print(f"  {game.game_date_est[:10]}  {away} @ {home}  —  opener / neutral site")
+        else:
+            direction = "→E" if leg.tz_shift > 0 else "→W" if leg.tz_shift < 0 else "  "
+            print(f"  {game.game_date_est[:10]}  {away} @ {home}  {leg.miles:>6.0f} mi  {direction}  tz {leg.tz_shift:+d}h")
+
+asyncio.run(main())
 ```
 
 ---
@@ -316,6 +378,37 @@ async def main():
 asyncio.run(main())
 ```
 
+### Travel distance for a road trip stretch
+
+Combine `travel_distance` with `is_back_to_back` to identify the most punishing stretches: long-distance travel into a back-to-back.
+
+```python
+import asyncio
+from datetime import date
+from fastbreak.clients import NBAClient
+from fastbreak.schedule import days_rest_before_game, get_team_schedule, travel_distance
+
+async def main():
+    async with NBAClient() as client:
+        games = await get_team_schedule(client, team_id=1610612754)  # Pacers
+
+    dated_games = [g for g in games if g.game_date_est]
+    dates = [date.fromisoformat(g.game_date_est[:10]) for g in dated_games]
+
+    print("Hard travel legs (back-to-back AND 1,000+ miles):")
+    for i, game in enumerate(dated_games):
+        if not game.game_id:
+            continue
+        rest = days_rest_before_game(dates, i)
+        leg = travel_distance(games, game.game_id)
+        if rest == 0 and leg is not None and leg.miles >= 1000:
+            away = game.away_team.team_tricode if game.away_team else "?"
+            home = game.home_team.team_tricode if game.home_team else "?"
+            print(f"  {game.game_date_est[:10]}  {away} @ {home}  {leg.miles:.0f} mi  tz {leg.tz_shift:+d}h")
+
+asyncio.run(main())
+```
+
 ### Upcoming schedule
 
 Filter to only future games using today's date.
@@ -440,7 +533,64 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-### Example 3: Back-to-back fatigue tracker
+### Example 3: Travel load summary
+
+Summarise a team's full-season travel: total miles, eastward vs westward legs, and the single hardest journey.
+
+```python
+"""Travel load summary for a full NBA season."""
+
+import asyncio
+from fastbreak.clients import NBAClient
+from fastbreak.schedule import get_team_schedule, travel_distance
+
+TEAM_ID = 1610612754  # Indiana Pacers
+SEASON = "2025-26"
+
+
+def _matchup(game) -> str:
+    away = game.away_team.team_tricode if game.away_team else "?"
+    home = game.home_team.team_tricode if game.home_team else "?"
+    return f"{away} @ {home}"
+
+
+async def main() -> None:
+    async with NBAClient() as client:
+        games = await get_team_schedule(client, team_id=TEAM_ID, season=SEASON)
+
+    # Only count away games — those are the legs where the Pacers traveled TO the arena.
+    # Home games where arena_city changes represent returning home from a road trip,
+    # not travel the Pacers made for that specific game.
+    away_legs = [
+        (game, travel_distance(games, game.game_id))
+        for game in games
+        if game.game_id
+        and game.away_team is not None
+        and game.away_team.team_id == TEAM_ID
+    ]
+    legs_with_data = [(g, leg) for g, leg in away_legs if leg is not None]
+
+    total_miles = sum(leg.miles for _, leg in legs_with_data)
+    east_legs = [(g, leg) for g, leg in legs_with_data if leg.tz_shift > 0]
+    west_legs = [(g, leg) for g, leg in legs_with_data if leg.tz_shift < 0]
+
+    print(f"Indiana Pacers — {SEASON} Travel Summary (away games only)")
+    print(f"  Total legs tracked : {len(legs_with_data)}")
+    print(f"  Total miles        : {total_miles:,.0f}")
+    print(f"  Eastward legs      : {len(east_legs)}")
+    print(f"  Westward legs      : {len(west_legs)}")
+    print()
+
+    if legs_with_data:
+        g, leg = max(legs_with_data, key=lambda t: t[1].miles)
+        print(f"  Longest leg: {_matchup(g)}  {leg.miles:.0f} mi  tz {leg.tz_shift:+d}h")
+        print(f"    Date: {(g.game_date_est or '')[:10]}")
+
+
+asyncio.run(main())
+```
+
+### Example 4: Back-to-back fatigue tracker
 
 For each back-to-back, show the preceding game and the B2B game side by side.
 
