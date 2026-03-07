@@ -5,9 +5,11 @@
 [![License](https://img.shields.io/github/license/reidhoch/fastbreak)](https://github.com/reidhoch/fastbreak/blob/main/LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/reidhoch/fastbreak/ci.yaml?label=CI)](https://github.com/reidhoch/fastbreak/actions)
 
-Async Python client for the NBA Stats API, fully typed with Pydantic models and optional DataFrame conversion.
+Async Python client for the NBA Stats API. Typed end-to-end with Pydantic. Pandas and polars export are optional.
 
 ## Installation
+
+Requires Python 3.12+.
 
 ```bash
 pip install fastbreak
@@ -56,7 +58,7 @@ Fetch multiple endpoints concurrently with `get_many()`:
 from fastbreak.clients import NBAClient
 from fastbreak.endpoints import BoxScoreTraditional
 
-game_ids = ["0022401001", "0022401002", "0022401003"]
+game_ids = ["0022500001", "0022500002", "0022500003"]
 
 async with NBAClient() as client:
     results = await client.get_many(
@@ -65,11 +67,11 @@ async with NBAClient() as client:
     )
 ```
 
-Results are returned in the same order as the input. If any request fails, all in-flight requests are cancelled and an `ExceptionGroup` is raised.
+Results come back in the same order as the input. If any request fails, all in-flight requests are cancelled and an `ExceptionGroup` is raised.
 
 ### Caching
 
-Enable TTL-based response caching to avoid redundant API calls:
+Pass `cache_ttl` to avoid hitting the API twice for the same response:
 
 ```python
 from fastbreak.clients import NBAClient
@@ -79,6 +81,32 @@ async with NBAClient(cache_ttl=300, cache_maxsize=256) as client:
     result = await client.get(LeagueStandings(season="2025-26"))  # cached for 5 min
     print(client.cache_info)  # {'size': 1, 'maxsize': 256, 'ttl': 300}
     client.clear_cache()
+```
+
+## Utility Modules
+
+Skip the endpoint boilerplate for common operations. Import directly and pass `client` as the first argument.
+
+| Module | Key Functions |
+|--------|---------------|
+| `fastbreak.players` | `search_players`, `get_player_game_log`, `get_player_stats`, `get_league_leaders` |
+| `fastbreak.teams` | `search_teams`, `get_team_stats`, `get_team_game_log`, `get_lineup_stats` |
+| `fastbreak.games` | `get_todays_games`, `get_games_on_date`, `get_box_scores`, `get_play_by_play` |
+| `fastbreak.shots` | `get_shot_chart`, `zone_breakdown`, `shot_quality_vs_league`, `xfg_pct` |
+| `fastbreak.clutch` | `get_player_clutch_profile`, `get_league_clutch_leaders`, `clutch_score` |
+| `fastbreak.metrics` | `bpm`, `vorp`, `per`, `ewma`, `true_shooting`, `usage_pct` |
+| `fastbreak.schedule` | `get_team_schedule`, `is_back_to_back`, `travel_distance` |
+| `fastbreak.standings` | `get_standings`, `get_conference_standings`, `magic_number` |
+| `fastbreak.seasons` | `get_season_from_date`, `season_start_year` — sync, no client needed |
+
+```python
+from fastbreak.players import search_players, get_player_game_log
+from fastbreak.games import get_todays_games
+
+async with NBAClient() as client:
+    players = await search_players(client, "Jokić")
+    log     = await get_player_game_log(client, player_id=players[0].person_id)
+    games   = await get_todays_games(client)
 ```
 
 ## Features
