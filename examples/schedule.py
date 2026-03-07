@@ -8,7 +8,7 @@ from fastbreak.schedule import (
     days_rest_before_game,
     get_team_schedule,
     is_back_to_back,
-    travel_distance,
+    travel_distances,
 )
 from fastbreak.teams import get_team_id
 
@@ -81,17 +81,18 @@ async def main() -> None:
         print("=" * 60)
         print("Pacers — travel legs for first 10 games")
         print("=" * 60)
+        all_legs = travel_distances(games)
         for i, (game, d) in enumerate(valid_games[:10]):
             if not game.game_id:
                 continue
-            leg = travel_distance(games, game.game_id)
+            leg = all_legs.get(game.game_id)
             away = game.away_team.team_tricode if game.away_team else "???"
             home = game.home_team.team_tricode if game.home_team else "???"
             matchup = f"{away} @ {home}"
             if leg is None:
                 travel_str = "n/a (first game or neutral site)"
             else:
-                direction = "→E" if leg.tz_shift > 0 else "→W" if leg.tz_shift < 0 else "  "
+                direction = "→E" if leg.tz_shift > 0 else "←W" if leg.tz_shift < 0 else "  "
                 travel_str = f"{leg.miles:>6.0f} mi  {direction}  tz {leg.tz_shift:+d}h"
             print(f"  Game {i + 1:3d}  {d}  {matchup:<14}  {travel_str}")
         print()
@@ -100,16 +101,16 @@ async def main() -> None:
         print("=" * 60)
         print("Pacers — longest single travel leg (full season)")
         print("=" * 60)
-        legs = [
-            (game, travel_distance(games, game.game_id))
+        away_legs = [
+            (game, leg)
             for game in games
             if game.game_id
             and game.away_team is not None
             and game.away_team.team_id == IND_TEAM_ID  # Pacers traveled TO this game
+            and (leg := all_legs.get(game.game_id)) is not None
         ]
-        legs_with_data = [(g, leg) for g, leg in legs if leg is not None]
-        if legs_with_data:
-            hardest = max(legs_with_data, key=lambda t: t[1].miles)
+        if away_legs:
+            hardest = max(away_legs, key=lambda t: t[1].miles)
             g, leg = hardest
             away = g.away_team.team_tricode if g.away_team else "???"
             home = g.home_team.team_tricode if g.home_team else "???"

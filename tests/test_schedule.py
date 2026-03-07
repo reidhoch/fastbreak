@@ -316,3 +316,55 @@ class TestTravelDistance:
         assert result is not None
         assert result.miles == 0.0
         assert result.tz_shift == 0
+
+
+class TestTravelDistances:
+    """Tests for the travel_distances bulk function."""
+
+    def _make_game(
+        self, game_id: str | None, city: str | None, state: str | None
+    ) -> MagicMock:
+        g = MagicMock()
+        g.game_id = game_id
+        g.arena_city = city
+        g.arena_state = state
+        return g
+
+    def test_empty_list_returns_empty_dict(self):
+        from fastbreak.schedule import travel_distances
+
+        assert travel_distances([]) == {}
+
+    def test_first_game_maps_to_none(self):
+        from fastbreak.schedule import travel_distances
+
+        games = [self._make_game("001", "Boston", "MA")]
+        assert travel_distances(games) == {"001": None}
+
+    def test_skips_games_with_none_game_id(self):
+        from fastbreak.schedule import travel_distances
+
+        games = [
+            self._make_game(None, "Boston", "MA"),
+            self._make_game("002", "Los Angeles", "CA"),
+        ]
+        result = travel_distances(games)
+        assert None not in result
+        assert "002" in result
+
+    def test_full_schedule_single_pass(self):
+        """All three games processed; distances match individual travel_distance calls."""
+        from fastbreak.schedule import TravelLeg, travel_distance, travel_distances
+
+        games = [
+            self._make_game("001", "Boston", "MA"),
+            self._make_game("002", "Los Angeles", "CA"),
+            self._make_game("003", "Denver", "CO"),
+        ]
+        bulk = travel_distances(games)
+
+        assert bulk["001"] is None
+        assert isinstance(bulk["002"], TravelLeg)
+        assert isinstance(bulk["003"], TravelLeg)
+        assert bulk["002"] == travel_distance(games, "002")
+        assert bulk["003"] == travel_distance(games, "003")
