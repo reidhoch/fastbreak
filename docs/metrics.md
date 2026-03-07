@@ -29,7 +29,7 @@ from fastbreak.metrics import (
     # Possession estimate
     possessions,
     # Rolling / windowed
-    rolling_avg,
+    rolling_avg, ewma,
     # Distribution
     stat_floor, stat_ceiling, stat_median, prop_hit_rate,
     percentile_rank, stat_consistency, streak_count,
@@ -1153,6 +1153,87 @@ async def main() -> None:
     print(f"{'Game':>5}  {'Pts':>5}  {'5-game avg':>10}")
     for i, (raw, avg) in enumerate(zip(pts, avgs, strict=True), start=1):
         avg_str = f"{avg:.2f}" if avg is not None else "    warm"
+        print(f"  {i:>5}  {raw:>5.1f}  {avg_str:>10}")
+```
+
+---
+
+#### `ewma`
+
+```python
+def ewma(
+    values: Sequence[float | None],
+    span: int,
+) -> list[float | None]
+```
+
+Returns an exponentially weighted moving average (EWMA) over a sequence of per-game stat
+values. Uses the pandas-compatible smoothing factor `alpha = 2 / (span + 1)`. This is a
+pure function — no API call is needed.
+
+Unlike `rolling_avg`, which propagates `None` through windows, `ewma` **skips** `None`
+entries: a `None` input produces a `None` output, but the internal running state persists
+and the average resumes from its last value on the next valid observation.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `values` | `Sequence[float \| None]` | Per-game stat values in chronological order. Pass `None` for games where the stat is unavailable (DNP, injury, missing data). |
+| `span` | `int` | Effective window size (≥ 1). Larger values produce a smoother, slower-reacting average. Equivalent to `pandas.Series.ewm(span=span).mean()`. |
+
+**Returns:** `list[float | None]` — same length as `values`. Each position holds the
+EWMA up to and including that observation, or `None` in two cases:
+
+| Cause | Description |
+|---|---|
+| Pre-seed | No valid observation has been seen yet (leading `None` entries) |
+| Missing game | The input at this position is `None` (DNP / missing) |
+
+**Raises:** `ValueError` if `span < 1`.
+
+```python
+from fastbreak.metrics import ewma
+
+pts = [22.0, 18.0, 30.0, None, 25.0, 28.0, 15.0, 24.0]
+
+# span=3 → alpha=0.5
+smoothed = ewma(pts, span=3)
+# [22.0, 20.0, 25.0, None, 25.0, 26.5, 20.75, 22.375]
+#  ^seed  ^avg  ^avg  ^DNP  ^resume from 25.0
+
+# span=5 → alpha=0.333 — reacts more slowly to new values
+smoothed_5 = ewma(pts, span=5)
+# [22.0, 20.67, 23.78, None, 24.19, 25.46, 21.97, 22.65]
+```
+
+**Comparison with `rolling_avg`:**
+
+| | `rolling_avg` | `ewma` |
+|---|---|---|
+| **Warm-up period** | Yes — positions 0 to `window - 2` are `None` | No — the first valid observation seeds the average |
+| **None handling** | Any `None` in the window → output is `None` | `None` → `None` output, but running state persists |
+| **Recency bias** | Equal weight for all values in the window | More weight on recent values (`alpha` controls decay) |
+| **Memory** | Only the last `window` games | All prior games, with exponential decay |
+
+**Common pattern — EWMA from a player game log:**
+
+```python
+from fastbreak.clients import NBAClient
+from fastbreak.metrics import ewma
+from fastbreak.players import get_player_game_log
+
+async def main() -> None:
+    async with NBAClient() as client:
+        games = await get_player_game_log(client, player_id=201939)  # Curry
+
+    # Game log is reverse-chronological; reverse for plotting
+    pts = [float(g.pts) for g in reversed(games)]
+    smoothed = ewma(pts, span=5)
+
+    print(f"{'Game':>5}  {'Pts':>5}  {'EWMA(5)':>10}")
+    for i, (raw, avg) in enumerate(zip(pts, smoothed, strict=True), start=1):
+        avg_str = f"{avg:.2f}" if avg is not None else "     --"
         print(f"  {i:>5}  {raw:>5.1f}  {avg_str:>10}")
 ```
 

@@ -1,7 +1,7 @@
 """Tests for derived basketball metrics."""
 
 import pytest
-from hypothesis import HealthCheck, given, settings
+from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 
 _XDIST = [HealthCheck.differing_executors]
@@ -32,6 +32,7 @@ from fastbreak.metrics import (
     pythagorean_win_pct,
     relative_efg,
     relative_ts,
+    ewma,
     rolling_avg,
     stl_pct,
     three_point_rate,
@@ -1263,6 +1264,91 @@ class TestRollingAvg:
             rolling_avg([1.0, 2.0], window=-5)
 
 
+class TestEwma:
+    """Tests for ewma()."""
+
+    def test_span_one_returns_values_unchanged(self) -> None:
+        """span=1 gives α=1 — each output equals the raw input value."""
+        values = [5.0, 10.0, 15.0]
+        result = ewma(values, span=1)
+        assert result == [pytest.approx(5.0), pytest.approx(10.0), pytest.approx(15.0)]
+
+    def test_docstring_example(self) -> None:
+        """Verify the hand-computed example from the docstring (span=3, α=0.5)."""
+        pts = [22.0, 18.0, 30.0, 25.0, 20.0]
+        result = ewma(pts, span=3)
+        assert result[0] == pytest.approx(22.0)
+        assert result[1] == pytest.approx(20.0)  # 0.5*18 + 0.5*22
+        assert result[2] == pytest.approx(25.0)  # 0.5*30 + 0.5*20
+        assert result[3] == pytest.approx(25.0)  # 0.5*25 + 0.5*25
+        assert result[4] == pytest.approx(22.5)  # 0.5*20 + 0.5*25
+
+    def test_first_value_initialises_ewa(self) -> None:
+        """First non-None value seeds the running average, not None."""
+        result = ewma([10.0, 10.0], span=5)
+        assert result[0] == pytest.approx(10.0)
+
+    def test_constant_series_returns_constant(self) -> None:
+        """Constant input produces the same constant at every position."""
+        result = ewma([7.0, 7.0, 7.0, 7.0], span=4)
+        for v in result:
+            assert v == pytest.approx(7.0)
+
+    def test_none_produces_none_output_but_state_persists(self) -> None:
+        """None in input yields None in output; EWA resumes after the gap."""
+        result = ewma([10.0, None, 10.0], span=1)
+        assert result[0] == pytest.approx(10.0)
+        assert result[1] is None
+        assert result[2] == pytest.approx(10.0)  # state resumed — still 10.0
+
+    def test_none_state_persists_across_multiple_gaps(self) -> None:
+        """Multiple consecutive Nones don't reset the running average."""
+        result = ewma([20.0, None, None, 20.0], span=2)
+        assert result[0] == pytest.approx(20.0)
+        assert result[1] is None
+        assert result[2] is None
+        assert result[3] == pytest.approx(20.0)  # constant — no drift
+
+    def test_leading_nones_return_none_until_first_value(self) -> None:
+        """Positions before the first non-None value return None."""
+        result = ewma([None, None, 5.0, 10.0], span=3)
+        assert result[0] is None
+        assert result[1] is None
+        assert result[2] == pytest.approx(5.0)
+
+    def test_all_none_returns_all_none(self) -> None:
+        """All-None input returns all None."""
+        assert ewma([None, None, None], span=3) == [None, None, None]
+
+    def test_empty_list_returns_empty(self) -> None:
+        """Empty input returns empty output."""
+        assert ewma([], span=3) == []
+
+    def test_output_length_matches_input(self) -> None:
+        """Output list is always the same length as the input."""
+        values = [1.0, 2.0, 3.0, 4.0, 5.0]
+        assert len(ewma(values, span=2)) == len(values)
+
+    def test_larger_span_produces_smoother_series(self) -> None:
+        """Higher span reacts more slowly to a jump in values."""
+        jump = [1.0, 1.0, 1.0, 100.0]
+        slow = ewma(jump, span=10)
+        fast = ewma(jump, span=2)
+        # After the jump, slow EWA should be closer to 1.0 than fast EWA
+        assert slow[-1] is not None and fast[-1] is not None
+        assert slow[-1] < fast[-1]
+
+    def test_invalid_span_raises(self) -> None:
+        """span=0 raises ValueError with a message naming the constraint."""
+        with pytest.raises(ValueError, match="span must be >= 1, got 0"):
+            ewma([1.0, 2.0], span=0)
+
+    def test_negative_span_raises(self) -> None:
+        """Negative span also raises ValueError."""
+        with pytest.raises(ValueError, match="span must be >= 1, got -3"):
+            ewma([1.0, 2.0], span=-3)
+
+
 class TestPossessions:
     """Tests for possessions() — Dean Oliver possession estimate."""
 
@@ -1722,6 +1808,100 @@ _finite_floats = st.floats(
     allow_nan=False, allow_infinity=False, min_value=-1e6, max_value=1e6
 )
 _maybe_float = st.one_of(st.none(), _finite_floats)
+
+
+class TestEwmaProperties:
+    """Property-based tests for ewma() using Hypothesis."""
+
+    @settings(suppress_health_check=_XDIST)
+    @given(
+        values=st.lists(_maybe_float, min_size=0, max_size=50),
+        span=st.integers(min_value=1, max_value=20),
+    )
+    def test_output_length_always_matches_input(
+        self, values: list[float | None], span: int
+    ) -> None:
+        """Output is always the same length as input, regardless of span or Nones."""
+        assert len(ewma(values, span)) == len(values)
+
+    @settings(suppress_health_check=_XDIST)
+    @given(
+        values=st.lists(_maybe_float, min_size=1, max_size=50),
+        span=st.integers(min_value=1, max_value=20),
+    )
+    def test_none_positions_preserved(
+        self, values: list[float | None], span: int
+    ) -> None:
+        """Every None in the input maps to None in the output (and only there)."""
+        result = ewma(values, span)
+        for i, val in enumerate(values):
+            if val is None:
+                assert result[i] is None
+
+    @settings(suppress_health_check=_XDIST)
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=50),
+        span=st.integers(min_value=1, max_value=20),
+    )
+    def test_output_bounded_by_input_min_max(
+        self, values: list[float], span: int
+    ) -> None:
+        """EWA is a convex combination of observations, so it stays within [min, max]."""
+        lo, hi = min(values), max(values)
+        result = ewma(values, span)
+        for v in result:
+            assert v is not None
+            assert lo - 1e-9 <= v <= hi + 1e-9
+
+    @settings(suppress_health_check=_XDIST)
+    @given(
+        c=_finite_floats,
+        n=st.integers(min_value=1, max_value=30),
+        span=st.integers(min_value=1, max_value=20),
+    )
+    def test_constant_series_returns_constant(
+        self, c: float, n: int, span: int
+    ) -> None:
+        """α*c + (1-α)*c = c for any c and any α, so a constant series is fixed."""
+        result = ewma([c] * n, span)
+        for v in result:
+            assert v == pytest.approx(c, abs=1e-9)
+
+    @settings(suppress_health_check=_XDIST)
+    @given(
+        values=st.lists(_finite_floats, min_size=1, max_size=50),
+        leading=st.lists(st.none(), min_size=0, max_size=5),
+        span=st.integers(min_value=1, max_value=20),
+    )
+    def test_first_non_none_output_equals_first_non_none_input(
+        self, values: list[float], leading: list[None], span: int
+    ) -> None:
+        """EWA initialises from the first valid observation — no warm-up average."""
+        combined: list[float | None] = [*leading, *values]
+        result = ewma(combined, span)
+        first_valid_out = next((v for v in result if v is not None), None)
+        assert first_valid_out is not None
+        assert first_valid_out == pytest.approx(values[0])
+
+    @settings(suppress_health_check=_XDIST)
+    @given(
+        c=_finite_floats,
+        n_hist=st.integers(min_value=3, max_value=15),
+        jump=_finite_floats,
+        slow_span=st.integers(min_value=5, max_value=20),
+    )
+    def test_larger_span_reacts_more_slowly_to_a_step(
+        self, c: float, n_hist: int, jump: float, slow_span: int
+    ) -> None:
+        """After a step from a constant baseline c to jump, slow EWA moves less from c."""
+        assume(abs(jump - c) > 1.0)  # require a meaningful step size
+        fast_span = max(1, slow_span // 3)
+        # Constant history guarantees the EWA is exactly c before the step
+        series = [c] * n_hist + [jump]
+        slow_last = ewma(series, slow_span)[-1]
+        fast_last = ewma(series, fast_span)[-1]
+        assert slow_last is not None and fast_last is not None
+        assert abs(slow_last - c) <= abs(fast_last - c) + 1e-9
 
 
 class TestStatFloor:
