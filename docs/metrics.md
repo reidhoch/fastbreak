@@ -1180,7 +1180,7 @@ and the average resumes from its last value on the next valid observation.
 | Parameter | Type | Description |
 |---|---|---|
 | `values` | `Sequence[float \| None]` | Per-game stat values in chronological order. Pass `None` for games where the stat is unavailable (DNP, injury, missing data). |
-| `span` | `int` | Effective window size (≥ 1). Larger values produce a smoother, slower-reacting average. Equivalent to `pandas.Series.ewm(span=span).mean()`. |
+| `span` | `int` | Effective window size (≥ 1). Larger values produce a smoother, slower-reacting average. For the non-missing observations, this matches `pandas.Series(values, dtype="float64").ewm(span=span, adjust=False, ignore_na=True).mean()`. |
 
 **Returns:** `list[float | None]` — same length as `values`. Each position holds the
 EWMA up to and including that observation, or `None` in two cases:

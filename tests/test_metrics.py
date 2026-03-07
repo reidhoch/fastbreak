@@ -1295,11 +1295,15 @@ class TestEwma:
             assert v == pytest.approx(7.0)
 
     def test_none_produces_none_output_but_state_persists(self) -> None:
-        """None in input yields None in output; EWA resumes after the gap."""
-        result = ewma([10.0, None, 10.0], span=1)
+        """None in input yields None in output; EWA resumes using pre-gap state."""
+        # span=3 (α=0.5): state persistence gives 0.5*20 + 0.5*10 = 15.0
+        # A reset-on-None implementation would give 20.0 instead
+        result = ewma([10.0, None, 20.0], span=3)
         assert result[0] == pytest.approx(10.0)
         assert result[1] is None
-        assert result[2] == pytest.approx(10.0)  # state resumed — still 10.0
+        assert result[2] == pytest.approx(
+            15.0
+        )  # uses pre-gap state (10.0), not a reset
 
     def test_none_state_persists_across_multiple_gaps(self) -> None:
         """Multiple consecutive Nones don't reset the running average."""
