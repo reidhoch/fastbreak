@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.1] - 2026-03-07
+
+### ✨ New
+
+**`fastbreak.metrics`:**
+
+- **`ewma()`** — Exponentially weighted moving average over a sequence of per-game values. `None` entries (DNPs) produce `None` in the output but do not reset the running state — the average picks up from where it left off on the next valid observation. Uses `alpha = 2 / (span + 1)`, matching `pandas.Series(values).ewm(span=span, adjust=False, ignore_na=True).mean()`.
+
+**`fastbreak.schedule`:**
+
+- **`travel_distance()`** / **`travel_distances()`** — Compute road-trip travel distance (haversine great-circle miles) between NBA arenas from a team's schedule.
+
+### 📚 Documentation
+
+- **README**: Added Python 3.12+ requirement, a utility modules section covering all 9 high-level helper modules.
+
 ## [v0.1.0] - 2026-03-06
 
 ### ✨ New Modules
