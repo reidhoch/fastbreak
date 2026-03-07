@@ -15,6 +15,7 @@ Part 12 — live API: player prop profile from a season game log.
 Part 13 — pure computation: advanced distribution analytics (consistency, streaks, percentile rank).
 Part 14 — pure computation: rolling consistency, expected stat, and recent-form hit rate.
 Part 15 — pure computation: Box Plus/Minus 2.0 (BPM / OBPM / DBPM) + VORP — LeBron James 2009-10.
+Part 16 — pure computation: EWMA scoring trend — span comparison and DNP gap handling.
 """
 
 import asyncio
@@ -32,6 +33,7 @@ from fastbreak.metrics import (
     dreb_pct,
     drtg,
     effective_fg_pct,
+    ewma,
     expected_stat,
     free_throw_rate,
     game_score,
@@ -1481,6 +1483,78 @@ def demo_recent_form() -> None:
     )
 
 
+# ---------------------------------------------------------------------------
+# Part 16: EWMA — exponentially weighted moving average — no API call required
+# ---------------------------------------------------------------------------
+
+
+def demo_ewma() -> None:
+    """Compare EWMA at three spans over a 20-game log, and show DNP-gap behaviour."""
+    print("=" * 60)
+    print("Part 16 — EWMA: exponentially weighted scoring trend")
+    print("=" * 60)
+    print(
+        "  alpha = 2 / (span + 1).  Larger span = smoother / slower reaction.\n"
+        "  None (DNP) produces None output but does not reset the running state.\n"
+    )
+
+    # 20-game scoring log: cold start → improvement → hot stretch → steady.
+    # Three None entries scattered to represent DNPs.
+    pts: list[float | None] = [
+        12.0, 8.0, 15.0, None, 10.0,   # cold (None = DNP)
+        18.0, 22.0, None, 25.0, 20.0,  # improving
+        28.0, 31.0, 25.0, None, 27.0,  # hot stretch
+        24.0, 26.0, 22.0, 28.0, 25.0,  # recent games
+    ]
+
+    # ------------------------------------------------------------------ #
+    # Section A: side-by-side comparison of three spans                   #
+    # ------------------------------------------------------------------ #
+    spans = [3, 7, 10]
+    smoothed = {s: ewma(pts, span=s) for s in spans}
+
+    header = f"  {'Gm':>3}  {'PTS':>4}" + "".join(
+        f"  {'EWMA(' + str(s) + ')':>9}" for s in spans
+    )
+    print(header)
+    print("  " + "-" * (len(header) - 2))
+    for i, raw in enumerate(pts):
+        raw_str = f"{raw:.0f}" if raw is not None else "DNP"
+        row = f"  {i + 1:>3}  {raw_str:>4}"
+        for s in spans:
+            v = smoothed[s][i]
+            row += f"  {v:>9.2f}" if v is not None else f"  {'—':>9}"
+        print(row)
+
+    print()
+    for s in spans:
+        last = smoothed[s][-1]  # pts ends with 25.0 (non-None), so always set
+        alpha = 2.0 / (s + 1)
+        last_str = f"{last:.2f}" if last is not None else "n/a"
+        print(f"  span={s:>2}  alpha={alpha:.3f}  final EWMA = {last_str}")
+    print(
+        "\n  Larger span trails further behind the recent hot stretch —\n"
+        "  useful for trend detection (span=3) vs noise suppression (span=10).\n"
+    )
+
+    # ------------------------------------------------------------------ #
+    # Section B: DNP gap — running state persists across missed games     #
+    # ------------------------------------------------------------------ #
+    print("  DNP gap demo (span=5): state persists, then resumes")
+    gap_pts: list[float | None] = [20.0, 22.0, 24.0, None, None, None, 30.0]
+    gap_ewma = ewma(gap_pts, span=5)
+    print(f"  {'Gm':>3}  {'PTS':>4}  {'EWMA(5)':>9}")
+    print("  " + "-" * 20)
+    for i, (raw, avg) in enumerate(zip(gap_pts, gap_ewma, strict=True), start=1):
+        raw_str = f"{raw:.0f}" if raw is not None else "DNP"
+        avg_str = f"{avg:.2f}" if avg is not None else "     —"
+        print(f"  {i:>3}  {raw_str:>4}  {avg_str:>9}")
+    print(
+        "\n  After three DNPs the EWMA resumes from its last value (~22)\n"
+        "  and reacts to the 30-point game — no cold-start penalty.\n"
+    )
+
+
 async def main() -> None:
     demo_single_line()
     demo_rate_stats()
@@ -1493,6 +1567,7 @@ async def main() -> None:
     demo_distribution_stats()
     demo_advanced_distribution()
     demo_recent_form()
+    demo_ewma()
 
     yesterday = (
         datetime.now(tz=UTC).astimezone().date() - timedelta(days=1)

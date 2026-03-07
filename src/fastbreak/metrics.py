@@ -1292,6 +1292,57 @@ def rolling_avg(
     return result
 
 
+def ewma(
+    values: Sequence[float | None],
+    span: int,
+) -> list[float | None]:
+    """Exponentially weighted moving average over a sequence of per-game values.
+
+    Uses the pandas-compatible smoothing factor ``alpha = 2 / (span + 1)``.  The
+    first valid (non-``None``) observation initialises the running average.
+    ``None`` entries (DNP / missing games) produce ``None`` in the output but
+    do **not** reset the running state — the EWA resumes from its last value
+    when the next valid observation arrives.
+
+    Args:
+        values: Per-game stat values in chronological order (oldest first).
+                Pass ``None`` for games where the stat is unavailable (DNP).
+        span:   Effective window size (>= 1).  Larger values produce a
+                smoother, slower-reacting average.  Equivalent to
+                ``pandas.Series.ewm(span=span).mean()``.
+
+    Returns:
+        List of the same length as *values*.  Each position holds the EWA
+        up to and including that game, or ``None`` before the first valid
+        observation or when the game was a DNP.
+
+    Raises:
+        ValueError: When *span* is less than 1.
+
+    Examples:
+        pts = [22.0, 18.0, 30.0, 25.0, 20.0]
+        ewma(pts, span=3)
+        # [22.0, 20.0, 25.0, 25.0, 22.5]
+    """
+    if span < 1:
+        msg = f"span must be >= 1, got {span}"
+        raise ValueError(msg)
+
+    alpha = 2.0 / (span + 1)
+    one_minus_alpha = 1.0 - alpha
+    result: list[float | None] = []
+    s: float | None = None  # running EWA; None until first valid observation
+
+    for val in values:
+        if val is None:
+            result.append(None)
+            continue
+        s = val if s is None else alpha * val + one_minus_alpha * s
+        result.append(s)
+
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Distribution statistics: floor, ceiling, median, prop hit rate
 # ---------------------------------------------------------------------------
