@@ -587,7 +587,7 @@ Summarise a team's full-season travel: total miles, eastward vs westward legs, a
 
 import asyncio
 from fastbreak.clients import NBAClient
-from fastbreak.schedule import get_team_schedule, travel_distance
+from fastbreak.schedule import get_team_schedule, travel_distances
 
 TEAM_ID = 1610612754  # Indiana Pacers
 SEASON = "2025-26"
@@ -603,11 +603,13 @@ async def main() -> None:
     async with NBAClient() as client:
         games = await get_team_schedule(client, team_id=TEAM_ID, season=SEASON)
 
+    legs = travel_distances(games)  # O(n) — compute all legs in one pass
+
     # Only count away games — those are the legs where the Pacers traveled TO the arena.
     # Home games where arena_city changes represent returning home from a road trip,
     # not travel the Pacers made for that specific game.
     away_legs = [
-        (game, travel_distance(games, game.game_id))
+        (game, legs.get(game.game_id))
         for game in games
         if game.game_id
         and game.away_team is not None
