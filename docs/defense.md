@@ -33,8 +33,7 @@ async with NBAClient() as client:
     # Delta vs. league average for one team (Boston Celtics)
     deltas = defensive_shot_quality_vs_league(zones, team_id=1610612738)
     for abbr, delta in deltas.items():
-        if delta is not None:
-            print(f"{abbr}: {delta:+.3f} vs league avg (negative = better defense)")
+        print(f"{abbr}: {delta:+.3f} vs league avg (negative = better defense)")
 
     # Opponent 2PT/3PT shooting breakdown for all teams
     opp_stats = await get_team_opponent_stats(client, season="2025-26")
@@ -194,7 +193,7 @@ defense = await get_player_shot_defense(client, player_id=203497, season="2025-2
 def defensive_shot_quality_vs_league(
     zones: list[TeamDefendStats],
     team_id: int,
-) -> dict[str, float | None]
+) -> dict[str, float]
 ```
 
 Compute per-zone FG% delta that a team *allows* vs. league average. Extracts `pct_plusminus` from `TeamDefendStats` rows for the given `team_id`. Mirrors `shot_quality_vs_league()` from `fastbreak.shots` — but the sign convention is inverted: **negative is better** (opponents shoot worse than the league average against this team).
