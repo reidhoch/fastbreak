@@ -14,7 +14,7 @@ from datetime import UTC, datetime, timedelta
 from fastbreak.clients import NBAClient
 from fastbreak.games import game_flow, get_games_on_date, get_play_by_play
 
-_CLOSE_GAME_MARGIN = 5   # points — within this margin counts as "close"
+_CLOSE_GAME_MARGIN = 5  # points — within this margin counts as "close"
 _CLOSE_GAME_WINDOW = 120  # seconds — final 2 minutes of the game
 
 
@@ -42,7 +42,9 @@ async def game_flow_summary(
     last = flow[-1]
     winner = home if last.score_home > last.score_away else away
     print(f"\n{away} @ {home}")
-    print(f"  Final:  {away} {last.score_away}  {home} {last.score_home}  ({winner} wins)")
+    print(
+        f"  Final:  {away} {last.score_away}  {home} {last.score_home}  ({winner} wins)"
+    )
 
     # Halftime: last scoring event at end of Q2
     half = [p for p in flow if p.period <= 2]  # noqa: PLR2004
@@ -63,7 +65,8 @@ async def game_flow_summary(
 
     # Lead changes: margin sign flips between consecutive scoring events
     lead_changes = sum(
-        1 for i in range(1, len(flow))
+        1
+        for i in range(1, len(flow))
         if (flow[i - 1].margin > 0 and flow[i].margin < 0)
         or (flow[i - 1].margin < 0 and flow[i].margin > 0)
     )
@@ -73,7 +76,8 @@ async def game_flow_summary(
     # Close finish: scoring events in the final 2 min of the game within 5 pts.
     # Uses elapsed_seconds so this works for regulation and OT games.
     close_late = [
-        p for p in flow
+        p
+        for p in flow
         if p.elapsed_seconds >= last.elapsed_seconds - _CLOSE_GAME_WINDOW
         and abs(p.margin) <= _CLOSE_GAME_MARGIN
     ]
@@ -87,7 +91,9 @@ async def game_flow_summary(
     # Final 5 scoring plays
     print("  Last 5 plays:")
     for point in flow[-5:]:
-        period_label = f"Q{point.period}" if point.period <= 4 else f"OT{point.period - 4}"  # noqa: PLR2004
+        period_label = (
+            f"Q{point.period}" if point.period <= 4 else f"OT{point.period - 4}"
+        )  # noqa: PLR2004
         margin_str = f"+{point.margin}" if point.margin > 0 else str(point.margin)
         print(
             f"    {period_label} {point.clock}  "

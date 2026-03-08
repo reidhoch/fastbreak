@@ -81,7 +81,6 @@ async def main() -> None:
             print(f"  Game {i + 1}  {d}  {away} @ {home}  rest={rest_str}")
         print()
 
-
         # ── 4. Travel distance ───────────────────────────────────────
         print("=" * 60)
         print("Pacers — travel legs for first 10 games")
@@ -97,7 +96,9 @@ async def main() -> None:
             if leg is None:
                 travel_str = "n/a (first game or neutral site)"
             else:
-                direction = "→E" if leg.tz_shift > 0 else "←W" if leg.tz_shift < 0 else "  "
+                direction = (
+                    "→E" if leg.tz_shift > 0 else "←W" if leg.tz_shift < 0 else "  "
+                )
                 travel_str = f"{leg.miles:>6.0f} mi  {direction}  tz {leg.tz_shift:+d}h"
             print(f"  Game {i + 1:3d}  {d}  {matchup:<14}  {travel_str}")
         print()

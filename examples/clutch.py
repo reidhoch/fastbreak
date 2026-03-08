@@ -37,7 +37,9 @@ async def league_clutch_leaders(season: str = "2025-26") -> None:
     print("-" * 55)
     for rank, row in enumerate(leaders, 1):
         pm_str = f"{row.plus_minus:+.1f}"
-        print(f"{rank:<3} {row.player_name:<25} {row.team_abbreviation:<5} {row.min:>5.1f} {pm_str:>6}")
+        print(
+            f"{rank:<3} {row.player_name:<25} {row.team_abbreviation:<5} {row.min:>5.1f} {pm_str:>6}"
+        )
 
 
 async def player_clutch_profile(player_name: str, season: str = "2025-26") -> None:
