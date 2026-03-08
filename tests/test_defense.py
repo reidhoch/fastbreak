@@ -247,6 +247,14 @@ class TestGetTeamDefenseZones:
 
         assert result == []
 
+    async def test_defense_category_kwarg_accepted(self, make_mock_client) -> None:
+        """Explicit defense_category= kwarg does not raise."""
+        client, _ = make_mock_client(json_data=_make_team_defend_response([]))
+
+        result = await get_team_defense_zones(client, defense_category="3 Pointers")
+
+        assert result == []
+
 
 # ─── OppPtShot fixture helper ──────────────────────────────────────────────────
 

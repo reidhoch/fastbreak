@@ -27,7 +27,7 @@ from fastbreak.defense import (
 )
 
 async with NBAClient() as client:
-    # Zone-by-zone FG% allowed for all 30 teams (2025-26 season)
+    # FG% allowed vs league average for all 30 teams (2025-26 season)
     zones = await get_team_defense_zones(client, season="2025-26")
 
     # Delta vs. league average for one team (Boston Celtics)
@@ -61,16 +61,18 @@ async def get_team_defense_zones(
     client: NBAClient,
     season: Season | None = None,
     season_type: SeasonType = "Regular Season",
+    defense_category: DefenseCategory = "Overall",
 ) -> list[TeamDefendStats]
 ```
 
-Fetch shot-zone defensive breakdown for all 30 teams. Wraps `LeagueDashPtTeamDefend` (defense_category="Overall"). Returns opponent FGA frequency and FG% allowed vs. league average per team.
+Fetch defensive breakdown for all 30 teams by shot category. Wraps `LeagueDashPtTeamDefend`. Returns opponent FGA frequency and FG% allowed vs. league average per team.
 
 | Parameter | Default | Description |
 |---|---|---|
 | `client` | required | NBA API client |
 | `season` | current | Season in YYYY-YY format |
 | `season_type` | `"Regular Season"` | `"Regular Season"`, `"Playoffs"`, or `"Pre Season"` |
+| `defense_category` | `"Overall"` | Shot category: `"Overall"`, `"3 Pointers"`, `"2 Pointers"`, `"Less Than 6Ft"`, `"Less Than 10Ft"`, `"Greater Than 15Ft"` |
 
 Returns `list[TeamDefendStats]` with one entry per team (all 30 teams). Filter by `team_id` to isolate a specific team, or pass the full list to `defensive_shot_quality_vs_league()`.
 
