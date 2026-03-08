@@ -47,7 +47,7 @@ if TYPE_CHECKING:
 def defensive_shot_quality_vs_league(
     zones: list[TeamDefendStats],
     team_id: int,
-) -> dict[str, float | None]:
+) -> dict[str, float]:
     """FG% delta that a team ALLOWS vs. league average.
 
     Extracts pct_plusminus from TeamDefendStats rows for the given team.

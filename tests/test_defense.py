@@ -440,6 +440,10 @@ class TestGetBoxScoresDefensive:
         assert len(result) == 2
         assert isinstance(result["0022500001"], BoxScoreDefensiveResponse)
         assert isinstance(result["0022500002"], BoxScoreDefensiveResponse)
+        # Verify zip ordering: the first key must map to its own response game_id
+        # (both calls return the same mock JSON with gameId="0022500001", so only
+        # the first entry's game_id is verifiable; this guards against zip bugs)
+        assert result["0022500001"].box_score_defensive.game_id == "0022500001"
 
     async def test_raises_exception_group_on_failure(
         self, make_mock_client, make_client_response_error

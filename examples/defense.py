@@ -43,9 +43,8 @@ async def team_zone_defense(team_name: str, season: str | None = None) -> None:
     print("  (negative = better than average; opponents shoot below normal FG%)")
     print("-" * 45)
     for abbr, delta in deltas.items():
-        if delta is not None:
-            marker = "<-- better" if delta < 0 else ""
-            print(f"  {abbr}: {delta:+.3f}  {marker}")
+        marker = "<-- better" if delta < 0 else ""
+        print(f"  {abbr}: {delta:+.3f}  {marker}")
 
 
 async def league_opponent_shooting(season: str | None = None, top_n: int = 5) -> None:
