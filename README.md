@@ -93,6 +93,7 @@ Skip the endpoint boilerplate for common operations. Import directly and pass `c
 | `fastbreak.teams` | `search_teams`, `get_team_stats`, `get_team_game_log`, `get_lineup_stats` |
 | `fastbreak.games` | `get_todays_games`, `get_games_on_date`, `get_box_scores`, `get_play_by_play` |
 | `fastbreak.shots` | `get_shot_chart`, `zone_breakdown`, `shot_quality_vs_league`, `xfg_pct` |
+| `fastbreak.defense` | `get_team_defense_zones`, `get_team_opponent_stats`, `get_box_scores_defensive`, `defensive_shot_quality_vs_league` |
 | `fastbreak.clutch` | `get_player_clutch_profile`, `get_league_clutch_leaders`, `clutch_score` |
 | `fastbreak.metrics` | `bpm`, `vorp`, `per`, `ewma`, `true_shooting`, `usage_pct` |
 | `fastbreak.schedule` | `get_team_schedule`, `is_back_to_back`, `travel_distance` |

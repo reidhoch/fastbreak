@@ -7,6 +7,12 @@ from fastbreak.clutch import (
     get_player_clutch_profile,
     get_player_clutch_stats,
 )
+from fastbreak.defense import (
+    defensive_shot_quality_vs_league,
+    get_box_scores_defensive,
+    get_team_defense_zones,
+    get_team_opponent_stats,
+)
 from fastbreak.games import (
     GameFlowPoint,
     game_flow,
@@ -234,6 +240,7 @@ __all__ = [
     "build_clutch_profile",
     "clutch_score",
     "days_rest_before_game",
+    "defensive_shot_quality_vs_league",
     "defensive_win_shares",
     "dreb_pct",
     "drtg",
@@ -246,6 +253,7 @@ __all__ = [
     "game_score",
     "get_box_scores",
     "get_box_scores_advanced",
+    "get_box_scores_defensive",
     "get_box_scores_hustle",
     "get_box_scores_scoring",
     "get_career_game_logs",
@@ -285,8 +293,10 @@ __all__ = [
     "get_standings",
     "get_team",
     "get_team_coaches",
+    "get_team_defense_zones",
     "get_team_game_log",
     "get_team_id",
+    "get_team_opponent_stats",
     "get_team_passes",
     "get_team_playtypes",
     "get_team_rebounds",

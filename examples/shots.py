@@ -47,14 +47,20 @@ async def player_shot_zones(player_name: str, season: str | None = None) -> None
     # player shoot from the same locations?"
     expected = xfg_pct(shots, lg_zones, player_zones=breakdown)
     actual = zone_fg_pct(shots)
-    making_delta = (actual - expected) if actual is not None and expected is not None else None
+    making_delta = (
+        (actual - expected) if actual is not None and expected is not None else None
+    )
 
     print(f"\nShot Zone Breakdown — {player_name} ({season})")
     print(f"Total shots: {len(shots)}")
     if expected is not None and actual is not None:
-        print(f"Overall FG%: {actual:.1%}  |  xFG%: {expected:.1%}  |  "
-              f"Shot-making: {making_delta:+.1%}")
-        print("  (xFG% = expected FG% from shot locations; positive shot-making = above average)")
+        print(
+            f"Overall FG%: {actual:.1%}  |  xFG%: {expected:.1%}  |  "
+            f"Shot-making: {making_delta:+.1%}"
+        )
+        print(
+            "  (xFG% = expected FG% from shot locations; positive shot-making = above average)"
+        )
     print("-" * 62)
     print(f"{'Zone':<28} {'FGM':>4} {'FGA':>4} {'FG%':>6}  {'vs Lg':>7}")
     print("-" * 62)
@@ -63,7 +69,9 @@ async def player_shot_zones(player_name: str, season: str | None = None) -> None
         fg_pct_str = f"{stats.fg_pct:.1%}" if stats.fg_pct is not None else "N/A"
         delta = deltas.get(zone)
         delta_str = f"{delta:+.1%}" if delta is not None else "  N/A"
-        print(f"{zone:<28} {stats.fgm:>4} {stats.fga:>4} {fg_pct_str:>6}  {delta_str:>7}")
+        print(
+            f"{zone:<28} {stats.fgm:>4} {stats.fga:>4} {fg_pct_str:>6}  {delta_str:>7}"
+        )
 
 
 async def compare_shot_zones(
@@ -117,7 +125,9 @@ async def compare_shot_zones(
         print(f"{zone:<28}", end="")
         for name in names:
             stats = all_breakdowns[name].get(zone)
-            val = f"{stats.fg_pct:.1%}" if stats and stats.fg_pct is not None else " ---"
+            val = (
+                f"{stats.fg_pct:.1%}" if stats and stats.fg_pct is not None else " ---"
+            )
             print(f"  {val:>10}", end="")
         lg_avg = zone_lookup.get(zone)
         lg_str = f"{lg_avg:.1%}" if lg_avg is not None else "  N/A"

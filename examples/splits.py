@@ -52,11 +52,15 @@ async def player_situational_splits(
         print("  " + "-" * 35)
         for label, row in [("Home", home), ("Road", road)]:
             fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "  N/A"
-            print(f"  {label:<8} {row.gp:>4} {fg_str:>6} {row.pts:>6.1f} {row.plus_minus:>+6.1f}")
+            print(
+                f"  {label:<8} {row.gp:>4} {fg_str:>6} {row.pts:>6.1f} {row.plus_minus:>+6.1f}"
+            )
         fg_delta_str = f"{fg_delta:+.3f}" if fg_delta is not None else "  N/A"
         pts_delta_str = f"{pts_delta:>+6.1f}" if pts_delta is not None else "   N/A"
         pm_delta_str = f"{pm_delta:>+6.1f}" if pm_delta is not None else "   N/A"
-        print(f"  {'Delta':<8} {'':>4} {fg_delta_str:>6}  {pts_delta_str}  {pm_delta_str}")
+        print(
+            f"  {'Delta':<8} {'':>4} {fg_delta_str:>6}  {pts_delta_str}  {pm_delta_str}"
+        )
 
     # Wins vs Losses
     wins = next((s for s in splits.by_wins_losses if "W" in str(s.group_value)), None)
@@ -68,7 +72,9 @@ async def player_situational_splits(
         print("  " + "-" * 35)
         for label, row in [("Wins", wins), ("Losses", losses)]:
             fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "  N/A"
-            print(f"  {label:<8} {row.gp:>4} {fg_str:>6} {row.pts:>6.1f} {row.plus_minus:>+6.1f}")
+            print(
+                f"  {label:<8} {row.gp:>4} {fg_str:>6} {row.pts:>6.1f} {row.plus_minus:>+6.1f}"
+            )
         if fg_delta is not None:
             print(f"\n  FG% in wins vs losses: {fg_delta:+.3f}")
 
@@ -76,7 +82,9 @@ async def player_situational_splits(
     print("\n  Starter vs Bench:")
     for row in splits.by_starting_position:
         fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "  N/A"
-        print(f"  {row.group_value!s:<10} {row.gp:>3} GP  {fg_str} FG%  {row.pts:.1f} PTS")
+        print(
+            f"  {row.group_value!s:<10} {row.gp:>3} GP  {fg_str} FG%  {row.pts:.1f} PTS"
+        )
 
 
 async def player_recent_form(player_name: str, season: str | None = None) -> None:
@@ -109,7 +117,9 @@ async def player_recent_form(player_name: str, season: str | None = None) -> Non
             print(f"  {label:<8}  N/A")
             continue
         fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "  N/A"
-        print(f"  {label:<8} {row.gp:>4} {row.pts:>6.1f} {fg_str:>6} {row.ast:>5.1f} {row.reb:>5.1f}")
+        print(
+            f"  {label:<8} {row.gp:>4} {row.pts:>6.1f} {fg_str:>6} {row.ast:>5.1f} {row.reb:>5.1f}"
+        )
 
     # Trend: compare L5 to season baseline
     if last_n.overall and last_n.last_5:
@@ -117,8 +127,14 @@ async def player_recent_form(player_name: str, season: str | None = None) -> Non
         fg_trend = stat_delta(last_n.last_5.fg_pct, last_n.overall.fg_pct)
         if pts_trend is None and fg_trend is None:
             return
-        direction = "↑ heating up" if pts_trend is not None and pts_trend > 0 else "↓ cooling off"
-        pts_trend_str = f"{pts_trend:+.1f} PTS" if pts_trend is not None else "   N/A PTS"
+        direction = (
+            "↑ heating up"
+            if pts_trend is not None and pts_trend > 0
+            else "↓ cooling off"
+        )
+        pts_trend_str = (
+            f"{pts_trend:+.1f} PTS" if pts_trend is not None else "   N/A PTS"
+        )
         fg_trend_str = f"{fg_trend:+.3f} FG%" if fg_trend is not None else "   N/A FG%"
         print(f"\n  L5 vs season: {pts_trend_str}  {fg_trend_str}  {direction}")
 
@@ -152,10 +168,7 @@ async def player_shooting_breakdown(
         print(f"\n  {'Type':<30} {'FG%':>6}  {'% Assisted':>10}")
         print("  " + "-" * 50)
         for row in shooting.by_assisted:
-            print(
-                f"  {row.group_value:<30} {row.fg_pct:.1%}  "
-                f"{row.pct_ast_fgm:>9.1%}"
-            )
+            print(f"  {row.group_value:<30} {row.fg_pct:.1%}  {row.pct_ast_fgm:>9.1%}")
 
 
 async def player_full_profile(player_name: str, season: str | None = None) -> None:
@@ -179,7 +192,9 @@ async def player_full_profile(player_name: str, season: str | None = None) -> No
     print("\n  By score margin (game splits):")
     for row in profile.game_splits.by_score_margin:
         fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "  N/A"
-        print(f"  {row.group_value!s:<20} {row.gp:>3} GP  {fg_str} FG%  {row.pts:.1f} PTS")
+        print(
+            f"  {row.group_value!s:<20} {row.gp:>3} GP  {fg_str} FG%  {row.pts:.1f} PTS"
+        )
 
     # Team performance context
     print("\n  By team score differential:")

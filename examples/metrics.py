@@ -471,32 +471,40 @@ def demo_bpm_vorp() -> None:
     #   BLK           1.0        1.1
     #   PF            2.2        2.5
     result = bpm(
-        pts=34.3, fg3m=1.6, ast=9.8, tov=3.9,
-        orb=1.4, drb=7.3, stl=1.9, blk=1.1, pf=2.5,
-        fga=26.5, fta=10.2,
+        pts=34.3,
+        fg3m=1.6,
+        ast=9.8,
+        tov=3.9,
+        orb=1.4,
+        drb=7.3,
+        stl=1.9,
+        blk=1.1,
+        pf=2.5,
+        fga=26.5,
+        fta=10.2,
         # Cleveland 2009-10 team per-game averages (used as proxy for
         # on-court team share; BR uses true on-court totals which differ
         # slightly, accounting for the residual gap in the adj values below):
         #   PPG 102.1, RPG 43.5, APG 21.2, SPG 7.9, BPG 5.2, PF 20.4
-        pct_team_trb=0.168,   # 7.3  / 43.5
-        pct_team_stl=0.203,   # 1.6  / 7.9
-        pct_team_pf=0.108,    # 2.2  / 20.4
-        pct_team_ast=0.406,   # 8.6  / 21.2
-        pct_team_blk=0.192,   # 1.0  / 5.2
-        pct_team_pts=0.291,   # 29.7 / 102.1
+        pct_team_trb=0.168,  # 7.3  / 43.5
+        pct_team_stl=0.203,  # 1.6  / 7.9
+        pct_team_pf=0.108,  # 2.2  / 20.4
+        pct_team_ast=0.406,  # 8.6  / 21.2
+        pct_team_blk=0.192,  # 1.0  / 5.2
+        pct_team_pts=0.291,  # 29.7 / 102.1
         listed_position=3.0,  # SF
-        mp=2966.0,            # 38.5 mpg x 77 games (approx.)
+        mp=2966.0,  # 38.5 mpg x 77 games (approx.)
     )
     assert result is not None
 
-    print(f"\n  Raw BPM (before team adjustment)")
+    print("\n  Raw BPM (before team adjustment)")
     print(f"  {'Total BPM:':<14} {result.total:+.2f}")
     print(f"  {'OBPM:':<14} {result.offensive:+.2f}")
     print(f"  {'DBPM:':<14} {result.defensive:+.2f}")
     print()
-    print(f"  Note: raw values are elevated because the team adjustment has")
-    print(f"  not yet been applied.  DBPM is unaffected by the team constant")
-    print(f"  (it equals Total BPM minus OBPM, so the constant cancels).")
+    print("  Note: raw values are elevated because the team adjustment has")
+    print("  not yet been applied.  DBPM is unaffected by the team constant")
+    print("  (it equals Total BPM minus OBPM, so the constant cancels).")
 
     # ── Team adjustment ────────────────────────────────────────────────────
     # The team adjustment is a constant added to every player's Total and
@@ -521,18 +529,18 @@ def demo_bpm_vorp() -> None:
     # ── VORP ───────────────────────────────────────────────────────────────
     # poss_pct = player minutes / (team games x 48 min/game)
     # Captures the fraction of team possessions the player participated in.
-    poss_pct = 2966.0 / (82 * 48)   # ≈ 0.754
+    poss_pct = 2966.0 / (82 * 48)  # ≈ 0.754
     player_vorp = vorp(bpm_total=adj_total, poss_pct=poss_pct, games=82)
     wins_above_replacement = player_vorp * 2.7  # BR conversion factor
 
-    print(f"\n  VORP calculation")
+    print("\n  VORP calculation")
     print(f"  Possession share:  {poss_pct:.1%}  (2966 min / 82x48)")
     print(f"  VORP:              {player_vorp:.2f}   (BR published: 9.3)")
     print(f"  ~{wins_above_replacement:.1f} wins above replacement")
     print()
-    print(f"  Context: +10.8 BPM is one of the highest single-season marks")
-    print(f"  in the Basketball Reference era.  LeBron averaged 29.7 / 7.3")
-    print(f"  / 8.6 on a 61-win Cleveland team in his first MVP campaign.")
+    print("  Context: +10.8 BPM is one of the highest single-season marks")
+    print("  in the Basketball Reference era.  LeBron averaged 29.7 / 7.3")
+    print("  / 8.6 on a 61-win Cleveland team in his first MVP campaign.")
     print()
 
 
@@ -1501,10 +1509,26 @@ def demo_ewma() -> None:
     # 20-game scoring log: cold start → improvement → hot stretch → steady.
     # Three None entries scattered to represent DNPs.
     pts: list[float | None] = [
-        12.0, 8.0, 15.0, None, 10.0,   # cold (None = DNP)
-        18.0, 22.0, None, 25.0, 20.0,  # improving
-        28.0, 31.0, 25.0, None, 27.0,  # hot stretch
-        24.0, 26.0, 22.0, 28.0, 25.0,  # recent games
+        12.0,
+        8.0,
+        15.0,
+        None,
+        10.0,  # cold (None = DNP)
+        18.0,
+        22.0,
+        None,
+        25.0,
+        20.0,  # improving
+        28.0,
+        31.0,
+        25.0,
+        None,
+        27.0,  # hot stretch
+        24.0,
+        26.0,
+        22.0,
+        28.0,
+        25.0,  # recent games
     ]
 
     # ------------------------------------------------------------------ #
