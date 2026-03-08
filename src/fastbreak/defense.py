@@ -37,6 +37,7 @@ from fastbreak.tracking import (
 
 if TYPE_CHECKING:
     from fastbreak.clients.nba import NBAClient
+    from fastbreak.endpoints.league_dash_pt_team_defend import DefenseCategory
     from fastbreak.models.box_score_defensive import BoxScoreDefensiveResponse
     from fastbreak.models.league_dash_opp_pt_shot import OppPtShotStats
     from fastbreak.models.league_dash_pt_team_defend import TeamDefendStats
@@ -47,7 +48,7 @@ def defensive_shot_quality_vs_league(
     zones: list[TeamDefendStats],
     team_id: int,
 ) -> dict[str, float | None]:
-    """Per-zone FG% delta that a team ALLOWS vs. league average.
+    """FG% delta that a team ALLOWS vs. league average.
 
     Extracts pct_plusminus from TeamDefendStats rows for the given team.
     Negative = better than average (team holds opponents below league FG%).
@@ -76,16 +77,20 @@ async def get_team_defense_zones(
     client: NBAClient,
     season: Season | None = None,
     season_type: SeasonType = "Regular Season",
+    defense_category: DefenseCategory = "Overall",
 ) -> list[TeamDefendStats]:
-    """Shot zone defense breakdown for all 30 teams.
+    """Defensive breakdown for all 30 teams by shot category.
 
-    Wraps LeagueDashPtTeamDefend (defense_category="Overall").
+    Wraps LeagueDashPtTeamDefend.
     Returns opponent FGA frequency and FG% allowed vs league average per team.
 
     Args:
         client: NBA API client.
         season: Season in YYYY-YY format (defaults to current season).
         season_type: "Regular Season", "Playoffs", or "Pre Season".
+        defense_category: Shot category to analyze ("Overall", "3 Pointers",
+            "2 Pointers", "Less Than 6Ft", "Less Than 10Ft",
+            "Greater Than 15Ft"). Defaults to "Overall".
 
     Returns:
         list[TeamDefendStats] with one entry per team (all 30 teams).
@@ -95,7 +100,11 @@ async def get_team_defense_zones(
 
     season = season or get_season_from_date()
     response = await client.get(
-        LeagueDashPtTeamDefend(season=season, season_type=season_type)
+        LeagueDashPtTeamDefend(
+            season=season,
+            season_type=season_type,
+            defense_category=defense_category,
+        )
     )
     return response.teams
 

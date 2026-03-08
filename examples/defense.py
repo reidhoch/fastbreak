@@ -39,7 +39,7 @@ async def team_zone_defense(team_name: str, season: str | None = None) -> None:
         print(f"No zone defense data for team_id={team_id}")
         return
 
-    print(f"\nZone Defense Quality — {team_name} ({season})")
+    print(f"\nDefense Quality vs League — {team_name} ({season})")
     print("  (negative = better than average; opponents shoot below normal FG%)")
     print("-" * 45)
     for abbr, delta in deltas.items():
