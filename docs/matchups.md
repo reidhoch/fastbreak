@@ -166,7 +166,7 @@ Per-game player-vs-player defensive matchup data. Wraps `BoxScoreMatchupsV3` (th
 | `client` | required | NBA API client |
 | `game_id` | required | NBA game ID (e.g., `"0022500571"`) |
 
-Returns a `BoxScoreMatchupsV3Response`. Access per-player matchup stats via `response.box_score_matchups.home_team.players` and `response.box_score_matchups.away_team.players`. Each player has a `matchups` list ordered by time guarded.
+Returns a `BoxScoreMatchupsV3Response`. Access per-player matchup stats via `response.box_score_matchups.home_team.players` and `response.box_score_matchups.away_team.players`. Each player has a `matchups` list (not sorted — sort by `matchup_minutes_sort` to find the primary assignment).
 
 ```python
 response = await get_game_matchups(client, game_id="0022500571")
