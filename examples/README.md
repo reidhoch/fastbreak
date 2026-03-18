@@ -181,6 +181,16 @@ Demonstrates the `to_polars()` mixin for DataFrame conversion and complex data t
 uv run python examples/three_two_one.py
 ```
 
+### [lineups.py](lineups.py)
+
+Analyze league-wide lineup statistics using `fastbreak.lineups`: fetch top lineups by
+plus/minus, compare lineup efficiency ratings and net ratings, explore two-man combinations,
+and rank lineups across the league.
+
+```bash
+uv run python examples/lineups.py
+```
+
 ### [matchups.py](matchups.py)
 
 Analyze player-vs-player matchups using `fastbreak.matchups`: identify primary defenders
