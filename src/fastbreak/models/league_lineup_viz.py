@@ -43,7 +43,7 @@ class LeagueLineupVizResponse(FrozenResponse):
     Contains lineup visualization statistics for player combinations.
     """
 
-    lineups: list[LineupViz] = Field(default_factory=list)
+    lineups: list[LineupViz] = Field(default_factory=list[LineupViz])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"lineups": "LeagueLineupViz"})

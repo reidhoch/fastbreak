@@ -30,7 +30,7 @@ class PlayerGameStreakFinderResponse(FrozenResponse):
     Contains game streak information for a player.
     """
 
-    streaks: list[PlayerGameStreak] = Field(default_factory=list)
+    streaks: list[PlayerGameStreak] = Field(default_factory=list[PlayerGameStreak])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"streaks": "PlayerGameStreakFinderResults"})

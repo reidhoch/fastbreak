@@ -78,9 +78,13 @@ class HustleStatsBoxscoreResponse(FrozenResponse):
     hustle stats for a given game.
     """
 
-    hustle_stats_available: list[HustleStatsAvailable] = Field(default_factory=list)
-    player_stats: list[HustleStatsPlayer] = Field(default_factory=list)
-    team_stats: list[HustleStatsTeam] = Field(default_factory=list)
+    hustle_stats_available: list[HustleStatsAvailable] = Field(
+        default_factory=list[HustleStatsAvailable]
+    )
+    player_stats: list[HustleStatsPlayer] = Field(
+        default_factory=list[HustleStatsPlayer]
+    )
+    team_stats: list[HustleStatsTeam] = Field(default_factory=list[HustleStatsTeam])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

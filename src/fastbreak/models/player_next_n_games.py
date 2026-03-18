@@ -34,7 +34,7 @@ class PlayerNextNGamesResponse(FrozenResponse):
     Contains a list of upcoming games for a player.
     """
 
-    games: list[NextGame] = Field(default_factory=list)
+    games: list[NextGame] = Field(default_factory=list[NextGame])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"games": "NextNGames"})

@@ -104,10 +104,10 @@ class PlayerDashboardByGameSplitsResponse(FrozenResponse):
     """
 
     overall: GameSplitStats | None = None
-    by_half: list[GameSplitStats] = Field(default_factory=list)
-    by_period: list[GameSplitStats] = Field(default_factory=list)
-    by_score_margin: list[GameSplitStats] = Field(default_factory=list)
-    by_actual_margin: list[GameSplitStats] = Field(default_factory=list)
+    by_half: list[GameSplitStats] = Field(default_factory=list[GameSplitStats])
+    by_period: list[GameSplitStats] = Field(default_factory=list[GameSplitStats])
+    by_score_margin: list[GameSplitStats] = Field(default_factory=list[GameSplitStats])
+    by_actual_margin: list[GameSplitStats] = Field(default_factory=list[GameSplitStats])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

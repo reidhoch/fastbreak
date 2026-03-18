@@ -44,6 +44,6 @@ class AnthroPlayer(PandasMixin, PolarsMixin, BaseModel):
 class DraftCombinePlayerAnthroResponse(FrozenResponse):
     """Response from the draft combine player anthro endpoint."""
 
-    players: list[AnthroPlayer] = Field(default_factory=list)
+    players: list[AnthroPlayer] = Field(default_factory=list[AnthroPlayer])
 
     from_result_sets = model_validator(mode="before")(tabular_validator("players"))

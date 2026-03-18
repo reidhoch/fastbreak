@@ -42,7 +42,7 @@ class LeagueDashPlayerBioStatsResponse(FrozenResponse):
     draft info) combined with basic statistics and advanced metrics.
     """
 
-    players: list[PlayerBioStats] = Field(default_factory=list)
+    players: list[PlayerBioStats] = Field(default_factory=list[PlayerBioStats])
 
     from_result_sets = model_validator(mode="before")(
         named_tabular_validator("players", "LeagueDashPlayerBioStats")

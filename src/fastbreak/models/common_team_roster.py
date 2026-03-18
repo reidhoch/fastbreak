@@ -46,8 +46,8 @@ class Coach(PandasMixin, PolarsMixin, BaseModel):
 class CommonTeamRosterResponse(FrozenResponse):
     """Response from the commonteamroster endpoint."""
 
-    players: list[RosterPlayer] = Field(default_factory=list)
-    coaches: list[Coach] = Field(default_factory=list)
+    players: list[RosterPlayer] = Field(default_factory=list[RosterPlayer])
+    coaches: list[Coach] = Field(default_factory=list[Coach])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

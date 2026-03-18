@@ -253,11 +253,17 @@ class TeamVsPlayerResponse(FrozenResponse):
     Contains team and player stats plus on/off court and shooting splits.
     """
 
-    overall: list[TeamVsPlayerTeamStats] = Field(default_factory=list)
+    overall: list[TeamVsPlayerTeamStats] = Field(
+        default_factory=list[TeamVsPlayerTeamStats]
+    )
     vs_player_overall: VsPlayerStats | None = Field(default=None)
-    on_off_court: list[TeamVsPlayerOnOff] = Field(default_factory=list)
-    shot_distance_overall: list[ShotDistanceStats] = Field(default_factory=list)
-    shot_area_overall: list[ShotAreaStats] = Field(default_factory=list)
+    on_off_court: list[TeamVsPlayerOnOff] = Field(
+        default_factory=list[TeamVsPlayerOnOff]
+    )
+    shot_distance_overall: list[ShotDistanceStats] = Field(
+        default_factory=list[ShotDistanceStats]
+    )
+    shot_area_overall: list[ShotAreaStats] = Field(default_factory=list[ShotAreaStats])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

@@ -59,7 +59,7 @@ class TeamEstimatedMetricsResponse(FrozenResponse):
     Contains estimated advanced metrics for all teams in the league.
     """
 
-    teams: list[TeamEstimatedMetric] = Field(default_factory=list)
+    teams: list[TeamEstimatedMetric] = Field(default_factory=list[TeamEstimatedMetric])
 
     @model_validator(mode="before")
     @classmethod

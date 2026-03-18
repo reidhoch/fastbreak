@@ -46,7 +46,7 @@ class LeagueGameFinderResponse(FrozenResponse):
     Contains a list of games matching the search criteria with box score stats.
     """
 
-    games: list[GameFinderResult] = Field(default_factory=list)
+    games: list[GameFinderResult] = Field(default_factory=list[GameFinderResult])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"games": "LeagueGameFinderResults"})

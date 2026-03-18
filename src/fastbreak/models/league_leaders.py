@@ -57,7 +57,7 @@ class LeagueLeadersResponse(FrozenResponse):
     Contains ranked player statistics for a specific category.
     """
 
-    leaders: list[LeagueLeader] = Field(default_factory=list)
+    leaders: list[LeagueLeader] = Field(default_factory=list[LeagueLeader])
 
     @model_validator(mode="before")
     @classmethod

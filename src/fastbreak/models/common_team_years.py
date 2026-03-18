@@ -20,6 +20,6 @@ class TeamYear(PandasMixin, PolarsMixin, BaseModel):
 class CommonTeamYearsResponse(FrozenResponse):
     """Response from the commonteamyears endpoint."""
 
-    teams: list[TeamYear] = Field(default_factory=list)
+    teams: list[TeamYear] = Field(default_factory=list[TeamYear])
 
     from_result_sets = model_validator(mode="before")(tabular_validator("teams"))

@@ -71,6 +71,8 @@ class LeagueDashTeamStatsRow(PandasMixin, PolarsMixin, BaseModel):
 class LeagueDashTeamStatsResponse(FrozenResponse):
     """Response from leaguedashteamstats endpoint."""
 
-    teams: list[LeagueDashTeamStatsRow] = Field(default_factory=list)
+    teams: list[LeagueDashTeamStatsRow] = Field(
+        default_factory=list[LeagueDashTeamStatsRow]
+    )
 
     from_result_sets = model_validator(mode="before")(tabular_validator("teams"))

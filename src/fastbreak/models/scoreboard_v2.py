@@ -169,15 +169,19 @@ class ScoreboardV2Response(FrozenResponse):
     - Team leaders for each game (pts/reb/ast)
     """
 
-    game_header: list[GameHeader] = Field(default_factory=list)
-    line_score: list[LineScore] = Field(default_factory=list)
-    series_standings: list[SeriesStanding] = Field(default_factory=list)
-    last_meeting: list[LastMeeting] = Field(default_factory=list)
-    east_conf_standings_by_day: list[ConferenceStanding] = Field(default_factory=list)
-    west_conf_standings_by_day: list[ConferenceStanding] = Field(default_factory=list)
-    available: list[AvailableGame] = Field(default_factory=list)
-    team_leaders: list[TeamLeader] = Field(default_factory=list)
-    ticket_links: list[TicketLink] = Field(default_factory=list)
+    game_header: list[GameHeader] = Field(default_factory=list[GameHeader])
+    line_score: list[LineScore] = Field(default_factory=list[LineScore])
+    series_standings: list[SeriesStanding] = Field(default_factory=list[SeriesStanding])
+    last_meeting: list[LastMeeting] = Field(default_factory=list[LastMeeting])
+    east_conf_standings_by_day: list[ConferenceStanding] = Field(
+        default_factory=list[ConferenceStanding]
+    )
+    west_conf_standings_by_day: list[ConferenceStanding] = Field(
+        default_factory=list[ConferenceStanding]
+    )
+    available: list[AvailableGame] = Field(default_factory=list[AvailableGame])
+    team_leaders: list[TeamLeader] = Field(default_factory=list[TeamLeader])
+    ticket_links: list[TicketLink] = Field(default_factory=list[TicketLink])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

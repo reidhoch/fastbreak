@@ -94,11 +94,13 @@ class TeamDashboardByGeneralSplitsResponse(FrozenResponse):
     """
 
     overall: TeamSplitStats | None = None
-    by_location: list[TeamSplitStats] = Field(default_factory=list)
-    by_wins_losses: list[TeamSplitStats] = Field(default_factory=list)
-    by_month: list[TeamSplitStats] = Field(default_factory=list)
-    by_pre_post_all_star: list[TeamSplitStats] = Field(default_factory=list)
-    by_days_rest: list[TeamSplitStats] = Field(default_factory=list)
+    by_location: list[TeamSplitStats] = Field(default_factory=list[TeamSplitStats])
+    by_wins_losses: list[TeamSplitStats] = Field(default_factory=list[TeamSplitStats])
+    by_month: list[TeamSplitStats] = Field(default_factory=list[TeamSplitStats])
+    by_pre_post_all_star: list[TeamSplitStats] = Field(
+        default_factory=list[TeamSplitStats]
+    )
+    by_days_rest: list[TeamSplitStats] = Field(default_factory=list[TeamSplitStats])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

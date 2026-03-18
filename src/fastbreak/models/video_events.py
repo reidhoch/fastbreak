@@ -35,7 +35,9 @@ class VideoUrl(BaseModel):
 class VideoMeta(BaseModel):
     """Metadata containing video URLs for the event."""
 
-    video_urls: list[VideoUrl] = Field(alias="videoUrls", default_factory=list)
+    video_urls: list[VideoUrl] = Field(
+        alias="videoUrls", default_factory=list[VideoUrl]
+    )
 
 
 class PlaylistItem(PandasMixin, PolarsMixin, BaseModel):

@@ -33,31 +33,31 @@ class GameBroadcasters(PandasMixin, PolarsMixin, BaseModel):
     """All broadcasters for a game."""
 
     national_broadcasters: list[ScheduleBroadcaster] = Field(
-        default_factory=list, alias="nationalBroadcasters"
+        default_factory=list[ScheduleBroadcaster], alias="nationalBroadcasters"
     )
     national_radio_broadcasters: list[ScheduleBroadcaster] = Field(
-        default_factory=list, alias="nationalRadioBroadcasters"
+        default_factory=list[ScheduleBroadcaster], alias="nationalRadioBroadcasters"
     )
     national_ott_broadcasters: list[ScheduleBroadcaster] = Field(
-        default_factory=list, alias="nationalOttBroadcasters"
+        default_factory=list[ScheduleBroadcaster], alias="nationalOttBroadcasters"
     )
     home_tv_broadcasters: list[ScheduleBroadcaster] = Field(
-        default_factory=list, alias="homeTvBroadcasters"
+        default_factory=list[ScheduleBroadcaster], alias="homeTvBroadcasters"
     )
     home_radio_broadcasters: list[ScheduleBroadcaster] = Field(
-        default_factory=list, alias="homeRadioBroadcasters"
+        default_factory=list[ScheduleBroadcaster], alias="homeRadioBroadcasters"
     )
     home_ott_broadcasters: list[ScheduleBroadcaster] = Field(
-        default_factory=list, alias="homeOttBroadcasters"
+        default_factory=list[ScheduleBroadcaster], alias="homeOttBroadcasters"
     )
     away_tv_broadcasters: list[ScheduleBroadcaster] = Field(
-        default_factory=list, alias="awayTvBroadcasters"
+        default_factory=list[ScheduleBroadcaster], alias="awayTvBroadcasters"
     )
     away_radio_broadcasters: list[ScheduleBroadcaster] = Field(
-        default_factory=list, alias="awayRadioBroadcasters"
+        default_factory=list[ScheduleBroadcaster], alias="awayRadioBroadcasters"
     )
     away_ott_broadcasters: list[ScheduleBroadcaster] = Field(
-        default_factory=list, alias="awayOttBroadcasters"
+        default_factory=list[ScheduleBroadcaster], alias="awayOttBroadcasters"
     )
 
 
@@ -124,7 +124,7 @@ class ScheduledGame(PandasMixin, PolarsMixin, BaseModel):
     home_team: ScheduleTeam | None = Field(default=None, alias="homeTeam")
     away_team: ScheduleTeam | None = Field(default=None, alias="awayTeam")
     points_leaders: list[PointsLeader] = Field(
-        default_factory=list, alias="pointsLeaders"
+        default_factory=list[PointsLeader], alias="pointsLeaders"
     )
 
 
@@ -132,7 +132,9 @@ class GameDate(PandasMixin, PolarsMixin, BaseModel):
     """A single date with its games."""
 
     game_date: str | None = Field(default=None, alias="gameDate")
-    games: list[ScheduledGame] = Field(default_factory=list, alias="games")
+    games: list[ScheduledGame] = Field(
+        default_factory=list[ScheduledGame], alias="games"
+    )
 
 
 class ScheduleWeek(PandasMixin, PolarsMixin, BaseModel):
@@ -149,8 +151,10 @@ class LeagueSchedule(PandasMixin, PolarsMixin, BaseModel):
 
     season_year: str | None = Field(default=None, alias="seasonYear")
     league_id: str | None = Field(default=None, alias="leagueId")
-    game_dates: list[GameDate] = Field(default_factory=list, alias="gameDates")
-    weeks: list[ScheduleWeek] = Field(default_factory=list, alias="weeks")
+    game_dates: list[GameDate] = Field(
+        default_factory=list[GameDate], alias="gameDates"
+    )
+    weeks: list[ScheduleWeek] = Field(default_factory=list[ScheduleWeek], alias="weeks")
 
 
 class ScheduleLeagueV2Response(FrozenResponse):

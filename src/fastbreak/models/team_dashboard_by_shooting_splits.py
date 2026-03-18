@@ -24,12 +24,22 @@ class TeamDashboardByShootingSplitsResponse(FrozenResponse):
     """
 
     overall: ShootingSplitStatsWithRank | None = None
-    by_shot_distance_5ft: list[ShootingSplitStatsWithRank] = Field(default_factory=list)
-    by_shot_distance_8ft: list[ShootingSplitStatsWithRank] = Field(default_factory=list)
-    by_shot_area: list[ShootingSplitStatsWithRank] = Field(default_factory=list)
-    by_assisted: list[ShootingSplitStatsWithRank] = Field(default_factory=list)
-    by_shot_type: list[ShootingSplitStatsWithRank] = Field(default_factory=list)
-    assisted_by: list[AssistedByStats] = Field(default_factory=list)
+    by_shot_distance_5ft: list[ShootingSplitStatsWithRank] = Field(
+        default_factory=list[ShootingSplitStatsWithRank]
+    )
+    by_shot_distance_8ft: list[ShootingSplitStatsWithRank] = Field(
+        default_factory=list[ShootingSplitStatsWithRank]
+    )
+    by_shot_area: list[ShootingSplitStatsWithRank] = Field(
+        default_factory=list[ShootingSplitStatsWithRank]
+    )
+    by_assisted: list[ShootingSplitStatsWithRank] = Field(
+        default_factory=list[ShootingSplitStatsWithRank]
+    )
+    by_shot_type: list[ShootingSplitStatsWithRank] = Field(
+        default_factory=list[ShootingSplitStatsWithRank]
+    )
+    assisted_by: list[AssistedByStats] = Field(default_factory=list[AssistedByStats])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

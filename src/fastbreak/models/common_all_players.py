@@ -31,6 +31,6 @@ class CommonPlayer(PandasMixin, PolarsMixin, BaseModel):
 class CommonAllPlayersResponse(FrozenResponse):
     """Response from the common all players endpoint."""
 
-    players: list[CommonPlayer] = Field(default_factory=list)
+    players: list[CommonPlayer] = Field(default_factory=list[CommonPlayer])
 
     from_result_sets = model_validator(mode="before")(tabular_validator("players"))

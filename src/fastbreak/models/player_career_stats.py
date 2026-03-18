@@ -197,20 +197,44 @@ class PlayerCareerStatsResponse(FrozenResponse):
     all-star games, college, and showcase seasons.
     """
 
-    season_totals_regular_season: list[SeasonTotals] = Field(default_factory=list)
-    career_totals_regular_season: list[CareerTotals] = Field(default_factory=list)
-    season_totals_post_season: list[SeasonTotals] = Field(default_factory=list)
-    career_totals_post_season: list[CareerTotals] = Field(default_factory=list)
-    season_totals_all_star: list[SeasonTotals] = Field(default_factory=list)
-    career_totals_all_star: list[CareerTotals] = Field(default_factory=list)
-    season_totals_college: list[CollegeSeasonTotals] = Field(default_factory=list)
-    career_totals_college: list[CollegeCareerTotals] = Field(default_factory=list)
-    season_totals_showcase: list[SeasonTotals] = Field(default_factory=list)
-    career_totals_showcase: list[CareerTotals] = Field(default_factory=list)
-    season_rankings_regular_season: list[SeasonRankings] = Field(default_factory=list)
-    season_rankings_post_season: list[SeasonRankings] = Field(default_factory=list)
-    season_highs: list[StatHigh] = Field(default_factory=list)
-    career_highs: list[StatHigh] = Field(default_factory=list)
+    season_totals_regular_season: list[SeasonTotals] = Field(
+        default_factory=list[SeasonTotals]
+    )
+    career_totals_regular_season: list[CareerTotals] = Field(
+        default_factory=list[CareerTotals]
+    )
+    season_totals_post_season: list[SeasonTotals] = Field(
+        default_factory=list[SeasonTotals]
+    )
+    career_totals_post_season: list[CareerTotals] = Field(
+        default_factory=list[CareerTotals]
+    )
+    season_totals_all_star: list[SeasonTotals] = Field(
+        default_factory=list[SeasonTotals]
+    )
+    career_totals_all_star: list[CareerTotals] = Field(
+        default_factory=list[CareerTotals]
+    )
+    season_totals_college: list[CollegeSeasonTotals] = Field(
+        default_factory=list[CollegeSeasonTotals]
+    )
+    career_totals_college: list[CollegeCareerTotals] = Field(
+        default_factory=list[CollegeCareerTotals]
+    )
+    season_totals_showcase: list[SeasonTotals] = Field(
+        default_factory=list[SeasonTotals]
+    )
+    career_totals_showcase: list[CareerTotals] = Field(
+        default_factory=list[CareerTotals]
+    )
+    season_rankings_regular_season: list[SeasonRankings] = Field(
+        default_factory=list[SeasonRankings]
+    )
+    season_rankings_post_season: list[SeasonRankings] = Field(
+        default_factory=list[SeasonRankings]
+    )
+    season_highs: list[StatHigh] = Field(default_factory=list[StatHigh])
+    career_highs: list[StatHigh] = Field(default_factory=list[StatHigh])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

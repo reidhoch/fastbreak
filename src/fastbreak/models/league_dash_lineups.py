@@ -86,7 +86,7 @@ class LeagueDashLineupsResponse(FrozenResponse):
     Contains stats for lineup combinations across the league.
     """
 
-    lineups: list[LeagueLineup] = Field(default_factory=list)
+    lineups: list[LeagueLineup] = Field(default_factory=list[LeagueLineup])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"lineups": "Lineups"})

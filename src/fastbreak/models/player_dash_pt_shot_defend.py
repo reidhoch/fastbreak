@@ -33,7 +33,7 @@ class PlayerDashPtShotDefendResponse(FrozenResponse):
     defended by this player compared to their normal percentages.
     """
 
-    defending_shots: list[DefendingShots] = Field(default_factory=list)
+    defending_shots: list[DefendingShots] = Field(default_factory=list[DefendingShots])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"defending_shots": "DefendingShots"})

@@ -37,7 +37,7 @@ class LeagueDashTeamPtShotResponse(FrozenResponse):
     makes, attempts, and percentages for 2-point and 3-point shots.
     """
 
-    teams: list[TeamPtShotStats] = Field(default_factory=list)
+    teams: list[TeamPtShotStats] = Field(default_factory=list[TeamPtShotStats])
 
     from_result_sets = model_validator(mode="before")(
         named_tabular_validator("teams", "LeagueDashPTShots")

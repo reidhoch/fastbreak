@@ -47,7 +47,7 @@ class LeagueGameLogResponse(FrozenResponse):
     Contains a sorted list of game logs across the league.
     """
 
-    games: list[GameLogEntry] = Field(default_factory=list)
+    games: list[GameLogEntry] = Field(default_factory=list[GameLogEntry])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"games": "LeagueGameLog"})

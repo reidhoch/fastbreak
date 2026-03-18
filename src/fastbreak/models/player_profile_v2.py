@@ -186,39 +186,45 @@ class PlayerProfileV2Response(FrozenResponse):
 
     # Regular season
     season_totals_regular_season: list[ProfileSeasonTotals] = Field(
-        default_factory=list
+        default_factory=list[ProfileSeasonTotals]
     )
     career_totals_regular_season: ProfileCareerTotals | None = None
 
     # Post season
-    season_totals_post_season: list[ProfileSeasonTotals] = Field(default_factory=list)
+    season_totals_post_season: list[ProfileSeasonTotals] = Field(
+        default_factory=list[ProfileSeasonTotals]
+    )
     career_totals_post_season: ProfileCareerTotals | None = None
 
     # All-Star
-    season_totals_all_star: list[ProfileSeasonTotals] = Field(default_factory=list)
+    season_totals_all_star: list[ProfileSeasonTotals] = Field(
+        default_factory=list[ProfileSeasonTotals]
+    )
     career_totals_all_star: ProfileCareerTotals | None = None
 
     # College
     season_totals_college: list[ProfileCollegeSeasonTotals] = Field(
-        default_factory=list
+        default_factory=list[ProfileCollegeSeasonTotals]
     )
     career_totals_college: ProfileCollegeCareerTotals | None = None
 
     # Preseason
-    season_totals_preseason: list[ProfileSeasonTotals] = Field(default_factory=list)
+    season_totals_preseason: list[ProfileSeasonTotals] = Field(
+        default_factory=list[ProfileSeasonTotals]
+    )
     career_totals_preseason: ProfileCareerTotals | None = None
 
     # Rankings
     season_rankings_regular_season: list[ProfileSeasonRankings] = Field(
-        default_factory=list
+        default_factory=list[ProfileSeasonRankings]
     )
     season_rankings_post_season: list[ProfileSeasonRankings] = Field(
-        default_factory=list
+        default_factory=list[ProfileSeasonRankings]
     )
 
     # Highs
-    season_highs: list[ProfileStatHigh] = Field(default_factory=list)
-    career_highs: list[ProfileStatHigh] = Field(default_factory=list)
+    season_highs: list[ProfileStatHigh] = Field(default_factory=list[ProfileStatHigh])
+    career_highs: list[ProfileStatHigh] = Field(default_factory=list[ProfileStatHigh])
 
     # Next game
     next_game: ProfileNextGame | None = None

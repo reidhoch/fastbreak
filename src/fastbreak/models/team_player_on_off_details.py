@@ -158,8 +158,12 @@ class TeamPlayerOnOffDetailsResponse(FrozenResponse):
     """
 
     overall: TeamOnOffOverall | None = Field(default=None)
-    players_on_court: list[PlayerOnOffDetails] = Field(default_factory=list)
-    players_off_court: list[PlayerOnOffDetails] = Field(default_factory=list)
+    players_on_court: list[PlayerOnOffDetails] = Field(
+        default_factory=list[PlayerOnOffDetails]
+    )
+    players_off_court: list[PlayerOnOffDetails] = Field(
+        default_factory=list[PlayerOnOffDetails]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

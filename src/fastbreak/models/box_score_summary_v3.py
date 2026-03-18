@@ -47,40 +47,40 @@ class BroadcastersV3(BaseModel):
     """All broadcaster information for a game in V3 format."""
 
     international_broadcasters: list[BroadcasterV3] = Field(
-        alias="internationalBroadcasters", default_factory=list
+        alias="internationalBroadcasters", default_factory=list[BroadcasterV3]
     )
     international_radio_broadcasters: list[BroadcasterV3] = Field(
-        alias="internationalRadioBroadcasters", default_factory=list
+        alias="internationalRadioBroadcasters", default_factory=list[BroadcasterV3]
     )
     international_ott_broadcasters: list[BroadcasterV3] = Field(
-        alias="internationalOttBroadcasters", default_factory=list
+        alias="internationalOttBroadcasters", default_factory=list[BroadcasterV3]
     )
     national_broadcasters: list[BroadcasterV3] = Field(
-        alias="nationalBroadcasters", default_factory=list
+        alias="nationalBroadcasters", default_factory=list[BroadcasterV3]
     )
     national_radio_broadcasters: list[BroadcasterV3] = Field(
-        alias="nationalRadioBroadcasters", default_factory=list
+        alias="nationalRadioBroadcasters", default_factory=list[BroadcasterV3]
     )
     national_ott_broadcasters: list[BroadcasterV3] = Field(
-        alias="nationalOttBroadcasters", default_factory=list
+        alias="nationalOttBroadcasters", default_factory=list[BroadcasterV3]
     )
     home_tv_broadcasters: list[BroadcasterV3] = Field(
-        alias="homeTvBroadcasters", default_factory=list
+        alias="homeTvBroadcasters", default_factory=list[BroadcasterV3]
     )
     home_radio_broadcasters: list[BroadcasterV3] = Field(
-        alias="homeRadioBroadcasters", default_factory=list
+        alias="homeRadioBroadcasters", default_factory=list[BroadcasterV3]
     )
     home_ott_broadcasters: list[BroadcasterV3] = Field(
-        alias="homeOttBroadcasters", default_factory=list
+        alias="homeOttBroadcasters", default_factory=list[BroadcasterV3]
     )
     away_tv_broadcasters: list[BroadcasterV3] = Field(
-        alias="awayTvBroadcasters", default_factory=list
+        alias="awayTvBroadcasters", default_factory=list[BroadcasterV3]
     )
     away_radio_broadcasters: list[BroadcasterV3] = Field(
-        alias="awayRadioBroadcasters", default_factory=list
+        alias="awayRadioBroadcasters", default_factory=list[BroadcasterV3]
     )
     away_ott_broadcasters: list[BroadcasterV3] = Field(
-        alias="awayOttBroadcasters", default_factory=list
+        alias="awayOttBroadcasters", default_factory=list[BroadcasterV3]
     )
 
 
@@ -101,7 +101,7 @@ class SummaryTeamV3(BaseModel):
     score: int
     seed: int | None = None
     inactive_players: list[dict[str, object]] = Field(
-        alias="inactivePlayers", default_factory=list
+        alias="inactivePlayers", default_factory=list[dict[str, object]]
     )
 
 

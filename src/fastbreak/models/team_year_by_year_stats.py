@@ -64,7 +64,7 @@ class TeamYearByYearStatsResponse(FrozenResponse):
     Contains historical season-by-season statistics for a franchise.
     """
 
-    seasons: list[TeamYearStats] = Field(default_factory=list)
+    seasons: list[TeamYearStats] = Field(default_factory=list[TeamYearStats])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"seasons": "TeamStats"})

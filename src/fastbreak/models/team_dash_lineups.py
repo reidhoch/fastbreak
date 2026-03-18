@@ -159,7 +159,7 @@ class TeamDashLineupsResponse(FrozenResponse):
     """
 
     overall: TeamLineupOverall | None = None
-    lineups: list[LineupStats] = Field(default_factory=list)
+    lineups: list[LineupStats] = Field(default_factory=list[LineupStats])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

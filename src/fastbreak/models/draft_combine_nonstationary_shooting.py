@@ -92,6 +92,8 @@ class NonstationaryShootingPlayer(PandasMixin, PolarsMixin, BaseModel):
 class DraftCombineNonstationaryShootingResponse(FrozenResponse):
     """Response from the draft combine non-stationary shooting endpoint."""
 
-    players: list[NonstationaryShootingPlayer] = Field(default_factory=list)
+    players: list[NonstationaryShootingPlayer] = Field(
+        default_factory=list[NonstationaryShootingPlayer]
+    )
 
     from_result_sets = model_validator(mode="before")(tabular_validator("players"))

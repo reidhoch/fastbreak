@@ -180,3 +180,14 @@ Demonstrates the `to_polars()` mixin for DataFrame conversion and complex data t
 ```bash
 uv run python examples/three_two_one.py
 ```
+
+### [matchups.py](matchups.py)
+
+Analyze player-vs-player matchups using `fastbreak.matchups`: identify primary defenders
+for a player, review a defender's assignments, compare team-vs-team matchups ranked by
+points per possession, break down per-game matchups, and explore head-to-head stats with
+on/off court splits.
+
+```bash
+uv run python examples/matchups.py
+```

@@ -51,7 +51,7 @@ class InfographicFanDuelPlayerResponse(FrozenResponse):
     Contains fantasy scoring and box score stats for all players in a game.
     """
 
-    players: list[FanDuelPlayer] = Field(default_factory=list)
+    players: list[FanDuelPlayer] = Field(default_factory=list[FanDuelPlayer])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"players": "FanDuelPlayer"})

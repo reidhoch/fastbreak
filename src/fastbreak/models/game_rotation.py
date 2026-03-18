@@ -27,8 +27,8 @@ class RotationEntry(PandasMixin, PolarsMixin, BaseModel):
 class GameRotationResponse(FrozenResponse):
     """Response from the game rotation endpoint."""
 
-    away_team: list[RotationEntry] = Field(default_factory=list)
-    home_team: list[RotationEntry] = Field(default_factory=list)
+    away_team: list[RotationEntry] = Field(default_factory=list[RotationEntry])
+    home_team: list[RotationEntry] = Field(default_factory=list[RotationEntry])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

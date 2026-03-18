@@ -72,8 +72,12 @@ class SynergyPlaytypesResponse(FrozenResponse):
     the PlayerOrTeam parameter used in the request.
     """
 
-    player_stats: list[PlayerSynergyPlaytype] = Field(default_factory=list)
-    team_stats: list[TeamSynergyPlaytype] = Field(default_factory=list)
+    player_stats: list[PlayerSynergyPlaytype] = Field(
+        default_factory=list[PlayerSynergyPlaytype]
+    )
+    team_stats: list[TeamSynergyPlaytype] = Field(
+        default_factory=list[TeamSynergyPlaytype]
+    )
 
     @model_validator(mode="before")
     @classmethod
