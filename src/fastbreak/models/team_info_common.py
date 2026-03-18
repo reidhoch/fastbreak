@@ -64,7 +64,9 @@ class TeamInfoCommonResponse(FrozenResponse):
 
     team_info: TeamInfoCommon | None = Field(default=None)
     season_ranks: TeamSeasonRanks | None = Field(default=None)
-    available_seasons: list[AvailableSeason] = Field(default_factory=list)
+    available_seasons: list[AvailableSeason] = Field(
+        default_factory=list[AvailableSeason]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

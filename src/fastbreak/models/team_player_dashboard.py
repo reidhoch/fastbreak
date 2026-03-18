@@ -165,7 +165,7 @@ class TeamPlayerDashboardResponse(FrozenResponse):
     """
 
     team_overall: TeamOverall | None = Field(default=None)
-    players: list[PlayerSeasonTotals] = Field(default_factory=list)
+    players: list[PlayerSeasonTotals] = Field(default_factory=list[PlayerSeasonTotals])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

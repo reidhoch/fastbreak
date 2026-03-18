@@ -80,7 +80,9 @@ class LeaguePlayerOnDetailsResponse(FrozenResponse):
     one for court_status="Off".
     """
 
-    details: list[PlayerOnCourtDetail] = Field(default_factory=list)
+    details: list[PlayerOnCourtDetail] = Field(
+        default_factory=list[PlayerOnCourtDetail]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"details": "PlayersOnCourtLeaguePlayerDetails"})

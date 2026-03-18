@@ -46,6 +46,10 @@ repos:
           - anyio>=4.12.1
           - types-cachetools>=5.5
           - tenacity>=8.0
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.408
+    hooks:
+    - id: pyright
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.11
     hooks:

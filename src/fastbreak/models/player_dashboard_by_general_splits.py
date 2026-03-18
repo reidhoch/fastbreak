@@ -21,12 +21,16 @@ class PlayerDashboardByGeneralSplitsResponse(FrozenResponse):
     """
 
     overall: GameSplitStats | None = None
-    by_location: list[GameSplitStats] = Field(default_factory=list)
-    by_wins_losses: list[GameSplitStats] = Field(default_factory=list)
-    by_month: list[GameSplitStats] = Field(default_factory=list)
-    by_pre_post_all_star: list[GameSplitStats] = Field(default_factory=list)
-    by_starting_position: list[GameSplitStats] = Field(default_factory=list)
-    by_days_rest: list[GameSplitStats] = Field(default_factory=list)
+    by_location: list[GameSplitStats] = Field(default_factory=list[GameSplitStats])
+    by_wins_losses: list[GameSplitStats] = Field(default_factory=list[GameSplitStats])
+    by_month: list[GameSplitStats] = Field(default_factory=list[GameSplitStats])
+    by_pre_post_all_star: list[GameSplitStats] = Field(
+        default_factory=list[GameSplitStats]
+    )
+    by_starting_position: list[GameSplitStats] = Field(
+        default_factory=list[GameSplitStats]
+    )
+    by_days_rest: list[GameSplitStats] = Field(default_factory=list[GameSplitStats])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

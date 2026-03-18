@@ -54,7 +54,7 @@ class LeagueSeasonMatchupsResponse(FrozenResponse):
     Contains player-vs-player matchup statistics for the season.
     """
 
-    matchups: list[SeasonMatchup] = Field(default_factory=list)
+    matchups: list[SeasonMatchup] = Field(default_factory=list[SeasonMatchup])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"matchups": "SeasonMatchups"})

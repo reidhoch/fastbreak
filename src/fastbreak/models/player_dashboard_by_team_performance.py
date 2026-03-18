@@ -29,9 +29,15 @@ class PlayerDashboardByTeamPerformanceResponse(FrozenResponse):
     """
 
     overall: GameSplitStats | None = None
-    by_score_differential: list[TeamPerformanceStats] = Field(default_factory=list)
-    by_points_scored: list[TeamPerformanceStats] = Field(default_factory=list)
-    by_points_against: list[TeamPerformanceStats] = Field(default_factory=list)
+    by_score_differential: list[TeamPerformanceStats] = Field(
+        default_factory=list[TeamPerformanceStats]
+    )
+    by_points_scored: list[TeamPerformanceStats] = Field(
+        default_factory=list[TeamPerformanceStats]
+    )
+    by_points_against: list[TeamPerformanceStats] = Field(
+        default_factory=list[TeamPerformanceStats]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

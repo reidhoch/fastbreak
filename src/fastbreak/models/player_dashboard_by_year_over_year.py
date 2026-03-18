@@ -104,7 +104,7 @@ class PlayerDashboardByYearOverYearResponse(FrozenResponse):
     """
 
     overall: YearOverYearStats | None = None
-    by_year: list[YearOverYearStats] = Field(default_factory=list)
+    by_year: list[YearOverYearStats] = Field(default_factory=list[YearOverYearStats])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

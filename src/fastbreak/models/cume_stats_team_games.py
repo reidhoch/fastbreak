@@ -21,7 +21,7 @@ class CumeStatsTeamGamesResponse(FrozenResponse):
     with optional filtering by location, outcome, opponent, etc.
     """
 
-    games: list[TeamGame] = Field(default_factory=list)
+    games: list[TeamGame] = Field(default_factory=list[TeamGame])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"games": "CumeStatsTeamGames"})

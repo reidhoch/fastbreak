@@ -84,6 +84,8 @@ class LeagueDashPlayerClutchRow(PandasMixin, PolarsMixin, BaseModel):
 class LeagueDashPlayerClutchResponse(FrozenResponse):
     """Response from leaguedashplayerclutch endpoint."""
 
-    players: list[LeagueDashPlayerClutchRow] = Field(default_factory=list)
+    players: list[LeagueDashPlayerClutchRow] = Field(
+        default_factory=list[LeagueDashPlayerClutchRow]
+    )
 
     from_result_sets = model_validator(mode="before")(tabular_validator("players"))

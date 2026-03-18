@@ -31,7 +31,7 @@ class LeagueDashPtTeamDefendResponse(FrozenResponse):
     indicates better defense (opponents shoot worse than normal).
     """
 
-    teams: list[TeamDefendStats] = Field(default_factory=list)
+    teams: list[TeamDefendStats] = Field(default_factory=list[TeamDefendStats])
 
     from_result_sets = model_validator(mode="before")(
         named_tabular_validator("teams", "LeagueDashPtTeamDefend")

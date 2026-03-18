@@ -58,7 +58,7 @@ class PlayerIndexResponse(FrozenResponse):
     Contains a list of all players for the specified season.
     """
 
-    players: list[PlayerIndexEntry] = Field(default_factory=list)
+    players: list[PlayerIndexEntry] = Field(default_factory=list[PlayerIndexEntry])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"players": "PlayerIndex"})

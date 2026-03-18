@@ -32,6 +32,6 @@ class PlayerAwardsResponse(FrozenResponse):
     Contains all awards for a specific player.
     """
 
-    awards: list[PlayerAward] = Field(default_factory=list)
+    awards: list[PlayerAward] = Field(default_factory=list[PlayerAward])
 
     from_result_sets = model_validator(mode="before")(tabular_validator("awards"))

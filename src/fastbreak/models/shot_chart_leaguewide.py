@@ -26,6 +26,8 @@ class ShotChartLeaguewideResponse(FrozenResponse):
     makes, and percentages for each zone.
     """
 
-    league_wide: list[LeagueWideShotZone] = Field(default_factory=list)
+    league_wide: list[LeagueWideShotZone] = Field(
+        default_factory=list[LeagueWideShotZone]
+    )
 
     from_result_sets = model_validator(mode="before")(tabular_validator("league_wide"))

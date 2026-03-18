@@ -29,6 +29,6 @@ class DraftPick(PandasMixin, PolarsMixin, BaseModel):
 class DraftHistoryResponse(FrozenResponse):
     """Response from the draft history endpoint."""
 
-    picks: list[DraftPick] = Field(default_factory=list)
+    picks: list[DraftPick] = Field(default_factory=list[DraftPick])
 
     from_result_sets = model_validator(mode="before")(tabular_validator("picks"))

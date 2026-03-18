@@ -20,6 +20,6 @@ class PlayoffSeriesGame(PandasMixin, PolarsMixin, BaseModel):
 class CommonPlayoffSeriesResponse(FrozenResponse):
     """Response from the common playoff series endpoint."""
 
-    games: list[PlayoffSeriesGame] = Field(default_factory=list)
+    games: list[PlayoffSeriesGame] = Field(default_factory=list[PlayoffSeriesGame])
 
     from_result_sets = model_validator(mode="before")(tabular_validator("games"))

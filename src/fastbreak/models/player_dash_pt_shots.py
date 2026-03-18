@@ -67,15 +67,21 @@ class PlayerDashPtShotsResponse(FrozenResponse):
     shot type, shot clock, dribbles, defender distance, and touch time.
     """
 
-    overall: list[ShotTypeStats] = Field(default_factory=list)
-    general_shooting: list[ShotTypeStats] = Field(default_factory=list)
-    shot_clock_shooting: list[ShotClockStats] = Field(default_factory=list)
-    dribble_shooting: list[DribbleStats] = Field(default_factory=list)
-    closest_defender_shooting: list[ClosestDefenderStats] = Field(default_factory=list)
-    closest_defender_10ft_plus_shooting: list[ClosestDefenderStats] = Field(
-        default_factory=list
+    overall: list[ShotTypeStats] = Field(default_factory=list[ShotTypeStats])
+    general_shooting: list[ShotTypeStats] = Field(default_factory=list[ShotTypeStats])
+    shot_clock_shooting: list[ShotClockStats] = Field(
+        default_factory=list[ShotClockStats]
     )
-    touch_time_shooting: list[TouchTimeStats] = Field(default_factory=list)
+    dribble_shooting: list[DribbleStats] = Field(default_factory=list[DribbleStats])
+    closest_defender_shooting: list[ClosestDefenderStats] = Field(
+        default_factory=list[ClosestDefenderStats]
+    )
+    closest_defender_10ft_plus_shooting: list[ClosestDefenderStats] = Field(
+        default_factory=list[ClosestDefenderStats]
+    )
+    touch_time_shooting: list[TouchTimeStats] = Field(
+        default_factory=list[TouchTimeStats]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

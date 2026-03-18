@@ -67,8 +67,10 @@ class TeamDashPtPassResponse(FrozenResponse):
     - passes_received: Passes received by each player from teammates
     """
 
-    passes_made: list[TeamPassMade] = Field(default_factory=list)
-    passes_received: list[TeamPassReceived] = Field(default_factory=list)
+    passes_made: list[TeamPassMade] = Field(default_factory=list[TeamPassMade])
+    passes_received: list[TeamPassReceived] = Field(
+        default_factory=list[TeamPassReceived]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

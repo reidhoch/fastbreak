@@ -22,31 +22,31 @@ class ScoreboardBroadcasters(PandasMixin, PolarsMixin, BaseModel):
     """All broadcasters for a game."""
 
     national_broadcasters: list[ScoreboardBroadcaster] = Field(
-        default_factory=list, alias="nationalBroadcasters"
+        default_factory=list[ScoreboardBroadcaster], alias="nationalBroadcasters"
     )
     national_radio_broadcasters: list[ScoreboardBroadcaster] = Field(
-        default_factory=list, alias="nationalRadioBroadcasters"
+        default_factory=list[ScoreboardBroadcaster], alias="nationalRadioBroadcasters"
     )
     national_ott_broadcasters: list[ScoreboardBroadcaster] = Field(
-        default_factory=list, alias="nationalOttBroadcasters"
+        default_factory=list[ScoreboardBroadcaster], alias="nationalOttBroadcasters"
     )
     home_tv_broadcasters: list[ScoreboardBroadcaster] = Field(
-        default_factory=list, alias="homeTvBroadcasters"
+        default_factory=list[ScoreboardBroadcaster], alias="homeTvBroadcasters"
     )
     home_radio_broadcasters: list[ScoreboardBroadcaster] = Field(
-        default_factory=list, alias="homeRadioBroadcasters"
+        default_factory=list[ScoreboardBroadcaster], alias="homeRadioBroadcasters"
     )
     home_ott_broadcasters: list[ScoreboardBroadcaster] = Field(
-        default_factory=list, alias="homeOttBroadcasters"
+        default_factory=list[ScoreboardBroadcaster], alias="homeOttBroadcasters"
     )
     away_tv_broadcasters: list[ScoreboardBroadcaster] = Field(
-        default_factory=list, alias="awayTvBroadcasters"
+        default_factory=list[ScoreboardBroadcaster], alias="awayTvBroadcasters"
     )
     away_radio_broadcasters: list[ScoreboardBroadcaster] = Field(
-        default_factory=list, alias="awayRadioBroadcasters"
+        default_factory=list[ScoreboardBroadcaster], alias="awayRadioBroadcasters"
     )
     away_ott_broadcasters: list[ScoreboardBroadcaster] = Field(
-        default_factory=list, alias="awayOttBroadcasters"
+        default_factory=list[ScoreboardBroadcaster], alias="awayOttBroadcasters"
     )
 
 
@@ -115,7 +115,9 @@ class ScoreboardTeam(PandasMixin, PolarsMixin, BaseModel):
     seed: int | None = Field(default=None, alias="seed")
     in_bonus: str | None = Field(default=None, alias="inBonus")
     timeouts_remaining: int | None = Field(default=None, alias="timeoutsRemaining")
-    periods: list[PeriodScore] = Field(default_factory=list, alias="periods")
+    periods: list[PeriodScore] = Field(
+        default_factory=list[PeriodScore], alias="periods"
+    )
 
 
 class ScoreboardGame(PandasMixin, PolarsMixin, BaseModel):
@@ -154,7 +156,9 @@ class Scoreboard(PandasMixin, PolarsMixin, BaseModel):
     game_date: str | None = Field(default=None, alias="gameDate")
     league_id: str | None = Field(default=None, alias="leagueId")
     league_name: str | None = Field(default=None, alias="leagueName")
-    games: list[ScoreboardGame] = Field(default_factory=list, alias="games")
+    games: list[ScoreboardGame] = Field(
+        default_factory=list[ScoreboardGame], alias="games"
+    )
 
 
 class ScoreboardV3Response(FrozenResponse):

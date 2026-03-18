@@ -66,16 +66,24 @@ class TeamDashPtShotsResponse(FrozenResponse):
     shot type, shot clock, dribbles, defender distance, and touch time.
     """
 
-    general_shooting: list[TeamShotTypeStats] = Field(default_factory=list)
-    shot_clock_shooting: list[TeamShotClockStats] = Field(default_factory=list)
-    dribble_shooting: list[TeamDribbleStats] = Field(default_factory=list)
+    general_shooting: list[TeamShotTypeStats] = Field(
+        default_factory=list[TeamShotTypeStats]
+    )
+    shot_clock_shooting: list[TeamShotClockStats] = Field(
+        default_factory=list[TeamShotClockStats]
+    )
+    dribble_shooting: list[TeamDribbleStats] = Field(
+        default_factory=list[TeamDribbleStats]
+    )
     closest_defender_shooting: list[TeamClosestDefenderStats] = Field(
-        default_factory=list
+        default_factory=list[TeamClosestDefenderStats]
     )
     closest_defender_10ft_plus_shooting: list[TeamClosestDefenderStats] = Field(
-        default_factory=list
+        default_factory=list[TeamClosestDefenderStats]
     )
-    touch_time_shooting: list[TeamTouchTimeStats] = Field(default_factory=list)
+    touch_time_shooting: list[TeamTouchTimeStats] = Field(
+        default_factory=list[TeamTouchTimeStats]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

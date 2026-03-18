@@ -117,6 +117,6 @@ class CombinePlayer(PandasMixin, PolarsMixin, BaseModel):
 class DraftCombineStatsResponse(FrozenResponse):
     """Response from the draft combine stats endpoint."""
 
-    players: list[CombinePlayer] = Field(default_factory=list)
+    players: list[CombinePlayer] = Field(default_factory=list[CombinePlayer])
 
     from_result_sets = model_validator(mode="before")(tabular_validator("players"))

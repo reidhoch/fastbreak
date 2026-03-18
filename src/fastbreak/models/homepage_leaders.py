@@ -32,7 +32,7 @@ class HomepageLeadersResponse(FrozenResponse):
     additional efficiency metrics like EFG%, TS%, and per-48 stats.
     """
 
-    leaders: list[HomepageLeader] = Field(default_factory=list)
+    leaders: list[HomepageLeader] = Field(default_factory=list[HomepageLeader])
 
     from_result_sets = model_validator(mode="before")(
         named_tabular_validator("leaders", "HomePageLeaders")

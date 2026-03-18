@@ -87,7 +87,7 @@ class TeamGameLogsResponse(FrozenResponse):
     Contains extended game log entries with league-wide rankings.
     """
 
-    games: list[TeamGameLogsEntry] = Field(default_factory=list)
+    games: list[TeamGameLogsEntry] = Field(default_factory=list[TeamGameLogsEntry])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"games": "TeamGameLogs"})

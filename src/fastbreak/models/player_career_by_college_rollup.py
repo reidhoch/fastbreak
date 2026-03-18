@@ -43,6 +43,6 @@ class PlayerCareerByCollegeRollupResponse(FrozenResponse):
     region/seed. Organized by tournament regions (East, Midwest, South, West).
     """
 
-    entries: list[CollegeRollupEntry] = Field(default_factory=list)
+    entries: list[CollegeRollupEntry] = Field(default_factory=list[CollegeRollupEntry])
 
     from_result_sets = model_validator(mode="before")(tabular_validator("entries"))

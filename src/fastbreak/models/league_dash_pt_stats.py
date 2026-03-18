@@ -100,8 +100,8 @@ class LeagueDashPtStatsResponse(FrozenResponse):
     PlayerOrTeam parameter. Only one of teams or players will be populated.
     """
 
-    teams: list[TeamPtStats] = Field(default_factory=list)
-    players: list[PlayerPtStats] = Field(default_factory=list)
+    teams: list[TeamPtStats] = Field(default_factory=list[TeamPtStats])
+    players: list[PlayerPtStats] = Field(default_factory=list[PlayerPtStats])
 
     @model_validator(mode="before")
     @classmethod

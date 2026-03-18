@@ -48,7 +48,7 @@ class PlayerGameLogResponse(FrozenResponse):
     Contains a list of game log entries for a player's season.
     """
 
-    games: list[PlayerGameLogEntry] = Field(default_factory=list)
+    games: list[PlayerGameLogEntry] = Field(default_factory=list[PlayerGameLogEntry])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"games": "PlayerGameLog"})

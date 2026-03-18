@@ -32,7 +32,7 @@ class VideoStatusResponse(FrozenResponse):
     Contains video availability status for games on a given date.
     """
 
-    games: list[GameVideoStatus] = Field(default_factory=list)
+    games: list[GameVideoStatus] = Field(default_factory=list[GameVideoStatus])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"games": "VideoStatus"})

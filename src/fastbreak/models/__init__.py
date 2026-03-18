@@ -789,9 +789,9 @@ for _module_info in pkgutil.iter_modules([str(_package_dir)]):
             globals()[_name] = getattr(_module, _name)
             _public_names.append(_name)
 
-__all__ = sorted(set(_public_names))  # noqa: PLE0605
+__all__ = sorted(set(_public_names))  # pyright: ignore[reportUnsupportedDunderAll]  # noqa: PLE0605
 
 # Clean up module-level temporaries
 del importlib, pkgutil, Path
-del _package_dir, _common_module, _common_names, _module_info, _module, _names, _name
+del _package_dir, _common_module, _common_names, _module_info, _module, _names, _name  # pyright: ignore[reportPossiblyUnboundVariable]
 del _public_names

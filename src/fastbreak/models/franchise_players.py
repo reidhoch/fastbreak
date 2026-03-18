@@ -49,6 +49,6 @@ class FranchisePlayer(PandasMixin, PolarsMixin, BaseModel):
 class FranchisePlayersResponse(FrozenResponse):
     """Response from the franchise players endpoint."""
 
-    players: list[FranchisePlayer] = Field(default_factory=list)
+    players: list[FranchisePlayer] = Field(default_factory=list[FranchisePlayer])
 
     from_result_sets = model_validator(mode="before")(tabular_validator("players"))

@@ -82,12 +82,24 @@ class PlayoffPictureResponse(FrozenResponse):
     - west_conf_remaining_games: Remaining games for West teams
     """
 
-    east_conf_playoff_picture: list[PlayoffMatchup] = Field(default_factory=list)
-    west_conf_playoff_picture: list[PlayoffMatchup] = Field(default_factory=list)
-    east_conf_standings: list[PlayoffStanding] = Field(default_factory=list)
-    west_conf_standings: list[PlayoffStanding] = Field(default_factory=list)
-    east_conf_remaining_games: list[RemainingGames] = Field(default_factory=list)
-    west_conf_remaining_games: list[RemainingGames] = Field(default_factory=list)
+    east_conf_playoff_picture: list[PlayoffMatchup] = Field(
+        default_factory=list[PlayoffMatchup]
+    )
+    west_conf_playoff_picture: list[PlayoffMatchup] = Field(
+        default_factory=list[PlayoffMatchup]
+    )
+    east_conf_standings: list[PlayoffStanding] = Field(
+        default_factory=list[PlayoffStanding]
+    )
+    west_conf_standings: list[PlayoffStanding] = Field(
+        default_factory=list[PlayoffStanding]
+    )
+    east_conf_remaining_games: list[RemainingGames] = Field(
+        default_factory=list[RemainingGames]
+    )
+    west_conf_remaining_games: list[RemainingGames] = Field(
+        default_factory=list[RemainingGames]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

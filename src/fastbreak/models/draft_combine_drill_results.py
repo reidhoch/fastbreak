@@ -42,6 +42,6 @@ class DrillResultsPlayer(PandasMixin, PolarsMixin, BaseModel):
 class DraftCombineDrillResultsResponse(FrozenResponse):
     """Response from the draft combine drill results endpoint."""
 
-    players: list[DrillResultsPlayer] = Field(default_factory=list)
+    players: list[DrillResultsPlayer] = Field(default_factory=list[DrillResultsPlayer])
 
     from_result_sets = model_validator(mode="before")(tabular_validator("players"))

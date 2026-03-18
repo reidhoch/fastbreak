@@ -79,6 +79,6 @@ class TeamClutchStats(PandasMixin, PolarsMixin, BaseModel):
 class LeagueDashTeamClutchResponse(FrozenResponse):
     """Response from the leaguedashteamclutch endpoint."""
 
-    teams: list[TeamClutchStats] = Field(default_factory=list)
+    teams: list[TeamClutchStats] = Field(default_factory=list[TeamClutchStats])
 
     from_result_sets = model_validator(mode="before")(tabular_validator("teams"))

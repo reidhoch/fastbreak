@@ -137,6 +137,6 @@ class SpotShootingPlayer(PandasMixin, PolarsMixin, BaseModel):
 class DraftCombineSpotShootingResponse(FrozenResponse):
     """Response from the draft combine spot shooting endpoint."""
 
-    players: list[SpotShootingPlayer] = Field(default_factory=list)
+    players: list[SpotShootingPlayer] = Field(default_factory=list[SpotShootingPlayer])
 
     from_result_sets = model_validator(mode="before")(tabular_validator("players"))

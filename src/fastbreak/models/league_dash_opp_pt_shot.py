@@ -38,7 +38,7 @@ class LeagueDashOppPtShotResponse(FrozenResponse):
     counterpart to LeagueDashTeamPtShot.
     """
 
-    teams: list[OppPtShotStats] = Field(default_factory=list)
+    teams: list[OppPtShotStats] = Field(default_factory=list[OppPtShotStats])
 
     from_result_sets = model_validator(mode="before")(
         named_tabular_validator("teams", "LeagueDashPTShots")

@@ -102,7 +102,7 @@ class PlayerGameLogsResponse(FrozenResponse):
     Contains extended game log entries with rankings and fantasy points.
     """
 
-    games: list[PlayerGameLogsEntry] = Field(default_factory=list)
+    games: list[PlayerGameLogsEntry] = Field(default_factory=list[PlayerGameLogsEntry])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"games": "PlayerGameLogs"})

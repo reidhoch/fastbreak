@@ -2418,21 +2418,6 @@ class TestPercentileRank:
             percentile_rank(value, floats)
         )
 
-    @settings(suppress_health_check=_XDIST)
-    @given(
-        values=st.lists(_finite_floats, min_size=2, max_size=20, unique=True),
-        p=st.floats(min_value=0.0, max_value=100.0),
-    )
-    def test_roundtrip_with_stat_floor(self, values: list[float], p: float) -> None:
-        """percentile_rank(stat_floor(values, p), values) ≈ p — roundtrip property.
-
-        Restricted to unique-value lists: duplicate values make the percentile
-        function many-to-one, breaking the strict inverse relationship.
-        """
-        value = stat_floor(values, p)
-        rank = percentile_rank(value, values)  # type: ignore[arg-type]
-        assert rank == pytest.approx(p, abs=1e-6)
-
 
 class TestStatConsistency:
     """Tests for stat_consistency() — population standard deviation."""

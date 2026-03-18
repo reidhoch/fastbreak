@@ -131,10 +131,18 @@ class PlayerDashPtRebResponse(FrozenResponse):
     """
 
     overall: OverallRebounding | None = None
-    by_shot_type: list[ShotTypeRebounding] = Field(default_factory=list)
-    by_num_contested: list[NumContestedRebounding] = Field(default_factory=list)
-    by_shot_distance: list[ShotDistanceRebounding] = Field(default_factory=list)
-    by_reb_distance: list[RebDistanceRebounding] = Field(default_factory=list)
+    by_shot_type: list[ShotTypeRebounding] = Field(
+        default_factory=list[ShotTypeRebounding]
+    )
+    by_num_contested: list[NumContestedRebounding] = Field(
+        default_factory=list[NumContestedRebounding]
+    )
+    by_shot_distance: list[ShotDistanceRebounding] = Field(
+        default_factory=list[ShotDistanceRebounding]
+    )
+    by_reb_distance: list[RebDistanceRebounding] = Field(
+        default_factory=list[RebDistanceRebounding]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

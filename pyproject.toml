@@ -109,6 +109,11 @@ ignore_missing_imports = true
 module = ["polars", "polars.*"]
 ignore_missing_imports = true
 
+[tool.pyright]
+ignore = ["tests/"]
+venvPath = "."
+venv = ".venv"
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"

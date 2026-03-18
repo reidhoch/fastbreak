@@ -42,7 +42,7 @@ class LeagueHustleStatsTeamResponse(FrozenResponse):
     Contains season-aggregated hustle statistics for all teams.
     """
 
-    teams: list[LeagueHustleTeam] = Field(default_factory=list)
+    teams: list[LeagueHustleTeam] = Field(default_factory=list[LeagueHustleTeam])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"teams": "HustleStatsTeam"})

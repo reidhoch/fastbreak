@@ -28,7 +28,7 @@ class ScoringTeam(PandasMixin, PolarsMixin, BaseModel):
     teamName: str | None = None
     teamTricode: str | None = None
     teamSlug: str | None = None
-    players: list[ScoringPlayer] = Field(default_factory=list)
+    players: list[ScoringPlayer] = Field(default_factory=list[ScoringPlayer])
     statistics: ScoringStatistics | None = None
 
 

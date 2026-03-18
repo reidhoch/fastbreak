@@ -56,8 +56,10 @@ class ShotChartLineupDetailResponse(FrozenResponse):
     Contains individual shot data with lineup context and league averages.
     """
 
-    shots: list[LineupShot] = Field(default_factory=list)
-    league_averages: list[LineupLeagueAverage] = Field(default_factory=list)
+    shots: list[LineupShot] = Field(default_factory=list[LineupShot])
+    league_averages: list[LineupLeagueAverage] = Field(
+        default_factory=list[LineupLeagueAverage]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

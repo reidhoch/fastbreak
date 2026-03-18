@@ -73,8 +73,8 @@ class PlayerDashPtPassResponse(FrozenResponse):
     - passes_received: Passes the player received from teammates
     """
 
-    passes_made: list[PassMade] = Field(default_factory=list)
-    passes_received: list[PassReceived] = Field(default_factory=list)
+    passes_made: list[PassMade] = Field(default_factory=list[PassMade])
+    passes_received: list[PassReceived] = Field(default_factory=list[PassReceived])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

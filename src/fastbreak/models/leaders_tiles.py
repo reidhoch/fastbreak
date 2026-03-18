@@ -51,9 +51,11 @@ class LeadersTilesResponse(FrozenResponse):
     the all-time season high and last season's leader for the stat.
     """
 
-    leaders: list[LeaderTile] = Field(default_factory=list)
-    all_time_season_high: list[AllTimeSeasonHigh] = Field(default_factory=list)
-    last_season_high: list[LastSeasonHigh] = Field(default_factory=list)
+    leaders: list[LeaderTile] = Field(default_factory=list[LeaderTile])
+    all_time_season_high: list[AllTimeSeasonHigh] = Field(
+        default_factory=list[AllTimeSeasonHigh]
+    )
+    last_season_high: list[LastSeasonHigh] = Field(default_factory=list[LastSeasonHigh])
 
     from_result_set = model_validator(mode="before")(
         singular_result_set_validator(

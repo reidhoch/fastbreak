@@ -131,10 +131,18 @@ class TeamDashPtRebResponse(FrozenResponse):
     """
 
     overall: TeamOverallRebounding | None = None
-    by_shot_type: list[TeamShotTypeRebounding] = Field(default_factory=list)
-    by_num_contested: list[TeamNumContestedRebounding] = Field(default_factory=list)
-    by_shot_distance: list[TeamShotDistanceRebounding] = Field(default_factory=list)
-    by_reb_distance: list[TeamRebDistanceRebounding] = Field(default_factory=list)
+    by_shot_type: list[TeamShotTypeRebounding] = Field(
+        default_factory=list[TeamShotTypeRebounding]
+    )
+    by_num_contested: list[TeamNumContestedRebounding] = Field(
+        default_factory=list[TeamNumContestedRebounding]
+    )
+    by_shot_distance: list[TeamShotDistanceRebounding] = Field(
+        default_factory=list[TeamShotDistanceRebounding]
+    )
+    by_reb_distance: list[TeamRebDistanceRebounding] = Field(
+        default_factory=list[TeamRebDistanceRebounding]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

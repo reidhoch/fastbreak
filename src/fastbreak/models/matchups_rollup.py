@@ -41,6 +41,6 @@ class MatchupsRollupResponse(FrozenResponse):
     offensive team.
     """
 
-    matchups: list[MatchupRollupEntry] = Field(default_factory=list)
+    matchups: list[MatchupRollupEntry] = Field(default_factory=list[MatchupRollupEntry])
 
     from_result_sets = model_validator(mode="before")(tabular_validator("matchups"))

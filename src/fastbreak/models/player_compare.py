@@ -47,8 +47,12 @@ class PlayerCompareResponse(FrozenResponse):
     - individual: Individual player stats for comparison
     """
 
-    overall_compare: list[PlayerCompareStats] = Field(default_factory=list)
-    individual: list[PlayerCompareStats] = Field(default_factory=list)
+    overall_compare: list[PlayerCompareStats] = Field(
+        default_factory=list[PlayerCompareStats]
+    )
+    individual: list[PlayerCompareStats] = Field(
+        default_factory=list[PlayerCompareStats]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

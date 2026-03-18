@@ -76,7 +76,9 @@ class CommonPlayerInfoResponse(FrozenResponse):
 
     player_info: PlayerInfo | None = None
     headline_stats: PlayerHeadlineStats | None = None
-    available_seasons: list[AvailableSeason] = Field(default_factory=list)
+    available_seasons: list[AvailableSeason] = Field(
+        default_factory=list[AvailableSeason]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

@@ -58,8 +58,8 @@ class ShotChartDetailResponse(PandasMixin, PolarsMixin, BaseModel):
     along with league average shooting percentages by zone.
     """
 
-    shots: list[Shot] = Field(default_factory=list)
-    league_averages: list[LeagueAverage] = Field(default_factory=list)
+    shots: list[Shot] = Field(default_factory=list[Shot])
+    league_averages: list[LeagueAverage] = Field(default_factory=list[LeagueAverage])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

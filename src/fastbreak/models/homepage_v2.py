@@ -65,12 +65,14 @@ class HomepageV2Response(FrozenResponse):
     """
 
     # Each stat category is a separate result set
-    pts_leaders: list[HomePageStatPts] = Field(default_factory=list)
-    reb_leaders: list[HomePageStatReb] = Field(default_factory=list)
-    ast_leaders: list[HomePageStatAst] = Field(default_factory=list)
-    blk_leaders: list[HomePageStatBlk] = Field(default_factory=list)
-    stl_leaders: list[HomePageStatStl] = Field(default_factory=list)
-    fg3_pct_leaders: list[HomePageStatFg3Pct] = Field(default_factory=list)
+    pts_leaders: list[HomePageStatPts] = Field(default_factory=list[HomePageStatPts])
+    reb_leaders: list[HomePageStatReb] = Field(default_factory=list[HomePageStatReb])
+    ast_leaders: list[HomePageStatAst] = Field(default_factory=list[HomePageStatAst])
+    blk_leaders: list[HomePageStatBlk] = Field(default_factory=list[HomePageStatBlk])
+    stl_leaders: list[HomePageStatStl] = Field(default_factory=list[HomePageStatStl])
+    fg3_pct_leaders: list[HomePageStatFg3Pct] = Field(
+        default_factory=list[HomePageStatFg3Pct]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

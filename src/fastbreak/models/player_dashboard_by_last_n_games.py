@@ -24,7 +24,7 @@ class PlayerDashboardByLastNGamesResponse(FrozenResponse):
     last_10: GameSplitStats | None = None
     last_15: GameSplitStats | None = None
     last_20: GameSplitStats | None = None
-    by_game_number: list[GameSplitStats] = Field(default_factory=list)
+    by_game_number: list[GameSplitStats] = Field(default_factory=list[GameSplitStats])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

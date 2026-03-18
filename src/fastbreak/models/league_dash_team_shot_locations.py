@@ -181,7 +181,7 @@ class LeagueDashTeamShotLocationsResponse(FrozenResponse):
     Contains shot statistics by distance range for all teams.
     """
 
-    teams: list[TeamShotLocations] = Field(default_factory=list)
+    teams: list[TeamShotLocations] = Field(default_factory=list[TeamShotLocations])
 
     @model_validator(mode="before")
     @classmethod

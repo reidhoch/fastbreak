@@ -52,7 +52,7 @@ class TeamGameLogResponse(FrozenResponse):
     Contains a list of game log entries for a team's season.
     """
 
-    games: list[TeamGameLogEntry] = Field(default_factory=list)
+    games: list[TeamGameLogEntry] = Field(default_factory=list[TeamGameLogEntry])
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator({"games": "TeamGameLog"})

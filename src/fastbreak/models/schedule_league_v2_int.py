@@ -48,40 +48,40 @@ class IntlGameBroadcasters(PandasMixin, PolarsMixin, BaseModel):
     """All broadcasters for a game (international version)."""
 
     national_tv_broadcasters: list[IntlScheduleBroadcaster] = Field(
-        default_factory=list, alias="nationalTvBroadcasters"
+        default_factory=list[IntlScheduleBroadcaster], alias="nationalTvBroadcasters"
     )
     national_radio_broadcasters: list[IntlScheduleBroadcaster] = Field(
-        default_factory=list, alias="nationalRadioBroadcasters"
+        default_factory=list[IntlScheduleBroadcaster], alias="nationalRadioBroadcasters"
     )
     national_ott_broadcasters: list[IntlScheduleBroadcaster] = Field(
-        default_factory=list, alias="nationalOttBroadcasters"
+        default_factory=list[IntlScheduleBroadcaster], alias="nationalOttBroadcasters"
     )
     home_tv_broadcasters: list[IntlScheduleBroadcaster] = Field(
-        default_factory=list, alias="homeTvBroadcasters"
+        default_factory=list[IntlScheduleBroadcaster], alias="homeTvBroadcasters"
     )
     home_radio_broadcasters: list[IntlScheduleBroadcaster] = Field(
-        default_factory=list, alias="homeRadioBroadcasters"
+        default_factory=list[IntlScheduleBroadcaster], alias="homeRadioBroadcasters"
     )
     home_ott_broadcasters: list[IntlScheduleBroadcaster] = Field(
-        default_factory=list, alias="homeOttBroadcasters"
+        default_factory=list[IntlScheduleBroadcaster], alias="homeOttBroadcasters"
     )
     away_tv_broadcasters: list[IntlScheduleBroadcaster] = Field(
-        default_factory=list, alias="awayTvBroadcasters"
+        default_factory=list[IntlScheduleBroadcaster], alias="awayTvBroadcasters"
     )
     away_radio_broadcasters: list[IntlScheduleBroadcaster] = Field(
-        default_factory=list, alias="awayRadioBroadcasters"
+        default_factory=list[IntlScheduleBroadcaster], alias="awayRadioBroadcasters"
     )
     away_ott_broadcasters: list[IntlScheduleBroadcaster] = Field(
-        default_factory=list, alias="awayOttBroadcasters"
+        default_factory=list[IntlScheduleBroadcaster], alias="awayOttBroadcasters"
     )
     intl_tv_broadcasters: list[IntlScheduleBroadcaster] = Field(
-        default_factory=list, alias="intlTvBroadcasters"
+        default_factory=list[IntlScheduleBroadcaster], alias="intlTvBroadcasters"
     )
     intl_radio_broadcasters: list[IntlScheduleBroadcaster] = Field(
-        default_factory=list, alias="intlRadioBroadcasters"
+        default_factory=list[IntlScheduleBroadcaster], alias="intlRadioBroadcasters"
     )
     intl_ott_broadcasters: list[IntlScheduleBroadcaster] = Field(
-        default_factory=list, alias="intlOttBroadcasters"
+        default_factory=list[IntlScheduleBroadcaster], alias="intlOttBroadcasters"
     )
 
 
@@ -150,7 +150,7 @@ class IntlScheduledGame(PandasMixin, PolarsMixin, BaseModel):
     home_team: IntlScheduleTeam | None = Field(default=None, alias="homeTeam")
     away_team: IntlScheduleTeam | None = Field(default=None, alias="awayTeam")
     points_leaders: list[IntlPointsLeader] = Field(
-        default_factory=list, alias="pointsLeaders"
+        default_factory=list[IntlPointsLeader], alias="pointsLeaders"
     )
 
 
@@ -158,7 +158,9 @@ class IntlGameDate(PandasMixin, PolarsMixin, BaseModel):
     """A single date with its games."""
 
     game_date: str | None = Field(default=None, alias="gameDate")
-    games: list[IntlScheduledGame] = Field(default_factory=list, alias="games")
+    games: list[IntlScheduledGame] = Field(
+        default_factory=list[IntlScheduledGame], alias="games"
+    )
 
 
 class IntlScheduleWeek(PandasMixin, PolarsMixin, BaseModel):
@@ -175,10 +177,14 @@ class IntlLeagueSchedule(PandasMixin, PolarsMixin, BaseModel):
 
     season_year: str | None = Field(default=None, alias="seasonYear")
     league_id: str | None = Field(default=None, alias="leagueId")
-    game_dates: list[IntlGameDate] = Field(default_factory=list, alias="gameDates")
-    weeks: list[IntlScheduleWeek] = Field(default_factory=list, alias="weeks")
+    game_dates: list[IntlGameDate] = Field(
+        default_factory=list[IntlGameDate], alias="gameDates"
+    )
+    weeks: list[IntlScheduleWeek] = Field(
+        default_factory=list[IntlScheduleWeek], alias="weeks"
+    )
     broadcaster_list: list[IntlBroadcasterInfo] = Field(
-        default_factory=list, alias="broadcasterList"
+        default_factory=list[IntlBroadcasterInfo], alias="broadcasterList"
     )
 
 

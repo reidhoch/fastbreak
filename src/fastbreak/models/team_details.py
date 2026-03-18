@@ -79,13 +79,15 @@ class TeamDetailsResponse(FrozenResponse):
     """
 
     background: TeamBackground | None = None
-    history: list[TeamHistory] = Field(default_factory=list)
-    social_sites: list[TeamSocialSite] = Field(default_factory=list)
-    championships: list[TeamAward] = Field(default_factory=list)
-    conference_titles: list[TeamAward] = Field(default_factory=list)
-    division_titles: list[TeamAward] = Field(default_factory=list)
-    hall_of_fame: list[TeamHofPlayer] = Field(default_factory=list)
-    retired_jerseys: list[TeamRetiredJersey] = Field(default_factory=list)
+    history: list[TeamHistory] = Field(default_factory=list[TeamHistory])
+    social_sites: list[TeamSocialSite] = Field(default_factory=list[TeamSocialSite])
+    championships: list[TeamAward] = Field(default_factory=list[TeamAward])
+    conference_titles: list[TeamAward] = Field(default_factory=list[TeamAward])
+    division_titles: list[TeamAward] = Field(default_factory=list[TeamAward])
+    hall_of_fame: list[TeamHofPlayer] = Field(default_factory=list[TeamHofPlayer])
+    retired_jerseys: list[TeamRetiredJersey] = Field(
+        default_factory=list[TeamRetiredJersey]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

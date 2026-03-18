@@ -168,26 +168,36 @@ class PlayerVsPlayerResponse(FrozenResponse):
     - vs_player_info: Info about the vs player
     """
 
-    overall: list[PlayerVsPlayerOverallStats] = Field(default_factory=list)
-    on_off_court: list[PlayerVsPlayerOnOffCourtStats] = Field(default_factory=list)
+    overall: list[PlayerVsPlayerOverallStats] = Field(
+        default_factory=list[PlayerVsPlayerOverallStats]
+    )
+    on_off_court: list[PlayerVsPlayerOnOffCourtStats] = Field(
+        default_factory=list[PlayerVsPlayerOnOffCourtStats]
+    )
     shot_distance_overall: list[PlayerVsPlayerShotDistanceStats] = Field(
-        default_factory=list
+        default_factory=list[PlayerVsPlayerShotDistanceStats]
     )
     shot_distance_on_court: list[PlayerVsPlayerShotDistanceOnOffStats] = Field(
-        default_factory=list
+        default_factory=list[PlayerVsPlayerShotDistanceOnOffStats]
     )
     shot_distance_off_court: list[PlayerVsPlayerShotDistanceOnOffStats] = Field(
-        default_factory=list
+        default_factory=list[PlayerVsPlayerShotDistanceOnOffStats]
     )
-    shot_area_overall: list[PlayerVsPlayerShotAreaStats] = Field(default_factory=list)
+    shot_area_overall: list[PlayerVsPlayerShotAreaStats] = Field(
+        default_factory=list[PlayerVsPlayerShotAreaStats]
+    )
     shot_area_on_court: list[PlayerVsPlayerShotAreaOnOffStats] = Field(
-        default_factory=list
+        default_factory=list[PlayerVsPlayerShotAreaOnOffStats]
     )
     shot_area_off_court: list[PlayerVsPlayerShotAreaOnOffStats] = Field(
-        default_factory=list
+        default_factory=list[PlayerVsPlayerShotAreaOnOffStats]
     )
-    player_info: list[PlayerVsPlayerPlayerInfo] = Field(default_factory=list)
-    vs_player_info: list[PlayerVsPlayerPlayerInfo] = Field(default_factory=list)
+    player_info: list[PlayerVsPlayerPlayerInfo] = Field(
+        default_factory=list[PlayerVsPlayerPlayerInfo]
+    )
+    vs_player_info: list[PlayerVsPlayerPlayerInfo] = Field(
+        default_factory=list[PlayerVsPlayerPlayerInfo]
+    )
 
     from_result_sets = model_validator(mode="before")(
         named_result_sets_validator(

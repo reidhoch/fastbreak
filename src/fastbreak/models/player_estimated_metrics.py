@@ -61,7 +61,9 @@ class PlayerEstimatedMetricsResponse(FrozenResponse):
     Contains estimated advanced metrics for all players in the league.
     """
 
-    players: list[PlayerEstimatedMetric] = Field(default_factory=list)
+    players: list[PlayerEstimatedMetric] = Field(
+        default_factory=list[PlayerEstimatedMetric]
+    )
 
     @model_validator(mode="before")
     @classmethod
