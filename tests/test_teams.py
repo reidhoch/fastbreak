@@ -683,6 +683,108 @@ class TestGetLeagueAverages:
         assert result.lg_pts == 115.0
 
 
+class TestGetLeagueAveragesExact:
+    """Exact-value tests to kill division→multiplication mutants on L717-L727."""
+
+    async def test_averages_are_mean_of_two_teams(self, mocker: MockerFixture):
+        """Every field must be the mean of two teams, not the product."""
+        row_a = _make_team_row(
+            pts=100.0,
+            fga=80.0,
+            fta=20.0,
+            ftm=16.0,
+            oreb=10.0,
+            reb=40.0,
+            ast=24.0,
+            fgm=36.0,
+            fg3m=10.0,
+            tov=12.0,
+            pf=18.0,
+        )
+        row_b = _make_team_row(
+            pts=120.0,
+            fga=90.0,
+            fta=24.0,
+            ftm=20.0,
+            oreb=12.0,
+            reb=44.0,
+            ast=28.0,
+            fgm=40.0,
+            fg3m=14.0,
+            tov=16.0,
+            pf=22.0,
+        )
+        response = mocker.MagicMock()
+        response.teams = [row_a, row_b]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_league_averages(client)
+
+        assert result.lg_pts == pytest.approx(110.0)  # (100+120)/2
+        assert result.lg_fga == pytest.approx(85.0)  # (80+90)/2
+        assert result.lg_fta == pytest.approx(22.0)  # (20+24)/2
+        assert result.lg_ftm == pytest.approx(18.0)  # (16+20)/2
+        assert result.lg_oreb == pytest.approx(11.0)  # (10+12)/2
+        assert result.lg_treb == pytest.approx(42.0)  # (40+44)/2
+        assert result.lg_ast == pytest.approx(26.0)  # (24+28)/2
+        assert result.lg_fgm == pytest.approx(38.0)  # (36+40)/2
+        assert result.lg_fg3m == pytest.approx(12.0)  # (10+14)/2
+        assert result.lg_tov == pytest.approx(14.0)  # (12+16)/2
+        assert result.lg_pf == pytest.approx(20.0)  # (18+22)/2
+
+
+class TestGetTeamPlaytypesFilter:
+    """Tests to kill the == to != filter mutant on L771."""
+
+    async def test_filters_to_requested_team_only(self, mocker: MockerFixture):
+        """Only rows matching the requested team_id are returned."""
+        target = mocker.MagicMock()
+        target.team_id = 1610612747  # LAL
+        other = mocker.MagicMock()
+        other.team_id = 1610612738  # BOS
+        response = mocker.MagicMock()
+        response.team_stats = [target, other]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        from fastbreak.teams import get_team_playtypes  # noqa: PLC0415
+
+        result = await get_team_playtypes(client, team_id=1610612747)
+
+        assert len(result) == 1
+        assert result[0].team_id == 1610612747
+
+    async def test_excludes_non_matching_teams(self, mocker: MockerFixture):
+        """Rows for other teams are excluded, not included."""
+        other = mocker.MagicMock()
+        other.team_id = 1610612738
+        response = mocker.MagicMock()
+        response.team_stats = [other]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        from fastbreak.teams import get_team_playtypes  # noqa: PLC0415
+
+        result = await get_team_playtypes(client, team_id=1610612747)
+
+        assert result == []
+
+
+class TestSearchTeamsBoundary:
+    """Tests to kill boundary mutants on L492."""
+
+    def test_limit_of_one_returns_single_result(self):
+        """limit=1 returns exactly one team (kills < to <= mutant at L492)."""
+        result = search_teams("New", limit=1)
+        assert len(result) == 1
+
+    def test_limit_zero_raises(self):
+        """limit=0 raises ValueError (boundary: 0 < 1 is True)."""
+        with pytest.raises(ValueError, match="positive integer"):
+            search_teams("Lakers", limit=0)
+
+
 from fastbreak.teams import (
     get_team_coaches,
     get_team_roster,

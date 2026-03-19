@@ -431,6 +431,7 @@ dependencies = [
     { name = "cachetools" },
     { name = "certifi" },
     { name = "pydantic" },
+    { name = "pytest-gremlins" },
     { name = "structlog" },
     { name = "tenacity" },
 ]
@@ -462,6 +463,7 @@ requires-dist = [
     { name = "cachetools", specifier = ">=5.5" },
     { name = "certifi", specifier = ">=2026" },
     { name = "pydantic", specifier = ">=2.12" },
+    { name = "pytest-gremlins", specifier = ">=1.5.1" },
     { name = "structlog", specifier = ">=25.0" },
     { name = "tenacity", specifier = ">=8.0" },
 ]
@@ -1444,6 +1446,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/5e/f7/c933acc76f5208b3b00089573cf6a2bc26dc80a8aece8f52bb7d6b1855ca/pytest_cov-7.0.0.tar.gz", hash = "sha256:33c97eda2e049a0c5298e91f519302a1334c26ac65c1a483d6206fd458361af1", size = 54328, upload-time = "2025-09-09T10:57:02.113Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ee/49/1377b49de7d0c1ce41292161ea0f721913fa8722c19fb9c1e3aa0367eecb/pytest_cov-7.0.0-py3-none-any.whl", hash = "sha256:3b8e9558b16cc1479da72058bdecf8073661c7f57f7d3c5f22a1c23507f2d861", size = 22424, upload-time = "2025-09-09T10:57:00.695Z" },
+]
+
+[[package]]
+name = "pytest-gremlins"
+version = "1.5.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "coverage" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f4/39/9ea5990445b9423871f85115108cbee1161a754883c32780d05c7f1a1bc4/pytest_gremlins-1.5.1.tar.gz", hash = "sha256:7a936d5e720463fed7e0099ce07e0218cbbb9928451942f8181e8015d494646d", size = 3960939, upload-time = "2026-03-15T20:33:16.383Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/08/51/db2cddc3570a3e2a3cd244891c980599fd7a344455efc1a52d233062deae/pytest_gremlins-1.5.1-py3-none-any.whl", hash = "sha256:ae860879738a82ac6bc4a95765acb5a53c5bd615919e49f586a57c3398482266", size = 100390, upload-time = "2026-03-15T20:33:14.497Z" },
 ]
 
 [[package]]
