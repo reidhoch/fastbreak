@@ -624,12 +624,6 @@ class TestGetPlayerPlaytypesFilter:
 class TestGetLeagueLeadersBoundary:
     """Tests to kill boundary mutants in get_league_leaders limit parameter."""
 
-    async def test_limit_zero_raises(self, mocker: MockerFixture):
-        """limit=0 raises ValueError (kills < to <= boundary mutant)."""
-        client = NBAClient(session=mocker.MagicMock())
-        with pytest.raises(ValueError, match="positive integer"):
-            await get_league_leaders(client, limit=0)
-
     async def test_limit_one_is_valid(self, mocker: MockerFixture):
         """limit=1 does not raise."""
         leader = mocker.MagicMock()

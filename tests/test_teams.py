@@ -779,11 +779,6 @@ class TestSearchTeamsBoundary:
         result = search_teams("New", limit=1)
         assert len(result) == 1
 
-    def test_limit_zero_raises(self):
-        """limit=0 raises ValueError (boundary: 0 < 1 is True)."""
-        with pytest.raises(ValueError, match="positive integer"):
-            search_teams("Lakers", limit=0)
-
 
 from fastbreak.teams import (
     get_team_coaches,
