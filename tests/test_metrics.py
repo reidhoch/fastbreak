@@ -655,19 +655,19 @@ class TestAstPct:
         assert ast_pct(ast=5, fgm=50, mp=36, team_fgm=5, team_mp=240) is None
 
     def test_one_minute_player_boundary(self) -> None:
-        """mp=1 is valid (kills boundary shift mutant at L517)."""
+        """mp=1 is valid (kills boundary shift mutant on minutes guard)."""
         # denominator = (1/(240/5))*42 - 8 = (1/48)*42 - 8 = 0.875 - 8 < 0 → None
         assert ast_pct(ast=5, fgm=8, mp=1, team_fgm=42, team_mp=240) is None
 
     def test_one_minute_team_boundary(self) -> None:
-        """team_mp=1 is valid (kills boundary shift mutant at L517)."""
+        """team_mp=1 is valid (kills boundary shift mutant on minutes guard)."""
         # denominator = (36/(1/5))*42 - 8 = (36/0.2)*42 - 8 = 7560 - 8 = 7552
         result = ast_pct(ast=10, fgm=8, mp=36, team_fgm=42, team_mp=1)
         assert result is not None
         assert result == pytest.approx(10 / 7552, abs=1e-6)
 
     def test_exactly_zero_denominator_returns_none(self) -> None:
-        """Denominator of exactly 0 returns None (kills <= to < at L520)."""
+        """Denominator of exactly 0 returns None (kills <= to < boundary mutant)."""
         # Need: (mp/(team_mp/5)) * team_fgm - fgm == 0
         # With mp=48, team_mp=240 → (48/48) * fgm = fgm → denom = fgm - fgm = 0
         assert ast_pct(ast=5, fgm=42, mp=48, team_fgm=42, team_mp=240) is None
@@ -3228,7 +3228,8 @@ class TestBpm:
 
         This catches mutants that flip + to - or * to / for individual terms.
         """
-        base = bpm(**_bpm_kwargs())
+        base_kwargs = _bpm_kwargs()
+        base = bpm(**base_kwargs)
         assert base is not None
 
         # Each stat change should produce a different total BPM
@@ -3245,14 +3246,15 @@ class TestBpm:
             ("fga", 5.0),
             ("fta", 3.0),
         ]:
-            tweaked = bpm(**_bpm_kwargs(**{field: _bpm_kwargs()[field] + delta}))
+            kwargs = {**base_kwargs, field: base_kwargs[field] + delta}
+            tweaked = bpm(**kwargs)
             assert tweaked is not None, f"bpm returned None when tweaking {field}"
             assert tweaked.total != pytest.approx(base.total), (
                 f"Changing {field} by {delta} should change total BPM"
             )
 
     def test_negative_mp_returns_none(self) -> None:
-        """Negative minutes returns None (kills boundary shift at L775)."""
+        """Negative minutes returns None (kills boundary shift on mp > 0 guard)."""
         assert bpm(**_bpm_kwargs(mp=-1.0)) is None
 
     def test_mp_of_one_is_valid(self) -> None:

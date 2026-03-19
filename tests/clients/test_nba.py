@@ -1579,9 +1579,9 @@ class TestMakeWaitWithRetryAfter:
 
         # Second call should fall back to exponential (retry_after was cleared)
         second_result = wait_func(mock_retry_state)
-        assert second_result != pytest.approx(5.0) or isinstance(second_result, float)
-        # The key assertion: second call should NOT be None
-        assert second_result is not None
+        assert second_result != pytest.approx(5.0)
+        assert isinstance(second_result, float)
+        assert second_result > 0
 
 
 class TestCacheTTLBoundary:

@@ -327,7 +327,7 @@ class TestBuildClutchProfile:
 
         Even though ato_delta is computable (both have valid ast/tov), score
         must remain None because the ``and`` requires *both* deltas.  This
-        kills the ``and → or`` mutation on L166.
+        kills the ``and → or`` mutation on the score computation guard.
         """
         overall = _StatsLike(pts=10.0, fga=0.0, fta=0.0, ast=3.0, tov=2.0)
         clutch = _StatsLike(pts=8.0, fga=5.0, fta=2.0, ast=4.0, tov=1.0, minutes=30.0)
@@ -571,7 +571,7 @@ class TestGetLeagueClutchLeaders:
         assert result == []
 
     async def test_top_n_zero_raises(self, mocker: MockerFixture) -> None:
-        """top_n=0 raises ValueError (kills < to <= boundary at L287)."""
+        """top_n=0 raises ValueError (kills < to <= boundary mutant)."""
         client = NBAClient(session=mocker.MagicMock())
         with pytest.raises(ValueError, match="top_n must be >= 1"):
             await get_league_clutch_leaders(client, top_n=0)
@@ -591,7 +591,7 @@ class TestGetLeagueClutchLeaders:
         assert len(result) == 1
 
     async def test_min_minutes_zero_is_valid(self, mocker: MockerFixture) -> None:
-        """min_minutes=0 does not raise (kills < to <= boundary at L290)."""
+        """min_minutes=0 does not raise (kills < to <= boundary mutant)."""
         response = mocker.MagicMock()
         response.players = [
             self._make_row(

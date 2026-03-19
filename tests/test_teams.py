@@ -684,7 +684,7 @@ class TestGetLeagueAverages:
 
 
 class TestGetLeagueAveragesExact:
-    """Exact-value tests to kill division→multiplication mutants on L717-L727."""
+    """Exact-value tests to kill division-to-multiplication mutants in get_league_averages."""
 
     async def test_averages_are_mean_of_two_teams(self, mocker: MockerFixture):
         """Every field must be the mean of two teams, not the product."""
@@ -735,7 +735,7 @@ class TestGetLeagueAveragesExact:
 
 
 class TestGetTeamPlaytypesFilter:
-    """Tests to kill the == to != filter mutant on L771."""
+    """Tests to kill the == to != filter mutant in get_team_playtypes."""
 
     async def test_filters_to_requested_team_only(self, mocker: MockerFixture):
         """Only rows matching the requested team_id are returned."""
@@ -772,10 +772,10 @@ class TestGetTeamPlaytypesFilter:
 
 
 class TestSearchTeamsBoundary:
-    """Tests to kill boundary mutants on L492."""
+    """Tests to kill boundary mutants in search_teams limit parameter."""
 
     def test_limit_of_one_returns_single_result(self):
-        """limit=1 returns exactly one team (kills < to <= mutant at L492)."""
+        """limit=1 returns exactly one team (kills < to <= boundary mutant)."""
         result = search_teams("New", limit=1)
         assert len(result) == 1
 

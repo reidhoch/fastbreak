@@ -14,6 +14,24 @@ import sys
 import pytest
 
 
+def _run_logging_test(env_vars: dict, code: str) -> subprocess.CompletedProcess:
+    """Run Python code with specific environment variables."""
+    env = os.environ.copy()
+    # Clear any existing fastbreak logging vars
+    env.pop("FASTBREAK_LOG_LEVEL", None)
+    env.pop("FASTBREAK_LOG_FORMAT", None)
+    # Set the test vars
+    env.update(env_vars)
+
+    return subprocess.run(
+        [sys.executable, "-c", code],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+
 class TestLogging:
     """Tests for logging configuration."""
 
@@ -91,21 +109,7 @@ class TestLoggingEnvironmentVariables:
         self, env_vars: dict, code: str
     ) -> subprocess.CompletedProcess:
         """Run Python code with specific environment variables."""
-        import os
-
-        env = os.environ.copy()
-        # Clear any existing fastbreak logging vars
-        env.pop("FASTBREAK_LOG_LEVEL", None)
-        # Set the test vars
-        env.update(env_vars)
-
-        return subprocess.run(
-            [sys.executable, "-c", code],
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
+        return _run_logging_test(env_vars, code)
 
     def test_default_level_is_warning(self) -> None:
         """Default log level should be WARNING when no env vars are set."""
@@ -407,25 +411,14 @@ class TestLoggingAlreadyConfigured:
         self, env_vars: dict, code: str
     ) -> subprocess.CompletedProcess:
         """Run Python code with specific environment variables."""
-        env = os.environ.copy()
-        env.pop("FASTBREAK_LOG_LEVEL", None)
-        env.pop("FASTBREAK_LOG_FORMAT", None)
-        env.update(env_vars)
-
-        return subprocess.run(
-            [sys.executable, "-c", code],
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
+        return _run_logging_test(env_vars, code)
 
     def test_skips_configuration_when_already_configured(self) -> None:
         """structlog.configure() should not be called when already configured.
 
         If the application pre-configures structlog before fastbreak is
         imported, fastbreak should respect that and not overwrite it.
-        The mutation ``not x -> x`` on L53 would cause fastbreak to
+        A ``not x -> x`` mutation on the is_configured() check would cause fastbreak to
         configure structlog only when it is *already* configured (the
         opposite of the intended behavior), which this test catches.
         """
