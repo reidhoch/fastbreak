@@ -40,6 +40,7 @@ dependencies = [
     "cachetools>=5.5",
     "certifi>=2026",
     "pydantic>=2.12",
+    "pytest-gremlins>=1.5.1",
     "structlog>=25.0",
     "tenacity>=8.0",
 ]
@@ -140,6 +141,18 @@ dev = [
     "ruff>=0.14",
     "types-cachetools>=5.5",
 ]
+
+[tool.pytest-gremlins]
+paths = ["src"]
+exclude = [
+    "**/test_*",
+    "**/__pycache__/*",
+    "**/conftest.py",
+]
+workers = "auto"
+cache = true
+
+
 
 [tool.mutmut]
 paths_to_mutate = ["src/fastbreak/"]
