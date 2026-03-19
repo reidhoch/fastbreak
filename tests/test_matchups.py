@@ -508,6 +508,101 @@ class TestGetPlayerMatchupStats:
         assert isinstance(result, PlayerVsPlayerResponse)
 
 
+class TestMatchupPppExact:
+    """Exact-value tests to kill arithmetic and boundary mutants."""
+
+    def test_exact_division_result(self) -> None:
+        """Pin the exact division to catch * mutation on L40."""
+        from fastbreak.matchups import matchup_ppp
+
+        assert matchup_ppp(player_pts=12.0, partial_poss=8.0) == pytest.approx(1.5)
+
+    def test_exact_zero_boundary(self) -> None:
+        """Exactly zero possessions returns None (kills <= to < mutant at L38)."""
+        from fastbreak.matchups import matchup_ppp
+
+        assert matchup_ppp(player_pts=5.0, partial_poss=0.0) is None
+
+    def test_tiny_positive_possessions_returns_value(self) -> None:
+        """Just above zero returns a value, not None (kills <= to < boundary shift)."""
+        from fastbreak.matchups import matchup_ppp
+
+        result = matchup_ppp(player_pts=5.0, partial_poss=0.001)
+        assert result is not None
+        assert result == pytest.approx(5000.0)
+
+
+class TestHelpDefenseRateExact:
+    """Exact-value tests to kill boundary mutants at L49."""
+
+    def test_exact_zero_total_boundary(self) -> None:
+        """Both FGA zero returns None (kills <= to < mutant at L49)."""
+        from fastbreak.matchups import help_defense_rate
+
+        assert help_defense_rate(matchup_fga=0.0, help_fga=0.0) is None
+
+    def test_exact_value(self) -> None:
+        """Pin exact fraction to verify division."""
+        from fastbreak.matchups import help_defense_rate
+
+        assert help_defense_rate(matchup_fga=60.0, help_fga=40.0) == pytest.approx(0.4)
+
+    def test_tiny_positive_total_returns_value(self) -> None:
+        """Just above zero total returns a value, not None (kills <= to < boundary)."""
+        from fastbreak.matchups import help_defense_rate
+
+        result = help_defense_rate(matchup_fga=0.0, help_fga=0.001)
+        assert result is not None
+        assert result == pytest.approx(1.0)
+
+
+class TestRankMatchupsPpp:
+    """Sort-by-PPP tests to kill reverse= mutant at L71."""
+
+    def test_ppp_ascending_order(self) -> None:
+        """Ascending PPP sort: lowest PPP first (best defensive matchups)."""
+        from fastbreak.matchups import rank_matchups
+
+        matchups = [
+            _make_season_matchup(def_player_id=1, partial_poss=20.0, player_pts=20.0),
+            _make_season_matchup(def_player_id=2, partial_poss=20.0, player_pts=10.0),
+        ]
+        result = rank_matchups(matchups, min_poss=0.0, by="ppp", ascending=True)
+        # PPP: id=1 → 1.0, id=2 → 0.5; ascending → 2 first
+        assert [m.def_player_id for m in result] == [2, 1]
+
+    def test_ppp_descending_order(self) -> None:
+        """Descending PPP sort: highest PPP first."""
+        from fastbreak.matchups import rank_matchups
+
+        matchups = [
+            _make_season_matchup(def_player_id=1, partial_poss=20.0, player_pts=10.0),
+            _make_season_matchup(def_player_id=2, partial_poss=20.0, player_pts=20.0),
+        ]
+        result = rank_matchups(matchups, min_poss=0.0, by="ppp", ascending=False)
+        assert [m.def_player_id for m in result] == [2, 1]
+
+
+class TestRankMatchupsBoundary:
+    """Boundary tests for rank_matchups min_poss filter (L66: >= to > mutant)."""
+
+    def test_matchup_exactly_at_min_poss_is_included(self) -> None:
+        """A matchup with partial_poss exactly equal to min_poss passes the >= filter."""
+        from fastbreak.matchups import rank_matchups
+
+        matchups = [
+            _make_season_matchup(
+                def_player_id=1, partial_poss=10.0, matchup_fg_pct=0.400
+            ),
+            _make_season_matchup(
+                def_player_id=2, partial_poss=9.9, matchup_fg_pct=0.400
+            ),
+        ]
+        result = rank_matchups(matchups, min_poss=10.0)
+        assert len(result) == 1
+        assert result[0].def_player_id == 1
+
+
 class TestGetPrimaryDefenders:
     async def test_returns_top_n_sorted_by_matchup_min(self, make_mock_client) -> None:
         from fastbreak.matchups import get_primary_defenders
@@ -605,6 +700,109 @@ class TestGetPrimaryDefenders:
         assert len(result) == 2
         assert result[0].def_player_id == 200  # 8.0 min (highest)
         assert result[1].def_player_id == 300  # 5.0 min
+
+    async def test_first_result_has_highest_matchup_min(self, make_mock_client) -> None:
+        """Verify descending sort: first result has the highest matchup_min (kills reverse=True→False)."""
+        from fastbreak.matchups import get_primary_defenders
+
+        rows = [
+            [
+                "22025",
+                2544,
+                "LeBron James",
+                10,
+                "Low Min",
+                3,
+                1.0,
+                5.0,
+                4.0,
+                8.0,
+                0.3,
+                0.1,
+                0.0,
+                2.0,
+                5.0,
+                0.400,
+                0.5,
+                1.0,
+                0.500,
+                1.0,
+                1.0,
+                0.0,
+                0.5,
+                1.0,
+                0.500,
+                0.1,
+            ],
+            [
+                "22025",
+                2544,
+                "LeBron James",
+                20,
+                "High Min",
+                3,
+                10.0,
+                25.0,
+                18.0,
+                28.0,
+                1.5,
+                0.5,
+                0.3,
+                7.0,
+                15.0,
+                0.467,
+                1.5,
+                4.0,
+                0.375,
+                2.5,
+                3.0,
+                0.2,
+                1.5,
+                4.0,
+                0.375,
+                0.6,
+            ],
+            [
+                "22025",
+                2544,
+                "LeBron James",
+                30,
+                "Mid Min",
+                3,
+                5.0,
+                12.0,
+                10.0,
+                16.0,
+                0.8,
+                0.3,
+                0.1,
+                4.0,
+                10.0,
+                0.400,
+                0.8,
+                2.0,
+                0.400,
+                1.5,
+                2.0,
+                0.1,
+                0.8,
+                2.0,
+                0.400,
+                0.3,
+            ],
+        ]
+        client, _ = make_mock_client(json_data=_make_season_matchups_response(rows))
+
+        result = await get_primary_defenders(client, player_id=2544, top_n=3)
+
+        assert len(result) == 3
+        # Verify descending order by matchup_min: 10.0, 5.0, 1.0
+        assert result[0].def_player_id == 20
+        assert result[0].matchup_min == pytest.approx(10.0)
+        assert result[1].def_player_id == 30
+        assert result[1].matchup_min == pytest.approx(5.0)
+        assert result[2].def_player_id == 10
+        assert result[2].matchup_min == pytest.approx(1.0)
 
     async def test_top_n_exceeds_results(self, make_mock_client) -> None:
         from fastbreak.matchups import get_primary_defenders

@@ -3217,20 +3217,11 @@ class TestBpm:
         #        = 6.00 - 0.6642 - 1.7088 = 3.627
         # role = (3.627*500 + 4.0*50) / 550 = (1813.5 + 200) / 550 = 3.66091
         #
-        # The exact values are complex but pinning the result catches mutations.
-        # Record the baseline result and check it doesn't change.
-        assert result.total == pytest.approx(result.total, abs=0.001)
+        # Pin against hardcoded expected values (computed from known-good run).
+        assert result.total == pytest.approx(8.989, abs=0.01)
+        assert result.offensive == pytest.approx(5.342, abs=0.01)
         # Verify DBPM identity holds
         assert result.defensive == pytest.approx(result.total - result.offensive)
-        # The actual total should be a specific value - compute once and pin
-        # For default inputs this should be deterministic
-        baseline_total = result.total
-        baseline_obpm = result.offensive
-        # Re-run to confirm determinism
-        result2 = bpm(**_bpm_kwargs())
-        assert result2 is not None
-        assert result2.total == pytest.approx(baseline_total)
-        assert result2.offensive == pytest.approx(baseline_obpm)
 
     def test_bpm_sensitive_to_each_coefficient(self) -> None:
         """Changing each stat by a small amount changes the BPM output.

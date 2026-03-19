@@ -217,6 +217,48 @@ print("OK")
         assert result.returncode == 0, f"Test failed: {result.stderr}"
         assert "OK" in result.stdout
 
+    def test_json_format_selects_json_renderer(self) -> None:
+        """FASTBREAK_LOG_FORMAT=json should select JSONRenderer."""
+        code = """
+import structlog
+from fastbreak.logging import _renderer
+assert isinstance(_renderer, structlog.processors.JSONRenderer), (
+    f"Expected JSONRenderer, got {type(_renderer).__name__}"
+)
+print("OK")
+"""
+        result = self._run_logging_test({"FASTBREAK_LOG_FORMAT": "json"}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+    def test_console_format_selects_console_renderer(self) -> None:
+        """FASTBREAK_LOG_FORMAT=console should select ConsoleRenderer."""
+        code = """
+import structlog
+from fastbreak.logging import _renderer
+assert isinstance(_renderer, structlog.dev.ConsoleRenderer), (
+    f"Expected ConsoleRenderer, got {type(_renderer).__name__}"
+)
+print("OK")
+"""
+        result = self._run_logging_test({"FASTBREAK_LOG_FORMAT": "console"}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
+    def test_default_format_selects_console_renderer(self) -> None:
+        """Default format (no env var) should select ConsoleRenderer."""
+        code = """
+import structlog
+from fastbreak.logging import _renderer
+assert isinstance(_renderer, structlog.dev.ConsoleRenderer), (
+    f"Expected ConsoleRenderer, got {type(_renderer).__name__}"
+)
+print("OK")
+"""
+        result = self._run_logging_test({}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout
+
 
 class TestLoggingOutput:
     """Tests for actual logging output behavior."""
@@ -356,3 +398,61 @@ class TestLoggingModuleReload:
         importlib.reload(log_module)
 
         assert log_module._log_level > logging.CRITICAL
+
+
+class TestLoggingAlreadyConfigured:
+    """Tests that structlog configuration is skipped when already configured."""
+
+    def _run_logging_test(
+        self, env_vars: dict, code: str
+    ) -> subprocess.CompletedProcess:
+        """Run Python code with specific environment variables."""
+        env = os.environ.copy()
+        env.pop("FASTBREAK_LOG_LEVEL", None)
+        env.pop("FASTBREAK_LOG_FORMAT", None)
+        env.update(env_vars)
+
+        return subprocess.run(
+            [sys.executable, "-c", code],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+
+    def test_skips_configuration_when_already_configured(self) -> None:
+        """structlog.configure() should not be called when already configured.
+
+        If the application pre-configures structlog before fastbreak is
+        imported, fastbreak should respect that and not overwrite it.
+        The mutation ``not x -> x`` on L53 would cause fastbreak to
+        configure structlog only when it is *already* configured (the
+        opposite of the intended behavior), which this test catches.
+        """
+        code = """
+import structlog
+
+# Pre-configure structlog with a known sentinel logger factory
+# before importing fastbreak.logging
+class _SentinelLoggerFactory:
+    pass
+
+structlog.configure(
+    logger_factory=_SentinelLoggerFactory,
+)
+
+# Now import fastbreak.logging — it should NOT overwrite our config
+import fastbreak.logging  # noqa: F401
+
+# Verify our sentinel factory is still in place
+cfg = structlog.get_config()
+factory = cfg["logger_factory"]
+assert factory is _SentinelLoggerFactory, (
+    f"Expected _SentinelLoggerFactory, got {factory!r}. "
+    "fastbreak.logging overwrote an existing structlog configuration."
+)
+print("OK")
+"""
+        result = self._run_logging_test({"FASTBREAK_LOG_LEVEL": "DEBUG"}, code)
+        assert result.returncode == 0, f"Test failed: {result.stderr}"
+        assert "OK" in result.stdout

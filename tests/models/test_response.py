@@ -82,3 +82,40 @@ class TestStrictMode:
         response = StrictExample(name="test", value=42)
         assert response.name == "test"
         assert response.value == 42
+
+    def test_strict_model_is_frozen(self):
+        """Strict model preserves frozen=True so instances are immutable."""
+        StrictExample = ExampleResponse.strict()
+        response = StrictExample(name="test", value=42)
+        with pytest.raises(ValidationError):
+            response.name = "changed"
+
+
+class TestWarnOnExtraFieldsPassthrough:
+    """Tests for _warn_on_extra_fields passthrough when data is not a dict."""
+
+    def test_non_dict_data_returned_unchanged(self):
+        """When non-dict data is passed, the validator returns it as-is.
+
+        Pydantic may call the 'before' validator with non-dict data during
+        internal model reconstruction; the validator must return it unchanged
+        (not None).
+        """
+        raw = [1, 2, 3]
+        # Call the underlying classmethod function directly to verify return value
+        func = ExampleResponse._warn_on_extra_fields.__func__
+        result = func(ExampleResponse, raw)
+        assert result is raw
+
+    def test_non_dict_string_returned_unchanged(self):
+        """String data passes through the validator unchanged."""
+        raw = "not a dict"
+        func = ExampleResponse._warn_on_extra_fields.__func__
+        result = func(ExampleResponse, raw)
+        assert result is raw
+
+    def test_non_dict_none_returned_unchanged(self):
+        """None data passes through the validator unchanged."""
+        func = ExampleResponse._warn_on_extra_fields.__func__
+        result = func(ExampleResponse, None)
+        assert result is None
