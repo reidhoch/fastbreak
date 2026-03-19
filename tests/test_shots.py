@@ -613,9 +613,9 @@ class TestLeagueZoneFgLookup:
     def test_zone_with_zero_fga_excluded(self) -> None:
         """A zone with fga=0 must be excluded from the result.
 
-        This kills the ``> → >=`` mutant at L106: if `fga > 0` were changed
-        to `fga >= 0`, the zero-FGA zone would be included and cause a
-        ZeroDivisionError (or an entry with undefined FG%).
+        If the ``fga > 0`` guard were weakened to ``fga >= 0``, the zero-FGA
+        zone would be included and cause a ZeroDivisionError (or an entry
+        with undefined FG%).
         """
         from fastbreak.models.shot_chart_leaguewide import LeagueWideShotZone
         from fastbreak.shots import _league_zone_fg_lookup
@@ -672,8 +672,8 @@ class TestLeagueZoneFgLookup:
 class TestGetShotChartSeasonDefault:
     """Tests for get_shot_chart season parameter defaulting.
 
-    Kills the ``or → and`` mutant at L222: ``season or get_season_from_date()``
-    must fall back to the current season when ``season`` is None.
+    The ``season or get_season_from_date()`` expression must fall back to the
+    current season when ``season`` is None.
     """
 
     async def test_explicit_season_is_used(self, mocker: MockerFixture) -> None:

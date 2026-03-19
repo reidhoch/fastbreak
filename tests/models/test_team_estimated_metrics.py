@@ -84,7 +84,7 @@ class TestTeamEstimatedMetricsValidatorPassthrough:
     """Tests for from_result_set validator passthrough branches."""
 
     def test_non_dict_data_returns_data(self):
-        """Validator returns non-dict data unchanged (L74: return data)."""
+        """Validator returns non-dict data unchanged (early return branch)."""
         raw = [1, 2, 3]
         func = TeamEstimatedMetricsResponse.from_result_set.__func__
         result = func(TeamEstimatedMetricsResponse, raw)
@@ -98,28 +98,28 @@ class TestTeamEstimatedMetricsValidatorPassthrough:
         assert result is raw
 
     def test_missing_result_set_key_returns_data(self):
-        """Validator returns data when 'resultSet' key is missing (L85: return data)."""
+        """Validator returns data when 'resultSet' key is missing (early return branch)."""
         raw = {"teams": [], "other_key": "value"}
         func = TeamEstimatedMetricsResponse.from_result_set.__func__
         result = func(TeamEstimatedMetricsResponse, raw)
         assert result is raw
 
     def test_result_set_is_none_returns_data(self):
-        """Validator returns data when resultSet is None (falsy, L78 first not)."""
+        """Validator returns data when resultSet is None (falsy value, first guard)."""
         raw = {"resultSet": None}
         func = TeamEstimatedMetricsResponse.from_result_set.__func__
         result = func(TeamEstimatedMetricsResponse, raw)
         assert result is raw
 
     def test_result_set_is_empty_list_returns_data(self):
-        """Validator returns data when resultSet is [] (falsy, L78 first not)."""
+        """Validator returns data when resultSet is [] (falsy value, first guard)."""
         raw = {"resultSet": []}
         func = TeamEstimatedMetricsResponse.from_result_set.__func__
         result = func(TeamEstimatedMetricsResponse, raw)
         assert result is raw
 
     def test_result_set_is_not_dict_returns_data(self):
-        """Validator returns data when resultSet is not a dict (L78 isinstance check)."""
+        """Validator returns data when resultSet is not a dict (isinstance guard)."""
         raw = {"resultSet": "string_value"}
         func = TeamEstimatedMetricsResponse.from_result_set.__func__
         result = func(TeamEstimatedMetricsResponse, raw)
@@ -133,7 +133,7 @@ class TestTeamEstimatedMetricsValidatorPassthrough:
         assert result is raw
 
     def test_result_set_is_truthy_non_dict_returns_data(self):
-        """Validator returns data when resultSet is truthy but not a dict (L78 second check)."""
+        """Validator returns data when resultSet is truthy but not a dict (isinstance guard)."""
         raw = {"resultSet": 42}
         func = TeamEstimatedMetricsResponse.from_result_set.__func__
         result = func(TeamEstimatedMetricsResponse, raw)

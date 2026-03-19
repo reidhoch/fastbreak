@@ -512,13 +512,13 @@ class TestMatchupPppExact:
     """Exact-value tests to kill arithmetic and boundary mutants."""
 
     def test_exact_division_result(self) -> None:
-        """Pin the exact division to catch * mutation on L40."""
+        """Pin the exact division to catch an arithmetic operator mutation."""
         from fastbreak.matchups import matchup_ppp
 
         assert matchup_ppp(player_pts=12.0, partial_poss=8.0) == pytest.approx(1.5)
 
     def test_exact_zero_boundary(self) -> None:
-        """Exactly zero possessions returns None (kills <= to < mutant at L38)."""
+        """Exactly zero possessions returns None (kills <= to < boundary mutant)."""
         from fastbreak.matchups import matchup_ppp
 
         assert matchup_ppp(player_pts=5.0, partial_poss=0.0) is None
@@ -533,10 +533,10 @@ class TestMatchupPppExact:
 
 
 class TestHelpDefenseRateExact:
-    """Exact-value tests to kill boundary mutants at L49."""
+    """Exact-value tests to kill boundary mutants in help_defense_rate."""
 
     def test_exact_zero_total_boundary(self) -> None:
-        """Both FGA zero returns None (kills <= to < mutant at L49)."""
+        """Both FGA zero returns None (kills <= to < boundary mutant)."""
         from fastbreak.matchups import help_defense_rate
 
         assert help_defense_rate(matchup_fga=0.0, help_fga=0.0) is None
@@ -557,7 +557,7 @@ class TestHelpDefenseRateExact:
 
 
 class TestRankMatchupsPpp:
-    """Sort-by-PPP tests to kill reverse= mutant at L71."""
+    """Sort-by-PPP tests to kill reverse= sort-order mutant in rank_matchups."""
 
     def test_ppp_ascending_order(self) -> None:
         """Ascending PPP sort: lowest PPP first (best defensive matchups)."""
@@ -584,7 +584,7 @@ class TestRankMatchupsPpp:
 
 
 class TestRankMatchupsBoundary:
-    """Boundary tests for rank_matchups min_poss filter (L66: >= to > mutant)."""
+    """Boundary tests for rank_matchups min_poss filter (>= to > mutant)."""
 
     def test_matchup_exactly_at_min_poss_is_included(self) -> None:
         """A matchup with partial_poss exactly equal to min_poss passes the >= filter."""

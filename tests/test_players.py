@@ -572,7 +572,7 @@ def test_get_player_playtypes_exported():
 
 
 class TestGetPlayerPlaytypesFilter:
-    """Tests to kill the == to != filter mutant on L444 and return→None mutant."""
+    """Tests to kill the == to != filter mutant in get_player_playtypes and return-to-None mutant."""
 
     async def test_filters_to_requested_player_only(self, mocker: MockerFixture):
         """Only rows matching the requested player_id are returned."""
@@ -622,10 +622,10 @@ class TestGetPlayerPlaytypesFilter:
 
 
 class TestGetLeagueLeadersBoundary:
-    """Tests to kill boundary mutants on L238."""
+    """Tests to kill boundary mutants in get_league_leaders limit parameter."""
 
     async def test_limit_zero_raises(self, mocker: MockerFixture):
-        """limit=0 raises ValueError (kills < to <= boundary at L238)."""
+        """limit=0 raises ValueError (kills < to <= boundary mutant)."""
         client = NBAClient(session=mocker.MagicMock())
         with pytest.raises(ValueError, match="positive integer"):
             await get_league_leaders(client, limit=0)

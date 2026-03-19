@@ -655,8 +655,8 @@ class TestGameFlow:
     def test_q4_elapsed_regulation_boundary(self) -> None:
         """Period 4 with 6:00 remaining → elapsed = 3*720 + (720-360) = 2520.0 seconds.
 
-        This kills the <= to < mutant at L407 by testing the exact boundary
-        between regulation (period <= 4) and overtime (period > 4).
+        This tests the exact boundary between regulation (period <= 4) and
+        overtime (period > 4), killing a <= to < boundary mutant.
         """
         from fastbreak.games import game_flow
 
@@ -844,8 +844,8 @@ class TestGameFlow:
     def test_action_with_score_home_but_no_score_away_skipped(self) -> None:
         """An action where scoreHome is set but scoreAway is empty is skipped.
 
-        This kills the `or → and` mutant at L397: `not scoreHome or not scoreAway`
-        must skip the action when *either* score is missing, not only when *both* are.
+        The ``not scoreHome or not scoreAway`` guard must skip the action when
+        *either* score is missing, not only when *both* are.
         """
         from fastbreak.games import game_flow
 
@@ -879,8 +879,8 @@ class TestGameFlow:
     def test_q4_treated_as_regulation_not_overtime(self) -> None:
         """Period 4 uses the regulation formula, not the overtime formula.
 
-        This kills the ``<= → <`` mutant at L407: if the boundary check
-        ``period <= 4`` were changed to ``period < 4``, period 4 would be
+        If the boundary check ``period <= 4`` were changed to ``period < 4``,
+        period 4 would be
         treated as overtime. The OT branch uses 300-second periods while
         regulation uses 720-second periods.
 

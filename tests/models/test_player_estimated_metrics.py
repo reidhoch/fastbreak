@@ -88,7 +88,7 @@ class TestPlayerEstimatedMetricsValidatorPassthrough:
     """Tests for from_result_set validator passthrough branches."""
 
     def test_non_dict_data_returns_data(self):
-        """Validator returns non-dict data unchanged (L78: return data)."""
+        """Validator returns non-dict data unchanged (early return branch)."""
         raw = [1, 2, 3]
         func = PlayerEstimatedMetricsResponse.from_result_set.__func__
         result = func(PlayerEstimatedMetricsResponse, raw)
@@ -109,28 +109,28 @@ class TestPlayerEstimatedMetricsValidatorPassthrough:
         assert result is raw
 
     def test_missing_result_set_key_returns_data(self):
-        """Validator returns data when 'resultSet' key is missing (L89: return data)."""
+        """Validator returns data when 'resultSet' key is missing (early return branch)."""
         raw = {"players": [], "other_key": "value"}
         func = PlayerEstimatedMetricsResponse.from_result_set.__func__
         result = func(PlayerEstimatedMetricsResponse, raw)
         assert result is raw
 
     def test_result_set_is_none_returns_data(self):
-        """Validator returns data when resultSet is None (falsy, L82 first not)."""
+        """Validator returns data when resultSet is None (falsy value, first guard)."""
         raw = {"resultSet": None}
         func = PlayerEstimatedMetricsResponse.from_result_set.__func__
         result = func(PlayerEstimatedMetricsResponse, raw)
         assert result is raw
 
     def test_result_set_is_empty_list_returns_data(self):
-        """Validator returns data when resultSet is [] (falsy, L82 first not)."""
+        """Validator returns data when resultSet is [] (falsy value, first guard)."""
         raw = {"resultSet": []}
         func = PlayerEstimatedMetricsResponse.from_result_set.__func__
         result = func(PlayerEstimatedMetricsResponse, raw)
         assert result is raw
 
     def test_result_set_is_not_dict_returns_data(self):
-        """Validator returns data when resultSet is not a dict (L82 isinstance check)."""
+        """Validator returns data when resultSet is not a dict (isinstance guard)."""
         raw = {"resultSet": "string_value"}
         func = PlayerEstimatedMetricsResponse.from_result_set.__func__
         result = func(PlayerEstimatedMetricsResponse, raw)
@@ -144,7 +144,7 @@ class TestPlayerEstimatedMetricsValidatorPassthrough:
         assert result is raw
 
     def test_result_set_is_truthy_non_dict_returns_data(self):
-        """Validator returns data when resultSet is truthy but not a dict (L82 second check)."""
+        """Validator returns data when resultSet is truthy but not a dict (isinstance guard)."""
         raw = {"resultSet": 42}
         func = PlayerEstimatedMetricsResponse.from_result_set.__func__
         result = func(PlayerEstimatedMetricsResponse, raw)
@@ -163,7 +163,7 @@ class TestPlayerEstimatedMetricsValidParsing:
         assert response.players[0].player_id == 201939
 
     def test_mismatched_header_row_lengths_raises(self):
-        """Strict zip raises when row has different length than headers (L95)."""
+        """Strict zip raises when row has different length than headers."""
         data = {
             "resultSet": {
                 "headers": ["PLAYER_ID", "PLAYER_NAME"],
