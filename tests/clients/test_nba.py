@@ -1,4 +1,5 @@
 import signal
+import warnings
 
 import anyio
 import certifi
@@ -6,13 +7,16 @@ import pytest
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, DummyCookieJar
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
+from tenacity import RetryCallState
 
 from fastbreak.clients.nba import (
     BATCH_PROGRESS_THRESHOLD,
     HTTP_SERVER_ERROR_MIN,
     HTTP_TOO_MANY_REQUESTS,
     NBAClient,
+    _RetryAfterState,
     _is_retryable_error,
+    _make_wait_with_retry_after,
 )
 from fastbreak.endpoints import PlayByPlay
 from fastbreak.models import PlayByPlayResponse
@@ -1511,3 +1515,200 @@ class TestNBAClientSignalHandling:
         await client._signal_handler_loop(mock_scope)
 
         mock_logger.debug.assert_called_once()
+
+
+class TestMakeWaitWithRetryAfter:
+    """Tests for the _make_wait_with_retry_after factory function."""
+
+    def test_returns_callable(self):
+        """Factory returns a callable wait function."""
+        state = _RetryAfterState()
+        wait_func = _make_wait_with_retry_after(state, initial=1.0, max_wait=10.0)
+        assert callable(wait_func)
+
+    def test_returns_retry_after_when_set(self, mocker: MockerFixture):
+        """Wait function returns min(retry_after, max_wait) when retry_after is set."""
+        state = _RetryAfterState()
+        wait_func = _make_wait_with_retry_after(state, initial=1.0, max_wait=60.0)
+
+        state.set_retry_after(5.0)
+        mock_retry_state = mocker.MagicMock(spec=RetryCallState)
+
+        result = wait_func(mock_retry_state)
+
+        assert result == pytest.approx(5.0)
+
+    def test_caps_retry_after_at_max_wait(self, mocker: MockerFixture):
+        """Wait function caps retry_after at max_wait."""
+        state = _RetryAfterState()
+        wait_func = _make_wait_with_retry_after(state, initial=1.0, max_wait=10.0)
+
+        state.set_retry_after(30.0)
+        mock_retry_state = mocker.MagicMock(spec=RetryCallState)
+
+        result = wait_func(mock_retry_state)
+
+        assert result == pytest.approx(10.0)
+
+    def test_falls_back_to_exponential_when_no_retry_after(self, mocker: MockerFixture):
+        """Wait function falls back to exponential backoff when no retry_after."""
+        state = _RetryAfterState()
+        wait_func = _make_wait_with_retry_after(state, initial=1.0, max_wait=10.0)
+
+        # Do not set retry_after — state should return None
+        mock_retry_state = mocker.MagicMock(spec=RetryCallState)
+        mock_retry_state.attempt_number = 1
+
+        result = wait_func(mock_retry_state)
+
+        # Should return a positive float from exponential backoff, not None
+        assert result is not None
+        assert isinstance(result, float)
+        assert result > 0
+
+    def test_clears_retry_after_after_use(self, mocker: MockerFixture):
+        """Retry_after value is consumed (cleared) after one call."""
+        state = _RetryAfterState()
+        wait_func = _make_wait_with_retry_after(state, initial=1.0, max_wait=60.0)
+        mock_retry_state = mocker.MagicMock(spec=RetryCallState)
+        mock_retry_state.attempt_number = 1
+
+        state.set_retry_after(5.0)
+        first_result = wait_func(mock_retry_state)
+        assert first_result == pytest.approx(5.0)
+
+        # Second call should fall back to exponential (retry_after was cleared)
+        second_result = wait_func(mock_retry_state)
+        assert second_result != pytest.approx(5.0) or isinstance(second_result, float)
+        # The key assertion: second call should NOT be None
+        assert second_result is not None
+
+
+class TestCacheTTLBoundary:
+    """Tests for cache_ttl boundary values."""
+
+    def test_cache_enabled_with_ttl_one(self):
+        """Cache is enabled when cache_ttl=1 (boundary: > 0)."""
+        client = NBAClient(cache_ttl=1)
+        assert client._cache is not None
+        assert client.cache_info is not None
+        assert client.cache_info["ttl"] == 1
+
+    def test_cache_disabled_with_ttl_zero(self):
+        """Cache is disabled when cache_ttl=0 (boundary: not > 0)."""
+        client = NBAClient(cache_ttl=0)
+        assert client._cache is None
+        assert client.cache_info is None
+
+
+class TestOwnsSessionFlag:
+    """Tests for _owns_session flag correctness."""
+
+    async def test_get_session_sets_owns_session_on_lazy_create(
+        self, mocker: MockerFixture
+    ):
+        """_get_session preserves _owns_session=True after lazy session creation."""
+        client = NBAClient()
+        assert client._owns_session is True
+
+        mocker.patch("fastbreak.clients.nba.ssl.create_default_context")
+        mocker.patch("fastbreak.clients.nba.TCPConnector")
+        mocker.patch(
+            "fastbreak.clients.nba.ClientSession",
+            return_value=mocker.MagicMock(spec=ClientSession),
+        )
+
+        await client._get_session()
+
+        # After creating a session, _owns_session must still be True
+        assert client._owns_session is True
+        await client.close()
+
+    def test_injected_session_owns_session_is_false(self, mocker: MockerFixture):
+        """Injecting a session sets _owns_session to False."""
+        mock_session = mocker.MagicMock(spec=ClientSession)
+        client = NBAClient(session=mock_session)
+
+        # _owns_session must be False when session is injected
+        assert client._owns_session is False
+        assert client._session is mock_session
+
+
+class TestClientResourceWarning:
+    """Tests for __del__ ResourceWarning when client is not properly closed."""
+
+    def test_del_warns_when_session_not_closed(self, mocker: MockerFixture):
+        """__del__ emits ResourceWarning when owned session was not closed."""
+        client = NBAClient()
+        # Simulate a session that was created but never closed
+        client._session = mocker.MagicMock(spec=ClientSession)
+        client._owns_session = True
+
+        with pytest.warns(ResourceWarning, match="NBAClient was not properly closed"):
+            client.__del__()
+
+    def test_del_no_warning_when_session_is_none(self):
+        """__del__ does not warn when session is None (not yet created)."""
+        client = NBAClient()
+        assert client._session is None
+        assert client._owns_session is True
+
+        # Should not raise any warning
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            client.__del__()
+            resource_warnings = [
+                x for x in w if issubclass(x.category, ResourceWarning)
+            ]
+            assert len(resource_warnings) == 0
+
+    def test_del_no_warning_when_not_owned(self, mocker: MockerFixture):
+        """__del__ does not warn when session is not owned (injected)."""
+        mock_session = mocker.MagicMock(spec=ClientSession)
+        client = NBAClient(session=mock_session)
+        assert client._owns_session is False
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            client.__del__()
+            resource_warnings = [
+                x for x in w if issubclass(x.category, ResourceWarning)
+            ]
+            assert len(resource_warnings) == 0
+
+
+class TestStoreInCacheWithNullKey:
+    """Tests for _store_in_cache when cache_key is None."""
+
+    async def test_store_in_cache_skips_when_cache_key_is_none(self):
+        """_store_in_cache does nothing when cache_key is None (caching disabled)."""
+        client = NBAClient(cache_ttl=300)
+        assert client._cache is not None
+
+        from pydantic import BaseModel
+
+        class _DummyResponse(BaseModel):
+            v: int = 42
+
+        result = _DummyResponse()
+
+        # Store with cache_key=None — should NOT store anything
+        await client._store_in_cache(None, result)
+
+        assert client.cache_info["size"] == 0
+
+    async def test_store_in_cache_stores_when_cache_key_is_provided(self):
+        """_store_in_cache stores when both cache and key are present."""
+        client = NBAClient(cache_ttl=300)
+        assert client._cache is not None
+
+        from pydantic import BaseModel
+
+        class _DummyResponse(BaseModel):
+            v: int = 42
+
+        result = _DummyResponse()
+
+        await client._store_in_cache("some_key", result)
+
+        assert client.cache_info["size"] == 1

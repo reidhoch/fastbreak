@@ -167,6 +167,33 @@ class TestClutchScore:
         assert result is not None
         assert result < 0.0
 
+    def test_exact_formula_output(self) -> None:
+        """Pin the exact weighted formula: ts*10 + ato*3 + pm*0.5."""
+        # 0.05*10 + 0.5*3 + 3.0*0.5 = 0.5 + 1.5 + 1.5 = 3.5
+        result = clutch_score(
+            ts_delta=0.05, ato_delta=0.5, plus_minus=3.0, clutch_min=7.0
+        )
+        assert result == pytest.approx(3.5)
+
+    def test_exact_formula_negative(self) -> None:
+        """Pin exact output with negative deltas to catch sign mutations."""
+        # -0.03*10 + -1.0*3 + -4.0*0.5 = -0.3 + -3.0 + -2.0 = -5.3
+        result = clutch_score(
+            ts_delta=-0.03, ato_delta=-1.0, plus_minus=-4.0, clutch_min=10.0
+        )
+        assert result == pytest.approx(-5.3)
+
+    def test_each_weight_contributes_independently(self) -> None:
+        """Isolate each term to verify weights are 10, 3, and 0.5."""
+        base = clutch_score(0.0, 0.0, 0.0, 10.0)
+        ts_only = clutch_score(0.1, 0.0, 0.0, 10.0)
+        ato_only = clutch_score(0.0, 1.0, 0.0, 10.0)
+        pm_only = clutch_score(0.0, 0.0, 2.0, 10.0)
+        assert base == pytest.approx(0.0)
+        assert ts_only == pytest.approx(1.0)  # 0.1 * 10
+        assert ato_only == pytest.approx(3.0)  # 1.0 * 3
+        assert pm_only == pytest.approx(1.0)  # 2.0 * 0.5
+
     @settings(suppress_health_check=_XDIST)
     @given(ts=_delta, ato=_delta, pm=_pm, minutes=_min_above)
     def test_antisymmetry(
@@ -294,6 +321,24 @@ class TestBuildClutchProfile:
         clutch = _make_stats(mocker, minutes=30.0)
         profile = build_clutch_profile(1, "Player", "TST", overall, clutch)
         assert profile.score is not None
+
+    def test_score_none_when_only_ts_delta_is_none(self) -> None:
+        """When overall has fga=0 and fta=0, regular TS% is None so ts_delta is None.
+
+        Even though ato_delta is computable (both have valid ast/tov), score
+        must remain None because the ``and`` requires *both* deltas.  This
+        kills the ``and → or`` mutation on L166.
+        """
+        overall = _StatsLike(pts=10.0, fga=0.0, fta=0.0, ast=3.0, tov=2.0)
+        clutch = _StatsLike(pts=8.0, fga=5.0, fta=2.0, ast=4.0, tov=1.0, minutes=30.0)
+        profile = build_clutch_profile(1, "Player", "TST", overall, clutch)
+        # regular_ts is None (fga=0, fta=0), so ts_delta is None
+        assert profile.regular_ts is None
+        assert profile.ts_delta is None
+        # ato_delta IS computable because both sides have valid ast/tov
+        assert profile.ato_delta is not None
+        # score must still be None — both deltas are required
+        assert profile.score is None
 
     @settings(suppress_health_check=_XDIST)
     @given(
@@ -524,3 +569,57 @@ class TestGetLeagueClutchLeaders:
         result = await get_league_clutch_leaders(client)
 
         assert result == []
+
+    async def test_top_n_zero_raises(self, mocker: MockerFixture) -> None:
+        """top_n=0 raises ValueError (kills < to <= boundary at L287)."""
+        client = NBAClient(session=mocker.MagicMock())
+        with pytest.raises(ValueError, match="top_n must be >= 1"):
+            await get_league_clutch_leaders(client, top_n=0)
+
+    async def test_top_n_one_is_valid(self, mocker: MockerFixture) -> None:
+        """top_n=1 does not raise (boundary: 1 < 1 is False)."""
+        response = mocker.MagicMock()
+        response.players = [
+            self._make_row(
+                mocker, player_id=1, name="A", team="X", plus_minus=5.0, minutes=25.0
+            ),
+        ]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_league_clutch_leaders(client, top_n=1)
+        assert len(result) == 1
+
+    async def test_min_minutes_zero_is_valid(self, mocker: MockerFixture) -> None:
+        """min_minutes=0 does not raise (kills < to <= boundary at L290)."""
+        response = mocker.MagicMock()
+        response.players = [
+            self._make_row(
+                mocker, player_id=1, name="A", team="X", plus_minus=5.0, minutes=0.0
+            ),
+        ]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_league_clutch_leaders(client, min_minutes=0.0)
+        assert len(result) == 1
+
+    async def test_min_minutes_negative_raises(self, mocker: MockerFixture) -> None:
+        """min_minutes=-1 raises ValueError."""
+        client = NBAClient(session=mocker.MagicMock())
+        with pytest.raises(ValueError, match="min_minutes must be >= 0"):
+            await get_league_clutch_leaders(client, min_minutes=-1.0)
+
+    async def test_filters_uses_gte_not_gt(self, mocker: MockerFixture) -> None:
+        """Player with min exactly equal to min_minutes is included (>= not >)."""
+        response = mocker.MagicMock()
+        response.players = [
+            self._make_row(
+                mocker, player_id=1, name="A", team="X", plus_minus=5.0, minutes=20.0
+            ),
+        ]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_league_clutch_leaders(client, min_minutes=20.0)
+        assert len(result) == 1

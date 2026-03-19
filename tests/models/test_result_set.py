@@ -1,6 +1,7 @@
 import pytest
 
 from fastbreak.models.common.result_set import (
+    _parse_result_set_rows,
     is_tabular_response,
     named_result_sets_validator,
     named_tabular_validator,
@@ -91,6 +92,37 @@ class TestParseResultSet:
         result = parse_result_set(data)
 
         assert result[0]["name"] is None
+
+
+class TestParseResultSetRowsStrictZip:
+    """Tests for _parse_result_set_rows strict zip (kills strict=True → False gremlin)."""
+
+    def test_mismatched_header_row_lengths_raises(self):
+        """Raises ValueError when a row has more elements than headers."""
+        result_set = {
+            "headers": ["id", "name"],
+            "rowSet": [[1, "Alice", "extra_value"]],
+        }
+        with pytest.raises(ValueError):
+            _parse_result_set_rows(result_set)
+
+    def test_fewer_row_elements_than_headers_raises(self):
+        """Raises ValueError when a row has fewer elements than headers."""
+        result_set = {
+            "headers": ["id", "name", "score"],
+            "rowSet": [[1, "Alice"]],
+        }
+        with pytest.raises(ValueError):
+            _parse_result_set_rows(result_set)
+
+    def test_matched_lengths_succeeds(self):
+        """Matching header and row lengths parse successfully."""
+        result_set = {
+            "headers": ["id", "name"],
+            "rowSet": [[1, "Alice"], [2, "Bob"]],
+        }
+        result = _parse_result_set_rows(result_set)
+        assert result == [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]
 
 
 class TestParseResultSetByName:

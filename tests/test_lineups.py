@@ -488,6 +488,30 @@ class TestRankLineups:
         result = rank_lineups(lineups, min_minutes=0.0, by="w_pct")
         assert result[0].group_id == "b"
 
+    def test_lineup_exactly_at_min_minutes_is_included(self) -> None:
+        """A lineup with min exactly equal to min_minutes passes the >= filter."""
+        from fastbreak.lineups import rank_lineups
+
+        lineups = [
+            _make_league_lineup(group_id="at", min=10.0),
+            _make_league_lineup(group_id="below", min=9.9),
+        ]
+        result = rank_lineups(lineups, min_minutes=10.0)
+        assert len(result) == 1
+        assert result[0].group_id == "at"
+
+    def test_by_fg_pct_ascending(self) -> None:
+        """by='fg_pct' with ascending=True sorts lowest fg_pct first."""
+        from fastbreak.lineups import rank_lineups
+
+        lineups = [
+            _make_league_lineup(group_id="high", fg_pct=0.550),
+            _make_league_lineup(group_id="low", fg_pct=0.380),
+            _make_league_lineup(group_id="mid", fg_pct=0.450),
+        ]
+        result = rank_lineups(lineups, min_minutes=0.0, by="fg_pct", ascending=True)
+        assert [lu.group_id for lu in result] == ["low", "mid", "high"]
+
 
 # ─── Async wrapper tests ─────────────────────────────────────────────────
 

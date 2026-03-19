@@ -227,3 +227,268 @@ class TestTeamPlayerTrackStatisticsValidation:
                 defendedAtRimFieldGoalsAttempted=30,
                 defendedAtRimFieldGoalPercentage=0.4,
             )
+
+
+class TestPlayerTrackBoundaryMadeEqualsAttempted:
+    """Boundary tests where made == attempted (kills > to >= gremlins)."""
+
+    def test_contested_made_equals_attempted_is_valid(self):
+        """made == attempted should pass validation (not raise)."""
+        stats = PlayerTrackStatistics(
+            minutes="30:00",
+            speed=5.0,
+            distance=2.5,
+            reboundChancesOffensive=5,
+            reboundChancesDefensive=10,
+            reboundChancesTotal=15,
+            touches=40,
+            secondaryAssists=2,
+            freeThrowAssists=3,
+            passes=15,
+            assists=5,
+            contestedFieldGoalsMade=10,  # Equal to attempted
+            contestedFieldGoalsAttempted=10,
+            contestedFieldGoalPercentage=1.0,
+            uncontestedFieldGoalsMade=5,
+            uncontestedFieldGoalsAttempted=15,
+            uncontestedFieldGoalsPercentage=0.333,
+            fieldGoalPercentage=0.5,
+            defendedAtRimFieldGoalsMade=3,
+            defendedAtRimFieldGoalsAttempted=8,
+            defendedAtRimFieldGoalPercentage=0.375,
+        )
+        assert stats.contestedFieldGoalsMade == stats.contestedFieldGoalsAttempted
+
+    def test_uncontested_made_equals_attempted_is_valid(self):
+        """made == attempted should pass validation (not raise)."""
+        stats = PlayerTrackStatistics(
+            minutes="30:00",
+            speed=5.0,
+            distance=2.5,
+            reboundChancesOffensive=5,
+            reboundChancesDefensive=10,
+            reboundChancesTotal=15,
+            touches=40,
+            secondaryAssists=2,
+            freeThrowAssists=3,
+            passes=15,
+            assists=5,
+            contestedFieldGoalsMade=8,
+            contestedFieldGoalsAttempted=20,
+            contestedFieldGoalPercentage=0.4,
+            uncontestedFieldGoalsMade=15,  # Equal to attempted
+            uncontestedFieldGoalsAttempted=15,
+            uncontestedFieldGoalsPercentage=1.0,
+            fieldGoalPercentage=0.5,
+            defendedAtRimFieldGoalsMade=3,
+            defendedAtRimFieldGoalsAttempted=8,
+            defendedAtRimFieldGoalPercentage=0.375,
+        )
+        assert stats.uncontestedFieldGoalsMade == stats.uncontestedFieldGoalsAttempted
+
+    def test_defended_at_rim_made_equals_attempted_is_valid(self):
+        """made == attempted should pass validation (not raise)."""
+        stats = PlayerTrackStatistics(
+            minutes="30:00",
+            speed=5.0,
+            distance=2.5,
+            reboundChancesOffensive=5,
+            reboundChancesDefensive=10,
+            reboundChancesTotal=15,
+            touches=40,
+            secondaryAssists=2,
+            freeThrowAssists=3,
+            passes=15,
+            assists=5,
+            contestedFieldGoalsMade=8,
+            contestedFieldGoalsAttempted=20,
+            contestedFieldGoalPercentage=0.4,
+            uncontestedFieldGoalsMade=10,
+            uncontestedFieldGoalsAttempted=15,
+            uncontestedFieldGoalsPercentage=0.667,
+            fieldGoalPercentage=0.5,
+            defendedAtRimFieldGoalsMade=8,  # Equal to attempted
+            defendedAtRimFieldGoalsAttempted=8,
+            defendedAtRimFieldGoalPercentage=1.0,
+        )
+        assert (
+            stats.defendedAtRimFieldGoalsMade == stats.defendedAtRimFieldGoalsAttempted
+        )
+
+    def test_all_made_equals_attempted_is_valid(self):
+        """All three pairs at boundary should pass validation."""
+        stats = PlayerTrackStatistics(
+            minutes="30:00",
+            speed=5.0,
+            distance=2.5,
+            reboundChancesOffensive=5,
+            reboundChancesDefensive=10,
+            reboundChancesTotal=15,
+            touches=40,
+            secondaryAssists=2,
+            freeThrowAssists=3,
+            passes=15,
+            assists=5,
+            contestedFieldGoalsMade=20,
+            contestedFieldGoalsAttempted=20,
+            contestedFieldGoalPercentage=1.0,
+            uncontestedFieldGoalsMade=15,
+            uncontestedFieldGoalsAttempted=15,
+            uncontestedFieldGoalsPercentage=1.0,
+            fieldGoalPercentage=1.0,
+            defendedAtRimFieldGoalsMade=8,
+            defendedAtRimFieldGoalsAttempted=8,
+            defendedAtRimFieldGoalPercentage=1.0,
+        )
+        assert stats.contestedFieldGoalsMade == stats.contestedFieldGoalsAttempted
+        assert stats.uncontestedFieldGoalsMade == stats.uncontestedFieldGoalsAttempted
+        assert (
+            stats.defendedAtRimFieldGoalsMade == stats.defendedAtRimFieldGoalsAttempted
+        )
+
+
+class TestTeamPlayerTrackBoundaryMadeEqualsAttempted:
+    """Boundary tests for TeamPlayerTrackStatistics where made == attempted."""
+
+    def test_team_contested_made_equals_attempted_is_valid(self):
+        """made == attempted should pass validation (not raise)."""
+        stats = TeamPlayerTrackStatistics(
+            minutes="240:00",
+            distance=25.0,
+            reboundChancesOffensive=20,
+            reboundChancesDefensive=40,
+            reboundChancesTotal=60,
+            touches=200,
+            secondaryAssists=10,
+            freeThrowAssists=15,
+            passes=75,
+            assists=25,
+            contestedFieldGoalsMade=80,  # Equal to attempted
+            contestedFieldGoalsAttempted=80,
+            contestedFieldGoalPercentage=1.0,
+            uncontestedFieldGoalsMade=40,
+            uncontestedFieldGoalsAttempted=60,
+            uncontestedFieldGoalsPercentage=0.667,
+            fieldGoalPercentage=0.5,
+            defendedAtRimFieldGoalsMade=12,
+            defendedAtRimFieldGoalsAttempted=30,
+            defendedAtRimFieldGoalPercentage=0.4,
+        )
+        assert stats.contestedFieldGoalsMade == stats.contestedFieldGoalsAttempted
+
+    def test_team_uncontested_made_equals_attempted_is_valid(self):
+        """made == attempted should pass validation (not raise)."""
+        stats = TeamPlayerTrackStatistics(
+            minutes="240:00",
+            distance=25.0,
+            reboundChancesOffensive=20,
+            reboundChancesDefensive=40,
+            reboundChancesTotal=60,
+            touches=200,
+            secondaryAssists=10,
+            freeThrowAssists=15,
+            passes=75,
+            assists=25,
+            contestedFieldGoalsMade=30,
+            contestedFieldGoalsAttempted=80,
+            contestedFieldGoalPercentage=0.375,
+            uncontestedFieldGoalsMade=60,  # Equal to attempted
+            uncontestedFieldGoalsAttempted=60,
+            uncontestedFieldGoalsPercentage=1.0,
+            fieldGoalPercentage=0.5,
+            defendedAtRimFieldGoalsMade=12,
+            defendedAtRimFieldGoalsAttempted=30,
+            defendedAtRimFieldGoalPercentage=0.4,
+        )
+        assert stats.uncontestedFieldGoalsMade == stats.uncontestedFieldGoalsAttempted
+
+    def test_team_defended_at_rim_made_equals_attempted_is_valid(self):
+        """made == attempted should pass validation (not raise)."""
+        stats = TeamPlayerTrackStatistics(
+            minutes="240:00",
+            distance=25.0,
+            reboundChancesOffensive=20,
+            reboundChancesDefensive=40,
+            reboundChancesTotal=60,
+            touches=200,
+            secondaryAssists=10,
+            freeThrowAssists=15,
+            passes=75,
+            assists=25,
+            contestedFieldGoalsMade=30,
+            contestedFieldGoalsAttempted=80,
+            contestedFieldGoalPercentage=0.375,
+            uncontestedFieldGoalsMade=40,
+            uncontestedFieldGoalsAttempted=60,
+            uncontestedFieldGoalsPercentage=0.667,
+            fieldGoalPercentage=0.5,
+            defendedAtRimFieldGoalsMade=30,  # Equal to attempted
+            defendedAtRimFieldGoalsAttempted=30,
+            defendedAtRimFieldGoalPercentage=1.0,
+        )
+        assert (
+            stats.defendedAtRimFieldGoalsMade == stats.defendedAtRimFieldGoalsAttempted
+        )
+
+
+class TestPlayerTrackValidatorReturnsSelf:
+    """Test that the model validator returns self (kills return → None gremlin)."""
+
+    def test_validator_returns_self_for_player(self):
+        """check_made_not_exceeding_attempted must return self, not None."""
+        stats = PlayerTrackStatistics(
+            minutes="30:00",
+            speed=5.0,
+            distance=2.5,
+            reboundChancesOffensive=5,
+            reboundChancesDefensive=10,
+            reboundChancesTotal=15,
+            touches=40,
+            secondaryAssists=2,
+            freeThrowAssists=3,
+            passes=15,
+            assists=5,
+            contestedFieldGoalsMade=8,
+            contestedFieldGoalsAttempted=20,
+            contestedFieldGoalPercentage=0.4,
+            uncontestedFieldGoalsMade=10,
+            uncontestedFieldGoalsAttempted=15,
+            uncontestedFieldGoalsPercentage=0.667,
+            fieldGoalPercentage=0.5,
+            defendedAtRimFieldGoalsMade=3,
+            defendedAtRimFieldGoalsAttempted=8,
+            defendedAtRimFieldGoalPercentage=0.375,
+        )
+        # If the validator returned None instead of self, construction would fail
+        assert stats is not None
+        assert isinstance(stats, PlayerTrackStatistics)
+        assert stats.minutes == "30:00"
+
+    def test_validator_returns_self_for_team(self):
+        """check_made_not_exceeding_attempted must return self, not None."""
+        stats = TeamPlayerTrackStatistics(
+            minutes="240:00",
+            distance=25.0,
+            reboundChancesOffensive=20,
+            reboundChancesDefensive=40,
+            reboundChancesTotal=60,
+            touches=200,
+            secondaryAssists=10,
+            freeThrowAssists=15,
+            passes=75,
+            assists=25,
+            contestedFieldGoalsMade=30,
+            contestedFieldGoalsAttempted=80,
+            contestedFieldGoalPercentage=0.375,
+            uncontestedFieldGoalsMade=40,
+            uncontestedFieldGoalsAttempted=60,
+            uncontestedFieldGoalsPercentage=0.667,
+            fieldGoalPercentage=0.5,
+            defendedAtRimFieldGoalsMade=12,
+            defendedAtRimFieldGoalsAttempted=30,
+            defendedAtRimFieldGoalPercentage=0.4,
+        )
+        # If the validator returned None instead of self, construction would fail
+        assert stats is not None
+        assert isinstance(stats, TeamPlayerTrackStatistics)
+        assert stats.minutes == "240:00"

@@ -571,6 +571,88 @@ def test_get_player_playtypes_exported():
     assert callable(get_player_playtypes)
 
 
+class TestGetPlayerPlaytypesFilter:
+    """Tests to kill the == to != filter mutant on L444 and return→None mutant."""
+
+    async def test_filters_to_requested_player_only(self, mocker: MockerFixture):
+        """Only rows matching the requested player_id are returned."""
+        from fastbreak.players import get_player_playtypes  # noqa: PLC0415
+
+        target = mocker.MagicMock()
+        target.player_id = 201939
+        other = mocker.MagicMock()
+        other.player_id = 2544
+        response = mocker.MagicMock()
+        response.player_stats = [target, other]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_player_playtypes(client, player_id=201939)
+
+        assert len(result) == 1
+        assert result[0].player_id == 201939
+
+    async def test_excludes_non_matching_players(self, mocker: MockerFixture):
+        """Rows for other players are excluded."""
+        from fastbreak.players import get_player_playtypes  # noqa: PLC0415
+
+        other = mocker.MagicMock()
+        other.player_id = 2544
+        response = mocker.MagicMock()
+        response.player_stats = [other]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_player_playtypes(client, player_id=201939)
+
+        assert result == []
+
+    async def test_returns_list_not_none(self, mocker: MockerFixture):
+        """Return value is a list, never None (kills return→None mutant)."""
+        from fastbreak.players import get_player_playtypes  # noqa: PLC0415
+
+        response = mocker.MagicMock()
+        response.player_stats = []
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_player_playtypes(client, player_id=201939)
+
+        assert isinstance(result, list)
+
+
+class TestGetLeagueLeadersBoundary:
+    """Tests to kill boundary mutants on L238."""
+
+    async def test_limit_zero_raises(self, mocker: MockerFixture):
+        """limit=0 raises ValueError (kills < to <= boundary at L238)."""
+        client = NBAClient(session=mocker.MagicMock())
+        with pytest.raises(ValueError, match="positive integer"):
+            await get_league_leaders(client, limit=0)
+
+    async def test_limit_one_is_valid(self, mocker: MockerFixture):
+        """limit=1 does not raise."""
+        leader = mocker.MagicMock()
+        response = mocker.MagicMock()
+        response.leaders = [leader]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_league_leaders(client, limit=1)
+        assert len(result) == 1
+
+    async def test_limit_none_returns_all(self, mocker: MockerFixture):
+        """limit=None returns all leaders without raising."""
+        leaders = [mocker.MagicMock() for _ in range(5)]
+        response = mocker.MagicMock()
+        response.leaders = leaders
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_league_leaders(client, limit=None)
+        assert len(result) == 5
+
+
 class TestSeasonIdToSeason:
     """season_id_to_season handles both NBA API season_id formats."""
 

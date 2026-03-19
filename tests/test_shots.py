@@ -598,3 +598,120 @@ class TestXfgPct:
         result = xfg_pct(shots, lg)
         assert result is not None
         assert 0.0 <= result <= 1.0
+
+
+# ─── TestLeagueZoneFgLookup ─────────────────────────────────────────────────
+
+
+class TestLeagueZoneFgLookup:
+    """Tests for the private _league_zone_fg_lookup() helper.
+
+    This function aggregates sub-zone league rows into per-zone FG%
+    and must exclude zones with 0 FGA.
+    """
+
+    def test_zone_with_zero_fga_excluded(self) -> None:
+        """A zone with fga=0 must be excluded from the result.
+
+        This kills the ``> → >=`` mutant at L106: if `fga > 0` were changed
+        to `fga >= 0`, the zero-FGA zone would be included and cause a
+        ZeroDivisionError (or an entry with undefined FG%).
+        """
+        from fastbreak.models.shot_chart_leaguewide import LeagueWideShotZone
+        from fastbreak.shots import _league_zone_fg_lookup
+
+        zones = [
+            _make_league_zone(zone="Mid-Range", fga=1000, fgm=400),
+            LeagueWideShotZone.model_validate(
+                {
+                    "GRID_TYPE": "League Averages",
+                    "SHOT_ZONE_BASIC": "Backcourt",
+                    "SHOT_ZONE_AREA": "Back Court(BC)",
+                    "SHOT_ZONE_RANGE": "Back Court Shot",
+                    "FGA": 0,
+                    "FGM": 0,
+                    "FG_PCT": 0.0,
+                }
+            ),
+        ]
+        result = _league_zone_fg_lookup(zones)
+        assert "Backcourt" not in result
+        assert "Mid-Range" in result
+        assert result["Mid-Range"] == pytest.approx(0.4)
+
+    def test_all_zones_with_positive_fga_included(self) -> None:
+        """Zones with fga > 0 are all present in the result."""
+        from fastbreak.shots import _league_zone_fg_lookup
+
+        zones = [
+            _make_league_zone(zone="Restricted Area", fga=500, fgm=300),
+            _make_league_zone(zone="Mid-Range", fga=1000, fgm=400),
+        ]
+        result = _league_zone_fg_lookup(zones)
+        assert len(result) == 2
+        assert result["Restricted Area"] == pytest.approx(0.6)
+        assert result["Mid-Range"] == pytest.approx(0.4)
+
+    def test_aggregates_sub_zones_by_basic_zone(self) -> None:
+        """Multiple sub-zone rows with the same shot_zone_basic are aggregated."""
+        from fastbreak.shots import _league_zone_fg_lookup
+
+        # Two sub-zones for "Mid-Range" with different areas
+        zones = [
+            _make_league_zone(zone="Mid-Range", fga=600, fgm=240),
+            _make_league_zone(zone="Mid-Range", fga=400, fgm=160),
+        ]
+        result = _league_zone_fg_lookup(zones)
+        # total: fga=1000, fgm=400 → 0.4
+        assert result["Mid-Range"] == pytest.approx(0.4)
+
+
+# ─── TestGetShotChartSeasonDefault ───────────────────────────────────────────
+
+
+class TestGetShotChartSeasonDefault:
+    """Tests for get_shot_chart season parameter defaulting.
+
+    Kills the ``or → and`` mutant at L222: ``season or get_season_from_date()``
+    must fall back to the current season when ``season`` is None.
+    """
+
+    async def test_explicit_season_is_used(self, mocker: MockerFixture) -> None:
+        """Passing an explicit season uses that value, not the default."""
+        from fastbreak.clients.nba import NBAClient
+        from fastbreak.endpoints import ShotChartDetail
+
+        response = mocker.MagicMock()
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        await get_shot_chart(client, player_id=2544, season="2023-24")
+
+        endpoint = client.get.call_args[0][0]
+        assert isinstance(endpoint, ShotChartDetail)
+        assert endpoint.season == "2023-24"
+
+    async def test_none_season_falls_back_to_current(
+        self, mocker: MockerFixture
+    ) -> None:
+        """When season is None (default), get_season_from_date() is used.
+
+        If the ``or`` were mutated to ``and``, a None season would remain None
+        (since ``None and X`` is None) and the endpoint would receive None
+        instead of a valid season string.
+        """
+        from fastbreak.clients.nba import NBAClient
+        from fastbreak.endpoints import ShotChartDetail
+        from fastbreak.seasons import get_season_from_date
+
+        response = mocker.MagicMock()
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        await get_shot_chart(client, player_id=2544)
+
+        endpoint = client.get.call_args[0][0]
+        assert isinstance(endpoint, ShotChartDetail)
+        expected_season = get_season_from_date()
+        assert endpoint.season == expected_season
+        assert endpoint.season is not None

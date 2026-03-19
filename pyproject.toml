@@ -40,7 +40,6 @@ dependencies = [
     "cachetools>=5.5",
     "certifi>=2026",
     "pydantic>=2.12",
-    "pytest-gremlins>=1.5.1",
     "structlog>=25.0",
     "tenacity>=8.0",
 ]
@@ -127,7 +126,6 @@ addopts = ["-m", "not live_api"]
 dev = [
     "complexipy>=5.1.0",
     "hypothesis>=6.151.4",
-    "mutmut>=3.3",
     "mypy>=1.19.1",
     "pandas>=3.0.0",
     "pandas-stubs>=3.0.0.260204",
@@ -137,6 +135,7 @@ dev = [
     "pytest-asyncio>=0.24",
     "pytest-cov>=7.0.0",
     "pytest-mock>=3.15.1",
+    "pytest-gremlins>=1.5.1",
     "pytest-xdist>=3.8.0",
     "ruff>=0.14",
     "types-cachetools>=5.5",
@@ -151,9 +150,3 @@ exclude = [
 ]
 workers = "auto"
 cache = true
-
-
-
-[tool.mutmut]
-paths_to_mutate = ["src/fastbreak/"]
-tests_dir = ["tests/"]
