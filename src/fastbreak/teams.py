@@ -362,6 +362,9 @@ _TEAMS_BY_ABBREVIATION: dict[str, TeamInfo] = {
     t.abbreviation: t for t in TEAMS.values()
 }
 _TEAMS_BY_NAME: dict[str, TeamInfo] = {t.name.lower(): t for t in TEAMS.values()}
+_TEAMS_BY_FULL_NAME: dict[str, TeamInfo] = {
+    t.full_name.lower(): t for t in TEAMS.values()
+}
 _TEAMS_BY_CITY: dict[str, TeamInfo] = {t.city.lower(): t for t in TEAMS.values()}
 _VALID_CONFERENCES: frozenset[str] = frozenset({t.conference for t in TEAMS.values()})
 _VALID_DIVISIONS: frozenset[str] = frozenset({t.division for t in TEAMS.values()})
@@ -374,11 +377,12 @@ for _t in TEAMS.values():
 
 
 def get_team(identifier: int | str) -> TeamInfo | None:
-    """Look up team information by ID, abbreviation, name, or city.
+    """Look up team information by ID, abbreviation, name, city, or full name.
 
     Args:
         identifier: Team ID (int), abbreviation (e.g., "LAL"),
-                   name (e.g., "Lakers"), or city (e.g., "Los Angeles")
+                   name (e.g., "Lakers"), city (e.g., "Los Angeles"),
+                   or full name (e.g., "Golden State Warriors")
 
     Returns:
         TeamInfo if found, None otherwise
@@ -390,6 +394,8 @@ def get_team(identifier: int | str) -> TeamInfo | None:
         TeamInfo(id=1610612747, abbreviation='LAL', ...)
         >>> get_team("Lakers")
         TeamInfo(id=1610612747, abbreviation='LAL', ...)
+        >>> get_team("Golden State Warriors")
+        TeamInfo(id=1610612744, abbreviation='GSW', ...)
 
     """
     if isinstance(identifier, int):
@@ -400,10 +406,12 @@ def get_team(identifier: int | str) -> TeamInfo | None:
     if upper in _TEAMS_BY_ABBREVIATION:
         return _TEAMS_BY_ABBREVIATION[upper]
 
-    # Try name or city (case-insensitive)
+    # Try name, full name, or city (case-insensitive)
     lower = identifier.lower()
     if lower in _TEAMS_BY_NAME:
         return _TEAMS_BY_NAME[lower]
+    if lower in _TEAMS_BY_FULL_NAME:
+        return _TEAMS_BY_FULL_NAME[lower]
     if lower in _TEAMS_BY_CITY:
         return _TEAMS_BY_CITY[lower]
 
@@ -411,10 +419,10 @@ def get_team(identifier: int | str) -> TeamInfo | None:
 
 
 def get_team_id(identifier: str) -> TeamID | None:
-    """Get a team's ID by abbreviation, name, or city.
+    """Get a team's ID by abbreviation, name, city, or full name.
 
     Args:
-        identifier: Team abbreviation, name, or city
+        identifier: Team abbreviation, name, city, or full name
 
     Returns:
         Team ID if found, None otherwise

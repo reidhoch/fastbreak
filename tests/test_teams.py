@@ -364,6 +364,18 @@ class TestGetTeam:
         assert team is not None
         assert team.name == "Celtics"
 
+    def test_get_by_full_name(self) -> None:
+        """Can get team by full name."""
+        team = get_team("Golden State Warriors")
+        assert team is not None
+        assert team.abbreviation == "GSW"
+
+    def test_get_by_full_name_lowercase(self) -> None:
+        """Full name lookup is case-insensitive."""
+        team = get_team("golden state warriors")
+        assert team is not None
+        assert team.abbreviation == "GSW"
+
     def test_get_unknown_returns_none(self) -> None:
         """Unknown identifier returns None."""
         assert get_team("Unknown") is None

@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 from fastbreak.clients.nba import NBAClient
 from fastbreak.games import (
+    elapsed_game_seconds,
     get_box_scores,
     get_game_ids,
     get_game_summary,
@@ -916,3 +917,39 @@ class TestGameFlow:
         assert flow[0].elapsed_seconds == pytest.approx(2520.0)
         # OT1 start: 4*720 + 0*(300) + (300-300) = 2880
         assert flow[1].elapsed_seconds == pytest.approx(2880.0)
+
+
+class TestElapsedGameSeconds:
+    """Tests for the public elapsed_game_seconds() helper."""
+
+    def test_q1_start(self) -> None:
+        """Q1 with 12:00 remaining → 0.0 seconds elapsed."""
+        assert elapsed_game_seconds("PT12M00.00S", 1) == pytest.approx(0.0)
+
+    def test_q1_midpoint(self) -> None:
+        """Q1 with 10:00 remaining → 120.0 seconds elapsed."""
+        assert elapsed_game_seconds("PT10M00.00S", 1) == pytest.approx(120.0)
+
+    def test_q2_start(self) -> None:
+        """Q2 with 12:00 remaining → 720.0 seconds elapsed."""
+        assert elapsed_game_seconds("PT12M00.00S", 2) == pytest.approx(720.0)
+
+    def test_q4_end(self) -> None:
+        """Q4 with 0:00 remaining → 2880.0 seconds (full regulation)."""
+        assert elapsed_game_seconds("PT00M00.00S", 4) == pytest.approx(2880.0)
+
+    def test_ot1_start(self) -> None:
+        """OT1 with 5:00 remaining → 2880.0 seconds."""
+        assert elapsed_game_seconds("PT05M00.00S", 5) == pytest.approx(2880.0)
+
+    def test_ot1_midpoint(self) -> None:
+        """OT1 with 2:30 remaining → 3030.0 seconds."""
+        assert elapsed_game_seconds("PT02M30.00S", 5) == pytest.approx(3030.0)
+
+    def test_double_ot(self) -> None:
+        """2OT with 5:00 remaining → 3180.0 seconds."""
+        assert elapsed_game_seconds("PT05M00.00S", 6) == pytest.approx(3180.0)
+
+    def test_invalid_clock(self) -> None:
+        """Invalid clock string returns period offset (0.0 remaining)."""
+        assert elapsed_game_seconds("INVALID", 1) == pytest.approx(720.0)

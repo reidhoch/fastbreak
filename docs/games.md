@@ -17,6 +17,7 @@ from fastbreak.games import (
     get_box_scores_scoring,
     get_play_by_play,
     game_flow,
+    elapsed_game_seconds,
     GameFlowPoint,
 )
 ```
@@ -665,6 +666,38 @@ A single scoring event in a game's score-line timeline, returned by `game_flow()
 | `score_away` | `int` | Away team cumulative score at this point |
 | `margin` | `int` | `score_home - score_away` (positive = home leading) |
 | `description` | `str` | Play description text from the API |
+
+---
+
+### `elapsed_game_seconds`
+
+```python
+def elapsed_game_seconds(clock: str, period: int) -> float
+```
+
+Convert a game clock and period into seconds elapsed since tip-off. This is a **pure computation function** — no client needed. Used internally by `game_flow()` and `fastbreak.transition.classify_possessions()`.
+
+**Parameters:**
+
+| Parameter | Type  | Description |
+|-----------|-------|-------------|
+| `clock`   | `str` | Remaining time as ISO 8601 duration, e.g. `"PT10M00.00S"` |
+| `period`  | `int` | Period number (1–4 = regulation, 5+ = overtime) |
+
+**Returns:** `float` — seconds elapsed since tip-off.
+
+**Time model:**
+- Regulation periods (1–4): 720 seconds (12 minutes) each.
+- Overtime periods (5+): 300 seconds (5 minutes) each.
+- `elapsed = period_offset + (period_duration - remaining)`
+
+```python
+from fastbreak.games import elapsed_game_seconds
+
+elapsed_game_seconds("PT10M00.00S", period=1)  # → 120.0   (2 min into Q1)
+elapsed_game_seconds("PT00M00.00S", period=4)  # → 2880.0  (end of regulation)
+elapsed_game_seconds("PT02M30.00S", period=5)  # → 3030.0  (2:30 into OT1)
+```
 
 ---
 

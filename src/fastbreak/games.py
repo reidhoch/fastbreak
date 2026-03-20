@@ -356,6 +356,41 @@ def _parse_clock(clock: str) -> float:
     return int(m.group(1)) * 60 + float(m.group(2))
 
 
+def elapsed_game_seconds(clock: str, period: int) -> float:
+    """Return seconds elapsed since tip-off from a game clock and period.
+
+    Regulation periods (1-4) are 12 minutes (720 seconds) each.
+    Overtime periods (5+) are 5 minutes (300 seconds) each.
+
+    Args:
+        clock: ISO 8601 duration string (e.g., ``"PT04M32.00S"``).
+        period: Period number (1-4 regulation, 5+ overtime).
+
+    Returns:
+        Total seconds elapsed since the start of the game.
+
+    Examples:
+        >>> elapsed_game_seconds("PT12M00.00S", 1)
+        0.0
+        >>> elapsed_game_seconds("PT00M00.00S", 4)
+        2880.0
+        >>> elapsed_game_seconds("PT05M00.00S", 5)
+        2880.0
+
+    """
+    remaining = _parse_clock(clock)
+    if period <= _REGULATION_PERIODS:
+        period_offset = (period - 1) * _REGULATION_PERIOD_SECONDS
+        period_duration = _REGULATION_PERIOD_SECONDS
+    else:
+        period_offset = (
+            _REGULATION_PERIODS * _REGULATION_PERIOD_SECONDS
+            + (period - _REGULATION_PERIODS - 1) * _OT_PERIOD_SECONDS
+        )
+        period_duration = _OT_PERIOD_SECONDS
+    return period_offset + (period_duration - remaining)
+
+
 def game_flow(actions: list[PlayByPlayAction]) -> list[GameFlowPoint]:
     """Build a score-line timeline from a list of play-by-play actions.
 
@@ -402,22 +437,10 @@ def game_flow(actions: list[PlayByPlayAction]) -> list[GameFlowPoint]:
         except ValueError:
             continue
 
-        period = action.period
-        remaining = _parse_clock(action.clock)
-        if period <= _REGULATION_PERIODS:
-            period_offset = (period - 1) * _REGULATION_PERIOD_SECONDS
-            period_duration = _REGULATION_PERIOD_SECONDS
-        else:
-            period_offset = (
-                _REGULATION_PERIODS * _REGULATION_PERIOD_SECONDS
-                + (period - _REGULATION_PERIODS - 1) * _OT_PERIOD_SECONDS
-            )
-            period_duration = _OT_PERIOD_SECONDS
-
-        elapsed = period_offset + (period_duration - remaining)
+        elapsed = elapsed_game_seconds(action.clock, action.period)
         result.append(
             GameFlowPoint(
-                period=period,
+                period=action.period,
                 clock=action.clock,
                 elapsed_seconds=elapsed,
                 score_home=score_home,
