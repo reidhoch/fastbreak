@@ -236,3 +236,14 @@ on/off court splits.
 ```bash
 uv run python examples/matchups.py
 ```
+
+### [rotations.py](rotations.py)
+
+Analyze game rotations using `fastbreak.rotations`: per-player minutes distribution
+(`player_total_minutes`), stint plus/minus leaders (`stint_plus_minus`), lineup
+reconstruction (`lineup_stints`), substitution timeline (`rotation_timeline`), and
+the convenience wrapper `get_rotation_summary` for a full team-level summary.
+
+```bash
+uv run python examples/rotations.py
+```
