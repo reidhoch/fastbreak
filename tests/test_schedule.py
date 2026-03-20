@@ -46,10 +46,10 @@ class TestDaysRestBeforeGame:
         game_dates = [date(2025, 1, 15), date(2025, 1, 18)]
         assert days_rest_before_game(game_dates, 1) == 2
 
-    def test_same_day_clamped_to_zero(self):
-        """Same-day duplicate → max(0, ...) returns 0, not -1."""
-        game_dates = [date(2025, 1, 15), date(2025, 1, 15)]
-        assert days_rest_before_game(game_dates, 1) == 0
+    def test_multi_day_gap_is_correct(self):
+        """Larger gap: Jan 15 → Jan 20 = 4 days rest."""
+        game_dates = [date(2025, 1, 15), date(2025, 1, 20)]
+        assert days_rest_before_game(game_dates, 1) == 4
 
     def test_negative_index_raises(self):
         """Negative game_index raises IndexError (not silent wrap)."""

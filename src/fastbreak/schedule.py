@@ -467,7 +467,7 @@ async def get_season_schedule(
 
     Returns:
         List of :class:`ScheduledGame` in chronological order, or ``[]``
-        if the API response contains no ``leagueSchedule``.
+        if the API response contains no ``league_schedule``.
     """
     league_schedule = await _fetch_league_schedule(client, season)
     if league_schedule is None:

@@ -134,7 +134,6 @@ async def main() -> None:
         print("Rest advantage — Pacers next home game")
         print("=" * 60)
         all_season = await get_season_schedule(client, season="2025-26")
-        ind_dates = game_dates_from_schedule(games)
 
         # Find first Pacers home game with a computable rest advantage.
         # NOTE: breaks after first match — opp_dates is recomputed each
@@ -155,7 +154,7 @@ async def main() -> None:
             if not game.game_date_est:
                 continue
             gd = date.fromisoformat(game.game_date_est[:10])
-            adv = rest_advantage(ind_dates, opp_dates, gd)
+            adv = rest_advantage(game_dates, opp_dates, gd)
             opp_tri = _tricode(game.away_team)
             if adv is not None:
                 sign = "+" if adv > 0 else ""
@@ -167,8 +166,8 @@ async def main() -> None:
         print("=" * 60)
         print("Schedule density — games in last 7 days (first 10 games)")
         print("=" * 60)
-        for i in range(min(10, len(ind_dates))):
-            d = schedule_density(ind_dates, i)
+        for i in range(min(10, len(game_dates))):
+            d = schedule_density(game_dates, i)
             game, gd = valid_games[i]
             away = _tricode(game.away_team)
             home = _tricode(game.home_team)
