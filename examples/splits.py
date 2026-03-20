@@ -1,8 +1,9 @@
-"""Player situational splits examples.
+"""Player and team situational splits examples.
 
 Demonstrates home/road and win/loss splits, recent form (last-N rolling averages),
-game-context splits by half and score margin, shot-area breakdowns, and concurrent
-profile fetching via PlayerSplitsProfile.
+game-context splits by half and score margin, shot-area breakdowns, concurrent
+profile fetching via PlayerSplitsProfile, and team-level splits (general, shooting,
+and concurrent TeamSplitsProfile).
 
 Run:
     uv run python examples/splits.py
@@ -18,12 +19,17 @@ from fastbreak.splits import (
     get_player_last_n_games,
     get_player_shooting_splits,
     get_player_splits_profile,
+    get_team_general_splits,
+    get_team_shooting_splits,
+    get_team_splits_profile,
     stat_delta,
 )
+from fastbreak.teams import get_team_id
 
 
 async def player_situational_splits(
-    player_name: str, season: str | None = None
+    player_name: str,
+    season: str | None = None,
 ) -> None:
     """Print home/road and win/loss splits: FG%, PTS, and +/- comparisons."""
     season = season or get_season_from_date()
@@ -35,7 +41,9 @@ async def player_situational_splits(
             return
 
         splits = await get_player_general_splits(
-            client, player_id=player_id, season=season
+            client,
+            player_id=player_id,
+            season=season,
         )
 
     print(f"\nSituational Splits — {player_name} ({season})")
@@ -53,13 +61,13 @@ async def player_situational_splits(
         for label, row in [("Home", home), ("Road", road)]:
             fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "  N/A"
             print(
-                f"  {label:<8} {row.gp:>4} {fg_str:>6} {row.pts:>6.1f} {row.plus_minus:>+6.1f}"
+                f"  {label:<8} {row.gp:>4} {fg_str:>6} {row.pts:>6.1f} {row.plus_minus:>+6.1f}",
             )
         fg_delta_str = f"{fg_delta:+.3f}" if fg_delta is not None else "  N/A"
         pts_delta_str = f"{pts_delta:>+6.1f}" if pts_delta is not None else "   N/A"
         pm_delta_str = f"{pm_delta:>+6.1f}" if pm_delta is not None else "   N/A"
         print(
-            f"  {'Delta':<8} {'':>4} {fg_delta_str:>6}  {pts_delta_str}  {pm_delta_str}"
+            f"  {'Delta':<8} {'':>4} {fg_delta_str:>6}  {pts_delta_str}  {pm_delta_str}",
         )
 
     # Wins vs Losses
@@ -73,7 +81,7 @@ async def player_situational_splits(
         for label, row in [("Wins", wins), ("Losses", losses)]:
             fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "  N/A"
             print(
-                f"  {label:<8} {row.gp:>4} {fg_str:>6} {row.pts:>6.1f} {row.plus_minus:>+6.1f}"
+                f"  {label:<8} {row.gp:>4} {fg_str:>6} {row.pts:>6.1f} {row.plus_minus:>+6.1f}",
             )
         if fg_delta is not None:
             print(f"\n  FG% in wins vs losses: {fg_delta:+.3f}")
@@ -83,7 +91,7 @@ async def player_situational_splits(
     for row in splits.by_starting_position:
         fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "  N/A"
         print(
-            f"  {row.group_value!s:<10} {row.gp:>3} GP  {fg_str} FG%  {row.pts:.1f} PTS"
+            f"  {row.group_value!s:<10} {row.gp:>3} GP  {fg_str} FG%  {row.pts:.1f} PTS",
         )
 
 
@@ -98,7 +106,9 @@ async def player_recent_form(player_name: str, season: str | None = None) -> Non
             return
 
         last_n = await get_player_last_n_games(
-            client, player_id=player_id, season=season
+            client,
+            player_id=player_id,
+            season=season,
         )
 
     windows = [
@@ -118,7 +128,7 @@ async def player_recent_form(player_name: str, season: str | None = None) -> Non
             continue
         fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "  N/A"
         print(
-            f"  {label:<8} {row.gp:>4} {row.pts:>6.1f} {fg_str:>6} {row.ast:>5.1f} {row.reb:>5.1f}"
+            f"  {label:<8} {row.gp:>4} {row.pts:>6.1f} {fg_str:>6} {row.ast:>5.1f} {row.reb:>5.1f}",
         )
 
     # Trend: compare L5 to season baseline
@@ -140,7 +150,8 @@ async def player_recent_form(player_name: str, season: str | None = None) -> Non
 
 
 async def player_shooting_breakdown(
-    player_name: str, season: str | None = None
+    player_name: str,
+    season: str | None = None,
 ) -> None:
     """Print FG% by court area: restricted area, paint, mid-range, 3PT."""
     season = season or get_season_from_date()
@@ -152,7 +163,9 @@ async def player_shooting_breakdown(
             return
 
         shooting = await get_player_shooting_splits(
-            client, player_id=player_id, season=season
+            client,
+            player_id=player_id,
+            season=season,
         )
 
     print(f"\nShooting by Court Area — {player_name} ({season})")
@@ -161,7 +174,7 @@ async def player_shooting_breakdown(
     for row in shooting.by_shot_area:
         print(
             f"  {row.group_value:<30} {row.fgm:>4} {row.fga:>4} "
-            f"{row.fg_pct:.1%}  {row.efg_pct:.1%}"
+            f"{row.fg_pct:.1%}  {row.efg_pct:.1%}",
         )
 
     if shooting.by_assisted:
@@ -183,7 +196,9 @@ async def player_full_profile(player_name: str, season: str | None = None) -> No
 
         # Single get_many() call fetches all 5 endpoints concurrently
         profile = await get_player_splits_profile(
-            client, player_id=player_id, season=season
+            client,
+            player_id=player_id,
+            season=season,
         )
 
     print(f"\nFull Splits Profile — {player_name} ({season})")
@@ -193,7 +208,7 @@ async def player_full_profile(player_name: str, season: str | None = None) -> No
     for row in profile.game_splits.by_score_margin:
         fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "  N/A"
         print(
-            f"  {row.group_value!s:<20} {row.gp:>3} GP  {fg_str} FG%  {row.pts:.1f} PTS"
+            f"  {row.group_value!s:<20} {row.gp:>3} GP  {fg_str} FG%  {row.pts:.1f} PTS",
         )
 
     # Team performance context
@@ -210,16 +225,137 @@ async def player_full_profile(player_name: str, season: str | None = None) -> No
         print(f"  {row.group_value!s:<22} {row.gp:>3} GP  {fg_str}")
 
 
+async def team_situational_splits(
+    team_name: str,
+    season: str | None = None,
+) -> None:
+    """Print home/road and win/loss splits for a team."""
+    season = season or get_season_from_date()
+    team_id_val = get_team_id(team_name)
+    if team_id_val is None:
+        print(f"Team not found: {team_name!r}")
+        return
+
+    async with NBAClient() as client:
+        splits = await get_team_general_splits(
+            client,
+            team_id=int(team_id_val),
+            season=season,
+        )
+
+    print(f"\nTeam Situational Splits — {team_name} ({season})")
+
+    # Home vs Road
+    home = next((s for s in splits.by_location if s.group_value == "Home"), None)
+    road = next((s for s in splits.by_location if s.group_value == "Road"), None)
+    if home and road:
+        print("\n  Home vs Road:")
+        print(f"  {'Split':<8} {'W-L':>6} {'PTS':>6} {'FG%':>6} {'±':>6}")
+        print("  " + "-" * 38)
+        for label, row in [("Home", home), ("Road", road)]:
+            fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "  N/A"
+            print(
+                f"  {label:<8} {row.w}-{row.losses:>2} "
+                f"{row.pts:>6.1f} {fg_str:>6} {row.plus_minus:>+6.1f}",
+            )
+        pts_delta = stat_delta(home.pts, road.pts)
+        if pts_delta is not None:
+            print(f"\n  Home PTS advantage: {pts_delta:+.1f}")
+
+    # By month
+    if splits.by_month:
+        print("\n  By Month:")
+        print(f"  {'Month':<12} {'W-L':>6} {'PTS':>6} {'FG%':>6}")
+        print("  " + "-" * 35)
+        for row in splits.by_month:
+            fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "  N/A"
+            print(
+                f"  {row.group_value!s:<12} "
+                f"{row.w}-{row.losses:>2} {row.pts:>6.1f} {fg_str:>6}",
+            )
+
+
+async def team_shooting_breakdown(
+    team_name: str,
+    season: str | None = None,
+) -> None:
+    """Print team shooting splits by court area."""
+    season = season or get_season_from_date()
+    team_id_val = get_team_id(team_name)
+    if team_id_val is None:
+        print(f"Team not found: {team_name!r}")
+        return
+
+    async with NBAClient() as client:
+        shooting = await get_team_shooting_splits(
+            client,
+            team_id=int(team_id_val),
+            season=season,
+        )
+
+    print(f"\nTeam Shooting by Court Area — {team_name} ({season})")
+    print(f"  {'Area':<30} {'FGM':>4} {'FGA':>4} {'FG%':>6}  {'eFG%':>6}")
+    print("  " + "-" * 55)
+    for row in shooting.by_shot_area:
+        print(
+            f"  {row.group_value:<30} {row.fgm:>4.0f} {row.fga:>4.0f} "
+            f"{row.fg_pct:.1%}  {row.efg_pct:.1%}",
+        )
+
+
+async def team_full_profile(team_name: str, season: str | None = None) -> None:
+    """Fetch both team split endpoints in one concurrent round-trip."""
+    season = season or get_season_from_date()
+    team_id_val = get_team_id(team_name)
+    if team_id_val is None:
+        print(f"Team not found: {team_name!r}")
+        return
+
+    async with NBAClient() as client:
+        # Single get_many() call fetches general + shooting concurrently
+        profile = await get_team_splits_profile(
+            client,
+            team_id=int(team_id_val),
+            season=season,
+        )
+
+    print(f"\nTeam Splits Profile — {team_name} ({season})")
+    print(f"  (team_id={profile.team_id})")
+
+    # Days of rest from general splits
+    if profile.general.by_days_rest:
+        print("\n  By Days of Rest:")
+        print(f"  {'Rest':<22} {'W-L':>6} {'PTS':>6} {'FG%':>6}")
+        print("  " + "-" * 44)
+        for row in profile.general.by_days_rest:
+            fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "  N/A"
+            print(
+                f"  {row.group_value!s:<22} "
+                f"{row.w}-{row.losses:>2} {row.pts:>6.1f} {fg_str:>6}",
+            )
+
+    # Assisted vs unassisted from shooting splits
+    if profile.shooting.by_assisted:
+        print("\n  Assisted vs Unassisted:")
+        print(f"  {'Type':<30} {'FG%':>6}  {'% Ast FGM':>10}")
+        print("  " + "-" * 50)
+        for row in profile.shooting.by_assisted:
+            print(f"  {row.group_value:<30} {row.fg_pct:.1%}  {row.pct_ast_fgm:>9.1%}")
+
+
 async def main() -> None:
     season = "2025-26"
 
-    # Individual split views
+    # Player split views
     await player_situational_splits("Victor Wembanyama", season)
     await player_recent_form("LeBron James", season)
     await player_shooting_breakdown("Stephen Curry", season)
-
-    # Full concurrent profile
     await player_full_profile("Nikola Jokić", season)
+
+    # Team split views
+    await team_situational_splits("Celtics", season)
+    await team_shooting_breakdown("Warriors", season)
+    await team_full_profile("Pacers", season)
 
 
 if __name__ == "__main__":

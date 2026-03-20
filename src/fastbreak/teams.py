@@ -17,6 +17,12 @@ if TYPE_CHECKING:
     from fastbreak.models.synergy_playtypes import TeamSynergyPlaytype
     from fastbreak.models.team_dash_lineups import LineupStats
     from fastbreak.models.team_game_log import TeamGameLogEntry
+    from fastbreak.models.team_player_on_off_details import (
+        TeamPlayerOnOffDetailsResponse,
+    )
+    from fastbreak.models.team_player_on_off_summary import (
+        TeamPlayerOnOffSummaryResponse,
+    )
     from fastbreak.types import Conference, Division, PerMode, Season, SeasonType
 
 
@@ -861,3 +867,55 @@ async def get_team_roster_and_coaches(
     season = season or get_season_from_date()
     response = await client.get(CommonTeamRoster(team_id=team_id, season=season))
     return response.players, response.coaches
+
+
+def on_off_net_rating_delta(on_net_rating: float, off_net_rating: float) -> float:
+    """Compute the difference between on-court and off-court net rating.
+
+    Positive = team better with player on court.
+    """
+    return on_net_rating - off_net_rating
+
+
+async def get_team_on_off_summary(
+    client: NBAClient,
+    team_id: int,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    per_mode: PerMode = "PerGame",
+) -> TeamPlayerOnOffSummaryResponse:
+    """Fetch summarized on/off court impact for all players on a team."""
+    from fastbreak.endpoints import TeamPlayerOnOffSummary  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    return await client.get(
+        TeamPlayerOnOffSummary(
+            team_id=team_id,
+            season=season,
+            season_type=season_type,
+            per_mode=per_mode,
+        )
+    )
+
+
+async def get_team_on_off_details(
+    client: NBAClient,
+    team_id: int,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    per_mode: PerMode = "PerGame",
+) -> TeamPlayerOnOffDetailsResponse:
+    """Fetch detailed on/off court stats for all players on a team."""
+    from fastbreak.endpoints import TeamPlayerOnOffDetails  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    return await client.get(
+        TeamPlayerOnOffDetails(
+            team_id=team_id,
+            season=season,
+            season_type=season_type,
+            per_mode=per_mode,
+        )
+    )

@@ -12,10 +12,13 @@ The `fastbreak.shots` module provides shot chart data with x/y court coordinates
   - [zone_breakdown](#zone_breakdown)
   - [shot_quality_vs_league](#shot_quality_vs_league)
   - [xfg_pct](#xfg_pct)
+  - [get_team_shot_locations](#get_team_shot_locations)
+  - [team_distance_breakdown](#team_distance_breakdown)
 - [Data Types](#data-types)
   - [ZoneStats](#zonestats)
   - [Shot (model)](#shot-model)
   - [LeagueWideShotZone (model)](#leaguewideshotzone-model)
+  - [TeamShotLocations (model)](#teamshotlocations-model)
 - [Common Patterns](#common-patterns)
 
 ---
@@ -49,6 +52,20 @@ async with NBAClient() as client:
     for zone, delta in deltas.items():
         if delta is not None:
             print(f"{zone}: {delta:+.1%} vs league")
+```
+
+```python
+from fastbreak.shots import get_team_shot_locations, team_distance_breakdown
+
+async with NBAClient() as client:
+    # All 30 teams' shot locations by distance
+    all_teams = await get_team_shot_locations(client, season="2025-26")
+    # Single team
+    lal = await get_team_shot_locations(client, team_id=1610612747, season="2025-26")
+    if lal:
+        breakdown = team_distance_breakdown(lal[0])
+        for label, stats in breakdown.items():
+            print(f"{label}: {stats.fgm}/{stats.fga}")
 ```
 
 ---
@@ -163,6 +180,8 @@ breakdown = zone_breakdown(response.shots)
 def shot_quality_vs_league(
     player_shots: list[Shot],
     league_zones: list[LeagueWideShotZone],
+    *,
+    player_zones: dict[str, ZoneStats] | None = None,
 ) -> dict[str, float | None]
 ```
 
@@ -230,6 +249,90 @@ if actual is not None and expected is not None:
 
 ---
 
+### get_team_shot_locations
+
+```python
+async def get_team_shot_locations(
+    client: NBAClient,
+    *,
+    team_id: int = 0,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    per_mode: PerMode = "PerGame",
+) -> list[TeamShotLocations]
+```
+
+Fetch team shot locations by distance range. Returns distance-bucketed FGA and FGM for each team. Pass `team_id=0` to get all 30 teams; pass a specific team ID to filter to one team.
+
+| Parameter | Default | Description |
+|---|---|---|
+| `client` | required | `NBAClient` instance |
+| `team_id` | `0` | 0 for all teams, nonzero for a single team |
+| `season` | current | Season in YYYY-YY format |
+| `season_type` | `"Regular Season"` | `"Regular Season"`, `"Playoffs"`, `"Pre Season"` |
+| `per_mode` | `"PerGame"` | `"PerGame"`, `"Totals"`, `"Per48"`, etc. |
+
+Returns `list[TeamShotLocations]`. Empty list if `team_id` not found.
+
+> **Note:** Always fetches all 30 teams from the API (`team_id=0` server-side) and filters client-side.
+
+```python
+from fastbreak.shots import get_team_shot_locations
+
+async with NBAClient() as client:
+    # All teams
+    all_teams = await get_team_shot_locations(client, season="2025-26")
+    print(f"Teams returned: {len(all_teams)}")  # 30
+
+    # Single team
+    lal = await get_team_shot_locations(client, team_id=1610612747, season="2025-26")
+    if lal:
+        team = lal[0]
+        print(f"{team.team_name}: {team.range_less_than_5ft.fga} FGA within 5ft")
+```
+
+---
+
+### team_distance_breakdown
+
+```python
+def team_distance_breakdown(locations: TeamShotLocations) -> dict[str, ZoneStats]
+```
+
+Convert a `TeamShotLocations` object's distance ranges into a dict of `ZoneStats`. Maps each of the 7 `ShotRange` attributes to a `ZoneStats` keyed by human-readable distance label.
+
+The 7 distance labels are:
+
+- `"Less Than 5ft"`
+- `"5-9ft"`
+- `"10-14ft"`
+- `"15-19ft"`
+- `"20-24ft"`
+- `"25-29ft"`
+- `"Back Court"`
+
+> **Note:** Reuses the existing `ZoneStats` dataclass. `fg_pct` is computed as `fgm / fga` if `fga > 0`, else `None`.
+
+> **Important:** These distance buckets are **NOT** compatible with `shot_quality_vs_league` or `xfg_pct` (which use qualitative zone names like `"Restricted Area"`, `"Mid-Range"`). They use different zone systems.
+
+```python
+from fastbreak.shots import get_team_shot_locations, team_distance_breakdown
+
+async with NBAClient() as client:
+    lal = await get_team_shot_locations(client, team_id=1610612747, season="2025-26")
+    if lal:
+        breakdown = team_distance_breakdown(lal[0])
+        for label, stats in breakdown.items():
+            print(f"{label}: {stats.fgm}/{stats.fga} ({stats.fg_pct:.1%})" if stats.fg_pct else f"{label}: 0 FGA")
+
+        # Compare rim vs. long-range
+        rim = breakdown["Less Than 5ft"]
+        deep = breakdown["25-29ft"]
+        print(f"Rim FGA: {rim.fga}, Deep 2/3 FGA: {deep.fga}")
+```
+
+---
+
 ## Data Types
 
 ### ZoneStats
@@ -237,13 +340,13 @@ if actual is not None and expected is not None:
 ```python
 @dataclass(frozen=True)
 class ZoneStats:
-    zone: str         # matches Shot.shot_zone_basic
-    fga: int          # total field goal attempts
-    fgm: int          # total field goals made
+    zone: str           # matches Shot.shot_zone_basic
+    fga: float          # field goal attempts (count or per-game average)
+    fgm: float          # field goals made (count or per-game average)
     fg_pct: float | None  # fgm / fga, or None if fga == 0
 ```
 
-> **Note:** `zone_breakdown()` only emits a `ZoneStats` entry when at least one shot exists in that zone (`fga >= 1`), so `fg_pct` is always a `float` in results returned by `zone_breakdown()`. `None` is only possible on a manually-constructed `ZoneStats(fga=0, ...)`.
+> **Note:** `fga` and `fgm` are `float` because `team_distance_breakdown()` passes through per-game averages from `ShotRange`. When used with `zone_breakdown()` (which counts individual shots), the values are always whole numbers. `zone_breakdown()` only emits a `ZoneStats` entry when at least one shot exists in that zone (`fga >= 1`), so `fg_pct` is always a `float` there. `None` is only possible when `fga == 0`.
 
 ### Shot (model)
 
@@ -278,6 +381,31 @@ Key fields on the `Shot` Pydantic model returned in `ShotChartDetailResponse.sho
 | `fga` | `int` | League-wide total attempts from this zone |
 | `fgm` | `int` | League-wide total makes |
 | `fg_pct` | `float` | League FG% from this zone |
+
+### TeamShotLocations (model)
+
+Team-level shot data bucketed by distance range. Returned by `get_team_shot_locations()`.
+
+| Field | Type | Description |
+|---|---|---|
+| `team_id` | `int` | NBA team ID |
+| `team_name` | `str` | Team display name |
+| `range_less_than_5ft` | `ShotRange` | Shots from less than 5 feet |
+| `range_5_9ft` | `ShotRange` | Shots from 5–9 feet |
+| `range_10_14ft` | `ShotRange` | Shots from 10–14 feet |
+| `range_15_19ft` | `ShotRange` | Shots from 15–19 feet |
+| `range_20_24ft` | `ShotRange` | Shots from 20–24 feet |
+| `range_25_29ft` | `ShotRange` | Shots from 25–29 feet |
+| `range_back_court` | `ShotRange` | Back court shots |
+
+Each `ShotRange` has two fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `fga` | `float` | Field goal attempts (float because `per_mode` can produce averages) |
+| `fgm` | `float` | Field goals made |
+
+> **Note:** These distance ranges use a different zone system than `Shot.shot_zone_basic`. The distance buckets are **not** interchangeable with qualitative zone names (`"Restricted Area"`, `"Mid-Range"`, etc.) used by `shot_quality_vs_league` and `xfg_pct`.
 
 ---
 
@@ -351,7 +479,7 @@ if rim_reg and rim_po and rim_reg.fg_pct and rim_po.fg_pct:
 
 ## Gotchas
 
-- **`loc_x` / `loc_y` are in tenths of feet.** Divide by 10 before converting to standard court diagrams (which use feet). The three-point line is at `~237–238` units, not ~23.8 feet.
+- **`loc_x` / `loc_y` are in tenths of feet.** Divide by 10 before converting to standard court diagrams (which use feet). The three-point line is at `~237–238` units (~23.75 feet), not 237 feet.
 - **`season` handling for `ShotChartDetail`.** The underlying NBA `ShotChartDetail` endpoint requires a `season` value, but `get_shot_chart()` will default `season` to the current season if you omit it or pass `season=None`. Passing an invalid season string will still return an empty result set silently.
 - **`context_measure="FGA"` includes all field goal attempts** (2-point and 3-point). Use `"FG3A"` to isolate three-point attempts only. This changes what shots appear in `response.shots` but does **not** affect `response.league_averages`.
 - **Zone names must match exactly** between `Shot.shot_zone_basic` and `LeagueWideShotZone.shot_zone_basic` for `shot_quality_vs_league()` to compute deltas. Both come from the same NBA API field name so they should always match, but unusual zone names (like `"Backcourt"`) may only appear in player data and not in league averages — those zones receive `delta=None`.

@@ -16,7 +16,9 @@ from fastbreak.shots import (
     ZoneStats,
     get_league_shot_zones,
     get_shot_chart,
+    get_team_shot_locations,
     shot_quality_vs_league,
+    team_distance_breakdown,
     xfg_pct,
     zone_breakdown,
     zone_fg_pct,
@@ -715,3 +717,222 @@ class TestGetShotChartSeasonDefault:
         expected_season = get_season_from_date()
         assert endpoint.season == expected_season
         assert endpoint.season is not None
+
+
+# ─── TeamShotLocations factory ───────────────────────────────────────────────
+
+
+def _make_team_shot_locations(
+    *, team_id: int = 1610612747, team_name: str = "Lakers"
+) -> object:
+    """Create a TeamShotLocations with known values for testing."""
+    from fastbreak.models.league_dash_team_shot_locations import (
+        ShotRange,
+        TeamShotLocations,
+    )
+
+    return TeamShotLocations(
+        team_id=team_id,
+        team_name=team_name,
+        range_less_than_5ft=ShotRange(fgm=50.0, fga=80.0, fg_pct=0.625),
+        range_5_9ft=ShotRange(fgm=20.0, fga=50.0, fg_pct=0.400),
+        range_10_14ft=ShotRange(fgm=15.0, fga=40.0, fg_pct=0.375),
+        range_15_19ft=ShotRange(fgm=18.0, fga=45.0, fg_pct=0.400),
+        range_20_24ft=ShotRange(fgm=30.0, fga=80.0, fg_pct=0.375),
+        range_25_29ft=ShotRange(fgm=35.0, fga=100.0, fg_pct=0.350),
+        range_back_court=ShotRange(fgm=0.0, fga=0.0, fg_pct=None),
+    )
+
+
+# ─── TestTeamDistanceBreakdown ───────────────────────────────────────────────
+
+
+class TestTeamDistanceBreakdown:
+    """Tests for the pure team_distance_breakdown() function."""
+
+    def test_returns_dict_of_zone_stats(self) -> None:
+        """All values in the result are ZoneStats instances."""
+        locations = _make_team_shot_locations()
+        result = team_distance_breakdown(locations)
+        for v in result.values():
+            assert isinstance(v, ZoneStats)
+
+    def test_returns_7_entries(self) -> None:
+        """There are exactly 7 distance buckets."""
+        locations = _make_team_shot_locations()
+        result = team_distance_breakdown(locations)
+        assert len(result) == 7
+
+    def test_keys_are_distance_labels(self) -> None:
+        """All expected distance labels are present as keys."""
+        locations = _make_team_shot_locations()
+        result = team_distance_breakdown(locations)
+        expected_keys = {
+            "Less Than 5ft",
+            "5-9ft",
+            "10-14ft",
+            "15-19ft",
+            "20-24ft",
+            "25-29ft",
+            "Back Court",
+        }
+        assert set(result.keys()) == expected_keys
+
+    def test_fga_fgm_from_shot_range(self) -> None:
+        """FGA and FGM values match the input ShotRange attributes."""
+        locations = _make_team_shot_locations()
+        result = team_distance_breakdown(locations)
+        assert result["Less Than 5ft"].fga == 80
+        assert result["Less Than 5ft"].fgm == 50
+        assert result["5-9ft"].fga == 50
+        assert result["5-9ft"].fgm == 20
+
+    def test_fg_pct_from_shot_range(self) -> None:
+        """FG% is computed correctly from FGM/FGA."""
+        locations = _make_team_shot_locations()
+        result = team_distance_breakdown(locations)
+        assert result["Less Than 5ft"].fg_pct == pytest.approx(50 / 80)
+        assert result["25-29ft"].fg_pct == pytest.approx(35 / 100)
+
+    def test_zone_name_matches_key(self) -> None:
+        """ZoneStats.zone attribute matches the dict key."""
+        locations = _make_team_shot_locations()
+        result = team_distance_breakdown(locations)
+        for key, stats in result.items():
+            assert stats.zone == key
+
+    def test_zero_fga_produces_none_pct(self) -> None:
+        """A range with 0 FGA produces fg_pct=None (Back Court)."""
+        locations = _make_team_shot_locations()
+        result = team_distance_breakdown(locations)
+        assert result["Back Court"].fga == 0
+        assert result["Back Court"].fgm == 0
+        assert result["Back Court"].fg_pct is None
+
+    def test_all_zones_non_negative_fga(self) -> None:
+        """Invariant: all FGA values are >= 0."""
+        locations = _make_team_shot_locations()
+        result = team_distance_breakdown(locations)
+        for stats in result.values():
+            assert stats.fga >= 0
+
+    def test_preserves_fractional_per_game_values(self) -> None:
+        """Fractional FGA/FGM are preserved (no int truncation)."""
+        from fastbreak.models.league_dash_team_shot_locations import (
+            ShotRange,
+            TeamShotLocations,
+        )
+
+        locations = TeamShotLocations(
+            team_id=1,
+            team_name="Test",
+            range_less_than_5ft=ShotRange(fgm=3.7, fga=5.3, fg_pct=0.698),
+            range_5_9ft=ShotRange(fgm=0.0, fga=0.0, fg_pct=None),
+            range_10_14ft=ShotRange(fgm=0.0, fga=0.0, fg_pct=None),
+            range_15_19ft=ShotRange(fgm=0.0, fga=0.0, fg_pct=None),
+            range_20_24ft=ShotRange(fgm=0.0, fga=0.0, fg_pct=None),
+            range_25_29ft=ShotRange(fgm=0.0, fga=0.0, fg_pct=None),
+            range_back_court=ShotRange(fgm=0.0, fga=0.0, fg_pct=None),
+        )
+        result = team_distance_breakdown(locations)
+        assert result["Less Than 5ft"].fga == pytest.approx(5.3)
+        assert result["Less Than 5ft"].fgm == pytest.approx(3.7)
+        assert result["Less Than 5ft"].fg_pct == pytest.approx(3.7 / 5.3)
+
+
+# ─── TestGetTeamShotLocations ────────────────────────────────────────────────
+
+
+class TestGetTeamShotLocations:
+    """Tests for the get_team_shot_locations() async API wrapper."""
+
+    async def test_calls_api_once(self, mocker: MockerFixture) -> None:
+        """get_team_shot_locations calls client.get exactly once."""
+        from fastbreak.clients.nba import NBAClient
+
+        team = _make_team_shot_locations()
+        response = mocker.MagicMock()
+        response.teams = [team]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        await get_team_shot_locations(client)
+
+        client.get.assert_called_once()
+
+    async def test_uses_correct_endpoint(self, mocker: MockerFixture) -> None:
+        """The endpoint used is LeagueDashTeamShotLocations."""
+        from fastbreak.clients.nba import NBAClient
+        from fastbreak.endpoints import LeagueDashTeamShotLocations
+
+        response = mocker.MagicMock()
+        response.teams = []
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        await get_team_shot_locations(client)
+
+        endpoint = client.get.call_args[0][0]
+        assert isinstance(endpoint, LeagueDashTeamShotLocations)
+
+    async def test_team_id_zero_returns_all(self, mocker: MockerFixture) -> None:
+        """team_id=0 returns all teams without filtering."""
+        from fastbreak.clients.nba import NBAClient
+
+        team1 = _make_team_shot_locations(team_id=1610612747, team_name="Lakers")
+        team2 = _make_team_shot_locations(team_id=1610612744, team_name="Pacers")
+        response = mocker.MagicMock()
+        response.teams = [team1, team2]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_team_shot_locations(client, team_id=0)
+
+        assert len(result) == 2
+
+    async def test_team_id_nonzero_filters(self, mocker: MockerFixture) -> None:
+        """A nonzero team_id filters to only matching teams."""
+        from fastbreak.clients.nba import NBAClient
+
+        team1 = _make_team_shot_locations(team_id=1610612747, team_name="Lakers")
+        team2 = _make_team_shot_locations(team_id=1610612744, team_name="Pacers")
+        response = mocker.MagicMock()
+        response.teams = [team1, team2]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_team_shot_locations(client, team_id=1610612747)
+
+        assert len(result) == 1
+        assert result[0].team_id == 1610612747
+
+    async def test_no_match_returns_empty(self, mocker: MockerFixture) -> None:
+        """An unknown team_id returns an empty list."""
+        from fastbreak.clients.nba import NBAClient
+
+        team = _make_team_shot_locations(team_id=1610612747, team_name="Lakers")
+        response = mocker.MagicMock()
+        response.teams = [team]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_team_shot_locations(client, team_id=9999999)
+
+        assert result == []
+
+    async def test_season_defaults(self, mocker: MockerFixture) -> None:
+        """Default season_type is 'Regular Season' and per_mode is 'PerGame'."""
+        from fastbreak.clients.nba import NBAClient
+        from fastbreak.endpoints import LeagueDashTeamShotLocations
+
+        response = mocker.MagicMock()
+        response.teams = []
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        await get_team_shot_locations(client)
+
+        endpoint = client.get.call_args[0][0]
+        assert isinstance(endpoint, LeagueDashTeamShotLocations)
+        assert endpoint.season_type == "Regular Season"
+        assert endpoint.per_mode == "PerGame"

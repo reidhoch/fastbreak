@@ -1,12 +1,13 @@
-"""Player situational split helpers for the NBA Stats API.
+"""Player and team situational split helpers for the NBA Stats API.
 
-Wraps five player-dashboard-by-* endpoints and exposes a ``PlayerSplitsProfile``
-dataclass that fetches all sub-endpoints concurrently.
+Wraps player-dashboard-by-* and team-dashboard-by-* endpoints and exposes
+``PlayerSplitsProfile`` / ``TeamSplitsProfile`` dataclasses that fetch all
+sub-endpoints concurrently.
 
 Examples::
 
     from fastbreak.clients import NBAClient
-    from fastbreak.splits import get_player_splits_profile, stat_delta
+    from fastbreak.splits import get_player_splits_profile, get_team_splits_profile, stat_delta
 
     async with NBAClient() as client:
         profile = await get_player_splits_profile(client, player_id=1641705)
@@ -18,6 +19,10 @@ Examples::
             home.fg_pct if home else None,
             road.fg_pct if road else None,
         )
+
+        # Team splits (general + shooting, fetched concurrently)
+        team_profile = await get_team_splits_profile(client, team_id=1610612747)
+        print(team_profile.general.by_location)
 """
 
 from __future__ import annotations
@@ -44,6 +49,12 @@ if TYPE_CHECKING:
     )
     from fastbreak.models.player_dashboard_by_team_performance import (
         PlayerDashboardByTeamPerformanceResponse,
+    )
+    from fastbreak.models.team_dashboard_by_general_splits import (
+        TeamDashboardByGeneralSplitsResponse,
+    )
+    from fastbreak.models.team_dashboard_by_shooting_splits import (
+        TeamDashboardByShootingSplitsResponse,
     )
     from fastbreak.types import PerMode, Season, SeasonType
 
@@ -321,4 +332,158 @@ async def get_player_splits_profile(  # noqa: PLR0913
         shooting_splits=cast("PlayerDashboardByShootingSplitsResponse", results[2]),
         last_n_games=cast("PlayerDashboardByLastNGamesResponse", results[3]),
         team_performance=cast("PlayerDashboardByTeamPerformanceResponse", results[4]),
+    )
+
+
+# ─── Team splits ─────────────────────────────────────────────────────────────
+
+
+@dataclass(frozen=True, slots=True)
+class TeamSplitsProfile:
+    """Aggregated situational split data for a single team.
+
+    Attributes:
+        team_id: NBA team ID.
+        general: Stats by location, W/L, month, rest, and pre/post All-Star.
+        shooting: Stats by shot distance, area, type, and assist type.
+    """
+
+    team_id: int
+    general: TeamDashboardByGeneralSplitsResponse
+    shooting: TeamDashboardByShootingSplitsResponse
+
+
+async def get_team_general_splits(  # noqa: PLR0913
+    client: NBAClient,
+    team_id: int,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    per_mode: PerMode = "PerGame",
+    last_n_games: int = 0,
+) -> TeamDashboardByGeneralSplitsResponse:
+    """Fetch team stats broken down by general categories.
+
+    Returns stats split by location, wins/losses, month, pre/post All-Star,
+    and days of rest.
+
+    Args:
+        client: NBA API client.
+        team_id: NBA team ID.
+        season: Season in YYYY-YY format (defaults to current season).
+        season_type: \"Regular Season\", \"Playoffs\", or \"Pre Season\".
+        per_mode: \"PerGame\" or \"Totals\".
+        last_n_games: Restrict to last N games (0 = full season).
+
+    Returns:
+        TeamDashboardByGeneralSplitsResponse with overall, by_location,
+        by_wins_losses, by_month, by_pre_post_all_star, and by_days_rest.
+    """
+    from fastbreak.endpoints import TeamDashboardByGeneralSplits  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    return await client.get(
+        TeamDashboardByGeneralSplits(
+            team_id=team_id,
+            season=season,
+            season_type=season_type,
+            per_mode=per_mode,
+            last_n_games=last_n_games,
+        )
+    )
+
+
+async def get_team_shooting_splits(  # noqa: PLR0913
+    client: NBAClient,
+    team_id: int,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    per_mode: PerMode = "PerGame",
+    last_n_games: int = 0,
+) -> TeamDashboardByShootingSplitsResponse:
+    """Fetch team shooting splits by distance, area, shot type, and assist.
+
+    Args:
+        client: NBA API client.
+        team_id: NBA team ID.
+        season: Season in YYYY-YY format (defaults to current season).
+        season_type: \"Regular Season\", \"Playoffs\", or \"Pre Season\".
+        per_mode: \"PerGame\" or \"Totals\".
+        last_n_games: Restrict to last N games (0 = full season).
+
+    Returns:
+        TeamDashboardByShootingSplitsResponse with splits by shot distance
+        (5ft and 8ft buckets), court area, assisted/unassisted, shot type,
+        and assisted-by player.
+    """
+    from fastbreak.endpoints import TeamDashboardByShootingSplits  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    return await client.get(
+        TeamDashboardByShootingSplits(
+            team_id=team_id,
+            season=season,
+            season_type=season_type,
+            per_mode=per_mode,
+            last_n_games=last_n_games,
+        )
+    )
+
+
+async def get_team_splits_profile(  # noqa: PLR0913
+    client: NBAClient,
+    team_id: int,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    per_mode: PerMode = "PerGame",
+    last_n_games: int = 0,
+) -> TeamSplitsProfile:
+    """Fetch both team split endpoints concurrently.
+
+    Uses ``client.get_many()`` so the client's ``request_delay`` and
+    ``max_concurrency`` settings are respected.  Raises ``ExceptionGroup`` if
+    any sub-request fails.  Callers that need partial results should call the
+    thin helpers individually.
+
+    Args:
+        client: NBA API client.
+        team_id: NBA team ID.
+        season: Season in YYYY-YY format (defaults to current season).
+        season_type: \"Regular Season\", \"Playoffs\", or \"Pre Season\".
+        per_mode: \"PerGame\" or \"Totals\".
+        last_n_games: Restrict to last N games (0 = full season).
+
+    Returns:
+        TeamSplitsProfile with general and shooting split data.
+
+    Raises:
+        ExceptionGroup: If any of the two API requests fails.
+    """
+    from fastbreak.endpoints import (  # noqa: PLC0415
+        TeamDashboardByGeneralSplits,
+        TeamDashboardByShootingSplits,
+    )
+
+    season = season or get_season_from_date()
+    params: dict[str, Any] = {
+        "team_id": team_id,
+        "season": season,
+        "season_type": season_type,
+        "per_mode": per_mode,
+        "last_n_games": last_n_games,
+    }
+
+    results: list[Any] = await client.get_many(
+        [
+            TeamDashboardByGeneralSplits(**params),
+            TeamDashboardByShootingSplits(**params),
+        ]
+    )
+
+    return TeamSplitsProfile(
+        team_id=team_id,
+        general=cast("TeamDashboardByGeneralSplitsResponse", results[0]),
+        shooting=cast("TeamDashboardByShootingSplitsResponse", results[1]),
     )

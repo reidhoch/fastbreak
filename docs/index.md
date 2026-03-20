@@ -9,11 +9,12 @@
 | [seasons.md](seasons.md) | Season string utilities: `get_season_from_date`, `season_start_year`, `season_to_season_id` |
 | [standings.md](standings.md) | Standings helpers: `get_standings`, `get_conference_standings`, `TeamStanding` fields |
 | [players.md](players.md) | Player helpers: search, game logs, stats, leaders, hustle, on/off splits, playtypes |
-| [teams.md](teams.md) | Team helpers: lookup, game logs, stats, lineups, net ratings, playtypes, roster, coaches |
+| [teams.md](teams.md) | Team helpers: lookup, game logs, stats, lineups, net ratings, playtypes, roster, coaches, on/off court impact |
 | [games.md](games.md) | Game helpers: scoreboard, box scores (traditional, advanced, hustle, scoring), play-by-play, game summary |
+| [splits.md](splits.md) | Player and team situational splits: home/road, win/loss, shooting, last-N games, `PlayerSplitsProfile`, `TeamSplitsProfile` |
 | [schedule.md](schedule.md) | Schedule helper: full season schedule, back-to-back detection, rest day utilities |
-| [clutch.md](clutch.md) | Clutch analysis: `ClutchProfile`, composite score, per-player profiles, league leaders |
-| [shots.md](shots.md) | Shot chart analysis: `ZoneStats`, per-shot coordinates, zone breakdown, delta vs. league average |
+| [clutch.md](clutch.md) | Clutch analysis: `ClutchProfile`, composite score, per-player profiles, player and team league leaders |
+| [shots.md](shots.md) | Shot chart analysis: `ZoneStats`, per-shot coordinates, zone breakdown, delta vs. league average, team shot locations by distance |
 | [defense.md](defense.md) | Defensive analysis: `get_team_defense_zones`, `get_team_opponent_stats`, `get_box_scores_defensive`, `defensive_shot_quality_vs_league` |
 | [metrics.md](metrics.md) | Pure-computation metrics: true shooting, PER, net rating, pace-adjusted stats |
 | [endpoints.md](endpoints.md) | All 100+ endpoint classes: params, response models, type aliases |

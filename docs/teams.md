@@ -16,6 +16,9 @@ from fastbreak.teams import (
     get_team_game_log, get_team_stats, get_lineup_stats,
     get_lineup_net_ratings, get_league_averages, get_team_playtypes,
     get_team_roster, get_team_coaches,
+    # On/off court impact
+    get_team_on_off_summary, get_team_on_off_details,
+    on_off_net_rating_delta,
 )
 ```
 
@@ -99,7 +102,8 @@ def get_team(identifier: int | str) -> TeamInfo | None: ...
 **Lookup priority (string input):**
 1. Abbreviation match (e.g., `"LAL"`, `"BOS"`)
 2. Nickname match (e.g., `"Lakers"`, `"Celtics"`)
-3. City match (e.g., `"Los Angeles"`, `"Boston"`)
+3. Full name match (e.g., `"Golden State Warriors"`, `"Los Angeles Lakers"`)
+4. City match (e.g., `"Los Angeles"`, `"Boston"`)
 
 Returns `None` if no team matches.
 
@@ -559,6 +563,107 @@ for c in coaches:
 
 ---
 
+### `on_off_net_rating_delta`
+
+```python
+def on_off_net_rating_delta(on_net_rating: float, off_net_rating: float) -> float
+```
+
+Pure computation — no client needed. Computes the difference between on-court and off-court net rating for a player.
+
+**Formula:** `on_net_rating - off_net_rating`
+
+A positive value means the team performs better with the player on the floor. A negative value means the team performs better with the player on the bench.
+
+```python
+from fastbreak.teams import on_off_net_rating_delta
+
+delta = on_off_net_rating_delta(on_net_rating=5.2, off_net_rating=-1.3)
+# delta = 6.5 — team is 6.5 points per 100 possessions better with player
+```
+
+---
+
+### `get_team_on_off_summary`
+
+```python
+async def get_team_on_off_summary(
+    client: NBAClient,
+    team_id: int,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    per_mode: PerMode = "PerGame",
+) -> TeamPlayerOnOffSummaryResponse
+```
+
+Fetches summarized on/off court impact for all players on a team.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `client` | `NBAClient` | required | Active NBA client |
+| `team_id` | `int` | required | NBA team ID |
+| `season` | `Season \| None` | current season | Season in `YYYY-YY` format |
+| `season_type` | `SeasonType` | `"Regular Season"` | Season type filter |
+| `per_mode` | `PerMode` | `"PerGame"` | Aggregation mode |
+
+**Returns:** `TeamPlayerOnOffSummaryResponse` with an overall summary and two player lists:
+
+| Field | Type | Description |
+|---|---|---|
+| `overall` | `TeamOnOffSummaryOverall \| None` | Team-level overall stats (single row) |
+| `players_on_court` | `list[PlayerOnOffSummary]` | Stats when each player is ON court |
+| `players_off_court` | `list[PlayerOnOffSummary]` | Stats when each player is OFF court |
+
+**`PlayerOnOffSummary` key fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| `vs_player_id` | `int` | Player ID |
+| `vs_player_name` | `str` | Player name |
+| `court_status` | `str` | `"On"` or `"Off"` |
+| `gp` | `int` | Games played |
+| `minutes` | `float` | Minutes (per game or totals) |
+| `plus_minus` | `float` | Plus/minus |
+| `off_rating` | `float` | Offensive rating |
+| `def_rating` | `float` | Defensive rating |
+| `net_rating` | `float` | Net rating (off_rating - def_rating) |
+
+---
+
+### `get_team_on_off_details`
+
+```python
+async def get_team_on_off_details(
+    client: NBAClient,
+    team_id: int,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    per_mode: PerMode = "PerGame",
+) -> TeamPlayerOnOffDetailsResponse
+```
+
+Fetches detailed on/off court stats for all players on a team. Returns full box stats per player on/off court — more granular than the summary version.
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `client` | `NBAClient` | required | Active NBA client |
+| `team_id` | `int` | required | NBA team ID |
+| `season` | `Season \| None` | current season | Season in `YYYY-YY` format |
+| `season_type` | `SeasonType` | `"Regular Season"` | Season type filter |
+| `per_mode` | `PerMode` | `"PerGame"` | Aggregation mode |
+
+**Returns:** `TeamPlayerOnOffDetailsResponse` — same structure as the summary response (`overall`, `players_on_court`, `players_off_court`) but each row contains full box score stats (pts, ast, reb, stl, blk, fg_pct, etc.) in addition to the net rating fields.
+
+> Use the **summary** endpoint for quick net rating analysis. Use **details** when you need full box stats (pts, ast, reb, etc.) for on/off comparison.
+
+---
+
 ## Examples
 
 ### Sync lookups — no async needed
@@ -770,6 +875,50 @@ asyncio.run(main())
 | `per(aper, lg_aper)` | Normalised PER with 15.0 = league average        |
 
 See [fastbreak.metrics](metrics.md) for the full reference.
+
+### Player on/off impact
+
+```python
+import asyncio
+from fastbreak.clients import NBAClient
+from fastbreak.teams import (
+    get_team_on_off_summary, on_off_net_rating_delta, TeamID,
+)
+
+async def main() -> None:
+    async with NBAClient() as client:
+        summary = await get_team_on_off_summary(
+            client,
+            team_id=TeamID.PACERS,
+            season="2025-26",
+        )
+
+    # Build on/off pairs by matching player names
+    on_by_name = {p.vs_player_name: p for p in summary.players_on_court}
+    off_by_name = {p.vs_player_name: p for p in summary.players_off_court}
+
+    rows: list[tuple[str, float, float, float]] = []
+    for name, on in on_by_name.items():
+        off = off_by_name.get(name)
+        if off is None:
+            continue
+        delta = on_off_net_rating_delta(
+            on_net_rating=on.net_rating,
+            off_net_rating=off.net_rating,
+        )
+        rows.append((name, on.net_rating, off.net_rating, delta))
+
+    # Sort by delta descending — most impactful players first
+    rows.sort(key=lambda r: r[3], reverse=True)
+
+    print(f"{'Player':<25s}  {'On':>7s}  {'Off':>7s}  {'Delta':>7s}")
+    for name, on_rtg, off_rtg, delta in rows:
+        print(f"{name:<25s}  {on_rtg:+7.1f}  {off_rtg:+7.1f}  {delta:+7.1f}")
+
+asyncio.run(main())
+```
+
+> **Gotcha:** The `pts` field on on/off splits is **team** points per game while the player is on court, not the player's individual scoring. A high `pts` value means the team scores more while that player is on the floor — it does not reflect the player's personal output.
 
 ---
 

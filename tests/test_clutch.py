@@ -17,8 +17,10 @@ from fastbreak.clutch import (
     build_clutch_profile,
     clutch_score,
     get_league_clutch_leaders,
+    get_league_team_clutch_leaders,
     get_player_clutch_profile,
     get_player_clutch_stats,
+    get_team_clutch_stats,
 )
 from fastbreak.clients.nba import NBAClient
 from fastbreak.metrics import ast_to_tov, true_shooting
@@ -623,3 +625,207 @@ class TestGetLeagueClutchLeaders:
 
         result = await get_league_clutch_leaders(client, min_minutes=20.0)
         assert len(result) == 1
+
+
+# ─── TestGetLeagueTeamClutchLeaders ─────────────────────────────────────────
+
+
+class TestGetLeagueTeamClutchLeaders:
+    """Tests for the get_league_team_clutch_leaders() function."""
+
+    def _make_team(
+        self,
+        mocker: MockerFixture,
+        *,
+        team_id: int,
+        team_name: str,
+        plus_minus: float,
+    ):
+        row = mocker.MagicMock()
+        row.team_id = team_id
+        row.team_name = team_name
+        row.plus_minus = plus_minus
+        return row
+
+    async def test_calls_api_once(self, mocker: MockerFixture) -> None:
+        """client.get is called exactly once."""
+        response = mocker.MagicMock()
+        response.teams = []
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        await get_league_team_clutch_leaders(client)
+
+        client.get.assert_called_once()
+
+    async def test_uses_team_clutch_endpoint(self, mocker: MockerFixture) -> None:
+        """The endpoint passed to client.get is LeagueDashTeamClutch."""
+        from fastbreak.endpoints import LeagueDashTeamClutch
+
+        response = mocker.MagicMock()
+        response.teams = []
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        await get_league_team_clutch_leaders(client)
+
+        endpoint_arg = client.get.call_args[0][0]
+        assert isinstance(endpoint_arg, LeagueDashTeamClutch)
+
+    async def test_sorted_by_plus_minus_desc(self, mocker: MockerFixture) -> None:
+        """Results are sorted highest plus_minus first."""
+        response = mocker.MagicMock()
+        response.teams = [
+            self._make_team(mocker, team_id=1, team_name="A", plus_minus=1.0),
+            self._make_team(mocker, team_id=2, team_name="B", plus_minus=5.0),
+            self._make_team(mocker, team_id=3, team_name="C", plus_minus=3.0),
+        ]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_league_team_clutch_leaders(client)
+
+        assert [r.team_id for r in result] == [2, 3, 1]
+
+    async def test_respects_top_n(self, mocker: MockerFixture) -> None:
+        """At most top_n teams are returned."""
+        response = mocker.MagicMock()
+        response.teams = [
+            self._make_team(mocker, team_id=i, team_name=f"T{i}", plus_minus=float(i))
+            for i in range(20)
+        ]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_league_team_clutch_leaders(client, top_n=5)
+
+        assert len(result) == 5
+
+    async def test_top_n_zero_raises(self, mocker: MockerFixture) -> None:
+        """top_n=0 raises ValueError."""
+        client = NBAClient(session=mocker.MagicMock())
+        with pytest.raises(ValueError, match="top_n must be >= 1"):
+            await get_league_team_clutch_leaders(client, top_n=0)
+
+    async def test_top_n_default_is_30(self, mocker: MockerFixture) -> None:
+        """Default top_n returns up to 30 teams."""
+        response = mocker.MagicMock()
+        response.teams = [
+            self._make_team(mocker, team_id=i, team_name=f"T{i}", plus_minus=float(i))
+            for i in range(35)
+        ]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_league_team_clutch_leaders(client)
+
+        assert len(result) == 30
+
+    async def test_empty_response(self, mocker: MockerFixture) -> None:
+        """No teams returns an empty list."""
+        response = mocker.MagicMock()
+        response.teams = []
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_league_team_clutch_leaders(client)
+
+        assert result == []
+
+
+# ─── TestGetTeamClutchStats ─────────────────────────────────────────────────
+
+
+class TestGetTeamClutchStats:
+    """Tests for the get_team_clutch_stats() function."""
+
+    def _make_team(
+        self,
+        mocker: MockerFixture,
+        *,
+        team_id: int,
+        team_name: str,
+        plus_minus: float = 0.0,
+    ):
+        row = mocker.MagicMock()
+        row.team_id = team_id
+        row.team_name = team_name
+        row.plus_minus = plus_minus
+        return row
+
+    async def test_returns_matching_team(self, mocker: MockerFixture) -> None:
+        """Returns the correct TeamClutchStats for the given team_id."""
+        team = self._make_team(
+            mocker, team_id=1610612747, team_name="Los Angeles Lakers"
+        )
+        response = mocker.MagicMock()
+        response.teams = [team]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_team_clutch_stats(client, team_id=1610612747)
+
+        assert result is team
+
+    async def test_returns_none_when_not_found(self, mocker: MockerFixture) -> None:
+        """Returns None for an unknown team_id."""
+        response = mocker.MagicMock()
+        response.teams = [
+            self._make_team(mocker, team_id=1610612747, team_name="Los Angeles Lakers"),
+        ]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_team_clutch_stats(client, team_id=9999999)
+
+        assert result is None
+
+    async def test_passes_season(self, mocker: MockerFixture) -> None:
+        """The season kwarg is forwarded to the endpoint."""
+        from fastbreak.endpoints import LeagueDashTeamClutch
+
+        response = mocker.MagicMock()
+        response.teams = []
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        await get_team_clutch_stats(client, team_id=1, season="2024-25")
+
+        endpoint_arg = client.get.call_args[0][0]
+        assert isinstance(endpoint_arg, LeagueDashTeamClutch)
+        assert endpoint_arg.season == "2024-25"
+
+    async def test_passes_season_type(self, mocker: MockerFixture) -> None:
+        """The season_type kwarg is forwarded to the endpoint."""
+        from fastbreak.endpoints import LeagueDashTeamClutch
+
+        response = mocker.MagicMock()
+        response.teams = []
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        await get_team_clutch_stats(client, team_id=1, season_type="Playoffs")
+
+        endpoint_arg = client.get.call_args[0][0]
+        assert isinstance(endpoint_arg, LeagueDashTeamClutch)
+        assert endpoint_arg.season_type == "Playoffs"
+
+    async def test_correct_team_from_multiple(self, mocker: MockerFixture) -> None:
+        """Filters exactly the matching team from multiple teams."""
+        lakers = self._make_team(
+            mocker, team_id=1610612747, team_name="Los Angeles Lakers"
+        )
+        celtics = self._make_team(
+            mocker, team_id=1610612738, team_name="Boston Celtics"
+        )
+        warriors = self._make_team(
+            mocker, team_id=1610612744, team_name="Golden State Warriors"
+        )
+        response = mocker.MagicMock()
+        response.teams = [lakers, celtics, warriors]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_team_clutch_stats(client, team_id=1610612738)
+
+        assert result is celtics

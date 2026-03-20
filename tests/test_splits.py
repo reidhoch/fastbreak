@@ -1,12 +1,12 @@
-"""Tests for fastbreak.splits — player situational split helpers."""
+"""Tests for fastbreak.splits — player and team situational split helpers."""
 
 from __future__ import annotations
 
+import dataclasses
 from typing import TYPE_CHECKING
 
 import pytest
-from hypothesis import given
-from hypothesis import strategies as st
+from hypothesis import given, strategies as st
 
 from fastbreak.clients.nba import NBAClient
 from fastbreak.endpoints import (
@@ -15,16 +15,22 @@ from fastbreak.endpoints import (
     PlayerDashboardByLastNGames,
     PlayerDashboardByShootingSplits,
     PlayerDashboardByTeamPerformance,
+    TeamDashboardByGeneralSplits,
+    TeamDashboardByShootingSplits,
 )
 from fastbreak.metrics import stat_delta
 from fastbreak.splits import (
     PlayerSplitsProfile,
+    TeamSplitsProfile,
     get_player_game_splits,
     get_player_general_splits,
     get_player_last_n_games,
     get_player_shooting_splits,
     get_player_splits_profile,
     get_player_team_performance_splits,
+    get_team_general_splits,
+    get_team_shooting_splits,
+    get_team_splits_profile,
 )
 
 if TYPE_CHECKING:
@@ -287,3 +293,194 @@ class TestStatDelta:
     def test_none_propagates_from_b(self, a: float) -> None:
         """None in position b always yields None."""
         assert stat_delta(a, None) is None
+
+
+# ─── TeamSplitsProfile ───────────────────────────────────────────────────────
+
+
+class TestTeamSplitsProfile:
+    """Tests for the TeamSplitsProfile frozen dataclass."""
+
+    def test_frozen(self, mocker: MockerFixture) -> None:
+        """TeamSplitsProfile is frozen — assignment after creation raises."""
+        profile = TeamSplitsProfile(
+            team_id=1610612747,
+            general=mocker.MagicMock(),
+            shooting=mocker.MagicMock(),
+        )
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            profile.team_id = 0  # type: ignore[misc]
+
+    def test_slots(self) -> None:
+        """TeamSplitsProfile uses __slots__."""
+        assert hasattr(TeamSplitsProfile, "__slots__")
+
+    def test_fields(self, mocker: MockerFixture) -> None:
+        """All three fields (team_id, general, shooting) are accessible."""
+        gen_mock = mocker.MagicMock()
+        shoot_mock = mocker.MagicMock()
+        profile = TeamSplitsProfile(
+            team_id=1610612747,
+            general=gen_mock,
+            shooting=shoot_mock,
+        )
+        assert profile.team_id == 1610612747  # noqa: PLR2004
+        assert profile.general is gen_mock
+        assert profile.shooting is shoot_mock
+
+
+# ─── get_team_general_splits ─────────────────────────────────────────────────
+
+
+class TestGetTeamGeneralSplits:
+    """Tests for the get_team_general_splits() async API wrapper."""
+
+    async def test_calls_api_once(self, mocker: MockerFixture) -> None:
+        """get_team_general_splits calls client.get exactly once."""
+        response = mocker.MagicMock()
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_team_general_splits(client, team_id=1610612747)
+
+        client.get.assert_called_once()
+        assert result is response
+
+    async def test_uses_team_general_splits_endpoint(
+        self, mocker: MockerFixture
+    ) -> None:
+        """Endpoint passed to client.get is TeamDashboardByGeneralSplits."""
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=mocker.MagicMock())
+
+        await get_team_general_splits(client, team_id=1610612747)
+
+        endpoint = client.get.call_args[0][0]
+        assert isinstance(endpoint, TeamDashboardByGeneralSplits)
+
+    async def test_passes_team_id(self, mocker: MockerFixture) -> None:
+        """team_id is forwarded to the endpoint."""
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=mocker.MagicMock())
+
+        await get_team_general_splits(client, team_id=1610612747)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.team_id == 1610612747  # noqa: PLR2004
+
+    async def test_defaults(self, mocker: MockerFixture) -> None:
+        """Default season_type is 'Regular Season' and per_mode is 'PerGame'."""
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=mocker.MagicMock())
+
+        await get_team_general_splits(client, team_id=1610612747)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.season_type == "Regular Season"
+        assert endpoint.per_mode == "PerGame"
+
+
+# ─── get_team_shooting_splits ────────────────────────────────────────────────
+
+
+class TestGetTeamShootingSplits:
+    """Tests for the get_team_shooting_splits() async API wrapper."""
+
+    async def test_calls_api_once(self, mocker: MockerFixture) -> None:
+        """get_team_shooting_splits calls client.get exactly once."""
+        response = mocker.MagicMock()
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_team_shooting_splits(client, team_id=1610612747)
+
+        client.get.assert_called_once()
+        assert result is response
+
+    async def test_uses_team_shooting_splits_endpoint(
+        self, mocker: MockerFixture
+    ) -> None:
+        """Endpoint passed to client.get is TeamDashboardByShootingSplits."""
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=mocker.MagicMock())
+
+        await get_team_shooting_splits(client, team_id=1610612747)
+
+        endpoint = client.get.call_args[0][0]
+        assert isinstance(endpoint, TeamDashboardByShootingSplits)
+
+    async def test_passes_team_id(self, mocker: MockerFixture) -> None:
+        """team_id is forwarded to the endpoint."""
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=mocker.MagicMock())
+
+        await get_team_shooting_splits(client, team_id=1610612747)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.team_id == 1610612747  # noqa: PLR2004
+
+    async def test_defaults(self, mocker: MockerFixture) -> None:
+        """Default season_type is 'Regular Season' and per_mode is 'PerGame'."""
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=mocker.MagicMock())
+
+        await get_team_shooting_splits(client, team_id=1610612747)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.season_type == "Regular Season"
+        assert endpoint.per_mode == "PerGame"
+
+
+# ─── get_team_splits_profile ─────────────────────────────────────────────────
+
+
+class TestGetTeamSplitsProfile:
+    """Tests for get_team_splits_profile(), which fetches 2 splits concurrently."""
+
+    async def test_calls_get_many_once(self, mocker: MockerFixture) -> None:
+        """get_team_splits_profile calls client.get_many exactly once."""
+        client = NBAClient(session=mocker.MagicMock())
+        client.get_many = mocker.AsyncMock(
+            return_value=[mocker.MagicMock() for _ in range(2)]
+        )
+
+        await get_team_splits_profile(client, team_id=1610612747)
+
+        client.get_many.assert_called_once()
+
+    async def test_get_many_receives_2_endpoints(self, mocker: MockerFixture) -> None:
+        """get_many is called with [GeneralSplits, ShootingSplits]."""
+        client = NBAClient(session=mocker.MagicMock())
+        client.get_many = mocker.AsyncMock(
+            return_value=[mocker.MagicMock() for _ in range(2)]
+        )
+
+        await get_team_splits_profile(client, team_id=1610612747)
+
+        endpoints = client.get_many.call_args[0][0]
+        assert len(endpoints) == 2  # noqa: PLR2004
+        assert isinstance(endpoints[0], TeamDashboardByGeneralSplits)
+        assert isinstance(endpoints[1], TeamDashboardByShootingSplits)
+
+    async def test_profile_fields_populated(self, mocker: MockerFixture) -> None:
+        """TeamSplitsProfile maps get_many results to fields in order."""
+        mock_results = [mocker.MagicMock() for _ in range(2)]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get_many = mocker.AsyncMock(return_value=mock_results)
+
+        profile = await get_team_splits_profile(client, team_id=1610612747)
+
+        assert isinstance(profile, TeamSplitsProfile)
+        assert profile.general is mock_results[0]
+        assert profile.shooting is mock_results[1]
+
+    async def test_team_id_stored(self, mocker: MockerFixture) -> None:
+        """TeamSplitsProfile stores the team_id passed to the function."""
+        client = NBAClient(session=mocker.MagicMock())
+        client.get_many = mocker.AsyncMock(
+            return_value=[mocker.MagicMock() for _ in range(2)]
+        )
+
+        profile = await get_team_splits_profile(client, team_id=1610612747)
+
+        assert profile.team_id == 1610612747  # noqa: PLR2004
