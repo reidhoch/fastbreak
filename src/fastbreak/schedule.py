@@ -10,6 +10,7 @@ from fastbreak.logging import logger
 from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from datetime import date
 
     from fastbreak.clients.nba import NBAClient
@@ -17,7 +18,14 @@ if TYPE_CHECKING:
     from fastbreak.types import Season
 
 
-def days_rest_before_game(game_dates: list[date], game_index: int) -> int | None:
+def _validate_game_index(game_dates: Sequence[date], game_index: int) -> None:
+    """Raise IndexError if *game_index* is out of range for *game_dates*."""
+    if game_index < 0 or game_index >= len(game_dates):
+        msg = f"game_index {game_index} out of range for {len(game_dates)} games"
+        raise IndexError(msg)
+
+
+def days_rest_before_game(game_dates: Sequence[date], game_index: int) -> int | None:
     """Return days of rest before the game at game_index.
 
     Args:
@@ -28,18 +36,22 @@ def days_rest_before_game(game_dates: list[date], game_index: int) -> int | None
         Days between previous game and this game minus 1,
         or None if this is the team's first game.
 
+    Raises:
+        IndexError: If *game_index* is out of range.
+
     Examples:
         # Back-to-back (Jan 15 -> Jan 16): 0 days rest
         days = days_rest_before_game([date(2025,1,15), date(2025,1,16)], 1)
         # => 0
     """
+    _validate_game_index(game_dates, game_index)
     if game_index == 0:
         return None
     delta = game_dates[game_index] - game_dates[game_index - 1]
     return max(0, delta.days - 1)
 
 
-def is_back_to_back(game_dates: list[date], game_index: int) -> bool:
+def is_back_to_back(game_dates: Sequence[date], game_index: int) -> bool:
     """Return True if the game at game_index is a back-to-back.
 
     Args:
@@ -58,6 +70,128 @@ _SORT_LAST: str = (
 )
 
 
+def game_dates_from_schedule(games: Sequence[ScheduledGame]) -> list[date]:
+    """Extract a sorted list of dates from scheduled games.
+
+    Skips games with ``None`` ``game_date_est``.  Uses the first 10
+    characters of the ISO-formatted ``game_date_est`` string to parse
+    the date portion.
+
+    Args:
+        games: Scheduled games (from :func:`get_team_schedule` or
+               :func:`get_season_schedule`).
+
+    Returns:
+        Sorted list of :class:`~datetime.date` objects.
+    """
+    from datetime import date as _date  # noqa: PLC0415
+
+    dates: list[_date] = []
+    skipped = 0
+    for g in games:
+        if g.game_date_est is None:
+            skipped += 1
+            continue
+        try:
+            dates.append(_date.fromisoformat(g.game_date_est[:10]))
+        except ValueError:
+            skipped += 1
+            logger.warning(
+                "game_date_parse_failed",
+                game_id=getattr(g, "game_id", "unknown"),
+                raw_date=g.game_date_est,
+                hint="Could not parse game_date_est; skipping game",
+            )
+    if skipped:
+        logger.debug(
+            "game_dates_skipped",
+            skipped=skipped,
+            total=len(games),
+        )
+    dates.sort()
+    return dates
+
+
+def is_home_game(game: ScheduledGame, team_id: int) -> bool:
+    """Return True if *team_id* is the home team for *game*."""
+    return game.home_team is not None and game.home_team.team_id == team_id
+
+
+def rest_advantage(
+    home_dates: Sequence[date],
+    away_dates: Sequence[date],
+    game_date: date,
+) -> int | None:
+    """Compute home-team rest advantage for a specific *game_date*.
+
+    Returns ``home_rest - away_rest``.  Positive means the home team is
+    more rested.  Returns ``None`` when *game_date* is missing from
+    either list, or when either team has no prior game (first game of
+    season).
+    """
+    try:
+        home_idx = home_dates.index(game_date)
+    except ValueError:
+        logger.debug(
+            "rest_advantage_date_not_in_home",
+            game_date=str(game_date),
+        )
+        return None
+    try:
+        away_idx = away_dates.index(game_date)
+    except ValueError:
+        logger.debug(
+            "rest_advantage_date_not_in_away",
+            game_date=str(game_date),
+        )
+        return None
+
+    home_rest = days_rest_before_game(home_dates, home_idx)
+    away_rest = days_rest_before_game(away_dates, away_idx)
+
+    if home_rest is None or away_rest is None:
+        return None
+    return home_rest - away_rest
+
+
+def schedule_density(
+    game_dates: Sequence[date],
+    game_index: int,
+    window: int = 7,
+) -> int:
+    """Count games in the *window*-day period ending on ``game_dates[game_index]``.
+
+    Scans backward from *game_index* while the date delta is <= *window* - 1
+    days.  The game at *game_index* always counts, so the minimum return
+    value is ``1``.
+
+    Args:
+        game_dates: Sorted list of game dates for a team.
+        game_index: Index of the anchor game.
+        window:     Window size in days (default 7).  Must be ≥ 1.
+
+    Returns:
+        Number of games (≥ 1) in the window.
+
+    Raises:
+        ValueError: If *window* < 1.
+        IndexError: If *game_index* is out of range.
+    """
+    if window < 1:
+        msg = f"window must be >= 1, got {window}"
+        raise ValueError(msg)
+    _validate_game_index(game_dates, game_index)
+
+    anchor = game_dates[game_index]
+    count = 1  # the game itself
+    for i in range(game_index - 1, -1, -1):
+        if (anchor - game_dates[i]).days <= window - 1:
+            count += 1
+        else:
+            break
+    return count
+
+
 def _schedule_sort_key(g: ScheduledGame) -> str:
     """Return the sort key for a scheduled game; games missing a date sort last."""
     if g.game_date_est is None:
@@ -70,18 +204,42 @@ def _schedule_sort_key(g: ScheduledGame) -> str:
     return g.game_date_est
 
 
+def _flatten_schedule(league_schedule: LeagueSchedule) -> list[ScheduledGame]:
+    """Return all games from a league schedule as a flat list."""
+    return [g for gd in league_schedule.game_dates for g in gd.games]
+
+
 def _collect_team_games(
     league_schedule: LeagueSchedule, team_id: int
 ) -> list[ScheduledGame]:
     """Return all games in a league schedule that involve the given team."""
-    games: list[ScheduledGame] = []
-    for game_date in league_schedule.game_dates:
-        for game in game_date.games:
-            home_id = game.home_team.team_id if game.home_team is not None else None
-            away_id = game.away_team.team_id if game.away_team is not None else None
-            if team_id in (home_id, away_id):
-                games.append(game)
-    return games
+    result: list[ScheduledGame] = []
+    for game in _flatten_schedule(league_schedule):
+        home_id = game.home_team.team_id if game.home_team is not None else None
+        away_id = game.away_team.team_id if game.away_team is not None else None
+        if team_id in (home_id, away_id):
+            result.append(game)
+    return result
+
+
+async def _fetch_league_schedule(
+    client: NBAClient, season: Season | None, **log_ctx: object
+) -> LeagueSchedule | None:
+    """Fetch the league schedule, returning ``None`` (with warning) when the response contains no ``league_schedule``."""
+    from fastbreak.endpoints import ScheduleLeagueV2  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    response = await client.get(ScheduleLeagueV2(season=season))
+
+    if response.league_schedule is None:
+        logger.warning(
+            "league_schedule_missing_from_response",
+            season=season,
+            hint="Response contained no league_schedule; returning empty list",
+            **log_ctx,
+        )
+        return None
+    return response.league_schedule
 
 
 async def get_team_schedule(
@@ -102,21 +260,11 @@ async def get_team_schedule(
     Examples:
         games = await get_team_schedule(client, 1610612747, "2024-25")
     """
-    from fastbreak.endpoints import ScheduleLeagueV2  # noqa: PLC0415
-
-    season = season or get_season_from_date()
-    response = await client.get(ScheduleLeagueV2(season=season))
-
-    if response.league_schedule is None:
-        logger.warning(
-            "league_schedule_missing_from_response",
-            team_id=team_id,
-            season=season,
-            hint="Response contained no league_schedule; returning empty list",
-        )
+    league_schedule = await _fetch_league_schedule(client, season, team_id=team_id)
+    if league_schedule is None:
         return []
 
-    team_games = _collect_team_games(response.league_schedule, team_id)
+    team_games = _collect_team_games(league_schedule, team_id)
     team_games.sort(key=_schedule_sort_key)
     return team_games
 
@@ -141,7 +289,7 @@ class TravelLeg:
 
 # (arena_city, arena_state) → (latitude, longitude, utc_std_offset)
 # Keys match the arenaCity / arenaState values returned by the NBA Stats API.
-# Both LA teams share Crypto.com Arena; Brooklyn and New York are separate.
+# Brooklyn and New York are separate.
 type ArenaCoord = tuple[float, float, int]
 
 _ARENA_COORDS: dict[tuple[str, str], ArenaCoord] = {
@@ -156,7 +304,8 @@ _ARENA_COORDS: dict[tuple[str, str], ArenaCoord] = {
     ("Detroit", "MI"): (42.3410, -83.0554, -5),  # Little Caesars Arena
     ("Houston", "TX"): (29.7508, -95.3621, -6),  # Toyota Center
     ("Indianapolis", "IN"): (39.7640, -86.1555, -5),  # Gainbridge Fieldhouse
-    ("Los Angeles", "CA"): (34.0430, -118.2673, -8),  # Crypto.com Arena (LAL + LAC)
+    ("Inglewood", "CA"): (33.9581, -118.3413, -8),  # Intuit Dome (LAC)
+    ("Los Angeles", "CA"): (34.0430, -118.2673, -8),  # Crypto.com Arena (LAL)
     ("Memphis", "TN"): (35.1383, -90.0505, -6),  # FedExForum
     ("Miami", "FL"): (25.7814, -80.1870, -5),  # Kaseya Center
     ("Milwaukee", "WI"): (43.0450, -87.9178, -6),  # Fiserv Forum
@@ -207,6 +356,13 @@ def _compute_leg(current: ScheduledGame, previous: ScheduledGame) -> TravelLeg |
     origin = _ARENA_COORDS.get((previous.arena_city, previous.arena_state))
     dest = _ARENA_COORDS.get((current.arena_city, current.arena_state))
     if origin is None or dest is None:
+        logger.debug(
+            "arena_coords_not_found",
+            current_city=current.arena_city,
+            current_state=current.arena_state,
+            previous_city=previous.arena_city,
+            previous_state=previous.arena_state,
+        )
         return None
 
     orig_lat, orig_lon, orig_tz = origin
@@ -218,7 +374,7 @@ def _compute_leg(current: ScheduledGame, previous: ScheduledGame) -> TravelLeg |
 
 
 def travel_distance(
-    games: list[ScheduledGame],
+    games: Sequence[ScheduledGame],
     game_id: str,
 ) -> TravelLeg | None:
     """Return travel distance and time-zone shift for a single game leg.
@@ -258,7 +414,7 @@ def travel_distance(
 
 
 def travel_distances(
-    games: list[ScheduledGame],
+    games: Sequence[ScheduledGame],
 ) -> dict[str, TravelLeg | None]:
     """Return travel legs for all games in a team's sorted schedule.
 
@@ -291,3 +447,30 @@ def travel_distances(
             continue
         result[game.game_id] = None if i == 0 else _compute_leg(game, games[i - 1])
     return result
+
+
+async def get_season_schedule(
+    client: NBAClient,
+    *,
+    season: Season | None = None,
+) -> list[ScheduledGame]:
+    """Return the full league schedule for a season, sorted chronologically.
+
+    Unlike :func:`get_team_schedule` this returns **all** games across
+    all teams with no team filter.
+
+    Args:
+        client: NBA API client.
+        season: Season in ``YYYY-YY`` format (defaults to current season).
+
+    Returns:
+        List of :class:`ScheduledGame` in chronological order, or ``[]``
+        if the API response contains no ``leagueSchedule``.
+    """
+    league_schedule = await _fetch_league_schedule(client, season)
+    if league_schedule is None:
+        return []
+
+    all_games = _flatten_schedule(league_schedule)
+    all_games.sort(key=_schedule_sort_key)
+    return all_games

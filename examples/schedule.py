@@ -6,8 +6,13 @@ from datetime import date
 from fastbreak.clients import NBAClient
 from fastbreak.schedule import (
     days_rest_before_game,
+    game_dates_from_schedule,
+    get_season_schedule,
     get_team_schedule,
     is_back_to_back,
+    is_home_game,
+    rest_advantage,
+    schedule_density,
     travel_distances,
 )
 from fastbreak.teams import get_team_id
@@ -122,6 +127,52 @@ async def main() -> None:
             home = _tricode(g.home_team)
             print(f"  {(g.game_date_est or '')[:10]}  {away} @ {home}")
             print(f"  {leg.miles:.0f} miles, tz shift {leg.tz_shift:+d}h")
+        print()
+
+        # ── 6. Rest advantage ──────────────────────────────────────────
+        print("=" * 60)
+        print("Rest advantage — Pacers next home game")
+        print("=" * 60)
+        all_season = await get_season_schedule(client, season="2025-26")
+        ind_dates = game_dates_from_schedule(games)
+
+        # Find first Pacers home game with a computable rest advantage.
+        # NOTE: breaks after first match — opp_dates is recomputed each
+        # iteration; remove the break only after precomputing opp schedules.
+        for game in games:
+            if not is_home_game(game, IND_TEAM_ID):
+                continue
+            if game.away_team is None or game.away_team.team_id is None:
+                continue
+            opp_id = game.away_team.team_id
+            opp_games = [
+                g
+                for g in all_season
+                if (g.home_team and g.home_team.team_id == opp_id)
+                or (g.away_team and g.away_team.team_id == opp_id)
+            ]
+            opp_dates = game_dates_from_schedule(opp_games)
+            if not game.game_date_est:
+                continue
+            gd = date.fromisoformat(game.game_date_est[:10])
+            adv = rest_advantage(ind_dates, opp_dates, gd)
+            opp_tri = _tricode(game.away_team)
+            if adv is not None:
+                sign = "+" if adv > 0 else ""
+                print(f"  {gd}  IND vs {opp_tri}  rest advantage: {sign}{adv} days")
+                break
+        print()
+
+        # ── 7. Schedule density ─────────────────────────────────────────
+        print("=" * 60)
+        print("Schedule density — games in last 7 days (first 10 games)")
+        print("=" * 60)
+        for i in range(min(10, len(ind_dates))):
+            d = schedule_density(ind_dates, i)
+            game, gd = valid_games[i]
+            away = _tricode(game.away_team)
+            home = _tricode(game.home_team)
+            print(f"  Game {i + 1:3d}  {gd}  {away} @ {home}  density={d}")
         print()
 
 
