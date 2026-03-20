@@ -245,7 +245,7 @@ asyncio.run(main())
 
 ### `game_dates_from_schedule(games) -> list[date]`
 
-Extract a sorted list of `datetime.date` objects from a list of `ScheduledGame`. Games with `None` `game_date_est` are skipped.
+Extract a sorted list of `datetime.date` objects from a list of `ScheduledGame`. Games with `None` or malformed `game_date_est` values are skipped (malformed values are logged and ignored rather than raising).
 
 **Parameters**
 
@@ -345,6 +345,7 @@ Count the number of games in the `window`-day period ending on `game_dates[game_
 **Raises**
 
 `ValueError` if `window < 1`.
+`IndexError` if `game_index` is out of range for `game_dates`.
 
 ```python
 from fastbreak.schedule import get_team_schedule, game_dates_from_schedule, schedule_density
