@@ -73,9 +73,11 @@ _SORT_LAST: str = (
 def game_dates_from_schedule(games: Sequence[ScheduledGame]) -> list[date]:
     """Extract a sorted list of dates from scheduled games.
 
-    Skips games with ``None`` ``game_date_est``.  Uses the first 10
+    Skips games with ``None`` ``game_date_est`` and any games whose
+    ``game_date_est`` cannot be parsed as a date.  Uses the first 10
     characters of the ISO-formatted ``game_date_est`` string to parse
-    the date portion.
+    the date portion.  Malformed values are logged and excluded rather
+    than raising.
 
     Args:
         games: Scheduled games (from :func:`get_team_schedule` or
