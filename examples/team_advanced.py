@@ -79,22 +79,22 @@ async def main() -> None:
         print("=" * 60)
         on_off = await get_team_on_off_summary(client, team_id=int(IND.id))
 
-        # Build (player_name, on_row, off_row) triples
-        on_rows = {r.vs_player_name: r for r in on_off.players_on_court}
-        off_rows = {r.vs_player_name: r for r in on_off.players_off_court}
-        players = sorted(on_rows.keys())
+        # Build on/off pairs by player ID (stable key, avoids name mismatches)
+        on_rows = {r.vs_player_id: r for r in on_off.players_on_court}
+        off_rows = {r.vs_player_id: r for r in on_off.players_off_court}
+        player_ids = sorted(on_rows.keys() & off_rows.keys())
 
         print(f"  {'Player':<25} {'On NR':>7} {'Off NR':>7} {'Delta':>7}")
         print(f"  {'-' * 25}  {'-' * 7} {'-' * 7} {'-' * 7}")
-        for name in players:
-            on_row = on_rows.get(name)
-            off_row = off_rows.get(name)
-            if on_row and off_row:
-                delta = on_off_net_rating_delta(on_row.net_rating, off_row.net_rating)
-                print(
-                    f"  {name:<25} {on_row.net_rating:>+7.1f} "
-                    f"{off_row.net_rating:>+7.1f} {delta:>+7.1f}",
-                )
+        for pid in player_ids:
+            on_row = on_rows[pid]
+            off_row = off_rows[pid]
+            name = on_row.vs_player_name
+            delta = on_off_net_rating_delta(on_row.net_rating, off_row.net_rating)
+            print(
+                f"  {name:<25} {on_row.net_rating:>+7.1f} "
+                f"{off_row.net_rating:>+7.1f} {delta:>+7.1f}",
+            )
         print()
 
 
