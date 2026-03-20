@@ -153,8 +153,9 @@ uv run python examples/team_stats.py
 ### [team_advanced.py](team_advanced.py)
 
 Advanced team analytics: live league-average stats via `get_league_averages`, offensive
-play-type breakdown with `get_team_playtypes`, and 5-man lineup net ratings from
-`get_lineup_net_ratings`. Uses the Indiana Pacers as the example team.
+play-type breakdown with `get_team_playtypes`, 5-man lineup net ratings from
+`get_lineup_net_ratings`, and player on/off court impact via `get_team_on_off_summary`
+with `on_off_net_rating_delta`. Uses the Indiana Pacers as the example team.
 
 ```bash
 uv run python examples/team_advanced.py
@@ -189,6 +190,40 @@ and rank lineups across the league.
 
 ```bash
 uv run python examples/lineups.py
+```
+
+### [splits.py](splits.py)
+
+Player and team situational splits using `fastbreak.splits`: home/road and win/loss
+comparisons, recent form via rolling last-N windows, shooting breakdowns by court area,
+concurrent profile fetching (`PlayerSplitsProfile`), and team-level equivalents including
+`get_team_general_splits`, `get_team_shooting_splits`, and `get_team_splits_profile`.
+
+```bash
+uv run python examples/splits.py
+```
+
+### [shots.py](shots.py)
+
+Shot chart analysis using `fastbreak.shots`: per-player zone efficiency, delta vs.
+league average, expected FG% (xFG%), multi-player zone comparison, team shot locations
+by distance range via `get_team_shot_locations` and `team_distance_breakdown`, and a
+league-wide comparison of rim FG%.
+
+```bash
+uv run python examples/shots.py
+```
+
+### [clutch.py](clutch.py)
+
+Clutch performance analysis using `fastbreak.clutch`: player and team clutch leaders
+sorted by plus/minus (`get_league_clutch_leaders`, `get_league_team_clutch_leaders`),
+per-player clutch profiles (`get_player_clutch_profile`), and single-team clutch stats
+(`get_team_clutch_stats`). Uses the standard NBA clutch definition: last 5 minutes,
+score within 5.
+
+```bash
+uv run python examples/clutch.py
 ```
 
 ### [matchups.py](matchups.py)

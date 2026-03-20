@@ -6,7 +6,9 @@ from fastbreak.clients import NBAClient
 from fastbreak.teams import (
     get_league_averages,
     get_lineup_net_ratings,
+    get_team_on_off_summary,
     get_team_playtypes,
+    on_off_net_rating_delta,
     search_teams,
 )
 
@@ -49,16 +51,18 @@ async def main() -> None:
             for p in sorted_plays[:8]:
                 print(
                     f"  {p.play_type:<20}  {p.poss:6.0f}  {p.ppp:5.2f}"
-                    f"  {p.efg_pct:6.3f}"
+                    f"  {p.efg_pct:6.3f}",
                 )
         print()
 
         # ── 3. Lineup net ratings ────────────────────────────────────
         print("=" * 60)
-        print(f"{IND.full_name} — top 10 lineups by net rating (avg ≥20 min/g)")
+        print(f"{IND.full_name} — top 10 lineups by net rating (avg ≥10 min/g)")
         print("=" * 60)
         lineups = await get_lineup_net_ratings(
-            client, team_id=int(IND.id), min_minutes=20.0
+            client,
+            team_id=int(IND.id),
+            min_minutes=10.0,
         )
         if not lineups:
             print("  No lineups meet the minutes threshold.")
@@ -67,6 +71,30 @@ async def main() -> None:
             print(f"  {'-' * 55}  {'-' * 3}  {'-' * 7}")
             for lineup, net in lineups[:10]:
                 print(f"  {lineup.group_name:<55}  {lineup.gp:3d}  {net:+7.1f}")
+        print()
+
+        # ── 4. Player on/off court impact ──────────────────────────────
+        print("=" * 60)
+        print(f"{IND.full_name} — player on/off court impact (net rating)")
+        print("=" * 60)
+        on_off = await get_team_on_off_summary(client, team_id=int(IND.id))
+
+        # Build (player_name, on_row, off_row) triples
+        on_rows = {r.vs_player_name: r for r in on_off.players_on_court}
+        off_rows = {r.vs_player_name: r for r in on_off.players_off_court}
+        players = sorted(on_rows.keys())
+
+        print(f"  {'Player':<25} {'On NR':>7} {'Off NR':>7} {'Delta':>7}")
+        print(f"  {'-' * 25}  {'-' * 7} {'-' * 7} {'-' * 7}")
+        for name in players:
+            on_row = on_rows.get(name)
+            off_row = off_rows.get(name)
+            if on_row and off_row:
+                delta = on_off_net_rating_delta(on_row.net_rating, off_row.net_rating)
+                print(
+                    f"  {name:<25} {on_row.net_rating:>+7.1f} "
+                    f"{off_row.net_rating:>+7.1f} {delta:>+7.1f}",
+                )
         print()
 
 

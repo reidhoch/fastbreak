@@ -32,12 +32,16 @@ from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
     from fastbreak.clients.nba import NBAClient
+    from fastbreak.models.league_dash_team_shot_locations import (
+        ShotRange,
+        TeamShotLocations,
+    )
     from fastbreak.models.shot_chart_detail import Shot, ShotChartDetailResponse
     from fastbreak.models.shot_chart_leaguewide import (
         LeagueWideShotZone,
         ShotChartLeaguewideResponse,
     )
-    from fastbreak.types import ContextMeasure, Season, SeasonType
+    from fastbreak.types import ContextMeasure, PerMode, Season, SeasonType
 
 
 @dataclass(frozen=True)
@@ -46,14 +50,14 @@ class ZoneStats:
 
     Attributes:
         zone: Zone name matching Shot.shot_zone_basic (e.g., "Mid-Range").
-        fga: Total field goal attempts from this zone.
-        fgm: Total field goals made from this zone.
+        fga: Field goal attempts (count or per-game average).
+        fgm: Field goals made (count or per-game average).
         fg_pct: Field goal percentage (fgm / fga), or None if no attempts.
     """
 
     zone: str
-    fga: int
-    fgm: int
+    fga: float
+    fgm: float
     fg_pct: float | None
 
 
@@ -180,7 +184,7 @@ def xfg_pct(
     league_lookup = _league_zone_fg_lookup(league_zones)
 
     expected_fgm = 0.0
-    matched_fga = 0
+    matched_fga = 0.0
     for zone, stats in _player_zones.items():
         if zone in league_lookup:
             expected_fgm += stats.fga * league_lookup[zone]
@@ -255,3 +259,58 @@ async def get_league_shot_zones(
         ShotChartLeaguewide(season=season)
     )
     return response.league_wide
+
+
+_DISTANCE_LABELS: tuple[tuple[str, str], ...] = (
+    ("range_less_than_5ft", "Less Than 5ft"),
+    ("range_5_9ft", "5-9ft"),
+    ("range_10_14ft", "10-14ft"),
+    ("range_15_19ft", "15-19ft"),
+    ("range_20_24ft", "20-24ft"),
+    ("range_25_29ft", "25-29ft"),
+    ("range_back_court", "Back Court"),
+)
+
+
+def team_distance_breakdown(locations: TeamShotLocations) -> dict[str, ZoneStats]:
+    """Convert TeamShotLocations distance ranges into a dict of ZoneStats.
+
+    Maps each of the 7 ShotRange attributes to a ZoneStats keyed by
+    human-readable distance label.
+    """
+    result: dict[str, ZoneStats] = {}
+    for attr_name, label in _DISTANCE_LABELS:
+        shot_range: ShotRange = getattr(locations, attr_name)
+        fga = shot_range.fga
+        fgm = shot_range.fgm
+        fg_pct = fgm / fga if fga > 0 else None
+        result[label] = ZoneStats(zone=label, fga=fga, fgm=fgm, fg_pct=fg_pct)
+    return result
+
+
+async def get_team_shot_locations(
+    client: NBAClient,
+    *,
+    team_id: int = 0,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    per_mode: PerMode = "PerGame",
+) -> list[TeamShotLocations]:
+    """Fetch team shot locations by distance range.
+
+    team_id=0 returns all 30 teams; nonzero filters client-side.
+    """
+    from fastbreak.endpoints import LeagueDashTeamShotLocations  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    response = await client.get(
+        LeagueDashTeamShotLocations(
+            team_id=0,  # Always fetch all, filter client-side
+            season=season,
+            season_type=season_type,
+            per_mode=per_mode,
+        )
+    )
+    if team_id == 0:
+        return response.teams
+    return [t for t in response.teams if t.team_id == team_id]

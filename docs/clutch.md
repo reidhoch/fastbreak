@@ -11,6 +11,8 @@ from fastbreak.clutch import (
     get_player_clutch_stats,
     get_player_clutch_profile,
     get_league_clutch_leaders,
+    get_league_team_clutch_leaders,
+    get_team_clutch_stats,
 )
 ```
 
@@ -339,6 +341,142 @@ asyncio.run(main())
 
 ---
 
+### `get_league_team_clutch_leaders`
+
+```python
+async def get_league_team_clutch_leaders(
+    client: NBAClient,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    top_n: int = 30,
+) -> list[TeamClutchStats]
+```
+
+Fetch league-wide team clutch leaders sorted by plus/minus descending. Uses the standard clutch definition (last 5 min, ≤5 pts) across all 30 teams.
+
+**Parameters**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `client` | `NBAClient` | required | Active NBA API client |
+| `season` | `Season \| None` | current season | Season in `YYYY-YY` format |
+| `season_type` | `SeasonType` | `"Regular Season"` | `"Regular Season"`, `"Playoffs"`, etc. |
+| `top_n` | `int` | `30` | Maximum number of teams to return. Raises `ValueError` if < 1. |
+
+**Returns** `list[TeamClutchStats]` — sorted by `plus_minus` descending, capped at `top_n`
+
+**`TeamClutchStats` fields (selected)**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `team_id` | `int` | NBA team ID |
+| `team_name` | `str` | Full team name |
+| `gp` | `int` | Games played |
+| `w` / `losses` | `int` | Wins / losses in clutch situations |
+| `w_pct` | `float` | Win percentage in clutch situations |
+| `min` | `float` | Clutch minutes played |
+| `fgm` / `fga` / `fg_pct` | `float / float / float` | Field goal stats |
+| `fg3m` / `fg3a` / `fg3_pct` | `float / float / float` | Three-point stats |
+| `ftm` / `fta` / `ft_pct` | `float / float / float` | Free throw stats |
+| `oreb` / `dreb` / `reb` | `float` | Rebound stats |
+| `ast` / `tov` / `stl` / `blk` | `float` | Assist / turnover / steal / block stats |
+| `pts` | `float` | Points in clutch situations |
+| `plus_minus` | `float` | Plus/minus in clutch situations |
+
+Each stat also has a corresponding `*_rank` field (e.g. `plus_minus_rank`) giving that team's league rank for the stat.
+
+**Example**
+
+```python
+import asyncio
+from fastbreak.clients import NBAClient
+from fastbreak.clutch import get_league_team_clutch_leaders
+
+async def main():
+    async with NBAClient() as client:
+        leaders = await get_league_team_clutch_leaders(
+            client,
+            season="2025-26",
+            top_n=10,
+        )
+
+    if not leaders:
+        print("No team clutch data found")
+        return
+
+    print("Top 10 Teams by Clutch +/- (2025-26)")
+    print(f"{'#':<3} {'Team':<25} {'GP':>3} {'Min':>6} {'PTS':>5} {'+/-':>6} {'W%':>6}")
+    print("-" * 58)
+    for rank, row in enumerate(leaders, 1):
+        w_pct = f"{row.w_pct:.3f}" if row.w_pct is not None else "  N/A"
+        print(
+            f"{rank:<3} {row.team_name:<25} {row.gp:>3} {row.min:>6.1f} "
+            f"{row.pts:>5.1f} {row.plus_minus:>+6.1f} {w_pct:>6}"
+        )
+
+asyncio.run(main())
+```
+
+---
+
+### `get_team_clutch_stats`
+
+```python
+async def get_team_clutch_stats(
+    client: NBAClient,
+    team_id: int,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+) -> TeamClutchStats | None
+```
+
+Fetch clutch stats for a single team. Filters from the league-wide response to one team. Returns `None` if `team_id` is not found.
+
+**Parameters**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `client` | `NBAClient` | required | Active NBA API client |
+| `team_id` | `int` | required | NBA team ID |
+| `season` | `Season \| None` | current season | Season in `YYYY-YY` format |
+| `season_type` | `SeasonType` | `"Regular Season"` | `"Regular Season"`, `"Playoffs"`, etc. |
+
+**Returns** `TeamClutchStats | None` — the team's clutch stats, or `None` if the team ID is not found
+
+**Example**
+
+```python
+import asyncio
+from fastbreak.clients import NBAClient
+from fastbreak.clutch import get_team_clutch_stats
+
+async def main():
+    async with NBAClient() as client:
+        stats = await get_team_clutch_stats(
+            client,
+            team_id=1610612747,  # Lakers
+            season="2025-26",
+        )
+
+    if stats is None:
+        print("Team not found")
+        return
+
+    print(f"{stats.team_name} — Clutch Stats (2025-26)")
+    print(f"  Record:    {stats.w}-{stats.losses} ({stats.w_pct:.3f})")
+    print(f"  Minutes:   {stats.min:.1f}")
+    print(f"  Points:    {stats.pts:.1f}")
+    print(f"  Plus/minus: {stats.plus_minus:+.1f}")
+    print(f"  FG%:       {stats.fg_pct:.3f}")
+    print(f"  3PT%:      {stats.fg3_pct:.3f}")
+
+asyncio.run(main())
+```
+
+---
+
 ## Complete Examples
 
 ### Clutch leaderboard with scoring efficiency
@@ -473,6 +611,8 @@ The helpers in `fastbreak.clutch` cover the most common clutch workflows. For ad
 |------|-----------|-----------------|
 | Standard clutch profile (last 5 min ≤5 pts) | `get_player_clutch_profile` | `PlayerDashboardByClutch` (all eleven windows) |
 | League-wide clutch ranking | `get_league_clutch_leaders` | `LeagueDashPlayerClutch` (position/conference filters) |
+| Team clutch leaderboard | `get_league_team_clutch_leaders` | `LeagueDashTeamClutch` |
+| Single team clutch stats | `get_team_clutch_stats` | `LeagueDashTeamClutch` |
 | Non-standard clutch window | `get_player_clutch_stats` + `build_clutch_profile` | `PlayerDashboardByClutch` (direct attribute access) |
 | Composite score from custom stats | `build_clutch_profile` / `clutch_score` | n/a — pure Python |
 

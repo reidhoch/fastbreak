@@ -2,7 +2,7 @@
 
 Provides a composite ClutchProfile aggregating a player's standard clutch
 definition (last 5 minutes, score within 5 points) against their full-season
-baseline, plus league-wide clutch leader queries.
+baseline, plus league-wide player and team clutch leader queries.
 
 Examples::
 
@@ -32,6 +32,7 @@ from fastbreak.seasons import get_season_from_date
 if TYPE_CHECKING:
     from fastbreak.clients.nba import NBAClient
     from fastbreak.models.league_dash_player_clutch import LeagueDashPlayerClutchRow
+    from fastbreak.models.league_dash_team_clutch import TeamClutchStats
     from fastbreak.models.player_dashboard_by_clutch import (
         PlayerDashboardByClutchResponse,
     )
@@ -300,3 +301,75 @@ async def get_league_clutch_leaders(
     qualified = [p for p in response.players if p.min >= min_minutes]
     qualified.sort(key=lambda p: p.plus_minus, reverse=True)
     return qualified[:top_n]
+
+
+async def get_league_team_clutch_leaders(
+    client: NBAClient,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    top_n: int = 30,
+) -> list[TeamClutchStats]:
+    """Fetch league-wide team clutch leaders sorted by plus/minus.
+
+    Uses the standard clutch definition (last 5 min, ≤5 pts) across all teams.
+
+    Args:
+        client: NBA API client.
+        season: Season in YYYY-YY format (defaults to current season).
+        season_type: "Regular Season", "Playoffs", etc.
+        top_n: Maximum number of teams to return (default 30).
+
+    Returns:
+        List of TeamClutchStats sorted by plus_minus descending,
+        capped at top_n entries.
+
+    Raises:
+        ValueError: If top_n < 1.
+    """
+    if top_n < 1:
+        msg = f"top_n must be >= 1, got {top_n}"
+        raise ValueError(msg)
+
+    from fastbreak.endpoints import LeagueDashTeamClutch  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    response = await client.get(
+        LeagueDashTeamClutch(season=season, season_type=season_type)
+    )
+    teams = list(response.teams)
+    teams.sort(key=lambda t: t.plus_minus, reverse=True)
+    return teams[:top_n]
+
+
+async def get_team_clutch_stats(
+    client: NBAClient,
+    team_id: int,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+) -> TeamClutchStats | None:
+    """Fetch clutch stats for a single team.
+
+    Filters from league-wide response to one team.
+    Returns None if team_id not found.
+
+    Args:
+        client: NBA API client.
+        team_id: NBA team ID.
+        season: Season in YYYY-YY format (defaults to current season).
+        season_type: "Regular Season", "Playoffs", etc.
+
+    Returns:
+        TeamClutchStats for the matching team, or None if not found.
+    """
+    from fastbreak.endpoints import LeagueDashTeamClutch  # noqa: PLC0415
+
+    season = season or get_season_from_date()
+    response = await client.get(
+        LeagueDashTeamClutch(season=season, season_type=season_type)
+    )
+    for team in response.teams:
+        if team.team_id == team_id:
+            return team
+    return None

@@ -1,11 +1,12 @@
 # fastbreak.splits
 
-High-level helpers for NBA player situational split data. These functions wrap five `PlayerDashboardBy*` endpoints and expose a `PlayerSplitsProfile` dataclass that fetches all sub-endpoints for a player concurrently.
+High-level helpers for NBA player and team situational split data. These functions wrap five `PlayerDashboardBy*` endpoints and two `TeamDashboardBy*` endpoints, and expose `PlayerSplitsProfile` and `TeamSplitsProfile` dataclasses that fetch all sub-endpoints concurrently.
 
 All async functions take an `NBAClient` instance as the first argument. The `season` parameter defaults to the current season when omitted.
 
 ```python
 from fastbreak.splits import (
+    # Player splits
     get_player_game_splits,
     get_player_general_splits,
     get_player_shooting_splits,
@@ -14,6 +15,11 @@ from fastbreak.splits import (
     get_player_splits_profile,
     PlayerSplitsProfile,
     stat_delta,
+    # Team splits
+    get_team_general_splits,
+    get_team_shooting_splits,
+    get_team_splits_profile,
+    TeamSplitsProfile,
 )
 ```
 
@@ -44,6 +50,28 @@ A frozen dataclass holding all five player split responses. Built by `get_player
 | `shooting_splits` | Stats by shot distance, court area, shot type, and assist type |
 | `last_n_games` | Rolling averages for last 5/10/15/20 games and by game-number range |
 | `team_performance` | Stats split by score differential and team points scored/against ranges |
+
+---
+
+## Team Data Class
+
+### `TeamSplitsProfile`
+
+```python
+@dataclass(frozen=True, slots=True)
+class TeamSplitsProfile:
+    team_id: int
+    general: TeamDashboardByGeneralSplitsResponse
+    shooting: TeamDashboardByShootingSplitsResponse
+```
+
+A frozen dataclass holding both team split responses. Built by `get_team_splits_profile`, which fetches both endpoints concurrently via `client.get_many()`.
+
+| Field | Description |
+|-------|-------------|
+| `team_id` | NBA team ID |
+| `general` | Stats by location, W/L, month, All-Star break, and days rest |
+| `shooting` | Stats by shot distance, court area, shot type, and assist type |
 
 ---
 
@@ -243,6 +271,161 @@ if delta is not None:
 if profile.last_n_games.last_5 and profile.last_n_games.overall:
     pts_trend = stat_delta(profile.last_n_games.last_5.pts, profile.last_n_games.overall.pts)
     print(f"L5 vs season: {pts_trend:+.1f} PTS")
+```
+
+---
+
+## Team Helpers
+
+All team helpers accept the same keyword arguments:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `season` | `Season \| None` | current season | Season in YYYY-YY format |
+| `season_type` | `SeasonType` | `"Regular Season"` | `"Regular Season"`, `"Playoffs"`, or `"Pre Season"` |
+| `per_mode` | `PerMode` | `"PerGame"` | `"PerGame"` or `"Totals"` |
+| `last_n_games` | `int` | `0` | Restrict to last N games (0 = full season) |
+
+---
+
+### `get_team_general_splits`
+
+```python
+async def get_team_general_splits(
+    client: NBAClient,
+    team_id: int,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    per_mode: PerMode = "PerGame",
+    last_n_games: int = 0,
+) -> TeamDashboardByGeneralSplitsResponse
+```
+
+Returns stats split by location, wins/losses, month, pre/post All-Star, and days of rest.
+
+**`TeamDashboardByGeneralSplitsResponse` fields**
+
+| Field | Row type | Description |
+|-------|----------|-------------|
+| `overall` | `TeamSplitStats \| None` | Full-season aggregate |
+| `by_location` | `list[TeamSplitStats]` | Home vs. Road |
+| `by_wins_losses` | `list[TeamSplitStats]` | Wins vs. Losses |
+| `by_month` | `list[TeamSplitStats]` | Per calendar month |
+| `by_pre_post_all_star` | `list[TeamSplitStats]` | Pre All-Star vs. Post All-Star |
+| `by_days_rest` | `list[TeamSplitStats]` | 0/1/2/3+ days rest |
+
+`TeamSplitStats` key fields: `group_set` (str), `group_value` (str | int), `gp` (int), `w` (int), `losses` (int), `w_pct` (float), `min` (float), `fgm`–`fta` (float), `fg_pct`/`fg3_pct`/`ft_pct` (float | None), `oreb`/`dreb`/`reb`/`ast`/`tov`/`stl`/`blk` (float), `pts` (float), `plus_minus` (float). Each stat has a `*_rank` field.
+
+**Example**
+
+```python
+from fastbreak.clients import NBAClient
+from fastbreak.splits import get_team_general_splits, stat_delta
+
+async with NBAClient() as client:
+    splits = await get_team_general_splits(client, team_id=1610612754, season="2025-26")
+
+home = next((s for s in splits.by_location if s.group_value == "Home"), None)
+road = next((s for s in splits.by_location if s.group_value == "Road"), None)
+
+pts_delta = stat_delta(home.pts if home else None, road.pts if road else None)
+pts_delta_str = f"{pts_delta:+.1f}" if pts_delta is not None else "N/A"
+print(f"Pacers home/road PTS edge: {pts_delta_str}")
+
+print("Record by month:")
+for row in splits.by_month:
+    print(f"  {str(row.group_value):<15} {row.w}-{row.losses}  ({row.w_pct:.3f})")
+```
+
+---
+
+### `get_team_shooting_splits`
+
+```python
+async def get_team_shooting_splits(
+    client: NBAClient,
+    team_id: int,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    per_mode: PerMode = "PerGame",
+    last_n_games: int = 0,
+) -> TeamDashboardByShootingSplitsResponse
+```
+
+Returns shooting stats broken down by shot distance (5ft and 8ft buckets), court area, assisted/unassisted, shot type, and assisted-by player.
+
+**`TeamDashboardByShootingSplitsResponse` fields**
+
+| Field | Row type | Description |
+|-------|----------|-------------|
+| `overall` | `ShootingSplitStatsWithRank \| None` | Full-season aggregate with league ranks |
+| `by_shot_distance_5ft` | `list[ShootingSplitStatsWithRank]` | Shot distance in 5-foot buckets |
+| `by_shot_distance_8ft` | `list[ShootingSplitStatsWithRank]` | Shot distance in 8-foot buckets |
+| `by_shot_area` | `list[ShootingSplitStatsWithRank]` | By court zone (Restricted Area, In The Paint, Mid-Range, Corner 3, Above the Break 3) |
+| `by_assisted` | `list[ShootingSplitStatsWithRank]` | Assisted vs. Unassisted shots |
+| `by_shot_type` | `list[ShootingSplitStatsWithRank]` | By shot type category |
+| `assisted_by` | `list[AssistedByStats]` | FG% on shots assisted by each player |
+
+**Example**
+
+```python
+from fastbreak.clients import NBAClient
+from fastbreak.splits import get_team_shooting_splits
+
+async with NBAClient() as client:
+    shooting = await get_team_shooting_splits(client, team_id=1610612754, season="2025-26")
+
+print("Pacers FG% by court area:")
+for row in shooting.by_shot_area:
+    print(f"  {row.group_value:<30} {row.fg_pct:.1%}  eFG% {row.efg_pct:.1%}")
+
+print("\nAssisted vs. Unassisted:")
+for row in shooting.by_assisted:
+    print(f"  {row.group_value:<20} {row.fgm:.1f}/{row.fga:.1f}  {row.fg_pct:.1%}")
+```
+
+---
+
+### `get_team_splits_profile`
+
+```python
+async def get_team_splits_profile(
+    client: NBAClient,
+    team_id: int,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    per_mode: PerMode = "PerGame",
+    last_n_games: int = 0,
+) -> TeamSplitsProfile
+```
+
+Fetch both team split endpoints concurrently and return a `TeamSplitsProfile`.
+
+Uses `client.get_many()` so the client's `request_delay` and `max_concurrency` settings are respected. Raises `ExceptionGroup` if any request fails. Callers that need partial results should call `get_team_general_splits` or `get_team_shooting_splits` individually.
+
+**Example**
+
+```python
+from fastbreak.clients import NBAClient
+from fastbreak.splits import get_team_splits_profile, stat_delta
+
+async with NBAClient() as client:
+    profile = await get_team_splits_profile(client, team_id=1610612738, season="2025-26")
+
+# Celtics home vs road win percentage
+home = next((s for s in profile.general.by_location if s.group_value == "Home"), None)
+road = next((s for s in profile.general.by_location if s.group_value == "Road"), None)
+wpct_delta = stat_delta(home.w_pct if home else None, road.w_pct if road else None)
+if wpct_delta is not None:
+    print(f"Celtics home/road W% edge: {wpct_delta:+.3f}")
+
+# Shooting efficiency by distance
+print("\nFG% by shot distance (5ft buckets):")
+for row in profile.shooting.by_shot_distance_5ft:
+    print(f"  {row.group_value:<20} {row.fg_pct:.1%}")
 ```
 
 ---

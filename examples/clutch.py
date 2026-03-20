@@ -1,7 +1,8 @@
 """Clutch performance analysis examples.
 
-Demonstrates league-wide clutch leaders and a per-player clutch profile
-using the standard NBA clutch definition: last 5 minutes, score within 5.
+Demonstrates league-wide clutch leaders (player and team), a per-player clutch
+profile, and single-team clutch stats using the standard NBA clutch definition:
+last 5 minutes, score within 5.
 
 Run:
     uv run python examples/clutch.py
@@ -10,8 +11,14 @@ Run:
 import asyncio
 
 from fastbreak.clients import NBAClient
-from fastbreak.clutch import get_league_clutch_leaders, get_player_clutch_profile
+from fastbreak.clutch import (
+    get_league_clutch_leaders,
+    get_league_team_clutch_leaders,
+    get_player_clutch_profile,
+    get_team_clutch_stats,
+)
 from fastbreak.players import get_player_id
+from fastbreak.teams import get_team_id
 
 _MIN_CLUTCH_MINUTES = 5.0  # minimum total clutch minutes for a meaningful sample
 
@@ -38,7 +45,7 @@ async def league_clutch_leaders(season: str = "2025-26") -> None:
     for rank, row in enumerate(leaders, 1):
         pm_str = f"{row.plus_minus:+.1f}"
         print(
-            f"{rank:<3} {row.player_name:<25} {row.team_abbreviation:<5} {row.min:>5.1f} {pm_str:>6}"
+            f"{rank:<3} {row.player_name:<25} {row.team_abbreviation:<5} {row.min:>5.1f} {pm_str:>6}",
         )
 
 
@@ -88,16 +95,74 @@ async def player_clutch_profile(player_name: str, season: str = "2025-26") -> No
         print(f"  Composite score:  N/A (< {_MIN_CLUTCH_MINUTES:.0f} clutch minutes)")
 
 
+async def team_clutch_leaders(season: str = "2025-26") -> None:
+    """Print the top 10 teams in clutch situations, sorted by plus/minus."""
+    async with NBAClient() as client:
+        leaders = await get_league_team_clutch_leaders(
+            client,
+            season=season,
+            top_n=10,
+        )
+
+    if not leaders:
+        print("No team clutch data found.")
+        return
+
+    print(f"\nTop Team Clutch Performers — {season} Regular Season")
+    print("(last 5 min ≤5 pts)")
+    print("-" * 60)
+    print(f"{'#':<3} {'Team':<28} {'W-L':>6} {'PTS':>5} {'±':>7}")
+    print("-" * 60)
+    for rank, row in enumerate(leaders, 1):
+        pm_str = f"{row.plus_minus:+.1f}"
+        print(
+            f"{rank:<3} {row.team_name:<28} "
+            f"{row.w}-{row.losses:>2} {row.pts:>5.1f} {pm_str:>7}",
+        )
+
+
+async def single_team_clutch(team_name: str, season: str = "2025-26") -> None:
+    """Print clutch stats for a single team."""
+    team_id = get_team_id(team_name)
+    if team_id is None:
+        print(f"Team not found: {team_name!r}")
+        return
+
+    async with NBAClient() as client:
+        stats = await get_team_clutch_stats(
+            client,
+            int(team_id),
+            season=season,
+        )
+
+    if stats is None:
+        print(f"No clutch data for {team_name}.")
+        return
+
+    print(f"\nClutch Stats — {stats.team_name} ({season})")
+    print("-" * 40)
+    print(f"  Record:     {stats.w}-{stats.losses} ({stats.w_pct:.3f})")
+    print(f"  Points:     {stats.pts:.1f}")
+    fg_str = f"{stats.fg_pct:.1%}" if stats.fga > 0 else "N/A"
+    fg3_str = f"{stats.fg3_pct:.1%}" if stats.fg3a > 0 else "N/A"
+    print(f"  FG%:        {fg_str}")
+    print(f"  3P%:        {fg3_str}")
+    print(f"  +/-:        {stats.plus_minus:+.1f}")
+    print(f"  AST:        {stats.ast:.1f}")
+    print(f"  TOV:        {stats.tov:.1f}")
+
+
 async def main() -> None:
     season = "2025-26"
 
+    # Player clutch leaders and profiles
     await league_clutch_leaders(season)
-
-    # Profile a handful of notable players
-    # Note: player names must match exactly as stored in the NBA API,
-    # including diacritics (e.g. "Nikola Jokić", not "Nikola Jokic")
     for name in ["LeBron James", "Victor Wembanyama", "Nikola Jokić"]:
         await player_clutch_profile(name, season)
+
+    # Team clutch leaders and single-team deep dive
+    await team_clutch_leaders(season)
+    await single_team_clutch("Celtics", season)
 
 
 if __name__ == "__main__":

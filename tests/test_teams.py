@@ -794,8 +794,11 @@ class TestSearchTeamsBoundary:
 
 from fastbreak.teams import (
     get_team_coaches,
+    get_team_on_off_details,
+    get_team_on_off_summary,
     get_team_roster,
     get_team_roster_and_coaches,
+    on_off_net_rating_delta,
 )
 
 
@@ -968,3 +971,172 @@ class TestGetTeamRosterAndCoaches:
 
         assert players == []
         assert coaches == []
+
+
+class TestOnOffNetRatingDelta:
+    """Tests for on_off_net_rating_delta pure function."""
+
+    def test_positive_delta(self):
+        """Positive delta when on-court rating exceeds off-court rating."""
+        assert on_off_net_rating_delta(10.0, 5.0) == 5.0
+
+    def test_negative_delta(self):
+        """Negative delta when off-court rating exceeds on-court rating."""
+        assert on_off_net_rating_delta(5.0, 10.0) == -5.0
+
+    def test_zero_delta(self):
+        """Zero delta when both ratings are equal."""
+        assert on_off_net_rating_delta(7.0, 7.0) == 0.0
+
+    def test_antisymmetric(self):
+        """delta(a, b) == -delta(b, a)."""
+        assert on_off_net_rating_delta(10.0, 5.0) == -on_off_net_rating_delta(5.0, 10.0)
+
+    def test_identity(self):
+        """delta(a, a) == 0.0 for any a."""
+        assert on_off_net_rating_delta(42.0, 42.0) == 0.0
+
+
+def _make_on_off_client(mocker: MockerFixture, response):
+    """Return a NBAClient whose .get() resolves to a mock on/off response."""
+    client = NBAClient(session=mocker.MagicMock())
+    client.get = mocker.AsyncMock(return_value=response)
+    return client
+
+
+class TestGetTeamOnOffSummary:
+    """Tests for get_team_on_off_summary standalone function."""
+
+    async def test_calls_api_once(self, mocker: MockerFixture):
+        """get_team_on_off_summary issues exactly one API request."""
+        response = mocker.MagicMock()
+        client = _make_on_off_client(mocker, response)
+
+        await get_team_on_off_summary(client, team_id=1610612747)
+
+        assert client.get.call_count == 1
+
+    async def test_uses_summary_endpoint(self, mocker: MockerFixture):
+        """get_team_on_off_summary uses TeamPlayerOnOffSummary endpoint."""
+        from fastbreak.endpoints import TeamPlayerOnOffSummary
+
+        response = mocker.MagicMock()
+        client = _make_on_off_client(mocker, response)
+
+        await get_team_on_off_summary(client, team_id=1610612747)
+
+        endpoint = client.get.call_args[0][0]
+        assert isinstance(endpoint, TeamPlayerOnOffSummary)
+
+    async def test_passes_team_id(self, mocker: MockerFixture):
+        """get_team_on_off_summary passes team_id to the endpoint."""
+        response = mocker.MagicMock()
+        client = _make_on_off_client(mocker, response)
+
+        await get_team_on_off_summary(client, team_id=1610612747)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.team_id == 1610612747
+
+    async def test_season_defaults(self, mocker: MockerFixture):
+        """get_team_on_off_summary defaults season to current season."""
+        from fastbreak.seasons import get_season_from_date
+
+        response = mocker.MagicMock()
+        client = _make_on_off_client(mocker, response)
+
+        await get_team_on_off_summary(client, team_id=1610612747)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.season == get_season_from_date()
+
+    async def test_per_mode_defaults(self, mocker: MockerFixture):
+        """get_team_on_off_summary defaults per_mode to PerGame."""
+        response = mocker.MagicMock()
+        client = _make_on_off_client(mocker, response)
+
+        await get_team_on_off_summary(client, team_id=1610612747)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.per_mode == "PerGame"
+
+    async def test_season_type_forwarded(self, mocker: MockerFixture):
+        """get_team_on_off_summary forwards season_type to the endpoint."""
+        response = mocker.MagicMock()
+        client = _make_on_off_client(mocker, response)
+
+        await get_team_on_off_summary(
+            client, team_id=1610612747, season_type="Playoffs"
+        )
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.season_type == "Playoffs"
+
+
+class TestGetTeamOnOffDetails:
+    """Tests for get_team_on_off_details standalone function."""
+
+    async def test_calls_api_once(self, mocker: MockerFixture):
+        """get_team_on_off_details issues exactly one API request."""
+        response = mocker.MagicMock()
+        client = _make_on_off_client(mocker, response)
+
+        await get_team_on_off_details(client, team_id=1610612747)
+
+        assert client.get.call_count == 1
+
+    async def test_uses_details_endpoint(self, mocker: MockerFixture):
+        """get_team_on_off_details uses TeamPlayerOnOffDetails endpoint."""
+        from fastbreak.endpoints import TeamPlayerOnOffDetails
+
+        response = mocker.MagicMock()
+        client = _make_on_off_client(mocker, response)
+
+        await get_team_on_off_details(client, team_id=1610612747)
+
+        endpoint = client.get.call_args[0][0]
+        assert isinstance(endpoint, TeamPlayerOnOffDetails)
+
+    async def test_passes_team_id(self, mocker: MockerFixture):
+        """get_team_on_off_details passes team_id to the endpoint."""
+        response = mocker.MagicMock()
+        client = _make_on_off_client(mocker, response)
+
+        await get_team_on_off_details(client, team_id=1610612747)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.team_id == 1610612747
+
+    async def test_season_defaults(self, mocker: MockerFixture):
+        """get_team_on_off_details defaults season to current season."""
+        from fastbreak.seasons import get_season_from_date
+
+        response = mocker.MagicMock()
+        client = _make_on_off_client(mocker, response)
+
+        await get_team_on_off_details(client, team_id=1610612747)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.season == get_season_from_date()
+
+    async def test_per_mode_defaults(self, mocker: MockerFixture):
+        """get_team_on_off_details defaults per_mode to PerGame."""
+        response = mocker.MagicMock()
+        client = _make_on_off_client(mocker, response)
+
+        await get_team_on_off_details(client, team_id=1610612747)
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.per_mode == "PerGame"
+
+    async def test_season_type_forwarded(self, mocker: MockerFixture):
+        """get_team_on_off_details forwards season_type to the endpoint."""
+        response = mocker.MagicMock()
+        client = _make_on_off_client(mocker, response)
+
+        await get_team_on_off_details(
+            client, team_id=1610612747, season_type="Playoffs"
+        )
+
+        endpoint = client.get.call_args[0][0]
+        assert endpoint.season_type == "Playoffs"
