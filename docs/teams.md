@@ -893,20 +893,19 @@ async def main() -> None:
             season="2025-26",
         )
 
-    # Build on/off pairs by matching player names
-    on_by_name = {p.vs_player_name: p for p in summary.players_on_court}
-    off_by_name = {p.vs_player_name: p for p in summary.players_off_court}
+    # Build on/off pairs by player ID (stable key, avoids name mismatches)
+    on_by_id = {p.vs_player_id: p for p in summary.players_on_court}
+    off_by_id = {p.vs_player_id: p for p in summary.players_off_court}
 
     rows: list[tuple[str, float, float, float]] = []
-    for name, on in on_by_name.items():
-        off = off_by_name.get(name)
-        if off is None:
-            continue
+    for pid in on_by_id.keys() & off_by_id.keys():
+        on = on_by_id[pid]
+        off = off_by_id[pid]
         delta = on_off_net_rating_delta(
             on_net_rating=on.net_rating,
             off_net_rating=off.net_rating,
         )
-        rows.append((name, on.net_rating, off.net_rating, delta))
+        rows.append((on.vs_player_name, on.net_rating, off.net_rating, delta))
 
     # Sort by delta descending — most impactful players first
     rows.sort(key=lambda r: r[3], reverse=True)
