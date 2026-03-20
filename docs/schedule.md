@@ -4,17 +4,22 @@
 
 `fastbreak.schedule` provides an async schedule fetcher and sync utility functions for rest-day and travel analysis.
 
-- `get_team_schedule` is **async** — it calls the NBA Stats API and requires an `NBAClient` instance.
-- `is_back_to_back` and `days_rest_before_game` are **sync** — they operate on a `list[datetime.date]` extracted from the schedule and require no additional API calls.
+- `get_team_schedule` and `get_season_schedule` are **async** — they call the NBA Stats API and require an `NBAClient` instance.
+- `game_dates_from_schedule`, `is_home_game`, `is_back_to_back`, `days_rest_before_game`, `rest_advantage`, and `schedule_density` are **sync** — they operate on schedule data and require no additional API calls.
 - `travel_distance` and `travel_distances` are **sync** — they operate directly on the `list[ScheduledGame]` returned by `get_team_schedule` and require no additional API calls. Use `travel_distances` when computing legs for many games to avoid O(n²) behaviour.
 
-The async function fetches the full league schedule from the `ScheduleLeagueV2` endpoint and filters it down to the games that involve the requested team. The sync helpers accept the resulting data so you can run rest-day and travel analysis without additional API calls.
+The async functions fetch the full league schedule from the `ScheduleLeagueV2` endpoint. `get_team_schedule` filters to a single team; `get_season_schedule` returns all games. The sync helpers accept the resulting data so you can run rest-day, travel, and schedule-density analysis without additional API calls.
 
 ```python
 from fastbreak.schedule import (
     get_team_schedule,
+    get_season_schedule,
+    game_dates_from_schedule,
     is_back_to_back,
+    is_home_game,
     days_rest_before_game,
+    rest_advantage,
+    schedule_density,
     travel_distance,
     travel_distances,
     TravelLeg,
@@ -232,6 +237,151 @@ async def main():
         home = game.home_team.team_tricode if game.home_team else "?"
         if leg:
             print(f"  {(game.game_date_est or '')[:10]}  {away} @ {home}  {leg.miles:.0f} mi  tz {leg.tz_shift:+d}h")
+
+asyncio.run(main())
+```
+
+---
+
+### `game_dates_from_schedule(games) -> list[date]`
+
+Extract a sorted list of `datetime.date` objects from a list of `ScheduledGame`. Games with `None` `game_date_est` are skipped.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `games` | `list[ScheduledGame]` | Scheduled games from `get_team_schedule` or `get_season_schedule` |
+
+**Returns**
+
+`list[datetime.date]` — sorted chronologically.
+
+```python
+from datetime import date
+from fastbreak.schedule import get_team_schedule, game_dates_from_schedule
+
+games = await get_team_schedule(client, team_id=1610612754)
+dates = game_dates_from_schedule(games)
+print(f"First game: {dates[0]}, Last game: {dates[-1]}")
+```
+
+---
+
+### `is_home_game(game, team_id) -> bool`
+
+Return `True` if `team_id` is the home team for the given game.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `game` | `ScheduledGame` | A single scheduled game |
+| `team_id` | `int` | NBA team ID to check |
+
+**Returns**
+
+`bool` — `True` when `game.home_team` is not `None` and `game.home_team.team_id == team_id`.
+
+```python
+from fastbreak.schedule import get_team_schedule, is_home_game
+
+games = await get_team_schedule(client, team_id=1610612754)
+home_games = [g for g in games if is_home_game(g, team_id=1610612754)]
+print(f"Home games: {len(home_games)}")
+```
+
+---
+
+### `rest_advantage(home_dates, away_dates, game_date) -> int | None`
+
+Compute the rest-day advantage for the home team on a specific game date: `home_rest - away_rest`.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `home_dates` | `list[datetime.date]` | Sorted game dates for the home team |
+| `away_dates` | `list[datetime.date]` | Sorted game dates for the away team |
+| `game_date` | `datetime.date` | The date to evaluate |
+
+**Returns**
+
+| Value | Meaning |
+|-------|---------|
+| Positive `int` | Home team is more rested |
+| `0` | Both teams have equal rest |
+| Negative `int` | Away team is more rested |
+| `None` | `game_date` not found in either list, or either team's first game |
+
+```python
+from datetime import date
+from fastbreak.schedule import rest_advantage
+
+home_dates = [date(2025, 1, 10), date(2025, 1, 13)]
+away_dates = [date(2025, 1, 12), date(2025, 1, 13)]
+adv = rest_advantage(home_dates, away_dates, date(2025, 1, 13))
+print(f"Rest advantage: {adv}")  # 2 (home more rested)
+```
+
+---
+
+### `schedule_density(game_dates, game_index, window=7) -> int`
+
+Count the number of games in the `window`-day period ending on `game_dates[game_index]` (inclusive). Always returns at least `1` (the game itself).
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `game_dates` | `list[datetime.date]` | Sorted game dates for a team |
+| `game_index` | `int` | Index of the anchor game |
+| `window` | `int` | Window size in days (default `7`). Must be >= 1 |
+
+**Returns**
+
+`int` — number of games in the window (>= 1).
+
+**Raises**
+
+`ValueError` if `window < 1`.
+
+```python
+from fastbreak.schedule import get_team_schedule, game_dates_from_schedule, schedule_density
+
+games = await get_team_schedule(client, team_id=1610612754)
+dates = game_dates_from_schedule(games)
+for i in range(min(10, len(dates))):
+    d = schedule_density(dates, i)
+    print(f"  Game {i+1} ({dates[i]}): {d} games in last 7 days")
+```
+
+---
+
+### `get_season_schedule(client, *, season=None) -> list[ScheduledGame]`
+
+Return the full league schedule for a season (all teams, all games), sorted chronologically. Unlike `get_team_schedule`, this does not filter by team.
+
+**Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `client` | `NBAClient` | An active `NBAClient` async context manager instance |
+| `season` | `str \| None` | Season in `YYYY-YY` format. Defaults to current season via `get_season_from_date()` |
+
+**Returns**
+
+`list[ScheduledGame]` — all games sorted by `game_date_est`. Returns `[]` with a logged warning if the API response has no `leagueSchedule`.
+
+```python
+import asyncio
+from fastbreak.clients import NBAClient
+from fastbreak.schedule import get_season_schedule
+
+async def main():
+    async with NBAClient() as client:
+        all_games = await get_season_schedule(client, season="2025-26")
+    print(f"Total league games: {len(all_games)}")
 
 asyncio.run(main())
 ```
