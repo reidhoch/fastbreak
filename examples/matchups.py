@@ -81,9 +81,7 @@ async def defender_assignment_profile(
         )
 
 
-async def team_vs_team(
-    off_team: str, def_team: str, season: str | None = None
-) -> None:
+async def team_vs_team(off_team: str, def_team: str, season: str | None = None) -> None:
     """Print matchup summary between two teams, ranked by PPP."""
     season = season or get_season_from_date()
     off_id = get_team_id(off_team)

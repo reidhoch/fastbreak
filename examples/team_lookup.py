@@ -91,7 +91,7 @@ async def main() -> None:
         print(f"{ind.full_name} — last 5 games this season")
         print("=" * 60)
         log = await get_team_game_log(client, team_id=ind.id)
-        for entry in log[-5:]:
+        for entry in log[:5]:
             print(
                 f"  {entry.game_date}  {entry.matchup}"
                 f"  {entry.pts} pts  {'W' if entry.wl == 'W' else 'L'}"
