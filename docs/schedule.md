@@ -372,7 +372,7 @@ Return the full league schedule for a season (all teams, all games), sorted chro
 
 **Returns**
 
-`list[ScheduledGame]` — all games sorted by `game_date_est`. Returns `[]` with a logged warning if the API response has no `leagueSchedule`.
+`list[ScheduledGame]` — all games sorted by `game_date_est`. Returns `[]` with a logged warning if the API response has no `league_schedule`.
 
 ```python
 import asyncio
