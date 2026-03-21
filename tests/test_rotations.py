@@ -729,11 +729,23 @@ class TestGetRotationSummary:
 _entry_strategy = st.builds(
     _make_rotation_entry,
     person_id=st.integers(min_value=1, max_value=8),
-    in_time_real=st.floats(min_value=0.0, max_value=28800.0),
-    out_time_real=st.floats(min_value=0.0, max_value=28800.0),
+    in_time_real=st.floats(
+        min_value=0.0, max_value=28800.0, allow_nan=False, allow_infinity=False
+    ),
+    out_time_real=st.floats(
+        min_value=0.0, max_value=28800.0, allow_nan=False, allow_infinity=False
+    ),
     player_pts=st.one_of(st.none(), st.integers(min_value=0, max_value=30)),
-    pt_diff=st.one_of(st.none(), st.floats(min_value=-20.0, max_value=20.0)),
-    usg_pct=st.one_of(st.none(), st.floats(min_value=0.0, max_value=1.0)),
+    pt_diff=st.one_of(
+        st.none(),
+        st.floats(
+            min_value=-20.0, max_value=20.0, allow_nan=False, allow_infinity=False
+        ),
+    ),
+    usg_pct=st.one_of(
+        st.none(),
+        st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),
+    ),
 ).filter(lambda e: e.in_time_real <= e.out_time_real)
 
 
