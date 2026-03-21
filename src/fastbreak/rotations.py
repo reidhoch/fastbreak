@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -100,15 +99,20 @@ class RotationSummary:
 def _period_from_seconds(seconds: float) -> int:
     """Derive the period number from seconds since tip-off.
 
-    Q1-Q4: 720 s each.  OT periods: 300 s each.
-    ``seconds == 0`` maps to period 1 (tip-off).
+    Periods use half-open intervals ``[start, end)`` so that boundary
+    times map to the *next* period, consistent with
+    :func:`fastbreak.games.elapsed_game_seconds`:
+
+    - Q1: ``[0, 720)``, Q2: ``[720, 1440)``, Q3: ``[1440, 2160)``,
+      Q4: ``[2160, 2880)``, OT1: ``[2880, 3180)``, …
+    - ``seconds <= 0`` maps to period 1 (tip-off).
     """
     if seconds <= 0:
         return 1
-    if seconds <= _FULL_REGULATION_SECONDS:
-        return math.ceil(seconds / _REGULATION_PERIOD_SECONDS)
+    if seconds < _FULL_REGULATION_SECONDS:
+        return int(seconds // _REGULATION_PERIOD_SECONDS) + 1
     ot_seconds = seconds - _FULL_REGULATION_SECONDS
-    return _REGULATION_PERIODS + math.ceil(ot_seconds / _OT_PERIOD_SECONDS)
+    return _REGULATION_PERIODS + int(ot_seconds // _OT_PERIOD_SECONDS) + 1
 
 
 # ---------------------------------------------------------------------------
