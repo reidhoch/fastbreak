@@ -68,22 +68,22 @@ class TestPeriodFromSeconds:
     def test_mid_q1(self):
         assert _period_from_seconds(360) == 1
 
-    def test_end_q1_boundary(self):
-        assert _period_from_seconds(720) == 1
+    def test_boundary_q1_q2(self):
+        assert _period_from_seconds(720) == 2
 
-    def test_start_q2(self):
+    def test_within_q2(self):
         assert _period_from_seconds(720.1) == 2
 
-    def test_end_regulation(self):
-        assert _period_from_seconds(2880) == 4
+    def test_boundary_q4_ot1(self):
+        assert _period_from_seconds(2880) == 5
 
-    def test_start_ot1(self):
+    def test_within_ot1(self):
         assert _period_from_seconds(2880.1) == 5
 
-    def test_end_ot1(self):
-        assert _period_from_seconds(3180) == 5
+    def test_boundary_ot1_ot2(self):
+        assert _period_from_seconds(3180) == 6
 
-    def test_start_ot2(self):
+    def test_within_ot2(self):
         assert _period_from_seconds(3180.1) == 6
 
 
@@ -557,7 +557,7 @@ class TestRotationTimeline:
         result = rotation_timeline(entries)
         starts = [e for e in result if e.time == 2880.0]
         for ev in starts:
-            assert ev.period == 4  # 2880 is end of Q4
+            assert ev.period == 5  # 2880 is start of OT1
 
     def test_game_end_events(self):
         entries = _five_starters(0.0, 7200.0)
