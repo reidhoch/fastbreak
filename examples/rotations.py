@@ -34,9 +34,12 @@ async def main() -> None:
         print(f"  Away team entries: {len(response.away_team)}")
 
         # 2. Per-player minutes (sorted by total)
-        entries = response.home_team
+        if response.home_team and response.home_team[0].team_id == team_id:
+            entries = response.home_team
+        else:
+            entries = response.away_team
         minutes = player_total_minutes(entries)
-        print(f"\nPer-Player Minutes (home team, sorted by total)")
+        print(f"\nPer-Player Minutes (team {team_id}, sorted by total)")
         print("-" * 55)
         print(f"  {'Player':<25} {'Minutes':>8} {'Stints':>7} {'Avg':>6} {'Pts':>5} {'+/-':>6}")
         for m in minutes:

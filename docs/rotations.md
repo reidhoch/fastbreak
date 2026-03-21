@@ -166,8 +166,8 @@ All dataclasses use `frozen=True, slots=True`.
 |-------|------|-------------|
 | `game_id` | `str` | NBA game ID |
 | `team_id` | `int` | Team ID |
-| `player_stints` | `list[PlayerStint]` | All stints |
-| `player_minutes` | `list[PlayerMinutes]` | Aggregated by player |
-| `lineup_stints` | `list[LineupStint]` | Reconstructed lineups |
-| `substitution_events` | `list[SubstitutionEvent]` | Timeline |
+| `player_stints` | `tuple[PlayerStint, ...]` | All stints |
+| `player_minutes` | `tuple[PlayerMinutes, ...]` | Aggregated by player |
+| `lineup_stints` | `tuple[LineupStint, ...]` | Reconstructed lineups |
+| `substitution_events` | `tuple[SubstitutionEvent, ...]` | Timeline |
 | `total_game_minutes` | `float` | Max out_time / 60 |
