@@ -1121,7 +1121,7 @@ def floor_pct(
         of scoring possessions requires play-by-play data (some possessions
         score 2 or 3 points, so pts/poss overstates the fraction).  A
         common proxy is (FGM + 0.44 * FTA) / POSS, which counts made
-        field goals and made possession-ending free throws.
+        field goals and possession-ending free throw attempts.
     """
     if poss == 0:
         return None
@@ -1248,15 +1248,15 @@ def bell_curve_win_pct(
                       the team's games.  Requires individual game data.
 
     Returns:
-        Expected win probability in [0, 1], or None when std_net_pts is zero
-        (i.e. identical margin every game — degenerate case).
+        Expected win probability in [0, 1], or None when std_net_pts is
+        non-positive (zero or negative — degenerate/invalid case).
 
     Note:
         Offensive and defensive *ratings* (per-100 possessions) can be
         substituted for PPG and OPP_PPG along with their corresponding
         standard deviation for a pace-neutral version.
     """
-    if std_net_pts == 0:
+    if std_net_pts <= 0:
         return None
     z = (ppg - opp_ppg) / std_net_pts
     return 0.5 * (1.0 + erf(z / fsqrt(2.0)))

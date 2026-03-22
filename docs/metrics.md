@@ -885,9 +885,10 @@ nr = net_rtg(ortg_val=114.2, drtg_val=110.8)  # → 3.4
 def floor_pct(pts: float, poss: float) -> float | None
 ```
 
-Floor percentage — the fraction of possessions on which at least one point is scored.
-Introduced by Oliver (2004) as the characteristic probability in a binomial model of
-scoring sequences. Higher floor% means more consistent scoring.
+Floor percentage — points scored per possession (`PTS / POSS`) using box score data.
+In Oliver (2004), floor% is defined as the probability that a possession results in
+at least one point; that exact quantity generally requires play-by-play data to compute.
+Higher values mean more scoring per possession.
 
 **Formula:** `floor% = PTS / POSS` (approximation from box score data)
 
