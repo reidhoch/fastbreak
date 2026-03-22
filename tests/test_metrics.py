@@ -3489,7 +3489,7 @@ class TestPlays:
     """Tests for plays() — minor possessions including offensive-rebound extensions."""
 
     def test_typical_game(self) -> None:
-        """Standard NBA game totals produce ~105 plays."""
+        """Standard NBA game totals produce ~111 plays."""
         result = plays(fga=88, fta=22, tov=13)
         # 88 + 0.44*22 + 13 = 88 + 9.68 + 13 = 110.68
         assert result == pytest.approx(110.68)
@@ -3511,7 +3511,7 @@ class TestPlays:
 
 
 class TestFloorPct:
-    """Tests for floor_pct() — fraction of possessions scoring at least 1 point."""
+    """Tests for floor_pct() — points scored per possession."""
 
     def test_typical_team(self) -> None:
         """A team scoring 110 pts on 95 possessions."""
@@ -3529,7 +3529,7 @@ class TestFloorPct:
 
 
 class TestPlayPct:
-    """Tests for play_pct() — fraction of plays scoring at least 1 point."""
+    """Tests for play_pct() — points scored per play."""
 
     def test_typical_team(self) -> None:
         """A team scoring 110 pts on 105 plays."""
