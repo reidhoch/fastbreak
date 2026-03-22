@@ -14,6 +14,7 @@
 | [splits.md](splits.md) | Player and team situational splits: home/road, win/loss, shooting, last-N games, `PlayerSplitsProfile`, `TeamSplitsProfile` |
 | [schedule.md](schedule.md) | Schedule helper: full season schedule, back-to-back detection, rest day utilities |
 | [clutch.md](clutch.md) | Clutch analysis: `ClutchProfile`, composite score, per-player profiles, player and team league leaders |
+| [hot_hand.md](hot_hand.md) | Hot hand analysis: Miller-Sanjurjo bias correction, streak detection, `HotHandResult`, season-level merging |
 | [shots.md](shots.md) | Shot chart analysis: `ZoneStats`, per-shot coordinates, zone breakdown, delta vs. league average, team shot locations by distance |
 | [defense.md](defense.md) | Defensive analysis: `get_team_defense_zones`, `get_team_opponent_stats`, `get_box_scores_defensive`, `defensive_shot_quality_vs_league` |
 | [metrics.md](metrics.md) | Pure-computation metrics: true shooting, PER, net rating, pace-adjusted stats |

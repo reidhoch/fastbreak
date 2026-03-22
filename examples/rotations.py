@@ -53,7 +53,7 @@ async def main() -> None:
         stints = player_stints(entries)
         name_map = {s.player_id: s.player_name for s in stints}
         sorted_pm = sorted(pm.items(), key=lambda x: x[1], reverse=True)
-        print(f"\nPlus/Minus Leaders")
+        print("\nPlus/Minus Leaders")
         print("-" * 35)
         for pid, diff in sorted_pm[:5]:
             print(f"  {name_map.get(pid, str(pid)):<25} {diff:>+6.1f}")
@@ -61,7 +61,7 @@ async def main() -> None:
         # 4. Top 5 lineup stints by duration
         lineups = lineup_stints(entries)
         top_lineups = sorted(lineups, key=lambda l: l.duration_minutes, reverse=True)[:5]
-        print(f"\nTop 5 Lineups by Duration")
+        print("\nTop 5 Lineups by Duration")
         print("-" * 65)
         for ls in top_lineups:
             names = ", ".join(ls.player_names)
@@ -69,7 +69,7 @@ async def main() -> None:
 
         # 5. Substitution timeline
         timeline = rotation_timeline(entries)
-        print(f"\nSubstitution Timeline (first 10 events)")
+        print("\nSubstitution Timeline (first 10 events)")
         print("-" * 65)
         for ev in timeline[:10]:
             in_name = ev.player_in_name or "---"
@@ -80,7 +80,7 @@ async def main() -> None:
 
         # 6. Full summary via convenience wrapper
         summary = await get_rotation_summary(client, game_id, team_id=team_id)
-        print(f"\nRotation Summary")
+        print("\nRotation Summary")
         print("-" * 40)
         print(f"  Game: {summary.game_id}")
         print(f"  Team: {summary.team_id}")
