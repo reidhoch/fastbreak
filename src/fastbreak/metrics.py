@@ -1102,18 +1102,19 @@ def floor_pct(
     pts: float,
     poss: float,
 ) -> float | None:
-    """Floor percentage — fraction of possessions on which at least one point is scored.
+    """Floor percentage — points scored per possession.
 
-    Introduced by Oliver (2004) as the characteristic probability in a
-    binomial model of the scoring sequence on a court.
+    Introduced by Oliver (2004) as a scoring-rate measure.  The name
+    "floor percentage" is traditional but the value is pts / poss,
+    which can exceed 1.0 (e.g. 112 pts on 100 possessions → 1.12).
 
     Args:
         pts:  Points scored.
         poss: Total possessions (from :func:`possessions`).
 
     Returns:
-        Fraction in [0, 1] of possessions that produced at least one point,
-        or None when possessions is zero.
+        Points per possession (unbounded above 1.0), or None when
+        possessions is zero.
 
     Note:
         This is an *approximation* from box score data.  The exact count
@@ -1131,19 +1132,19 @@ def play_pct(
     pts: float,
     total_plays: float,
 ) -> float | None:
-    """Play percentage — fraction of plays on which at least one point is scored.
+    """Play percentage — points scored per play.
 
     Analogous to :func:`floor_pct` but uses plays (which count offensive
     rebounds as new opportunities) instead of possessions.  Because a team
-    has more plays than possessions, play percentage is always ≤ floor
-    percentage for the same scoring output.
+    has more plays than possessions, points per play is always ≤ points per
+    possession (floor percentage) for the same scoring output.
 
     Args:
         pts:         Points scored.
         total_plays: Total plays (from :func:`plays`).
 
     Returns:
-        Fraction in [0, 1], or None when total_plays is zero.
+        Points per play (unbounded above 1.0), or None when total_plays is zero.
     """
     if total_plays == 0:
         return None

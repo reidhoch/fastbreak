@@ -1634,8 +1634,8 @@ def demo_kubatko() -> None:
     fp = floor_pct(pts=pts, poss=poss)
     pp = play_pct(pts=pts, total_plays=play_count)
     print(f"\n  Scoring: {pts} pts on {poss:.0f} poss / {play_count:.0f} plays")
-    print(f"  Floor%:  {fp:.3f}" if fp else "  Floor%:  —")
-    print(f"  Play%:   {pp:.3f}" if pp else "  Play%:   —")
+    print(f"  Floor%:  {fp:.3f}" if fp is not None else "  Floor%:  —")
+    print(f"  Play%:   {pp:.3f}" if pp is not None else "  Play%:   —")
 
     # --- NBA Efficiency ---
     eff = nba_efficiency(
@@ -1658,14 +1658,14 @@ def demo_kubatko() -> None:
     pyth_kubatko = pythagorean_win_pct(pts=ppg, opp_pts=opp_ppg, exp=16.5)
     bell = bell_curve_win_pct(ppg=ppg, opp_ppg=opp_ppg, std_net_pts=std_net)
     print(f"\n  Win% estimates for {ppg:.0f} PPG vs {opp_ppg:.0f} OPP_PPG:")
-    print(f"    Pythagorean (e=13.91): {pyth:.3f}" if pyth else "    Pythagorean: —")
+    print(f"    Pythagorean (e=13.91): {pyth:.3f}" if pyth is not None else "    Pythagorean: —")
     print(
         f"    Pythagorean (e=16.5):  {pyth_kubatko:.3f}"
-        if pyth_kubatko
+        if pyth_kubatko is not None
         else "    Pythagorean: —"
     )
     print(
-        f"    Bell Curve (std={std_net}): {bell:.3f}" if bell else "    Bell Curve: —"
+        f"    Bell Curve (std={std_net}): {bell:.3f}" if bell is not None else "    Bell Curve: —"
     )
 
     # Show Bell Curve sensitivity to variance
@@ -1673,7 +1673,7 @@ def demo_kubatko() -> None:
         bc = bell_curve_win_pct(ppg=ppg, opp_ppg=opp_ppg, std_net_pts=std)
         print(
             f"    Bell Curve (std={std:4.1f}):  {bc:.3f}"
-            if bc
+            if bc is not None
             else f"    Bell Curve (std={std}): —"
         )
     print()
