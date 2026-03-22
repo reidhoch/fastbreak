@@ -3578,6 +3578,10 @@ class TestBellCurveWinPct:
         """Returns None when std_net_pts is zero (degenerate)."""
         assert bell_curve_win_pct(ppg=100.0, opp_ppg=95.0, std_net_pts=0.0) is None
 
+    def test_negative_std_returns_none(self) -> None:
+        """Returns None when std_net_pts is negative (invalid)."""
+        assert bell_curve_win_pct(ppg=100.0, opp_ppg=95.0, std_net_pts=-5.0) is None
+
     def test_higher_variance_moves_toward_half(self) -> None:
         """More variance → win% closer to 0.5 (less certainty)."""
         tight = bell_curve_win_pct(ppg=110.0, opp_ppg=105.0, std_net_pts=5.0)
