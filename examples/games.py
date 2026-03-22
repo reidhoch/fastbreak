@@ -93,7 +93,7 @@ async def game_flow_summary(
     for point in flow[-5:]:
         period_label = (
             f"Q{point.period}" if point.period <= 4 else f"OT{point.period - 4}"
-        )  # noqa: PLR2004
+        )
         margin_str = f"+{point.margin}" if point.margin > 0 else str(point.margin)
         print(
             f"    {period_label} {point.clock}  "

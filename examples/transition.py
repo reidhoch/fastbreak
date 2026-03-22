@@ -69,7 +69,7 @@ def step_by_step_analysis(actions: list[PlayByPlayAction], game_id: str) -> None
 
     # Show the first few transition possessions
     trans = [p for p in possessions if p.classification == "transition"]
-    print(f"\n  First 5 transition possessions:")
+    print("\n  First 5 transition possessions:")
     for p in trans[:5]:
         print(
             f"    Q{p.period} {p.game_clock:5.1f}s remaining  "
