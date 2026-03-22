@@ -7,10 +7,14 @@ import typing
 from datetime import date as _date
 from typing import Any
 
-from hypothesis import strategies as st
+from hypothesis import HealthCheck, strategies as st
 from pydantic import AfterValidator, BaseModel
 
 from fastbreak.types import _validate_date, _validate_season, validate_iso_date
+
+# Suppress the ``differing_executors`` health check that fires under pytest-xdist.
+# Import this in test files instead of redefining per-module.
+XDIST_SUPPRESS = [HealthCheck.differing_executors]
 
 # ---------------------------------------------------------------------------
 # Concrete strategies for validated Annotated string types.

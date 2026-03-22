@@ -1,12 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import pytest
 from pytest_mock import MockerFixture
-
-if TYPE_CHECKING:
-    from fastbreak.models.play_by_play import PlayByPlayAction
 
 from fastbreak.clients.nba import NBAClient
 from fastbreak.games import (
@@ -19,6 +14,7 @@ from fastbreak.games import (
     get_todays_games,
     get_yesterdays_games,
 )
+from fastbreak.models.play_by_play import PlayByPlayAction
 
 
 def _make_client(mocker: MockerFixture, game_entries: list[dict]):
@@ -427,40 +423,31 @@ class TestGetBoxScores:
         assert result == {"0022400001": bs}
 
 
-def _make_pbp_client(mocker: MockerFixture, actions: list):
-    """Return a NBAClient whose .get() resolves to a mock PlayByPlayResponse."""
-    game = mocker.MagicMock()
-    game.actions = actions
-    response = mocker.MagicMock()
-    response.game = game
-    client = NBAClient(session=mocker.MagicMock())
-    client.get = mocker.AsyncMock(return_value=response)
-    return client
-
-
 class TestGetPlayByPlay:
     """Tests for get_play_by_play standalone function."""
 
-    async def test_returns_list_of_actions(self, mocker: MockerFixture):
+    async def test_returns_list_of_actions(
+        self, mocker: MockerFixture, make_pbp_client
+    ):
         """get_play_by_play returns the list of play actions."""
         action = mocker.MagicMock()
-        client = _make_pbp_client(mocker, [action])
+        client = make_pbp_client([action])
 
         result = await get_play_by_play(client, "0022400001")
 
         assert result == [action]
 
-    async def test_returns_empty_list_when_no_actions(self, mocker: MockerFixture):
+    async def test_returns_empty_list_when_no_actions(self, make_pbp_client):
         """get_play_by_play returns [] when no actions exist."""
-        client = _make_pbp_client(mocker, [])
+        client = make_pbp_client([])
 
         result = await get_play_by_play(client, "0022400001")
 
         assert result == []
 
-    async def test_passes_game_id_to_endpoint(self, mocker: MockerFixture):
+    async def test_passes_game_id_to_endpoint(self, make_pbp_client):
         """get_play_by_play passes game_id to PlayByPlay."""
-        client = _make_pbp_client(mocker, [])
+        client = make_pbp_client([])
 
         await get_play_by_play(client, "0022400001")
 
@@ -486,8 +473,6 @@ def _make_action(
     action_number: int = 1,
 ) -> PlayByPlayAction:
     """Minimal PlayByPlayAction with real Pydantic construction for game_flow tests."""
-    from fastbreak.models.play_by_play import PlayByPlayAction
-
     return PlayByPlayAction(
         actionNumber=action_number,
         clock=clock,
