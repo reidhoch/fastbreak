@@ -25,7 +25,7 @@ Examples::
 import bisect
 from collections.abc import Sequence
 from dataclasses import dataclass, field, fields
-from math import pow as fpow, sqrt as fsqrt
+from math import erf, pow as fpow, sqrt as fsqrt
 
 
 @dataclass(frozen=True, slots=True)
@@ -390,6 +390,33 @@ def game_score(  # noqa: PLR0913
         - 0.4 * pf
         - tov
     )
+
+
+def nba_efficiency(  # noqa: PLR0913
+    pts: float,
+    reb: float,
+    ast: float,
+    stl: float,
+    blk: float,
+    tov: float,
+    fgm: float,
+    fga: float,
+    ftm: float,
+    fta: float,
+) -> float:
+    """NBA Efficiency — the simple linear weights stat used on NBA.com.
+
+    EFF = PTS + REB + AST + STL + BLK - TOV - (FGA - FGM) - (FTA - FTM)
+
+    Simpler than Game Score or PER — equal weight to every positive and
+    negative contribution.  Useful as a quick single-number box score summary
+    but criticized for rewarding volume and ignoring defense beyond steals
+    and blocks (Kubatko et al. 2007, Eq. 19).
+
+    Typical values: ~15 for an average starter, 30+ for elite performances.
+    Can be negative for extremely poor lines.
+    """
+    return pts + reb + ast + stl + blk - tov - (fga - fgm) - (fta - ftm)
 
 
 def per_36(stat: float, minutes: float) -> float | None:
@@ -945,6 +972,69 @@ def possessions(fga: float, oreb: float, tov: float, fta: float) -> float:
     return fga - oreb + tov + 0.44 * fta
 
 
+def possessions_general(  # noqa: PLR0913
+    fgm: float,
+    fga: float,
+    ftm: float,
+    fta: float,
+    oreb: float,
+    dreb_opp: float,
+    tov: float,
+    alpha: float = 1.0,
+    lam: float = 0.44,
+) -> float:
+    """General possession formula from Kubatko et al. (2007), Eq. 1.
+
+    POSS = (FGM + lam*FTM) + alpha*[(FGA-FGM) + lam*(FTA-FTM) - OREB]
+           + (1-alpha)*DREB_opp + TO
+
+    The ``alpha`` parameter controls how missed field goals and missed
+    possession-ending free throws split credit between the offensive team
+    (via offensive rebounds) and the defensive team (via defensive rebounds).
+    When alpha=1, missed shots are fully charged to the offense and defensive
+    rebounds have zero possession value -- this gives the common "possessions
+    lost" formula.  When alpha=0, credit goes entirely to the defense and you
+    get the "possessions gained" formula.
+
+    The ``lam`` parameter is the fraction of free throws that end possessions
+    (excluding and-ones, technicals, flagrants).  Empirically ~0.44 in the
+    NBA (Kubatko et al. found 43.8% over 2002-06).
+
+    The default (alpha=1, lam=0.44) reduces to :func:`possessions`:
+    ``FGA + 0.44*FTA - OREB + TO``.
+
+    Args:
+        fgm:      Field goals made.
+        fga:      Field goals attempted.
+        ftm:      Free throws made.
+        fta:      Free throw attempts.
+        oreb:     Offensive rebounds.
+        dreb_opp: Defensive rebounds for the opponent.
+        tov:      Turnovers (including team turnovers).
+        alpha:    Credit split parameter in [0, 1].  Default 1.0.
+        lam:      Fraction of free throws ending possessions.  Default 0.44.
+    """
+    made = fgm + lam * ftm
+    missed = alpha * ((fga - fgm) + lam * (fta - ftm) - oreb)
+    opp_dreb = (1 - alpha) * dreb_opp
+    return made + missed + opp_dreb + tov
+
+
+def plays(fga: float, fta: float, tov: float) -> float:
+    """Estimate plays (minor possessions) from box score stats.
+
+    PLAYS = FGA + 0.44 * FTA + TO
+
+    Plays differ from possessions because an offensive rebound starts a new
+    *play* but not a new *possession*.  A team typically has more plays than
+    possessions (~105 plays per ~92 possessions in 2002-06).
+
+    The 0.44 multiplier is the same possession-ending free throw fraction
+    used in :func:`possessions` (Kubatko et al. 2007, Eq. 7).
+    """
+    return fga + 0.44 * fta + tov
+
+
 def ortg(
     pts: float,
     fga: float,
@@ -1006,6 +1096,58 @@ def net_rtg(ortg_val: float | None, drtg_val: float | None) -> float | None:
         Net rating, or None if either input is None.
     """
     return stat_delta(ortg_val, drtg_val)
+
+
+def floor_pct(
+    pts: float,
+    poss: float,
+) -> float | None:
+    """Floor percentage — fraction of possessions on which at least one point is scored.
+
+    Introduced by Oliver (2004) as the characteristic probability in a
+    binomial model of the scoring sequence on a court.
+
+    Args:
+        pts:  Points scored.
+        poss: Total possessions (from :func:`possessions`).
+
+    Returns:
+        Fraction in [0, 1] of possessions that produced at least one point,
+        or None when possessions is zero.
+
+    Note:
+        This is an *approximation* from box score data.  The exact count
+        of scoring possessions requires play-by-play data (some possessions
+        score 2 or 3 points, so pts/poss overstates the fraction).  A
+        common proxy is (FGM + 0.44 * FTA) / POSS, which counts made
+        field goals and made possession-ending free throws.
+    """
+    if poss == 0:
+        return None
+    return pts / poss
+
+
+def play_pct(
+    pts: float,
+    total_plays: float,
+) -> float | None:
+    """Play percentage — fraction of plays on which at least one point is scored.
+
+    Analogous to :func:`floor_pct` but uses plays (which count offensive
+    rebounds as new opportunities) instead of possessions.  Because a team
+    has more plays than possessions, play percentage is always ≤ floor
+    percentage for the same scoring output.
+
+    Args:
+        pts:         Points scored.
+        total_plays: Total plays (from :func:`plays`).
+
+    Returns:
+        Fraction in [0, 1], or None when total_plays is zero.
+    """
+    if total_plays == 0:
+        return None
+    return pts / total_plays
 
 
 def offensive_win_shares(
@@ -1078,6 +1220,45 @@ def pythagorean_win_pct(
     if denominator == 0:
         return None
     return pts_exp / denominator
+
+
+def bell_curve_win_pct(
+    ppg: float,
+    opp_ppg: float,
+    std_net_pts: float,
+) -> float | None:
+    """Bell Curve method — win% from point differential using the normal CDF.
+
+    Win% = Φ((PPG - OPP_PPG) / StDev(PPG - OPP_PPG))
+
+    Introduced by Oliver (2004) as a more theoretically grounded alternative
+    to the Pythagorean method.  Assumes team points scored and allowed are
+    normally distributed, so their difference (net points) is also normal.
+
+    Advantages over :func:`pythagorean_win_pct`:
+    - No empirically tuned exponent — works across eras and leagues.
+    - Incorporates game-to-game variance: a team that wins by exactly 5
+      every game has a higher win% than one that alternates +20 and -10.
+
+    Args:
+        ppg:          Points per game (or total — same scale as *opp_ppg*).
+        opp_ppg:      Opponent points per game (same scale as *ppg*).
+        std_net_pts:  Standard deviation of net points (PPG - OPP_PPG) across
+                      the team's games.  Requires individual game data.
+
+    Returns:
+        Expected win probability in [0, 1], or None when std_net_pts is zero
+        (i.e. identical margin every game — degenerate case).
+
+    Note:
+        Offensive and defensive *ratings* (per-100 possessions) can be
+        substituted for PPG and OPP_PPG along with their corresponding
+        standard deviation for a pace-neutral version.
+    """
+    if std_net_pts == 0:
+        return None
+    z = (ppg - opp_ppg) / std_net_pts
+    return 0.5 * (1.0 + erf(z / fsqrt(2.0)))
 
 
 def defensive_win_shares(  # noqa: PLR0913

@@ -9,6 +9,7 @@ from fastbreak.metrics import (
     LeagueAverages,
     ast_pct,
     ast_to_tov,
+    bell_curve_win_pct,
     blk_pct,
     bpm,
     defensive_win_shares,
@@ -16,12 +17,14 @@ from fastbreak.metrics import (
     effective_fg_pct,
     ewma,
     expected_stat,
+    floor_pct,
     four_factors,
     free_throw_rate,
     game_score,
     hit_rate_last_n,
     is_double_double,
     is_triple_double,
+    nba_efficiency,
     oreb_pct,
     pace_adjusted_per,
     per,
@@ -29,7 +32,10 @@ from fastbreak.metrics import (
     per_48,
     per_100,
     percentile_rank,
+    play_pct,
+    plays,
     possessions,
+    possessions_general,
     prop_hit_rate,
     pythagorean_win_pct,
     relative_efg,
@@ -3305,3 +3311,307 @@ class TestVorp:
         """Zero possession share (no games played) → VORP of 0."""
         result = vorp(bpm_total=10.0, poss_pct=0.0, games=82)
         assert result == pytest.approx(0.0)
+
+
+# ---------------------------------------------------------------------------
+# Kubatko et al. (2007) additions
+# ---------------------------------------------------------------------------
+
+
+class TestNBAEfficiency:
+    """Tests for nba_efficiency() — the NBA.com simple linear weight stat."""
+
+    def test_typical_good_game(self) -> None:
+        """Solid stat line produces a positive efficiency."""
+        result = nba_efficiency(
+            pts=25,
+            reb=10,
+            ast=5,
+            stl=2,
+            blk=1,
+            tov=3,
+            fgm=10,
+            fga=18,
+            ftm=5,
+            fta=6,
+        )
+        # 25+10+5+2+1 - 3 - (18-10) - (6-5) = 43 - 3 - 8 - 1 = 31
+        assert result == pytest.approx(31.0)
+
+    def test_all_zeros(self) -> None:
+        """Empty stat line produces 0."""
+        result = nba_efficiency(
+            pts=0,
+            reb=0,
+            ast=0,
+            stl=0,
+            blk=0,
+            tov=0,
+            fgm=0,
+            fga=0,
+            ftm=0,
+            fta=0,
+        )
+        assert result == pytest.approx(0.0)
+
+    def test_poor_shooting_is_negative(self) -> None:
+        """0-for-10 with turnovers produces a negative efficiency."""
+        result = nba_efficiency(
+            pts=0,
+            reb=1,
+            ast=0,
+            stl=0,
+            blk=0,
+            tov=4,
+            fgm=0,
+            fga=10,
+            ftm=0,
+            fta=2,
+        )
+        # 0+1+0+0+0 - 4 - 10 - 2 = -15
+        assert result == pytest.approx(-15.0)
+
+    def test_perfect_scoring(self) -> None:
+        """Making every shot: missed FG and FT terms vanish."""
+        result = nba_efficiency(
+            pts=20,
+            reb=5,
+            ast=3,
+            stl=1,
+            blk=0,
+            tov=2,
+            fgm=8,
+            fga=8,
+            ftm=4,
+            fta=4,
+        )
+        # 20+5+3+1+0 - 2 - 0 - 0 = 27
+        assert result == pytest.approx(27.0)
+
+
+class TestPossessionsGeneral:
+    """Tests for possessions_general() — parameterized formula (Kubatko et al. Eq. 1)."""
+
+    def test_defaults_match_simple_possessions(self) -> None:
+        """Default alpha=1, lam=0.44 reduces to the standard possessions() formula."""
+        simple = possessions(fga=88, oreb=10, tov=13, fta=20)
+        general = possessions_general(
+            fgm=40,
+            fga=88,
+            ftm=15,
+            fta=20,
+            oreb=10,
+            dreb_opp=30,
+            tov=13,
+        )
+        assert general == pytest.approx(simple, abs=0.01)
+
+    def test_alpha_zero_is_possessions_gained(self) -> None:
+        """When alpha=0, missed shots and FTs have no value; DREBs get full credit."""
+        result = possessions_general(
+            fgm=40,
+            fga=88,
+            ftm=15,
+            fta=20,
+            oreb=10,
+            dreb_opp=30,
+            tov=13,
+            alpha=0.0,
+        )
+        # (40 + 0.44*15) + 0 + 1.0*30 + 13 = 46.6 + 30 + 13 = 89.6
+        assert result == pytest.approx(89.6)
+
+    def test_alpha_one_dreb_has_no_value(self) -> None:
+        """When alpha=1, opponent defensive rebounds have zero possession value."""
+        result_a = possessions_general(
+            fgm=40,
+            fga=88,
+            ftm=15,
+            fta=20,
+            oreb=10,
+            dreb_opp=30,
+            tov=13,
+            alpha=1.0,
+        )
+        result_b = possessions_general(
+            fgm=40,
+            fga=88,
+            ftm=15,
+            fta=20,
+            oreb=10,
+            dreb_opp=999,
+            tov=13,
+            alpha=1.0,
+        )
+        assert result_a == pytest.approx(result_b)
+
+    def test_custom_lambda(self) -> None:
+        """Changing lam adjusts the free throw contribution."""
+        result_44 = possessions_general(
+            fgm=40,
+            fga=88,
+            ftm=15,
+            fta=20,
+            oreb=10,
+            dreb_opp=30,
+            tov=13,
+            lam=0.44,
+        )
+        result_50 = possessions_general(
+            fgm=40,
+            fga=88,
+            ftm=15,
+            fta=20,
+            oreb=10,
+            dreb_opp=30,
+            tov=13,
+            lam=0.50,
+        )
+        assert result_50 > result_44
+
+    def test_all_zeros(self) -> None:
+        """All-zero inputs return 0.0."""
+        assert (
+            possessions_general(
+                fgm=0,
+                fga=0,
+                ftm=0,
+                fta=0,
+                oreb=0,
+                dreb_opp=0,
+                tov=0,
+            )
+            == 0.0
+        )
+
+
+class TestPlays:
+    """Tests for plays() — minor possessions including offensive-rebound extensions."""
+
+    def test_typical_game(self) -> None:
+        """Standard NBA game totals produce ~105 plays."""
+        result = plays(fga=88, fta=22, tov=13)
+        # 88 + 0.44*22 + 13 = 88 + 9.68 + 13 = 110.68
+        assert result == pytest.approx(110.68)
+
+    def test_more_than_possessions(self) -> None:
+        """Plays should exceed possessions for the same game (no OREB subtraction)."""
+        poss = possessions(fga=88, oreb=10, tov=13, fta=22)
+        play_count = plays(fga=88, fta=22, tov=13)
+        assert play_count > poss
+
+    def test_all_zeros(self) -> None:
+        """All-zero inputs return 0.0."""
+        assert plays(fga=0, fta=0, tov=0) == 0.0
+
+    def test_fta_weighted_by_0_44(self) -> None:
+        """FTA contributes 0.44 per attempt, same as possessions."""
+        result = plays(fga=0, fta=100, tov=0)
+        assert result == pytest.approx(44.0)
+
+
+class TestFloorPct:
+    """Tests for floor_pct() — fraction of possessions scoring at least 1 point."""
+
+    def test_typical_team(self) -> None:
+        """A team scoring 110 pts on 95 possessions."""
+        result = floor_pct(pts=110, poss=95)
+        assert result == pytest.approx(110 / 95)
+
+    def test_zero_possessions_returns_none(self) -> None:
+        """Returns None when possessions is zero."""
+        assert floor_pct(pts=10, poss=0) is None
+
+    def test_zero_points(self) -> None:
+        """No scoring on some possessions → 0.0."""
+        result = floor_pct(pts=0, poss=50)
+        assert result == pytest.approx(0.0)
+
+
+class TestPlayPct:
+    """Tests for play_pct() — fraction of plays scoring at least 1 point."""
+
+    def test_typical_team(self) -> None:
+        """A team scoring 110 pts on 105 plays."""
+        result = play_pct(pts=110, total_plays=105)
+        assert result == pytest.approx(110 / 105)
+
+    def test_zero_plays_returns_none(self) -> None:
+        """Returns None when plays is zero."""
+        assert play_pct(pts=10, total_plays=0) is None
+
+    def test_less_than_floor_pct(self) -> None:
+        """Play pct should be less than floor pct for the same scoring."""
+        fp = floor_pct(pts=110, poss=95)
+        pp = play_pct(pts=110, total_plays=105)
+        assert fp is not None and pp is not None
+        assert pp < fp
+
+
+class TestBellCurveWinPct:
+    """Tests for bell_curve_win_pct() — Oliver's Bell Curve method."""
+
+    def test_equal_scoring_is_dot_five(self) -> None:
+        """A team with 0 net points expects exactly 0.5 win%."""
+        result = bell_curve_win_pct(ppg=100.0, opp_ppg=100.0, std_net_pts=10.0)
+        assert result == pytest.approx(0.5)
+
+    def test_positive_margin_above_dot_five(self) -> None:
+        """A team that outscores opponents expects > 0.5."""
+        result = bell_curve_win_pct(ppg=110.0, opp_ppg=105.0, std_net_pts=12.0)
+        assert result is not None
+        assert result > 0.5
+
+    def test_negative_margin_below_dot_five(self) -> None:
+        """A team that gets outscored expects < 0.5."""
+        result = bell_curve_win_pct(ppg=100.0, opp_ppg=110.0, std_net_pts=12.0)
+        assert result is not None
+        assert result < 0.5
+
+    def test_dominant_team_approaches_one(self) -> None:
+        """Large positive margin with small variance → near 1.0."""
+        result = bell_curve_win_pct(ppg=120.0, opp_ppg=95.0, std_net_pts=8.0)
+        assert result is not None
+        assert result > 0.99
+
+    def test_zero_std_returns_none(self) -> None:
+        """Returns None when std_net_pts is zero (degenerate)."""
+        assert bell_curve_win_pct(ppg=100.0, opp_ppg=95.0, std_net_pts=0.0) is None
+
+    def test_higher_variance_moves_toward_half(self) -> None:
+        """More variance → win% closer to 0.5 (less certainty)."""
+        tight = bell_curve_win_pct(ppg=110.0, opp_ppg=105.0, std_net_pts=5.0)
+        loose = bell_curve_win_pct(ppg=110.0, opp_ppg=105.0, std_net_pts=20.0)
+        assert tight is not None and loose is not None
+        assert abs(tight - 0.5) > abs(loose - 0.5)
+
+    def test_known_value(self) -> None:
+        """Net +5 ppg with std=10: z=0.5, Phi(0.5) approx 0.6915."""
+        result = bell_curve_win_pct(ppg=105.0, opp_ppg=100.0, std_net_pts=10.0)
+        assert result == pytest.approx(0.6915, abs=0.001)
+
+    @settings(suppress_health_check=_XDIST)
+    @given(
+        ppg=st.floats(min_value=80.0, max_value=130.0),
+        opp_ppg=st.floats(min_value=80.0, max_value=130.0),
+        std=st.floats(min_value=1.0, max_value=30.0),
+    )
+    def test_always_between_zero_and_one(
+        self, ppg: float, opp_ppg: float, std: float
+    ) -> None:
+        """Bell Curve win% is always in [0, 1] for valid inputs."""
+        result = bell_curve_win_pct(ppg=ppg, opp_ppg=opp_ppg, std_net_pts=std)
+        assert result is not None
+        assert 0.0 <= result <= 1.0
+
+    @settings(suppress_health_check=_XDIST)
+    @given(
+        margin=st.floats(min_value=-40.0, max_value=40.0),
+        std=st.floats(min_value=1.0, max_value=30.0),
+    )
+    def test_symmetric(self, margin: float, std: float) -> None:
+        """win%(+margin) + win%(-margin) == 1.0 (symmetry of normal CDF)."""
+        win = bell_curve_win_pct(ppg=100 + margin, opp_ppg=100.0, std_net_pts=std)
+        loss = bell_curve_win_pct(ppg=100 - margin, opp_ppg=100.0, std_net_pts=std)
+        assert win is not None and loss is not None
+        assert win + loss == pytest.approx(1.0, abs=1e-9)

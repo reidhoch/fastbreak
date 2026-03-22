@@ -16,6 +16,8 @@ Part 13 — pure computation: advanced distribution analytics (consistency, stre
 Part 14 — pure computation: rolling consistency, expected stat, and recent-form hit rate.
 Part 15 — pure computation: Box Plus/Minus 2.0 (BPM / OBPM / DBPM) + VORP — LeBron James 2009-10.
 Part 16 — pure computation: EWMA scoring trend — span comparison and DNP gap handling.
+Part 17 — pure computation: Kubatko et al. (2007) additions — possessions, plays,
+          efficiency, floor/play %, and Bell Curve win expectation.
 """
 
 import asyncio
@@ -27,6 +29,7 @@ from fastbreak.metrics import (
     LeagueAverages,
     ast_pct,
     ast_to_tov,
+    bell_curve_win_pct,
     blk_pct,
     bpm,
     defensive_win_shares,
@@ -35,11 +38,13 @@ from fastbreak.metrics import (
     effective_fg_pct,
     ewma,
     expected_stat,
+    floor_pct,
     free_throw_rate,
     game_score,
     hit_rate_last_n,
     is_double_double,
     is_triple_double,
+    nba_efficiency,
     net_rtg,
     offensive_win_shares,
     oreb_pct,
@@ -48,7 +53,12 @@ from fastbreak.metrics import (
     per,
     per_36,
     percentile_rank,
+    play_pct,
+    plays,
+    possessions,
+    possessions_general,
     prop_hit_rate,
+    pythagorean_win_pct,
     relative_efg,
     relative_ts,
     rolling_avg,
@@ -1579,6 +1589,96 @@ def demo_ewma() -> None:
     )
 
 
+def demo_kubatko() -> None:
+    """Part 17 — Kubatko et al. (2007) additions."""
+    print("=" * 60)
+    print("Part 17: Kubatko et al. (2007) — possession framework")
+    print("=" * 60)
+
+    # --- Possessions and plays ---
+    fga, oreb, tov, fta = 88, 10, 13, 22
+    poss = possessions(fga=fga, oreb=oreb, tov=tov, fta=fta)
+    play_count = plays(fga=fga, fta=fta, tov=tov)
+    print(f"\nTeam box: FGA={fga}, OREB={oreb}, TOV={tov}, FTA={fta}")
+    print(f"  Possessions (standard):  {poss:.1f}")
+    print(f"  Plays (minor poss):      {play_count:.1f}")
+    print(f"  Difference (OREB plays): {play_count - poss:.1f}")
+
+    # --- General formula with different alpha values ---
+    fgm, ftm, dreb_opp = 40, 17, 30
+    poss_lost = possessions_general(
+        fgm=fgm,
+        fga=fga,
+        ftm=ftm,
+        fta=fta,
+        oreb=oreb,
+        dreb_opp=dreb_opp,
+        tov=tov,
+        alpha=1.0,
+    )
+    poss_gained = possessions_general(
+        fgm=fgm,
+        fga=fga,
+        ftm=ftm,
+        fta=fta,
+        oreb=oreb,
+        dreb_opp=dreb_opp,
+        tov=tov,
+        alpha=0.0,
+    )
+    print(f"\n  General formula (alpha=1.0, 'poss lost'):   {poss_lost:.1f}")
+    print(f"  General formula (alpha=0.0, 'poss gained'): {poss_gained:.1f}")
+
+    # --- Floor and play percentages ---
+    pts = 112
+    fp = floor_pct(pts=pts, poss=poss)
+    pp = play_pct(pts=pts, total_plays=play_count)
+    print(f"\n  Scoring: {pts} pts on {poss:.0f} poss / {play_count:.0f} plays")
+    print(f"  Floor%:  {fp:.3f}" if fp else "  Floor%:  —")
+    print(f"  Play%:   {pp:.3f}" if pp else "  Play%:   —")
+
+    # --- NBA Efficiency ---
+    eff = nba_efficiency(
+        pts=25,
+        reb=10,
+        ast=5,
+        stl=2,
+        blk=1,
+        tov=3,
+        fgm=10,
+        fga=18,
+        ftm=5,
+        fta=6,
+    )
+    print(f"\n  NBA Efficiency (25/10/5/2/1 with 10-18 FG, 5-6 FT, 3 TO): {eff:.0f}")
+
+    # --- Win expectation: Pythagorean vs Bell Curve ---
+    ppg, opp_ppg, std_net = 110.0, 105.0, 12.0
+    pyth = pythagorean_win_pct(pts=ppg, opp_pts=opp_ppg)
+    pyth_kubatko = pythagorean_win_pct(pts=ppg, opp_pts=opp_ppg, exp=16.5)
+    bell = bell_curve_win_pct(ppg=ppg, opp_ppg=opp_ppg, std_net_pts=std_net)
+    print(f"\n  Win% estimates for {ppg:.0f} PPG vs {opp_ppg:.0f} OPP_PPG:")
+    print(f"    Pythagorean (e=13.91): {pyth:.3f}" if pyth else "    Pythagorean: —")
+    print(
+        f"    Pythagorean (e=16.5):  {pyth_kubatko:.3f}"
+        if pyth_kubatko
+        else "    Pythagorean: —"
+    )
+    print(
+        f"    Bell Curve (std={std_net}): {bell:.3f}" if bell else "    Bell Curve: —"
+    )
+
+    # Show Bell Curve sensitivity to variance
+    for std in [8.0, 12.0, 20.0]:
+        bc = bell_curve_win_pct(ppg=ppg, opp_ppg=opp_ppg, std_net_pts=std)
+        print(
+            f"    Bell Curve (std={std:4.1f}):  {bc:.3f}"
+            if bc
+            else f"    Bell Curve (std={std}): —"
+        )
+    print()
+
+
 async def main() -> None:
     demo_single_line()
     demo_rate_stats()
@@ -1592,6 +1692,7 @@ async def main() -> None:
     demo_advanced_distribution()
     demo_recent_form()
     demo_ewma()
+    demo_kubatko()
 
     yesterday = (
         datetime.now(tz=UTC).astimezone().date() - timedelta(days=1)

@@ -10,7 +10,8 @@ fastbreak API helpers, but it has no dependency on them and can be used with any
 ```python
 from fastbreak.metrics import (
     # Efficiency
-    true_shooting, effective_fg_pct, game_score, relative_ts, relative_efg,
+    true_shooting, effective_fg_pct, game_score, nba_efficiency,
+    relative_ts, relative_efg,
     # Rate stats
     per_36, per_100, free_throw_rate, three_point_rate, ast_to_tov, assist_ratio,
     # Counting / thresholds
@@ -22,12 +23,12 @@ from fastbreak.metrics import (
     # BPM / VORP
     BPMResult, bpm, vorp,
     # Team ratings
+    possessions, possessions_general, plays, floor_pct, play_pct,
     ortg, drtg, net_rtg,
     # Win metrics
     offensive_win_shares, defensive_win_shares,
     win_shares, win_shares_per_48,
-    # Possession estimate
-    possessions,
+    pythagorean_win_pct, bell_curve_win_pct,
     # Rolling / windowed
     rolling_avg, ewma,
     # Distribution
@@ -286,6 +287,34 @@ gs = game_score(
     oreb=1, dreb=8, stl=2, ast=8, blk=1, pf=3, tov=4,
 )
 # → 24.5
+```
+
+---
+
+#### `nba_efficiency`
+
+```python
+def nba_efficiency(
+    pts: float, reb: float, ast: float, stl: float, blk: float,
+    tov: float, fgm: float, fga: float, ftm: float, fta: float,
+) -> float
+```
+
+NBA Efficiency — the simple linear weights stat used on NBA.com (Kubatko et al. 2007,
+Eq. 19). Equal weight to every positive and negative contribution. Simpler than Game
+Score or PER but criticized for rewarding volume and ignoring defense beyond steals/blocks.
+
+**Formula:** `EFF = PTS + REB + AST + STL + BLK - TO - (FGA - FGM) - (FTA - FTM)`
+
+Typical values: ~15 for an average starter, 30+ for elite performances. Can be negative.
+Never returns `None`.
+
+```python
+eff = nba_efficiency(
+    pts=25, reb=10, ast=5, stl=2, blk=1,
+    tov=3, fgm=10, fga=18, ftm=5, fta=6,
+)
+# → 31
 ```
 
 ---
@@ -746,6 +775,59 @@ poss = possessions(fga=88, oreb=10, tov=13, fta=22)  # → 103.68
 
 ---
 
+#### `possessions_general`
+
+```python
+def possessions_general(
+    fgm: float, fga: float, ftm: float, fta: float,
+    oreb: float, dreb_opp: float, tov: float,
+    alpha: float = 1.0, lam: float = 0.44,
+) -> float
+```
+
+General possession formula from Kubatko et al. (2007), Eq. 1. Parameterizes how missed
+shots and missed possession-ending free throws split credit between the offensive team
+(via offensive rebounds) and the defensive team (via defensive rebounds).
+
+**Formula:** `POSS = (FGM + lam*FTM) + alpha*[(FGA-FGM) + lam*(FTA-FTM) - OREB] + (1-alpha)*DREB_opp + TO`
+
+| `alpha` | Interpretation |
+|---|---|
+| 1.0 (default) | "Possessions lost" — misses charged to offense, DREBs have zero value |
+| 0.0 | "Possessions gained" — misses have no value, DREBs get full credit |
+| 0.59 | Empirical estimate from Kubatko et al. (2002-06 data) |
+
+The default (alpha=1, lam=0.44) reduces to the standard `possessions()` formula.
+
+```python
+# Standard estimate
+poss = possessions_general(fgm=40, fga=88, ftm=15, fta=20, oreb=10, dreb_opp=30, tov=13)
+
+# "Possessions gained" variant
+poss_gained = possessions_general(fgm=40, fga=88, ftm=15, fta=20,
+                                   oreb=10, dreb_opp=30, tov=13, alpha=0.0)
+```
+
+---
+
+#### `plays`
+
+```python
+def plays(fga: float, fta: float, tov: float) -> float
+```
+
+Estimate the number of plays (minor possessions) from box score stats. Plays differ
+from possessions because an offensive rebound starts a new *play* but not a new
+*possession*. A typical NBA team has ~105 plays per ~92 possessions.
+
+**Formula:** `PLAYS = FGA + 0.44 * FTA + TO`
+
+```python
+play_count = plays(fga=88, fta=22, tov=13)  # → 110.68
+```
+
+---
+
 #### `ortg`
 
 ```python
@@ -793,6 +875,48 @@ Returns `None` when either input is `None`.
 
 ```python
 nr = net_rtg(ortg_val=114.2, drtg_val=110.8)  # → 3.4
+```
+
+---
+
+#### `floor_pct`
+
+```python
+def floor_pct(pts: float, poss: float) -> float | None
+```
+
+Floor percentage — the fraction of possessions on which at least one point is scored.
+Introduced by Oliver (2004) as the characteristic probability in a binomial model of
+scoring sequences. Higher floor% means more consistent scoring.
+
+**Formula:** `floor% = PTS / POSS` (approximation from box score data)
+
+Returns `None` when possessions is zero.
+
+```python
+fp = floor_pct(pts=110, poss=95)  # → ~1.16 (points per possession, not capped at 1)
+```
+
+> **Note:** This is an approximation. Some possessions score 2-3 points, so
+> `pts / poss` can exceed 1.0. A more precise version would use play-by-play
+> data to count the number of possessions that scored at least 1 point.
+
+---
+
+#### `play_pct`
+
+```python
+def play_pct(pts: float, total_plays: float) -> float | None
+```
+
+Play percentage — analogous to `floor_pct` but uses plays (which count offensive
+rebounds as new opportunities) instead of possessions. Because a team has more plays
+than possessions, play percentage is always less than or equal to floor percentage.
+
+Returns `None` when total plays is zero.
+
+```python
+pp = play_pct(pts=110, total_plays=105)  # → ~1.05
 ```
 
 ---
@@ -970,6 +1094,39 @@ luck = s.win_pct - expected   # positive = "lucky", negative = "unlucky"
 ```
 
 Returns `None` when both inputs are zero.
+
+---
+
+#### `bell_curve_win_pct`
+
+```python
+def bell_curve_win_pct(ppg: float, opp_ppg: float, std_net_pts: float) -> float | None
+```
+
+Bell Curve method — a more theoretically grounded alternative to the Pythagorean method,
+introduced by Oliver (2004). Uses the normal CDF instead of an empirically tuned exponent.
+
+**Formula:** `Win% = Phi((PPG - OPP_PPG) / StDev(PPG - OPP_PPG))`
+
+where Phi is the standard normal cumulative distribution function.
+
+**Advantages over `pythagorean_win_pct`:**
+- No tuned exponent — works across eras and leagues without modification.
+- Incorporates game-to-game variance: a team that wins by exactly 5 every game has a
+  higher win% than one that alternates +20 and -10 (same mean, different std).
+
+Requires individual game data to compute `std_net_pts` (the standard deviation of
+net points across a team's games).
+
+Returns `None` when `std_net_pts` is zero.
+
+```python
+# Team averages 108 ppg, allows 103, with std dev of 12 in net points
+win_pct = bell_curve_win_pct(ppg=108, opp_ppg=103, std_net_pts=12)  # → ~0.662
+
+# Offensive/defensive ratings work too (per-100 possessions)
+win_pct = bell_curve_win_pct(ppg=112.5, opp_ppg=108.0, std_net_pts=10.0)
+```
 
 ---
 
