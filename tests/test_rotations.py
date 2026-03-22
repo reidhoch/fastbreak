@@ -6,9 +6,9 @@ import dataclasses
 
 import pytest
 from hypothesis import given, settings, strategies as st
-
 from pytest_mock import MockerFixture
 
+from fastbreak.clients.nba import NBAClient
 from fastbreak.models.game_rotation import GameRotationResponse, RotationEntry
 from fastbreak.rotations import (
     LineupStint,
@@ -25,7 +25,7 @@ from fastbreak.rotations import (
     rotation_timeline,
     stint_plus_minus,
 )
-
+from tests.strategies import XDIST_SUPPRESS as _XDIST
 
 # ---------------------------------------------------------------------------
 # TestDataclassFrozenSlots
@@ -509,6 +509,7 @@ class TestRotationTimeline:
         starts = [e for e in result if e.time == 0.0]
         assert len(starts) == 5
         for ev in starts:
+            assert ev.player_in_id is not None
             assert ev.player_out_id is None
 
     def test_mid_game_substitution(self):
@@ -566,6 +567,7 @@ class TestRotationTimeline:
         assert len(ends) == 5
         for ev in ends:
             assert ev.player_in_id is None
+            assert ev.player_out_id is not None
 
     def test_multiple_subs_at_same_time(self):
         # Two subs at the same time
@@ -606,7 +608,7 @@ def _make_mock_response(
 class TestGetGameRotations:
     async def test_calls_client_get(self, mocker: MockerFixture):
         response = _make_mock_response()
-        client = mocker.AsyncMock()
+        client = NBAClient(session=mocker.MagicMock())
         client.get = mocker.AsyncMock(return_value=response)
         result = await get_game_rotations(client, game_id="0022500571")
         client.get.assert_called_once()
@@ -614,24 +616,17 @@ class TestGetGameRotations:
 
     async def test_passes_game_id(self, mocker: MockerFixture):
         response = _make_mock_response()
-        client = mocker.AsyncMock()
+        client = NBAClient(session=mocker.MagicMock())
         client.get = mocker.AsyncMock(return_value=response)
         await get_game_rotations(client, game_id="0022500999")
         endpoint = client.get.call_args[0][0]
         assert endpoint.game_id == "0022500999"
 
-    async def test_returns_game_rotation_response(self, mocker: MockerFixture):
-        response = _make_mock_response()
-        client = mocker.AsyncMock()
-        client.get = mocker.AsyncMock(return_value=response)
-        result = await get_game_rotations(client, game_id="0022500571")
-        assert isinstance(result, GameRotationResponse)
-
     async def test_uses_game_rotation_endpoint(self, mocker: MockerFixture):
         from fastbreak.endpoints.game_rotation import GameRotation
 
         response = _make_mock_response()
-        client = mocker.AsyncMock()
+        client = NBAClient(session=mocker.MagicMock())
         client.get = mocker.AsyncMock(return_value=response)
         await get_game_rotations(client, game_id="0022500571")
         endpoint = client.get.call_args[0][0]
@@ -644,21 +639,18 @@ class TestGetGameRotations:
 
 
 class TestGetRotationSummary:
-    def _make_team_entries(self) -> list[RotationEntry]:
-        return _five_starters(0.0, 7200.0)
-
     async def test_returns_rotation_summary(self, mocker: MockerFixture):
-        entries = self._make_team_entries()
+        entries = _five_starters()
         response = _make_mock_response(home_entries=entries)
-        client = mocker.AsyncMock()
+        client = NBAClient(session=mocker.MagicMock())
         client.get = mocker.AsyncMock(return_value=response)
         result = await get_rotation_summary(client, "0022500571", team_id=100)
         assert isinstance(result, RotationSummary)
 
     async def test_game_id_preserved(self, mocker: MockerFixture):
-        entries = self._make_team_entries()
+        entries = _five_starters()
         response = _make_mock_response(home_entries=entries)
-        client = mocker.AsyncMock()
+        client = NBAClient(session=mocker.MagicMock())
         client.get = mocker.AsyncMock(return_value=response)
         result = await get_rotation_summary(client, "0022500571", team_id=100)
         assert result.game_id == "0022500571"
@@ -677,7 +669,7 @@ class TestGetRotationSummary:
             for i in range(6, 11)
         ]
         response = _make_mock_response(home_entries=home, away_entries=away)
-        client = mocker.AsyncMock()
+        client = NBAClient(session=mocker.MagicMock())
         client.get = mocker.AsyncMock(return_value=response)
         result = await get_rotation_summary(client, "0022500571", team_id=100)
         assert result.team_id == 100
@@ -697,7 +689,7 @@ class TestGetRotationSummary:
             for i in range(6, 11)
         ]
         response = _make_mock_response(home_entries=home, away_entries=away)
-        client = mocker.AsyncMock()
+        client = NBAClient(session=mocker.MagicMock())
         client.get = mocker.AsyncMock(return_value=response)
         result = await get_rotation_summary(client, "0022500571", team_id=200)
         assert result.team_id == 200
@@ -708,14 +700,14 @@ class TestGetRotationSummary:
     async def test_raises_for_unknown_team_id(self, mocker: MockerFixture):
         entries = [_make_rotation_entry(person_id=1, team_id=100)]
         response = _make_mock_response(home_entries=entries)
-        client = mocker.AsyncMock()
+        client = NBAClient(session=mocker.MagicMock())
         client.get = mocker.AsyncMock(return_value=response)
         with pytest.raises(ValueError, match="999"):
             await get_rotation_summary(client, "0022500571", team_id=999)
 
     async def test_empty_entries_zero_minutes(self, mocker: MockerFixture):
         response = _make_mock_response()
-        client = mocker.AsyncMock()
+        client = NBAClient(session=mocker.MagicMock())
         client.get = mocker.AsyncMock(return_value=response)
         with pytest.raises(ValueError):
             await get_rotation_summary(client, "0022500571", team_id=100)
@@ -726,57 +718,73 @@ class TestGetRotationSummary:
 # ---------------------------------------------------------------------------
 
 
-_entry_strategy = st.builds(
-    _make_rotation_entry,
-    person_id=st.integers(min_value=1, max_value=8),
-    in_time_real=st.floats(
-        min_value=0.0, max_value=28800.0, allow_nan=False, allow_infinity=False
-    ),
-    out_time_real=st.floats(
-        min_value=0.0, max_value=28800.0, allow_nan=False, allow_infinity=False
-    ),
-    player_pts=st.one_of(st.none(), st.integers(min_value=0, max_value=30)),
-    pt_diff=st.one_of(
-        st.none(),
+@st.composite
+def _entry_strategy(draw):
+    t1 = draw(
         st.floats(
-            min_value=-20.0, max_value=20.0, allow_nan=False, allow_infinity=False
+            min_value=0.0, max_value=28800.0, allow_nan=False, allow_infinity=False
+        )
+    )
+    t2 = draw(
+        st.floats(
+            min_value=0.0, max_value=28800.0, allow_nan=False, allow_infinity=False
+        )
+    )
+    return _make_rotation_entry(
+        person_id=draw(st.integers(min_value=1, max_value=8)),
+        in_time_real=min(t1, t2),
+        out_time_real=max(t1, t2),
+        player_pts=draw(st.one_of(st.none(), st.integers(min_value=0, max_value=30))),
+        pt_diff=draw(
+            st.one_of(
+                st.none(),
+                st.floats(
+                    min_value=-20.0,
+                    max_value=20.0,
+                    allow_nan=False,
+                    allow_infinity=False,
+                ),
+            )
         ),
-    ),
-    usg_pct=st.one_of(
-        st.none(),
-        st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),
-    ),
-).filter(lambda e: e.in_time_real <= e.out_time_real)
+        usg_pct=draw(
+            st.one_of(
+                st.none(),
+                st.floats(
+                    min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False
+                ),
+            )
+        ),
+    )
 
 
 class TestRotationsProperties:
-    @given(entries=st.lists(_entry_strategy, min_size=1, max_size=10))
-    @settings(max_examples=50)
+    @given(entries=st.lists(_entry_strategy(), min_size=1, max_size=10))
+    @settings(max_examples=50, suppress_health_check=_XDIST)
     def test_stint_durations_non_negative(self, entries):
         for s in player_stints(entries):
             assert s.duration_minutes >= 0
 
-    @given(entries=st.lists(_entry_strategy, min_size=1, max_size=10))
-    @settings(max_examples=50)
+    @given(entries=st.lists(_entry_strategy(), min_size=1, max_size=10))
+    @settings(max_examples=50, suppress_health_check=_XDIST)
     def test_total_minutes_non_negative(self, entries):
         for m in player_total_minutes(entries):
             assert m.total_minutes >= 0
 
-    @given(entries=st.lists(_entry_strategy, min_size=1, max_size=10))
-    @settings(max_examples=50)
+    @given(entries=st.lists(_entry_strategy(), min_size=1, max_size=10))
+    @settings(max_examples=50, suppress_health_check=_XDIST)
     def test_avg_lte_total(self, entries):
         for m in player_total_minutes(entries):
             assert m.avg_stint_minutes <= m.total_minutes + 1e-9
 
-    @given(entries=st.lists(_entry_strategy, min_size=1, max_size=10))
-    @settings(max_examples=50)
+    @given(entries=st.lists(_entry_strategy(), min_size=1, max_size=10))
+    @settings(max_examples=50, suppress_health_check=_XDIST)
     def test_stint_count_equals_entry_count(self, entries):
         minutes_list = player_total_minutes(entries)
         total_stints = sum(m.stint_count for m in minutes_list)
         assert total_stints == len(entries)
 
-    @given(entries=st.lists(_entry_strategy, min_size=1, max_size=10))
-    @settings(max_examples=50)
+    @given(entries=st.lists(_entry_strategy(), min_size=1, max_size=10))
+    @settings(max_examples=50, suppress_health_check=_XDIST)
     def test_lineup_stints_chronological(self, entries):
         result = lineup_stints(entries)
         for i in range(len(result) - 1):

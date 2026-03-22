@@ -7,7 +7,7 @@ PBT covers the mathematical invariants of defensive_shot_quality_vs_league.
 from __future__ import annotations
 
 import pytest
-from hypothesis import HealthCheck, given, settings, strategies as st
+from hypothesis import given, settings, strategies as st
 
 from fastbreak.defense import (
     defensive_shot_quality_vs_league,
@@ -17,10 +17,10 @@ from fastbreak.defense import (
 )
 from fastbreak.models.box_score_defensive import BoxScoreDefensiveResponse
 from fastbreak.models.league_dash_pt_team_defend import TeamDefendStats
+from tests.strategies import XDIST_SUPPRESS as _XDIST
 
 # ─── shared constants ─────────────────────────────────────────────────────────
 
-_XDIST = [HealthCheck.differing_executors]
 _TEAM_ID = 1610612738  # Boston Celtics
 
 

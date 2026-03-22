@@ -122,6 +122,28 @@ def sample_response_data(sample_meta_data, sample_game_data):
 
 
 @pytest.fixture
+def make_pbp_client(mocker: MockerFixture):
+    """Factory fixture for creating NBAClient with a mocked PBP response.
+
+    Usage:
+        async def test_something(make_pbp_client):
+            client = make_pbp_client([action1, action2])
+            result = await get_play_by_play(client, game_id)
+    """
+
+    def _make(actions: list | None = None) -> NBAClient:
+        game = mocker.MagicMock()
+        game.actions = actions if actions is not None else []
+        response = mocker.MagicMock()
+        response.game = game
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+        return client
+
+    return _make
+
+
+@pytest.fixture
 def make_mock_client(mocker: MockerFixture):
     """Factory fixture for creating NBAClient with mocked session.
 

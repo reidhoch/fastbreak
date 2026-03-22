@@ -8,10 +8,16 @@ PBT covers the mathematical invariants of the pure computation functions
 from __future__ import annotations
 
 import pytest
-from hypothesis import HealthCheck, given, settings
-from hypothesis import strategies as st
+from hypothesis import given, settings, strategies as st
 from pytest_mock import MockerFixture
 
+from fastbreak.clients.nba import NBAClient
+from fastbreak.models.league_dash_team_shot_locations import (
+    ShotRange,
+    TeamShotLocations,
+)
+from fastbreak.models.shot_chart_detail import Shot
+from fastbreak.models.shot_chart_leaguewide import LeagueWideShotZone
 from fastbreak.shots import (
     ZoneStats,
     get_league_shot_zones,
@@ -23,10 +29,10 @@ from fastbreak.shots import (
     zone_breakdown,
     zone_fg_pct,
 )
+from tests.strategies import XDIST_SUPPRESS as _XDIST
 
 # ─── shared constants ─────────────────────────────────────────────────────────
 
-_XDIST = [HealthCheck.differing_executors]
 _ZONES = [
     "Restricted Area",
     "In The Paint (Non-RA)",
@@ -37,7 +43,6 @@ _ZONES = [
     "Backcourt",
 ]
 
-
 # ─── Shot factory ─────────────────────────────────────────────────────────────
 
 
@@ -47,14 +52,8 @@ def _make_shot(
     made: int = 1,
     player_id: int = 2544,
     team_id: int = 1610612747,
-) -> object:
-    """Minimal Shot-like object for unit tests.
-
-    Uses the populate_by_name field names so the same factory works for
-    both Pydantic constructors and plain stubs in PBT strategies.
-    """
-    from fastbreak.models.shot_chart_detail import Shot
-
+) -> Shot:
+    """Minimal Shot for unit tests."""
     return Shot(
         grid_type="Player Track Shooting",
         game_id="0022500001",
@@ -85,10 +84,8 @@ def _make_shot(
 
 def _make_league_zone(
     *, zone: str = "Mid-Range", fga: int = 1000, fgm: int = 400
-) -> object:
-    """Minimal LeagueWideShotZone-like object for unit tests."""
-    from fastbreak.models.shot_chart_leaguewide import LeagueWideShotZone
-
+) -> LeagueWideShotZone:
+    """Minimal LeagueWideShotZone for unit tests."""
     # LeagueWideShotZone uses SCREAMING_SNAKE_CASE aliases (no populate_by_name)
     return LeagueWideShotZone.model_validate(
         {
@@ -371,7 +368,6 @@ class TestGetShotChart:
 
     async def test_calls_api_exactly_once(self, mocker: MockerFixture) -> None:
         """get_shot_chart calls client.get exactly once."""
-        from fastbreak.clients.nba import NBAClient
 
         response = mocker.MagicMock()
         client = NBAClient(session=mocker.MagicMock())
@@ -384,7 +380,6 @@ class TestGetShotChart:
 
     async def test_passes_player_id_to_endpoint(self, mocker: MockerFixture) -> None:
         """player_id is forwarded to the ShotChartDetail endpoint."""
-        from fastbreak.clients.nba import NBAClient
         from fastbreak.endpoints import ShotChartDetail
 
         response = mocker.MagicMock()
@@ -399,7 +394,6 @@ class TestGetShotChart:
 
     async def test_team_id_defaults_to_zero(self, mocker: MockerFixture) -> None:
         """team_id defaults to 0 (all teams) when not specified."""
-        from fastbreak.clients.nba import NBAClient
         from fastbreak.endpoints import ShotChartDetail
 
         response = mocker.MagicMock()
@@ -414,7 +408,6 @@ class TestGetShotChart:
 
     async def test_custom_team_id_forwarded(self, mocker: MockerFixture) -> None:
         """A non-zero team_id is forwarded correctly."""
-        from fastbreak.clients.nba import NBAClient
         from fastbreak.endpoints import ShotChartDetail
 
         response = mocker.MagicMock()
@@ -429,7 +422,6 @@ class TestGetShotChart:
 
     async def test_context_measure_defaults_to_fga(self, mocker: MockerFixture) -> None:
         """context_measure defaults to 'FGA' for all field goal attempts."""
-        from fastbreak.clients.nba import NBAClient
         from fastbreak.endpoints import ShotChartDetail
 
         response = mocker.MagicMock()
@@ -444,7 +436,6 @@ class TestGetShotChart:
 
     async def test_season_type_forwarded(self, mocker: MockerFixture) -> None:
         """season_type is forwarded to the endpoint."""
-        from fastbreak.clients.nba import NBAClient
         from fastbreak.endpoints import ShotChartDetail
 
         response = mocker.MagicMock()
@@ -468,8 +459,6 @@ class TestGetLeagueShotZones:
         self, mocker: MockerFixture
     ) -> None:
         """Returns the list of LeagueWideShotZone items from the response."""
-        from fastbreak.clients.nba import NBAClient
-        from fastbreak.models.shot_chart_leaguewide import LeagueWideShotZone
 
         zone = _make_league_zone()
         response = mocker.MagicMock()
@@ -486,7 +475,6 @@ class TestGetLeagueShotZones:
         self, mocker: MockerFixture
     ) -> None:
         """Uses the ShotChartLeaguewide endpoint under the hood."""
-        from fastbreak.clients.nba import NBAClient
         from fastbreak.endpoints import ShotChartLeaguewide
 
         response = mocker.MagicMock()
@@ -503,7 +491,6 @@ class TestGetLeagueShotZones:
         self, mocker: MockerFixture
     ) -> None:
         """An API response with no zones returns an empty list."""
-        from fastbreak.clients.nba import NBAClient
 
         response = mocker.MagicMock()
         response.league_wide = []
@@ -619,7 +606,6 @@ class TestLeagueZoneFgLookup:
         zone would be included and cause a ZeroDivisionError (or an entry
         with undefined FG%).
         """
-        from fastbreak.models.shot_chart_leaguewide import LeagueWideShotZone
         from fastbreak.shots import _league_zone_fg_lookup
 
         zones = [
@@ -680,7 +666,6 @@ class TestGetShotChartSeasonDefault:
 
     async def test_explicit_season_is_used(self, mocker: MockerFixture) -> None:
         """Passing an explicit season uses that value, not the default."""
-        from fastbreak.clients.nba import NBAClient
         from fastbreak.endpoints import ShotChartDetail
 
         response = mocker.MagicMock()
@@ -702,7 +687,6 @@ class TestGetShotChartSeasonDefault:
         (since ``None and X`` is None) and the endpoint would receive None
         instead of a valid season string.
         """
-        from fastbreak.clients.nba import NBAClient
         from fastbreak.endpoints import ShotChartDetail
         from fastbreak.seasons import get_season_from_date
 
@@ -724,13 +708,8 @@ class TestGetShotChartSeasonDefault:
 
 def _make_team_shot_locations(
     *, team_id: int = 1610612747, team_name: str = "Lakers"
-) -> object:
-    """Create a TeamShotLocations with known values for testing."""
-    from fastbreak.models.league_dash_team_shot_locations import (
-        ShotRange,
-        TeamShotLocations,
-    )
-
+) -> TeamShotLocations:
+    """Minimal TeamShotLocations for unit tests."""
     return TeamShotLocations(
         team_id=team_id,
         team_name=team_name,
@@ -818,11 +797,6 @@ class TestTeamDistanceBreakdown:
 
     def test_preserves_fractional_per_game_values(self) -> None:
         """Fractional FGA/FGM are preserved (no int truncation)."""
-        from fastbreak.models.league_dash_team_shot_locations import (
-            ShotRange,
-            TeamShotLocations,
-        )
-
         locations = TeamShotLocations(
             team_id=1,
             team_name="Test",
@@ -848,7 +822,6 @@ class TestGetTeamShotLocations:
 
     async def test_calls_api_once(self, mocker: MockerFixture) -> None:
         """get_team_shot_locations calls client.get exactly once."""
-        from fastbreak.clients.nba import NBAClient
 
         team = _make_team_shot_locations()
         response = mocker.MagicMock()
@@ -862,7 +835,6 @@ class TestGetTeamShotLocations:
 
     async def test_uses_correct_endpoint(self, mocker: MockerFixture) -> None:
         """The endpoint used is LeagueDashTeamShotLocations."""
-        from fastbreak.clients.nba import NBAClient
         from fastbreak.endpoints import LeagueDashTeamShotLocations
 
         response = mocker.MagicMock()
@@ -877,7 +849,6 @@ class TestGetTeamShotLocations:
 
     async def test_team_id_zero_returns_all(self, mocker: MockerFixture) -> None:
         """team_id=0 returns all teams without filtering."""
-        from fastbreak.clients.nba import NBAClient
 
         team1 = _make_team_shot_locations(team_id=1610612747, team_name="Lakers")
         team2 = _make_team_shot_locations(team_id=1610612744, team_name="Pacers")
@@ -892,7 +863,6 @@ class TestGetTeamShotLocations:
 
     async def test_team_id_nonzero_filters(self, mocker: MockerFixture) -> None:
         """A nonzero team_id filters to only matching teams."""
-        from fastbreak.clients.nba import NBAClient
 
         team1 = _make_team_shot_locations(team_id=1610612747, team_name="Lakers")
         team2 = _make_team_shot_locations(team_id=1610612744, team_name="Pacers")
@@ -908,7 +878,6 @@ class TestGetTeamShotLocations:
 
     async def test_no_match_returns_empty(self, mocker: MockerFixture) -> None:
         """An unknown team_id returns an empty list."""
-        from fastbreak.clients.nba import NBAClient
 
         team = _make_team_shot_locations(team_id=1610612747, team_name="Lakers")
         response = mocker.MagicMock()
@@ -922,7 +891,6 @@ class TestGetTeamShotLocations:
 
     async def test_season_defaults(self, mocker: MockerFixture) -> None:
         """Default season_type is 'Regular Season' and per_mode is 'PerGame'."""
-        from fastbreak.clients.nba import NBAClient
         from fastbreak.endpoints import LeagueDashTeamShotLocations
 
         response = mocker.MagicMock()

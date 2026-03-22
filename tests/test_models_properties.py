@@ -12,7 +12,7 @@ These tests verify structural invariants that must hold for all valid inputs:
 """
 
 import pytest
-from hypothesis import HealthCheck, given, settings
+from hypothesis import given, settings
 
 from fastbreak.endpoints.box_score_advanced import BoxScoreAdvanced
 from fastbreak.endpoints.box_score_four_factors import BoxScoreFourFactors
@@ -26,11 +26,7 @@ from fastbreak.endpoints.box_score_usage import BoxScoreUsage
 from fastbreak.endpoints.league_dash_player_stats import LeagueDashPlayerStats
 from fastbreak.endpoints.league_standings import LeagueStandings
 from fastbreak.models import TeamStanding
-
-from tests.strategies import model_strategy
-
-_XDIST = [HealthCheck.differing_executors]
-
+from tests.strategies import XDIST_SUPPRESS as _XDIST, model_strategy
 
 # ===========================================================================
 # Roundtrip: model_validate(model_dump(by_alias=True)) == original

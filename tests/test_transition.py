@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import pytest
 from hypothesis import HealthCheck, assume, given, settings, strategies as st
 from pytest_mock import MockerFixture
 
-from fastbreak.clients.nba import NBAClient
+from fastbreak.models.play_by_play import PlayByPlayAction
 from fastbreak.transition import (
     Classification,
     TransitionAnalysis,
@@ -19,10 +17,7 @@ from fastbreak.transition import (
     transition_efficiency,
     transition_frequency,
 )
-
-if TYPE_CHECKING:
-    from fastbreak.models.play_by_play import PlayByPlayAction
-
+from tests.strategies import XDIST_SUPPRESS as _XDIST
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -47,17 +42,11 @@ def _make_action(
     description: str = "",
     action_number: int = 1,
 ) -> PlayByPlayAction:
-    """Build a minimal PlayByPlayAction for transition tests.
-
-    ``is_field_goal`` defaults to ``1`` when ``action_type`` is in
-    ``_SHOT_ACTION_TYPES``, else ``0``.
-    """
-    from fastbreak.models.play_by_play import PlayByPlayAction as PBA
-
+    """Build a minimal PlayByPlayAction for transition tests."""
     if is_field_goal is None:
         is_field_goal = 1 if action_type in _SHOT_ACTION_TYPES else 0
 
-    return PBA(
+    return PlayByPlayAction(
         actionNumber=action_number,
         clock=clock,
         period=period,
@@ -103,17 +92,6 @@ def _make_possession(
         actions=(),
         points_scored=points_scored,
     )
-
-
-def _make_pbp_client(mocker: MockerFixture, actions: list | None = None):
-    """Return a NBAClient whose .get() resolves to a mock PBP response."""
-    game = mocker.MagicMock()
-    game.actions = actions if actions is not None else []
-    response = mocker.MagicMock()
-    response.game = game
-    client = NBAClient(session=mocker.MagicMock())
-    client.get = mocker.AsyncMock(return_value=response)
-    return client
 
 
 # ---------------------------------------------------------------------------
@@ -975,33 +953,35 @@ class TestTransitionEfficiency:
 class TestGetTransitionStats:
     """Tests for get_transition_stats() async wrapper."""
 
-    async def test_calls_get_play_by_play(self, mocker: MockerFixture):
+    async def test_calls_get_play_by_play(self, make_pbp_client):
         """get_transition_stats calls the API with the correct game_id."""
-        client = _make_pbp_client(mocker, [])
+        client = make_pbp_client([])
         await get_transition_stats(client, "0022500571")
         client.get.assert_called_once()
         endpoint = client.get.call_args[0][0]
         assert endpoint.game_id == "0022500571"
 
-    async def test_returns_transition_analysis(self, mocker: MockerFixture):
+    async def test_returns_transition_analysis(self, make_pbp_client):
         """get_transition_stats returns a TransitionAnalysis."""
-        client = _make_pbp_client(mocker, [])
+        client = make_pbp_client([])
         result = await get_transition_stats(client, "0022500571")
         assert isinstance(result, TransitionAnalysis)
 
-    async def test_game_id_preserved(self, mocker: MockerFixture):
+    async def test_game_id_preserved(self, make_pbp_client):
         """The game_id is stored on the result."""
-        client = _make_pbp_client(mocker, [])
+        client = make_pbp_client([])
         result = await get_transition_stats(client, "0022500571")
         assert result.game_id == "0022500571"
 
-    async def test_custom_window_forwarded(self, mocker: MockerFixture):
+    async def test_custom_window_forwarded(
+        self, mocker: MockerFixture, make_pbp_client
+    ):
         """transition_window kwarg is forwarded to classify_possessions."""
         mock_classify = mocker.patch(
             "fastbreak.transition.classify_possessions",
             return_value=[],
         )
-        client = _make_pbp_client(mocker, [])
+        client = make_pbp_client([])
         await get_transition_stats(client, "0022500571", transition_window=5.0)
         mock_classify.assert_called_once()
         assert mock_classify.call_args.kwargs["transition_window"] == 5.0
@@ -1031,7 +1011,7 @@ class TestClassifyPossessionsProperties:
     """Hypothesis property-based tests for classify_possessions."""
 
     @given(st.lists(_action_st, max_size=30))
-    @settings(suppress_health_check=[HealthCheck.too_slow], max_examples=50)
+    @settings(suppress_health_check=[HealthCheck.too_slow, *_XDIST], max_examples=50)
     def test_classification_always_valid(self, actions):
         """Every classification is 'transition' or 'halfcourt'."""
         result = classify_possessions(actions)
@@ -1039,7 +1019,7 @@ class TestClassifyPossessionsProperties:
             assert poss.classification in {"transition", "halfcourt"}
 
     @given(st.lists(_action_st, max_size=30))
-    @settings(suppress_health_check=[HealthCheck.too_slow], max_examples=50)
+    @settings(suppress_health_check=[HealthCheck.too_slow, *_XDIST], max_examples=50)
     def test_total_equals_transition_plus_halfcourt(self, actions):
         """total always equals transition + halfcourt count."""
         possessions = classify_possessions(actions)
@@ -1050,7 +1030,7 @@ class TestClassifyPossessionsProperties:
         )
 
     @given(st.lists(_action_st, min_size=1, max_size=30))
-    @settings(suppress_health_check=[HealthCheck.too_slow], max_examples=50)
+    @settings(suppress_health_check=[HealthCheck.too_slow, *_XDIST], max_examples=50)
     def test_pcts_sum_to_one_when_nonempty(self, actions):
         """transition_pct + halfcourt_pct = 1.0 when possessions exist."""
         possessions = classify_possessions(actions)
@@ -1061,7 +1041,7 @@ class TestClassifyPossessionsProperties:
         assert summary.transition_pct + summary.halfcourt_pct == pytest.approx(1.0)
 
     @given(st.lists(_action_st, max_size=30))
-    @settings(suppress_health_check=[HealthCheck.too_slow], max_examples=50)
+    @settings(suppress_health_check=[HealthCheck.too_slow, *_XDIST], max_examples=50)
     def test_window_zero_all_halfcourt(self, actions):
         """With window=0, no possession with positive elapsed is transition."""
         result = classify_possessions(actions, transition_window=0.0)

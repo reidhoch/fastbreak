@@ -8,8 +8,7 @@ These complement the example-based tests in test_metrics.py.
 from __future__ import annotations
 
 import pytest
-from hypothesis import HealthCheck, assume, given, settings
-from hypothesis import strategies as st
+from hypothesis import assume, given, settings, strategies as st
 
 from fastbreak.metrics import (
     LeagueAverages,
@@ -21,8 +20,8 @@ from fastbreak.metrics import (
     free_throw_rate,
     net_rtg,
     ortg,
-    per_100,
     per_36,
+    per_100,
     possessions,
     pythagorean_win_pct,
     relative_efg,
@@ -32,6 +31,7 @@ from fastbreak.metrics import (
     tov_pct,
     true_shooting,
 )
+from tests.strategies import XDIST_SUPPRESS as _XDIST
 
 # ─── Shared strategies ────────────────────────────────────────────────────────
 
@@ -52,8 +52,6 @@ pos = st.floats(min_value=0.01, max_value=200.0, allow_nan=False, allow_infinity
 # Scale factor for scale-invariance tests
 scale = st.floats(min_value=0.01, max_value=50.0, allow_nan=False, allow_infinity=False)
 
-_XDIST = [HealthCheck.differing_executors]
-
 
 @st.composite
 def league_averages_st(draw: st.DrawFn) -> LeagueAverages:
@@ -62,15 +60,17 @@ def league_averages_st(draw: st.DrawFn) -> LeagueAverages:
     lg_fga = draw(pos)
     lg_fta = draw(pos)
     lg_ftm = draw(pos)
-    lg_oreb = draw(nn)
     lg_treb = draw(pos)
+    lg_oreb = draw(
+        st.floats(
+            min_value=0.0, max_value=lg_treb, allow_nan=False, allow_infinity=False
+        )
+    )
     lg_ast = draw(nn)
     lg_fgm = draw(pos)
     lg_fg3m = draw(nn)
     lg_tov = draw(nn)
     lg_pf = draw(pos)
-    # Cross-field: offensive rebounds cannot exceed total rebounds
-    assume(lg_oreb <= lg_treb)
     # vop denominator must be positive (validated in __post_init__)
     assume(lg_fga - lg_oreb + lg_tov + 0.44 * lg_fta > 0)
     return LeagueAverages(

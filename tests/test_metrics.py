@@ -1,10 +1,7 @@
 """Tests for derived basketball metrics."""
 
 import pytest
-from hypothesis import HealthCheck, assume, given, settings
-from hypothesis import strategies as st
-
-_XDIST = [HealthCheck.differing_executors]
+from hypothesis import assume, given, settings, strategies as st
 
 from fastbreak.metrics import (
     BPMResult,
@@ -13,46 +10,47 @@ from fastbreak.metrics import (
     ast_pct,
     ast_to_tov,
     blk_pct,
+    bpm,
     defensive_win_shares,
     dreb_pct,
     effective_fg_pct,
+    ewma,
+    expected_stat,
     four_factors,
     free_throw_rate,
     game_score,
+    hit_rate_last_n,
     is_double_double,
     is_triple_double,
     oreb_pct,
     pace_adjusted_per,
-    bpm,
     per,
-    per_100,
     per_36,
     per_48,
+    per_100,
+    percentile_rank,
     possessions,
+    prop_hit_rate,
     pythagorean_win_pct,
     relative_efg,
     relative_ts,
-    ewma,
     rolling_avg,
-    stl_pct,
-    three_point_rate,
-    tov_pct,
-    true_shooting,
-    usage_pct,
-    expected_stat,
-    hit_rate_last_n,
-    percentile_rank,
-    prop_hit_rate,
     rolling_consistency,
     stat_ceiling,
     stat_consistency,
     stat_floor,
     stat_median,
+    stl_pct,
     streak_count,
+    three_point_rate,
+    tov_pct,
+    true_shooting,
+    usage_pct,
     vorp,
     win_shares,
     win_shares_per_48,
 )
+from tests.strategies import XDIST_SUPPRESS as _XDIST
 
 
 class TestTrueShooting:
@@ -1487,7 +1485,10 @@ class TestOffensiveWinShares:
 
     def test_degenerate_lg_pts_returns_none(self) -> None:
         """lg.lg_pts == 0 → can't compute pts_per_win → None."""
-        from fastbreak.metrics import LeagueAverages, offensive_win_shares  # noqa: PLC0415
+        from fastbreak.metrics import (  # noqa: PLC0415
+            LeagueAverages,
+            offensive_win_shares,
+        )
 
         degenerate = LeagueAverages(
             lg_pts=0.0,

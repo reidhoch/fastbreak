@@ -8,10 +8,10 @@ build_clutch_profile() functions.
 from __future__ import annotations
 
 import pytest
-from hypothesis import HealthCheck, assume, given, settings
-from hypothesis import strategies as st
+from hypothesis import assume, given, settings, strategies as st
 from pytest_mock import MockerFixture
 
+from fastbreak.clients.nba import NBAClient
 from fastbreak.clutch import (
     ClutchProfile,
     build_clutch_profile,
@@ -22,12 +22,11 @@ from fastbreak.clutch import (
     get_player_clutch_stats,
     get_team_clutch_stats,
 )
-from fastbreak.clients.nba import NBAClient
 from fastbreak.metrics import ast_to_tov, true_shooting
+from tests.strategies import XDIST_SUPPRESS as _XDIST
 
 # ─── shared constants ─────────────────────────────────────────────────────────
 
-_XDIST = [HealthCheck.differing_executors]
 _DEFAULT_THRESHOLD = 5.0
 
 # ─── Hypothesis strategies ────────────────────────────────────────────────────
@@ -76,7 +75,7 @@ _min_below = st.floats(
 )
 
 
-# ─── Lightweight stats stub (used in PBT to avoid MagicMock) ─────────────────
+# ─── Lightweight stats stub ───────────────────────────────────────────────────
 
 
 class _StatsLike:
@@ -84,13 +83,13 @@ class _StatsLike:
 
     def __init__(
         self,
-        pts: float,
-        fga: float,
-        fta: float,
-        ast: float = 2.0,
-        tov: float = 1.0,
-        minutes: float = 30.0,
-        plus_minus: float = 0.0,
+        pts: float = 20.0,
+        fga: float = 15.0,
+        fta: float = 4.0,
+        ast: float = 3.0,
+        tov: float = 2.0,
+        minutes: float = 28.0,
+        plus_minus: float = 3.0,
     ) -> None:
         self.pts = pts
         self.fga = fga
@@ -99,31 +98,6 @@ class _StatsLike:
         self.tov = tov
         self.min = minutes
         self.plus_minus = plus_minus
-
-
-# ─── Mock factory for mock-based tests ───────────────────────────────────────
-
-
-def _make_stats(
-    mocker: MockerFixture,
-    *,
-    pts: float = 20.0,
-    fga: float = 15.0,
-    fta: float = 4.0,
-    ast: float = 3.0,
-    tov: float = 2.0,
-    minutes: float = 28.0,
-    plus_minus: float = 3.0,
-):
-    s = mocker.MagicMock()
-    s.pts = pts
-    s.fga = fga
-    s.fta = fta
-    s.ast = ast
-    s.tov = tov
-    s.min = minutes
-    s.plus_minus = plus_minus
-    return s
 
 
 # ─── TestClutchScore ──────────────────────────────────────────────────────────
@@ -247,47 +221,43 @@ class TestClutchScore:
 class TestBuildClutchProfile:
     """Tests for the build_clutch_profile() factory function."""
 
-    def test_returns_clutch_profile_instance(self, mocker: MockerFixture) -> None:
+    def test_returns_clutch_profile_instance(self) -> None:
         """build_clutch_profile always returns a ClutchProfile."""
-        overall = _make_stats(mocker)
-        clutch = _make_stats(mocker, minutes=25.0)
+        overall = _StatsLike()
+        clutch = _StatsLike(minutes=25.0)
         result = build_clutch_profile(2544, "LeBron James", "LAL", overall, clutch)
         assert isinstance(result, ClutchProfile)
 
-    def test_player_id_name_team_are_preserved(self, mocker: MockerFixture) -> None:
+    def test_player_id_name_team_are_preserved(self) -> None:
         """player_id, name, and team pass through unchanged."""
-        overall = _make_stats(mocker)
-        clutch = _make_stats(mocker, minutes=25.0)
+        overall = _StatsLike()
+        clutch = _StatsLike(minutes=25.0)
         profile = build_clutch_profile(2544, "LeBron James", "LAL", overall, clutch)
         assert profile.player_id == 2544
         assert profile.name == "LeBron James"
         assert profile.team == "LAL"
 
-    def test_none_overall_gives_none_regular_fields(
-        self, mocker: MockerFixture
-    ) -> None:
+    def test_none_overall_gives_none_regular_fields(self) -> None:
         """Without an overall stats row the regular-season baseline is absent."""
-        clutch = _make_stats(mocker, minutes=25.0)
+        clutch = _StatsLike(minutes=25.0)
         profile = build_clutch_profile(1, "Player", "TST", None, clutch)
         assert profile.regular_ts is None
         assert profile.regular_ato is None
         assert profile.ts_delta is None
         assert profile.ato_delta is None
 
-    def test_none_clutch_gives_zero_clutch_min_and_no_score(
-        self, mocker: MockerFixture
-    ) -> None:
+    def test_none_clutch_gives_zero_clutch_min_and_no_score(self) -> None:
         """Without clutch stats the profile has no clutch minutes and no score."""
-        overall = _make_stats(mocker)
+        overall = _StatsLike()
         profile = build_clutch_profile(1, "Player", "TST", overall, None)
         assert profile.clutch_min == 0.0
         assert profile.clutch_ts is None
         assert profile.score is None
 
-    def test_ts_delta_equals_clutch_minus_regular(self, mocker: MockerFixture) -> None:
+    def test_ts_delta_equals_clutch_minus_regular(self) -> None:
         """ts_delta == true_shooting(clutch) - true_shooting(regular)."""
-        overall = _make_stats(mocker, pts=20.0, fga=15.0, fta=4.0)
-        clutch = _make_stats(mocker, pts=25.0, fga=16.0, fta=5.0, minutes=30.0)
+        overall = _StatsLike(pts=20.0, fga=15.0, fta=4.0)
+        clutch = _StatsLike(pts=25.0, fga=16.0, fta=5.0, minutes=30.0)
         profile = build_clutch_profile(1, "Player", "TST", overall, clutch)
         reg_ts = true_shooting(20.0, 15.0, 4.0)
         cl_ts = true_shooting(25.0, 16.0, 5.0)
@@ -295,10 +265,10 @@ class TestBuildClutchProfile:
         assert cl_ts is not None
         assert profile.ts_delta == pytest.approx(cl_ts - reg_ts)
 
-    def test_ato_delta_equals_clutch_minus_regular(self, mocker: MockerFixture) -> None:
+    def test_ato_delta_equals_clutch_minus_regular(self) -> None:
         """ato_delta == ast_to_tov(clutch) - ast_to_tov(regular)."""
-        overall = _make_stats(mocker, ast=3.0, tov=2.0)
-        clutch = _make_stats(mocker, ast=4.0, tov=1.5, minutes=30.0)
+        overall = _StatsLike(ast=3.0, tov=2.0)
+        clutch = _StatsLike(ast=4.0, tov=1.5, minutes=30.0)
         profile = build_clutch_profile(1, "Player", "TST", overall, clutch)
         reg_ato = ast_to_tov(3.0, 2.0)
         cl_ato = ast_to_tov(4.0, 1.5)
@@ -306,21 +276,17 @@ class TestBuildClutchProfile:
         assert cl_ato is not None
         assert profile.ato_delta == pytest.approx(cl_ato - reg_ato)
 
-    def test_score_none_when_below_default_threshold(
-        self, mocker: MockerFixture
-    ) -> None:
+    def test_score_none_when_below_default_threshold(self) -> None:
         """Player with only 2 clutch minutes gets score=None (insufficient sample)."""
-        overall = _make_stats(mocker)
-        clutch = _make_stats(mocker, minutes=2.0)
+        overall = _StatsLike()
+        clutch = _StatsLike(minutes=2.0)
         profile = build_clutch_profile(1, "Player", "TST", overall, clutch)
         assert profile.score is None
 
-    def test_score_defined_with_sufficient_clutch_minutes(
-        self, mocker: MockerFixture
-    ) -> None:
+    def test_score_defined_with_sufficient_clutch_minutes(self) -> None:
         """Player with 30 clutch minutes gets a computed composite score."""
-        overall = _make_stats(mocker)
-        clutch = _make_stats(mocker, minutes=30.0)
+        overall = _StatsLike()
+        clutch = _StatsLike(minutes=30.0)
         profile = build_clutch_profile(1, "Player", "TST", overall, clutch)
         assert profile.score is not None
 
@@ -420,7 +386,7 @@ class TestGetPlayerClutchProfile:
         """Returns None when the player has no last_5_min_lte_5_pts data."""
         response = mocker.MagicMock()
         response.last_5_min_lte_5_pts = None
-        response.overall = _make_stats(mocker)
+        response.overall = _StatsLike()
         client = NBAClient(session=mocker.MagicMock())
         client.get = mocker.AsyncMock(return_value=response)
 
@@ -433,8 +399,8 @@ class TestGetPlayerClutchProfile:
     ) -> None:
         """Returns a ClutchProfile carrying the correct player_id."""
         response = mocker.MagicMock()
-        response.last_5_min_lte_5_pts = _make_stats(mocker, minutes=30.0)
-        response.overall = _make_stats(mocker)
+        response.last_5_min_lte_5_pts = _StatsLike(minutes=30.0)
+        response.overall = _StatsLike()
         client = NBAClient(session=mocker.MagicMock())
         client.get = mocker.AsyncMock(return_value=response)
 
@@ -450,8 +416,8 @@ class TestGetPlayerClutchProfile:
     ) -> None:
         """Name and team kwargs are stored on the returned ClutchProfile."""
         response = mocker.MagicMock()
-        response.last_5_min_lte_5_pts = _make_stats(mocker, minutes=30.0)
-        response.overall = _make_stats(mocker)
+        response.last_5_min_lte_5_pts = _StatsLike(minutes=30.0)
+        response.overall = _StatsLike()
         client = NBAClient(session=mocker.MagicMock())
         client.get = mocker.AsyncMock(return_value=response)
 
