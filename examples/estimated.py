@@ -6,8 +6,8 @@ Part 2 — live API: fetch all player estimated metrics and look up a single pla
          (Tyrese Haliburton, player_id=1641705).
 Part 3 — live API: fetch all team estimated metrics and look up a single team
          (Indiana Pacers, team_id=1610612754).
-Part 4 — live API: get_estimated_leaders for top 10 by net rating, then top 5
-         by offensive rating.
+Part 4 — live API: build estimated leaderboards (top 10 by net rating, then
+         top 5 by offensive rating) using rank_estimated_metrics.
 
 Run:
     uv run python examples/estimated.py

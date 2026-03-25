@@ -46,7 +46,7 @@ def _make_player(
     e_oreb_pct: float | None = 0.05,
     e_dreb_pct: float | None = 0.15,
     e_reb_pct: float | None = 0.10,
-    e_tov_pct: float | None = 0.12,
+    e_tov_pct: float | None = 12.0,
     e_usg_pct: float | None = 0.20,
     e_pace: float | None = 100.0,
 ) -> PlayerEstimatedMetric:
@@ -284,20 +284,20 @@ class TestRankEstimatedMetrics:
         assert result[0].player_id == 1
 
     def test_filters_by_min_minutes(self) -> None:
-        p1 = _make_player(player_id=1, minutes=2000.0)
-        p2 = _make_player(player_id=2, minutes=100.0)
+        p1 = _make_player(player_id=1, minutes=33.0)
+        p2 = _make_player(player_id=2, minutes=12.0)
         players = [p1, p2]
 
-        result = rank_estimated_metrics(players, min_minutes=500.0)
+        result = rank_estimated_metrics(players, min_minutes=30.0)
 
         assert len(result) == 1
         assert result[0].player_id == 1
 
     def test_minutes_exactly_at_min_minutes_is_included(self) -> None:
-        p1 = _make_player(player_id=1, minutes=500.0)
+        p1 = _make_player(player_id=1, minutes=30.0)
         players = [p1]
 
-        result = rank_estimated_metrics(players, min_minutes=500.0)
+        result = rank_estimated_metrics(players, min_minutes=30.0)
 
         assert len(result) == 1
         assert result[0].player_id == 1
@@ -366,7 +366,7 @@ class TestRankEstimatedMetrics:
                 gp=st.integers(min_value=0, max_value=82),
                 minutes=st.floats(
                     min_value=0.0,
-                    max_value=3_500.0,
+                    max_value=48.0,
                     allow_nan=False,
                     allow_infinity=False,
                 ),
@@ -384,7 +384,7 @@ class TestRankEstimatedMetrics:
         ),
         min_gp=st.integers(min_value=0, max_value=82),
         min_minutes=st.floats(
-            min_value=0.0, max_value=3_500.0, allow_nan=False, allow_infinity=False
+            min_value=0.0, max_value=48.0, allow_nan=False, allow_infinity=False
         ),
     )
     def test_pbt_result_is_subset(
