@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.2.0] - 2026-03-07
+
+### ✨ New Modules
+
+- **`fastbreak.estimated`** — League-wide estimated advanced metrics with filtering, ranking, and lookup (`get_player_estimated_metrics`, `get_team_estimated_metrics`, `get_estimated_leaders`, `rank_estimated_metrics`, `find_player`, `find_team`). Unlike box-score-derived stats, estimated metrics use a Bayesian/regression framework that produces reliable values even with limited sample sizes.
+- **`fastbreak.hot_hand`** — Hot hand analysis with Miller-Sanjuryo bias correction and streak detection from play-by-play data (`get_hot_hand_stats`, `hot_hand_result`, `extract_shot_sequences`, `merge_sequences`).
+- **`fastbreak.rotations`** — Rotation analysis: player stints, lineup stints, substitution timeline, minutes distribution, and stint plus/minus from game rotation data.
+- **`fastbreak.transition`** — Transition analysis: classify possessions as transition or half-court from play-by-play, with frequency and efficiency breakdowns (`classify_possessions`, `transition_frequency`, `transition_efficiency`).
+- **`fastbreak.lineups`** — League lineups, lineup ratings, two-man combos, and lineup efficiency rankings via `LeagueDashLineups` and `LeagueLineupViz` endpoints.
+- **`fastbreak.matchups`** — Player matchups, defensive assignments, primary defenders, team matchup summaries, PPP, and help defense rate calculations.
+- **`fastbreak.defense`** — Defensive stats: team defense zones, opponent shot stats, defensive box scores, and shot quality vs. league comparisons.
+
+### ✨ New
+
+**`fastbreak.schedule`:**
+
+- **`get_season_schedule()`** — Fetch the full league-wide season schedule.
+- **`rest_advantage()`** — Compare rest days between home and away teams for a given game date.
+- **`schedule_density()`** — Count games within a sliding window to detect schedule compression.
+- **`is_home_game()`** — Determine home/away status from a scheduled game entry.
+
+**`fastbreak.metrics`:**
+
+- **Kubatko et al. (2007) metrics** — `bell_curve_win_pct()`, `possessions_general()`, `plays()`, `floor_pct()`, `play_pct()`, `nba_efficiency()`.
+
+**`fastbreak.teams`:**
+
+- **`get_team_on_off_summary()`** / **`get_team_on_off_details()`** — On/off court impact splits for every player on a team.
+- **`on_off_net_rating_delta()`** — Compute net rating differential (positive = better with player on court).
+
+**`fastbreak.clutch`:**
+
+- **`get_league_team_clutch_leaders()`** — Team-level clutch leaders sorted by plus/minus.
+- **`get_team_clutch_stats()`** — Single-team clutch performance lookup.
+
+**`fastbreak.shots`:**
+
+- **`get_team_shot_locations()`** / **`team_distance_breakdown()`** — Team shot distribution across 7 distance buckets.
+
+**`fastbreak.splits`:**
+
+- **`get_team_splits_profile()`** — Concurrent fetch of team general + shooting splits.
+- **`get_team_general_splits()`** / **`get_team_shooting_splits()`** — Individual team split endpoints.
+
+### 🔩 Dependencies
+
+- `anyio` bumped 4.12.1 → 4.13.0
+- `cachetools` bumped 7.0.3 → 7.0.5
+- `ruff` bumped 0.15.5 → 0.15.7 (dev)
+- `polars` bumped 1.38.1 → 1.39.3 (dev)
+- `pytest-cov` bumped 7.0.0 → 7.1.0 (dev)
+- `pytest-gremlins` bumped 1.5.1 → 1.6.0 (dev)
+- `types-cachetools` updated (dev)
+- Pre-commit hooks updated via pre-commit.ci autoupdate + manual bump
+
+### 📚 Documentation
+
+- New module docs: `defense.md`, `estimated.md`, `hot_hand.md`, `lineups.md`, `matchups.md`, `rotations.md`, `transition.md`
+
 ## [v0.1.1] - 2026-03-07
 
 ### ✨ New
