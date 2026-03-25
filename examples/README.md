@@ -29,6 +29,17 @@ Demonstrate the three sync season utilities from `fastbreak.seasons` — no API 
 uv run python examples/seasons.py
 ```
 
+### [estimated.py](estimated.py)
+
+Fetch and rank estimated advanced metrics using `fastbreak.estimated`: league-wide player
+and team estimated metrics (`get_player_estimated_metrics`, `get_team_estimated_metrics`),
+leaderboards by any metric (`get_estimated_leaders`), and single-player/team lookup
+(`find_player`, `find_team`).
+
+```bash
+uv run python examples/estimated.py
+```
+
 ### [gravity.py](gravity.py)
 
 Fetch the top 10 gravity leaders for a season. Gravity measures how much defensive attention a player draws based on defender proximity.

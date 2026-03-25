@@ -22,4 +22,5 @@
 | [models.md](models.md) | Response model patterns: `FrozenResponse`, result set validators, v3 models, DataFrame mixins |
 | [types.md](types.md) | Type aliases: `Season`, `SeasonType`, `PerMode`, `MeasureType`, `LeagueID`, and more |
 | [transition.md](transition.md) | Transition analysis: `classify_possessions`, `transition_frequency`, `transition_efficiency`, `get_transition_stats` |
+| [estimated.md](estimated.md) | Estimated metrics: `get_player_estimated_metrics`, `get_team_estimated_metrics`, `get_estimated_leaders`, `find_player`, `find_team`, `rank_estimated_metrics` |
 | [gotchas.md](gotchas.md) | Known quirks: All-Star game IDs, `SynergyPlaytypes` returning 0 rows, lineup `min` field, and more |
