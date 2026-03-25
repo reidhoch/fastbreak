@@ -109,7 +109,7 @@ def _make_team(
     e_oreb_pct: float | None = 0.25,
     e_dreb_pct: float | None = 0.75,
     e_reb_pct: float | None = 0.50,
-    e_tm_tov_pct: float | None = 0.12,
+    e_tm_tov_pct: float | None = 12.0,
 ) -> TeamEstimatedMetric:
     return TeamEstimatedMetric.model_validate(
         {
@@ -543,7 +543,7 @@ def _player_row(
         0.05,
         0.15,
         0.10,
-        0.12,
+        12.0,
         0.20,
         100.0,
         *([None] * 15),  # ranks
@@ -568,7 +568,7 @@ def _team_row(team_id: int = _TEAM_ID, team_name: str = "Test Team") -> list:
         0.25,
         0.75,
         0.50,
-        0.12,
+        12.0,
         *([None] * 14),  # ranks
     ]
 
