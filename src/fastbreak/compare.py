@@ -24,9 +24,8 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Protocol
 
-import structlog
-
 from fastbreak.estimated import find_player
+from fastbreak.logging import logger
 from fastbreak.metrics import (
     ast_to_tov,
     effective_fg_pct,
@@ -42,8 +41,6 @@ if TYPE_CHECKING:
     from fastbreak.clients.nba import NBAClient
     from fastbreak.models.player_estimated_metrics import PlayerEstimatedMetric
     from fastbreak.types import PerMode, Season, SeasonType
-
-logger = structlog.get_logger()
 
 
 # ---------------------------------------------------------------------------
