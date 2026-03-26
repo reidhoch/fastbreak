@@ -1,6 +1,6 @@
 # fastbreak.compare
 
-High-level helpers for comparing two NBA players side-by-side across box score stats, derived efficiency metrics (TS%, eFG%, A/TO, game score), and estimated advanced metrics (net rating, usage, pace).
+High-level helpers for comparing two NBA players side-by-side across box score stats, derived efficiency metrics (TS%, eFG%, A/TO, game score, FT rate, 3P attempt rate), and estimated advanced metrics (net rating, usage, pace).
 
 All async functions take an `NBAClient` instance as the first argument. The `season` parameter defaults to the current season when omitted. Pure computation helpers (`build_compared_player`, `compare_players`, `comparison_deltas`, `comparison_edges`, `stat_leader`) do not require a client.
 
@@ -172,7 +172,7 @@ def comparison_deltas(
 ) -> dict[str, float | None]
 ```
 
-Compute `a - b` for every metric in `COMPARISON_METRICS`. Returns `None` for any metric where either value is `None`.
+Compute `a - b` for every metric in `COMPARISON_METRICS`. Returns `None` for any metric where either value is `None` or the computed delta is non-finite (inf/NaN).
 
 **Mathematical properties:**
 - **Antisymmetry**: `deltas(a, b)[m] == -deltas(b, a)[m]`
@@ -215,7 +215,7 @@ def stat_leader(
 ) -> int | None
 ```
 
-Return the `player_id` of whichever player leads in a metric. Returns `None` if tied or either value is unavailable.
+Return the `player_id` of whichever player leads in a metric. Returns `None` if tied, either value is unavailable, the difference falls within the internal tie tolerance, or the delta is non-finite (inf/NaN).
 
 **Parameters**
 

@@ -473,10 +473,10 @@ async def get_player_comparison(  # noqa: PLR0913
 
     estimated_a = find_player(estimated_resp.players, player_a_id)
     if estimated_a is None:
-        logger.info("estimated_metrics_not_found", player_id=player_a_id)
+        logger.debug("estimated_metrics_not_found", player_id=player_a_id)
     estimated_b = find_player(estimated_resp.players, player_b_id)
     if estimated_b is None:
-        logger.info("estimated_metrics_not_found", player_id=player_b_id)
+        logger.debug("estimated_metrics_not_found", player_id=player_b_id)
 
     return compare_players(
         player_a_id=player_a_id,
