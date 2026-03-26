@@ -299,8 +299,10 @@ async def main():
         result = await get_player_comparison(client, 2544, 203999)
 
     a, b = result.player_a, result.player_b
-    print(f"{a.name}: {a.pts} pts, TS% {a.ts_pct:.3f}")
-    print(f"{b.name}: {b.pts} pts, TS% {b.ts_pct:.3f}")
+    a_ts = f"{a.ts_pct:.3f}" if a.ts_pct is not None else "N/A"
+    b_ts = f"{b.ts_pct:.3f}" if b.ts_pct is not None else "N/A"
+    print(f"{a.name}: {a.pts} pts, TS% {a_ts}")
+    print(f"{b.name}: {b.pts} pts, TS% {b_ts}")
 
     for metric, delta in result.deltas.items():
         if delta is not None and abs(delta) > 1.0:
@@ -328,6 +330,8 @@ async def main():
     async with NBAClient() as client:
         pid_a = await get_player_id(client, "Jayson Tatum")
         pid_b = await get_player_id(client, "Luka Dončić")
+        if pid_a is None or pid_b is None:
+            raise ValueError("Could not resolve one or both player IDs")
         result = await get_player_comparison(client, pid_a, pid_b)
 
     a, b = result.player_a, result.player_b
