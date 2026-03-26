@@ -121,7 +121,7 @@ class ComparisonResult:
     edges: EdgeSummary
 ```
 
-The complete comparison. `deltas` maps each metric name to `player_a - player_b` (positive means A leads). `None` deltas indicate one or both values are unavailable.
+The complete comparison. `deltas` maps each metric name to `player_a - player_b` (positive means A's raw value is higher). `None` deltas indicate one or both values are unavailable. Who actually *leads* on a metric depends on polarity — use `HIGHER_IS_WORSE` (and helpers like `stat_leader` / `comparison_edges`) rather than the sign of the delta alone.
 
 ---
 
