@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/github/license/reidhoch/fastbreak)](https://github.com/reidhoch/fastbreak/blob/main/LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/reidhoch/fastbreak/ci.yaml?label=CI)](https://github.com/reidhoch/fastbreak/actions)
 
-Async Python client for the NBA Stats API. Typed end-to-end with Pydantic. Pandas and polars export are optional.
+Async Python client for the NBA Stats API, fully typed with Pydantic. Pandas and polars exports are optional.
 
 ## Installation
 
@@ -83,22 +83,58 @@ async with NBAClient(cache_ttl=300, cache_maxsize=256) as client:
     client.clear_cache()
 ```
 
+## Features
+
+- Async I/O via aiohttp (asyncio only)
+- Strict mypy typing
+- Pydantic models for all responses, with pandas/polars export
+- Retries and rate-limit handling built in
+- `get_many()` for concurrent batch requests
+- Optional TTL response caching
+- Pure-computation analytics: BPM, VORP, PER, true shooting, win shares, Pythagorean wins
+
 ## Utility Modules
 
 Skip the endpoint boilerplate for common operations. Import directly and pass `client` as the first argument.
+
+### Data Access
 
 | Module | Key Functions |
 |--------|---------------|
 | `fastbreak.players` | `search_players`, `get_player_game_log`, `get_player_stats`, `get_league_leaders` |
 | `fastbreak.teams` | `search_teams`, `get_team_stats`, `get_team_game_log`, `get_lineup_stats` |
 | `fastbreak.games` | `get_todays_games`, `get_games_on_date`, `get_box_scores`, `get_play_by_play` |
-| `fastbreak.shots` | `get_shot_chart`, `zone_breakdown`, `shot_quality_vs_league`, `xfg_pct` |
-| `fastbreak.defense` | `get_team_defense_zones`, `get_team_opponent_stats`, `get_box_scores_defensive`, `defensive_shot_quality_vs_league` |
-| `fastbreak.clutch` | `get_player_clutch_profile`, `get_league_clutch_leaders`, `clutch_score` |
-| `fastbreak.metrics` | `bpm`, `vorp`, `per`, `ewma`, `true_shooting`, `usage_pct` |
-| `fastbreak.schedule` | `get_team_schedule`, `is_back_to_back`, `travel_distance` |
 | `fastbreak.standings` | `get_standings`, `get_conference_standings`, `magic_number` |
+| `fastbreak.schedule` | `get_team_schedule`, `is_back_to_back`, `travel_distance`, `schedule_density` |
 | `fastbreak.seasons` | `get_season_from_date`, `season_start_year` — sync, no client needed |
+
+### Shooting & Defense
+
+| Module | Key Functions |
+|--------|---------------|
+| `fastbreak.shots` | `get_shot_chart`, `zone_breakdown`, `shot_quality_vs_league`, `xfg_pct` |
+| `fastbreak.defense` | `get_team_defense_zones`, `get_team_opponent_stats`, `defensive_shot_quality_vs_league` |
+| `fastbreak.tracking` | `get_player_tracking_profile`, `get_team_tracking_profile`, `get_player_shot_defense` |
+
+### Matchups, Lineups & Rotations
+
+| Module | Key Functions |
+|--------|---------------|
+| `fastbreak.matchups` | `get_primary_defenders`, `get_defensive_assignments`, `get_team_matchup_summary` |
+| `fastbreak.lineups` | `get_league_lineups`, `get_top_lineups`, `get_two_man_combos`, `get_lineup_efficiency` |
+| `fastbreak.rotations` | `get_game_rotations`, `get_rotation_summary`, `lineup_stints`, `minutes_distribution` |
+
+### Analytics & Comparison
+
+| Module | Key Functions |
+|--------|---------------|
+| `fastbreak.metrics` | `bpm`, `vorp`, `per`, `true_shooting`, `usage_pct`, `pythagorean_win_pct` |
+| `fastbreak.compare` | `get_player_comparison`, `comparison_deltas`, `comparison_edges`, `stat_leader` |
+| `fastbreak.clutch` | `get_player_clutch_profile`, `get_league_clutch_leaders`, `clutch_score` |
+| `fastbreak.estimated` | `get_player_estimated_metrics`, `get_team_estimated_metrics`, `get_estimated_leaders` |
+| `fastbreak.splits` | `get_player_splits_profile`, `get_team_splits_profile` |
+| `fastbreak.hot_hand` | `get_hot_hand_stats`, `hot_hand_result`, `miller_sanjurjo_bias`, `extract_shot_sequences` |
+| `fastbreak.transition` | `get_transition_stats`, `classify_possessions`, `transition_frequency`, `transition_efficiency` |
 
 ```python
 from fastbreak.players import search_players, get_player_game_log
@@ -110,28 +146,23 @@ async with NBAClient() as client:
     games   = await get_todays_games(client)
 ```
 
-## Features
-
-- Async I/O via aiohttp (asyncio only; trio is not supported)
-- Strict mypy typing throughout
-- Pydantic models for all responses, with pandas/polars export
-- Retries and rate-limit handling built in
-- `get_many()` for concurrent batch requests
-- Optional TTL response caching
-
 ## Available Endpoints
 
-100+ endpoints covering:
+Over 115 endpoints covering:
 
 | Category | Examples |
 |----------|----------|
-| **Box Scores** | `BoxScoreTraditional`, `BoxScoreAdvanced`, `BoxScorePlayerTrack` |
-| **Players** | `PlayerCareerStats`, `PlayerGameLogs`, `PlayerDashboardByClutch` |
-| **Teams** | `TeamDetails`, `TeamGameLog`, `TeamPlayerDashboard` |
-| **League** | `LeagueStandings`, `LeagueLeaders`, `LeagueGameLog` |
+| **Box Scores** | `BoxScoreTraditional`, `BoxScoreAdvanced`, `BoxScorePlayerTrack`, `BoxScoreHustle`, `BoxScoreMatchups` |
+| **Players** | `PlayerCareerStats`, `PlayerGameLogs`, `PlayerDashboardByClutch`, `PlayerEstimatedMetrics` |
+| **Teams** | `TeamDetails`, `TeamGameLog`, `TeamPlayerDashboard`, `TeamEstimatedMetrics` |
+| **League** | `LeagueStandings`, `LeagueLeaders`, `LeagueGameLog`, `LeagueDashLineups` |
+| **Tracking** | `PlayerDashPtShots`, `PlayerDashPtPass`, `PlayerDashPtReb`, `PlayerDashPtShotDefend` |
+| **Matchups** | `BoxScoreMatchupsV3`, `LeagueSeasonMatchups`, `MatchupsRollup`, `PlayerVsPlayer` |
+| **Shooting** | `ShotChartDetail`, `ShotChartLeaguewide`, `LeagueDashTeamShotLocations` |
 | **Play-by-Play** | `PlayByPlay`, `GameRotation` |
-| **Shooting** | `ShotChartDetail`, `ShotChartLeaguewide` |
-| **Draft** | `DraftHistory`, `DraftCombineStats` |
+| **Hustle** | `HustleStatsBoxscore`, `LeagueHustleStatsPlayer`, `LeagueHustleStatsTeam` |
+| **Splits** | `PlayerDashboardByGeneralSplits`, `PlayerDashboardByShootingSplits`, `TeamDashboardByGeneralSplits` |
+| **Draft** | `DraftHistory`, `DraftCombineStats`, `DraftCombineDrillResults` |
 
 See [`fastbreak.endpoints`](https://github.com/reidhoch/fastbreak/tree/main/src/fastbreak/endpoints) for the full list.
 
