@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
     from fastbreak.clients.nba import NBAClient
     from fastbreak.models.box_score_advanced import BoxScoreAdvancedData
+    from fastbreak.models.box_score_four_factors import BoxScoreFourFactorsData
     from fastbreak.models.box_score_hustle import BoxScoreHustleData
     from fastbreak.models.box_score_scoring import BoxScoreScoringData
     from fastbreak.models.box_score_summary import BoxScoreSummaryData
@@ -288,6 +289,31 @@ async def get_box_scores_scoring(
 
     return await _batch_box_scores(
         client, game_ids, BoxScoreScoring, lambda r: r.boxScoreScoring
+    )
+
+
+async def get_box_scores_four_factors(
+    client: NBAClient,
+    game_ids: list[str],
+) -> dict[str, BoxScoreFourFactorsData]:
+    """Fetch four factors box scores for multiple games concurrently.
+
+    Args:
+        client: NBA API client
+        game_ids: List of NBA game ID strings
+
+    Returns:
+        Dict mapping game_id -> BoxScoreFourFactorsData, in input order
+
+    Examples:
+        ids = await get_game_ids(client, "2025-26")
+        box_scores = await get_box_scores_four_factors(client, ids[:5])
+
+    """
+    from fastbreak.endpoints import BoxScoreFourFactors  # noqa: PLC0415
+
+    return await _batch_box_scores(
+        client, game_ids, BoxScoreFourFactors, lambda r: r.boxScoreFourFactors
     )
 
 

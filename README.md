@@ -152,7 +152,7 @@ Over 115 endpoints covering:
 
 | Category | Examples |
 |----------|----------|
-| **Box Scores** | `BoxScoreTraditional`, `BoxScoreAdvanced`, `BoxScorePlayerTrack`, `BoxScoreHustle`, `BoxScoreMatchups` |
+| **Box Scores** | `BoxScoreTraditional`, `BoxScoreAdvanced`, `BoxScoreFourFactors`, `BoxScorePlayerTrack`, `BoxScoreHustle`, `BoxScoreMatchups` |
 | **Players** | `PlayerCareerStats`, `PlayerGameLogs`, `PlayerDashboardByClutch`, `PlayerEstimatedMetrics` |
 | **Teams** | `TeamDetails`, `TeamGameLog`, `TeamPlayerDashboard`, `TeamEstimatedMetrics` |
 | **League** | `LeagueStandings`, `LeagueLeaders`, `LeagueGameLog`, `LeagueDashLineups` |
