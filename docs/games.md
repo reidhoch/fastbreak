@@ -15,6 +15,7 @@ from fastbreak.games import (
     get_box_scores_advanced,
     get_box_scores_hustle,
     get_box_scores_scoring,
+    get_box_scores_four_factors,
     get_play_by_play,
     game_flow,
     elapsed_game_seconds,
@@ -512,6 +513,68 @@ for p in data.homeTeam.players + data.awayTeam.players:
             f"  3pt {s.percentagePoints3pt:.1%}"
             f"  FT {s.percentagePointsFreeThrow:.1%}"
         )
+```
+
+---
+
+### `get_box_scores_four_factors`
+
+```python
+async def get_box_scores_four_factors(
+    client: NBAClient,
+    game_ids: list[str],
+) -> dict[str, BoxScoreFourFactorsData]
+```
+
+Fetches Dean Oliver's Four Factors box scores for multiple games concurrently. The four factors decompose team efficiency into four independent components: shooting efficiency, turnover rate, offensive rebounding, and free throw rate. Both offensive and opponent (defensive) versions are included.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `client` | `NBAClient` | Active NBA client |
+| `game_ids` | `list[str]` | List of 10-character game ID strings |
+
+**Returns:** `dict[str, BoxScoreFourFactorsData]` — keys are game IDs in input order. Returns an empty dict if `game_ids` is empty.
+
+Key fields on `BoxScoreFourFactorsData`:
+
+| Field | Type | Description |
+|---|---|---|
+| `gameId` | `str` | Game ID |
+| `homeTeamId` | `int` | Home team ID |
+| `awayTeamId` | `int` | Away team ID |
+| `homeTeam` | `FourFactorsTeam` | Home team with players and statistics |
+| `awayTeam` | `FourFactorsTeam` | Away team with players and statistics |
+
+Key fields on `FourFactorsStatistics` (accessed via `team.statistics` or `player.statistics`):
+
+| Field | Type | Description |
+|---|---|---|
+| `minutes` | `str` | Minutes played |
+| `effectiveFieldGoalPercentage` | `float` | eFG% = (FGM + 0.5*FG3M) / FGA |
+| `freeThrowAttemptRate` | `float` | FT rate = FTA / FGA |
+| `teamTurnoverPercentage` | `float` | TOV% as a 0-1 fraction (not 0-100) |
+| `offensiveReboundPercentage` | `float` | OREB% as a 0-1 fraction |
+| `oppEffectiveFieldGoalPercentage` | `float` | Opponent eFG% (defensive) |
+| `oppFreeThrowAttemptRate` | `float` | Opponent FT rate (defensive) |
+| `oppTeamTurnoverPercentage` | `float` | Opponent TOV% (defensive) |
+| `oppOffensiveReboundPercentage` | `float` | Opponent OREB% (defensive) |
+
+> **Note:** `teamTurnoverPercentage` is a **0-1 fraction** (e.g., 0.126 for 12.6%). This differs from `AdvancedTeamStatistics.estimatedTeamTurnoverPercentage`, which is on a 0-100 scale. See the [gotchas](gotchas.md) page for details.
+
+```python
+four = await get_box_scores_four_factors(client, game_ids[:1])
+data = four[game_ids[0]]
+for label, team in [("Away", data.awayTeam), ("Home", data.homeTeam)]:
+    s = team.statistics
+    print(
+        f"{label} {team.teamTricode}:"
+        f"  eFG% {s.effectiveFieldGoalPercentage:.1%}"
+        f"  TOV% {s.teamTurnoverPercentage:.1%}"
+        f"  OREB% {s.offensiveReboundPercentage:.1%}"
+        f"  FTR {s.freeThrowAttemptRate:.3f}"
+    )
 ```
 
 ---

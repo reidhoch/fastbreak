@@ -36,6 +36,8 @@ date_st: st.SearchStrategy[str] = st.dates(
     max_value=_date(2030, 12, 31),
 ).map(lambda d: d.strftime("%m/%d/%Y"))
 
+game_id_st: st.SearchStrategy[str] = st.from_regex(r"002250\d{4}", fullmatch=True)
+
 # Mapping from AfterValidator function → its strategy, used when inspecting
 # FieldInfo.metadata (Pydantic strips AfterValidator out of the annotation
 # itself and stores it in the metadata list instead).
