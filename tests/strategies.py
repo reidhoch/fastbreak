@@ -137,11 +137,11 @@ wl_st: st.SearchStrategy[str] = st.sampled_from(["W", "L"])
 
 _nonneg_int = st.integers(min_value=0, max_value=200)
 _pct_or_none = st.one_of(
-    st.floats(min_value=0.0, max_value=1.0, allow_nan=False),
+    st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),
     st.none(),
 )
 _plus_minus = st.one_of(
-    st.floats(min_value=-50.0, max_value=50.0, allow_nan=False),
+    st.floats(min_value=-50.0, max_value=50.0, allow_nan=False, allow_infinity=False),
     st.none(),
 )
 
