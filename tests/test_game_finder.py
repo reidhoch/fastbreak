@@ -188,19 +188,70 @@ class TestFindTeamGames:
         endpoint = client.get.call_args[0][0]
         assert endpoint.outcome == "W"
 
-    async def test_passes_location_through(self, mocker: MockerFixture):
-        """location is passed directly to the endpoint."""
+    async def test_location_not_sent_to_endpoint(self, mocker: MockerFixture):
+        """location is NOT forwarded to the endpoint (filtered client-side instead)."""
         from fastbreak.game_finder import find_team_games
 
         response = mocker.MagicMock()
-        response.games = []
+        response.games = [_make_result(MATCHUP="TST vs. OPP")]
         client = NBAClient(session=mocker.MagicMock())
         client.get = mocker.AsyncMock(return_value=response)
 
         await find_team_games(client, team_id=1, location="Home")
 
         endpoint = client.get.call_args[0][0]
-        assert endpoint.location == "Home"
+        assert endpoint.location is None
+
+    async def test_location_filters_home_games(self, mocker: MockerFixture):
+        """location='Home' keeps only games with 'vs.' in matchup."""
+        from fastbreak.game_finder import find_team_games
+
+        response = mocker.MagicMock()
+        response.games = [
+            _make_result(MATCHUP="TST vs. OPP", GAME_ID="0022500001"),
+            _make_result(MATCHUP="TST @ OPP", GAME_ID="0022500002"),
+        ]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await find_team_games(client, team_id=1, location="Home")
+
+        assert len(result) == 1
+        assert result[0].game_id == "0022500001"
+
+    async def test_location_filters_road_games(self, mocker: MockerFixture):
+        """location='Road' keeps only games with '@' in matchup."""
+        from fastbreak.game_finder import find_team_games
+
+        response = mocker.MagicMock()
+        response.games = [
+            _make_result(MATCHUP="TST vs. OPP", GAME_ID="0022500001"),
+            _make_result(MATCHUP="TST @ OPP", GAME_ID="0022500002"),
+        ]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await find_team_games(client, team_id=1, location="Road")
+
+        assert len(result) == 1
+        assert result[0].game_id == "0022500002"
+
+    async def test_location_excludes_none_matchup(self, mocker: MockerFixture):
+        """Games with matchup=None are excluded when location is specified."""
+        from fastbreak.game_finder import find_team_games
+
+        response = mocker.MagicMock()
+        response.games = [
+            _make_result(MATCHUP="TST vs. OPP", GAME_ID="0022500001"),
+            _make_result(MATCHUP=None, GAME_ID="0022500002"),
+        ]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await find_team_games(client, team_id=1, location="Home")
+
+        assert len(result) == 1
+        assert result[0].game_id == "0022500001"
 
     async def test_returns_games_list(self, mocker: MockerFixture):
         """Returns the response.games list."""

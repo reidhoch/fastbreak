@@ -156,7 +156,7 @@ def game_finder_result_st(draw: st.DrawFn) -> Any:
     fg3a = draw(st.integers(min_value=0, max_value=fga))
     fg3m = draw(st.integers(min_value=0, max_value=fg3a))
     fta = draw(_nonneg_int)
-    ftm = draw(st.integers(min_value=0, max_value=max(fta, 1)))
+    ftm = draw(st.integers(min_value=0, max_value=fta))
 
     return GameFinderResult.model_validate(
         {

@@ -56,7 +56,7 @@ Find games for a team matching the given filters. All ID and threshold parameter
 | `date_from`   | `Date \| None`      | `None`     | Start date `"MM/DD/YYYY"` |
 | `date_to`     | `Date \| None`      | `None`     | End date `"MM/DD/YYYY"` |
 | `outcome`     | `Outcome \| None`   | `None`     | `"W"` or `"L"` |
-| `location`    | `Location \| None`  | `None`     | `"Home"` or `"Road"` |
+| `location`    | `Location \| None`  | `None`     | `"Home"` or `"Road"` (filtered client-side via matchup) |
 | `gt_pts`      | `int \| None`       | `None`     | Minimum points threshold |
 | `gt_reb`      | `int \| None`       | `None`     | Minimum rebounds threshold |
 | `gt_ast`      | `int \| None`       | `None`     | Minimum assists threshold |
@@ -70,7 +70,7 @@ Find games for a team matching the given filters. All ID and threshold parameter
 ```python
 # All Celtics home wins this season
 games = await find_team_games(
-    client, team_id=1610612738, season="2025-26", outcome="W", location="Home"
+    client, team_id=1610612738, season="2025-26", outcome="W", location="Home",
 )
 
 # Celtics vs Lakers games where they scored 110+
@@ -119,7 +119,7 @@ Find games for a player matching the given filters. Same parameters as `find_tea
 | `date_from`   | `Date \| None`      | `None`     | Start date `"MM/DD/YYYY"` |
 | `date_to`     | `Date \| None`      | `None`     | End date `"MM/DD/YYYY"` |
 | `outcome`     | `Outcome \| None`   | `None`     | `"W"` or `"L"` |
-| `location`    | `Location \| None`  | `None`     | `"Home"` or `"Road"` |
+| `location`    | `Location \| None`  | `None`     | `"Home"` or `"Road"` (filtered client-side via matchup) |
 | `gt_pts`      | `int \| None`       | `None`     | Minimum points threshold |
 | `gt_reb`      | `int \| None`       | `None`     | Minimum rebounds threshold |
 | `gt_ast`      | `int \| None`       | `None`     | Minimum assists threshold |
@@ -138,7 +138,7 @@ games = await find_player_games(
 
 # Tatum's road games vs the Heat
 games = await find_player_games(
-    client, player_id=1628369, vs_team_id=1610612748, location="Road"
+    client, player_id=1628369, vs_team_id=1610612748, location="Road",
 )
 ```
 
@@ -176,7 +176,7 @@ print(f"PPG: {avgs.pts:.1f}, RPG: {avgs.reb:.1f}, APG: {avgs.ast:.1f}")
 def streak_games(games: list[GameFinderResult]) -> list[list[GameFinderResult]]
 ```
 
-Group consecutive games into win/loss streaks. Games with `wl=None` are excluded and break the current streak. Adjacent streaks always have different `wl` values.
+Group consecutive games into win/loss streaks. Games with `wl=None` are excluded and break the current streak. Adjacent streaks have different `wl` values when the input contains no `None` `wl` games; `None` values may produce adjacent streaks with the same `wl`.
 
 **Parameters:**
 
@@ -217,7 +217,7 @@ Compute the win-loss record from a list of games. Games with `wl=None` are exclu
 
 ```python
 games = await find_team_games(
-    client, team_id=1610612738, season="2025-26", location="Road"
+    client, team_id=1610612738, season="2025-26", location="Road",
 )
 record = summarize_record(games)
 print(f"Road record: {record.wins}-{record.losses} ({record.win_pct:.3f})")
@@ -315,8 +315,9 @@ for rival_id in rivals:
 **Compare home vs road performance:**
 
 ```python
-home = await find_team_games(client, team_id=1610612747, season="2025-26", location="Home")
-road = await find_team_games(client, team_id=1610612747, season="2025-26", location="Road")
+games = await find_team_games(client, team_id=1610612747, season="2025-26")
+home = [g for g in games if g.matchup and "vs." in g.matchup]
+road = [g for g in games if g.matchup and "@" in g.matchup]
 home_avgs = aggregate_games(home)
 road_avgs = aggregate_games(road)
 print(f"Home PPG: {home_avgs.pts:.1f} vs Road PPG: {road_avgs.pts:.1f}")
