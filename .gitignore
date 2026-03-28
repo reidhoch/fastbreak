@@ -17,9 +17,12 @@ docs/plans/
 
 # Testing and coverage
 .coverage
+.coverage.*
 htmlcov/
+coverage/
 .pytest_cache/
 .hypothesis/
+.gremlins_cache/
 
 # Type checking and linting caches
 .mypy_cache/

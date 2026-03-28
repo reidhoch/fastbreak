@@ -127,3 +127,66 @@ def model_strategy(cls: type[BaseModel]) -> st.SearchStrategy[Any]:
         for name, field in cls.model_fields.items()
     }
     return st.fixed_dictionaries(field_strats).map(cls.model_validate)
+
+
+# ---------------------------------------------------------------------------
+# Game finder strategies
+# ---------------------------------------------------------------------------
+
+wl_st: st.SearchStrategy[str] = st.sampled_from(["W", "L"])
+
+_nonneg_int = st.integers(min_value=0, max_value=200)
+_pct_or_none = st.one_of(
+    st.floats(min_value=0.0, max_value=1.0, allow_nan=False),
+    st.none(),
+)
+_plus_minus = st.one_of(
+    st.floats(min_value=-50.0, max_value=50.0, allow_nan=False),
+    st.none(),
+)
+
+
+@st.composite
+def game_finder_result_st(draw: st.DrawFn) -> Any:
+    """Build a valid ``GameFinderResult`` using aliased keys."""
+    from fastbreak.models.league_game_finder import GameFinderResult  # noqa: PLC0415
+
+    fga = draw(_nonneg_int.filter(lambda x: x > 0))
+    fgm = draw(st.integers(min_value=0, max_value=fga))
+    fg3a = draw(st.integers(min_value=0, max_value=fga))
+    fg3m = draw(st.integers(min_value=0, max_value=fg3a))
+    fta = draw(_nonneg_int)
+    ftm = draw(st.integers(min_value=0, max_value=max(fta, 1)))
+
+    return GameFinderResult.model_validate(
+        {
+            "SEASON_ID": "22025",
+            "TEAM_ID": draw(st.integers(min_value=1, max_value=30)),
+            "TEAM_ABBREVIATION": "TST",
+            "TEAM_NAME": "Test Team",
+            "GAME_ID": draw(game_id_st),
+            "GAME_DATE": "2025-01-15",
+            "MATCHUP": "TST vs. OPP",
+            "WL": draw(st.one_of(wl_st, st.none())),
+            "MIN": draw(_nonneg_int),
+            "PTS": draw(_nonneg_int),
+            "FGM": fgm,
+            "FGA": fga,
+            "FG_PCT": draw(_pct_or_none),
+            "FG3M": fg3m,
+            "FG3A": fg3a,
+            "FG3_PCT": draw(_pct_or_none),
+            "FTM": ftm,
+            "FTA": fta,
+            "FT_PCT": draw(_pct_or_none),
+            "OREB": draw(_nonneg_int),
+            "DREB": draw(_nonneg_int),
+            "REB": draw(_nonneg_int),
+            "AST": draw(_nonneg_int),
+            "STL": draw(_nonneg_int),
+            "BLK": draw(_nonneg_int),
+            "TOV": draw(_nonneg_int),
+            "PF": draw(_nonneg_int),
+            "PLUS_MINUS": draw(_plus_minus),
+        }
+    )
