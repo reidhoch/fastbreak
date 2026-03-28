@@ -45,7 +45,9 @@ async def team_analysis(client: NBAClient) -> None:
     avgs = aggregate_games(games)
     print(f"  PPG: {avgs.pts:.1f}  RPG: {avgs.reb:.1f}  APG: {avgs.ast:.1f}")
     if avgs.fg_pct is not None:
-        print(f"  FG%: {avgs.fg_pct:.3f}  3P%: {avgs.fg3_pct or 0:.3f}  FT%: {avgs.ft_pct or 0:.3f}")
+        fg3_str = f"{avgs.fg3_pct:.3f}" if avgs.fg3_pct is not None else "N/A"
+        ft_str = f"{avgs.ft_pct:.3f}" if avgs.ft_pct is not None else "N/A"
+        print(f"  FG%: {avgs.fg_pct:.3f}  3P%: {fg3_str}  FT%: {ft_str}")
 
     # Streaks
     streaks = streak_games(games)
