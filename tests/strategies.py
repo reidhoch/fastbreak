@@ -151,7 +151,7 @@ def game_finder_result_st(draw: st.DrawFn) -> Any:
     """Build a valid ``GameFinderResult`` using aliased keys."""
     from fastbreak.models.league_game_finder import GameFinderResult  # noqa: PLC0415
 
-    fga = draw(_nonneg_int.filter(lambda x: x > 0))
+    fga = draw(st.integers(min_value=1, max_value=200))
     fgm = draw(st.integers(min_value=0, max_value=fga))
     fg3a = draw(st.integers(min_value=0, max_value=fga))
     fg3m = draw(st.integers(min_value=0, max_value=fg3a))
