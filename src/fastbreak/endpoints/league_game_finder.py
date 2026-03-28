@@ -24,7 +24,7 @@ class LeagueGameFinder(Endpoint[LeagueGameFinderResponse]):
     Args:
         player_or_team: Search mode - "P" for player games, "T" for team games
         league_id: League identifier ("00" for NBA)
-        season: Season in YYYY-YY format (e.g., "2024-25")
+        season: Season in YYYY-YY format (e.g., "2025-26")
         season_type: Type of season ("Regular Season", "Playoffs", etc.)
         team_id: Filter by team ID
         player_id: Filter by player ID (when player_or_team="P")
@@ -36,6 +36,8 @@ class LeagueGameFinder(Endpoint[LeagueGameFinderResponse]):
         gt_pts: Filter games with points greater than this value
         gt_reb: Filter games with rebounds greater than this value
         gt_ast: Filter games with assists greater than this value
+        gt_stl: Filter games with steals greater than this value
+        gt_blk: Filter games with blocks greater than this value
 
     """
 
