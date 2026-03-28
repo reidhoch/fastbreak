@@ -32,7 +32,10 @@ class LeagueGameFinder(Endpoint[LeagueGameFinderResponse]):
         date_from: Filter games from date (MM/DD/YYYY)
         date_to: Filter games to date (MM/DD/YYYY)
         outcome: Filter by game outcome ("W" or "L")
-        location: Filter by game location ("Home" or "Road")
+        location: Filter by game location ("Home" or "Road").
+            Non-functional on this endpoint — the API accepts the value
+            but always returns 0 results.  Use the ``game_finder`` wrapper
+            which filters client-side via the matchup string.
         gt_pts: Filter games with points greater than this value
         gt_reb: Filter games with rebounds greater than this value
         gt_ast: Filter games with assists greater than this value

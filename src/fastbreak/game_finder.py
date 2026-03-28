@@ -77,6 +77,26 @@ def _str_or_none(value: int | None) -> str | None:
     return str(value) if value is not None else None
 
 
+_LOCATION_MATCHUP: dict[Location, str] = {"Home": "vs.", "Road": "@"}
+
+
+def _filter_location(
+    games: list[GameFinderResult],
+    location: Location | None,
+) -> list[GameFinderResult]:
+    """Filter games by location using the matchup string.
+
+    The ``Location`` API parameter is non-functional on the
+    ``leaguegamefinder`` endpoint, so we filter client-side instead.
+    ``"Home"`` games contain ``"vs."`` in the matchup; ``"Road"`` games
+    contain ``"@"``.  Games with a ``None`` matchup are excluded.
+    """
+    if location is None:
+        return games
+    token = _LOCATION_MATCHUP[location]
+    return [g for g in games if g.matchup and token in g.matchup]
+
+
 def _avg_optional(values: list[float | None]) -> float | None:
     """Average non-None values; return None if all are None."""
     valid = [v for v in values if v is not None]
@@ -119,10 +139,8 @@ async def find_team_games(  # noqa: PLR0913
         date_to: End date in MM/DD/YYYY format.
         outcome: Filter by game outcome ("W" or "L").
         location: Filter by game location ("Home" or "Road").
-            **Note:** the ``Location`` filter is non-functional on the
-            ``leaguegamefinder`` endpoint — the API accepts it silently but
-            always returns 0 results.  Filter client-side instead using the
-            ``matchup`` field (``"vs."`` = home, ``"@"`` = road).
+            Applied client-side via the ``matchup`` field because the
+            ``Location`` API parameter is non-functional on ``leaguegamefinder``.
         gt_pts: Minimum points threshold.
         gt_reb: Minimum rebounds threshold.
         gt_ast: Minimum assists threshold.
@@ -147,7 +165,6 @@ async def find_team_games(  # noqa: PLR0913
         date_from=date_from,
         date_to=date_to,
         outcome=outcome,
-        location=location,
         gt_pts=_str_or_none(gt_pts),
         gt_reb=_str_or_none(gt_reb),
         gt_ast=_str_or_none(gt_ast),
@@ -155,7 +172,7 @@ async def find_team_games(  # noqa: PLR0913
         gt_blk=_str_or_none(gt_blk),
     )
     response = await client.get(endpoint)
-    return response.games
+    return _filter_location(response.games, location)
 
 
 async def find_player_games(  # noqa: PLR0913
@@ -189,10 +206,8 @@ async def find_player_games(  # noqa: PLR0913
         date_to: End date in MM/DD/YYYY format.
         outcome: Filter by game outcome ("W" or "L").
         location: Filter by game location ("Home" or "Road").
-            **Note:** the ``Location`` filter is non-functional on the
-            ``leaguegamefinder`` endpoint — the API accepts it silently but
-            always returns 0 results.  Filter client-side instead using the
-            ``matchup`` field (``"vs."`` = home, ``"@"`` = road).
+            Applied client-side via the ``matchup`` field because the
+            ``Location`` API parameter is non-functional on ``leaguegamefinder``.
         gt_pts: Minimum points threshold.
         gt_reb: Minimum rebounds threshold.
         gt_ast: Minimum assists threshold.
@@ -218,7 +233,6 @@ async def find_player_games(  # noqa: PLR0913
         date_from=date_from,
         date_to=date_to,
         outcome=outcome,
-        location=location,
         gt_pts=_str_or_none(gt_pts),
         gt_reb=_str_or_none(gt_reb),
         gt_ast=_str_or_none(gt_ast),
@@ -226,7 +240,7 @@ async def find_player_games(  # noqa: PLR0913
         gt_blk=_str_or_none(gt_blk),
     )
     response = await client.get(endpoint)
-    return response.games
+    return _filter_location(response.games, location)
 
 
 # ---------------------------------------------------------------------------
@@ -289,8 +303,10 @@ def streak_games(
 
     Returns:
         List of streaks, where each streak is a list of consecutive games
-        with the same ``wl`` value. Adjacent streaks always have different
-        ``wl`` values.
+        with the same ``wl`` value. Adjacent streaks have different ``wl``
+        values when the input contains no ``None`` ``wl`` games; ``None``
+        values break the current streak and may produce adjacent streaks
+        with the same ``wl``.
 
     """
     streaks: list[list[GameFinderResult]] = []
