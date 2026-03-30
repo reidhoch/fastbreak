@@ -39,7 +39,7 @@ class Endpoint[T: BaseModel](BaseModel):
     model_config = ConfigDict(frozen=True)
 
     path: ClassVar[str]
-    response_model: ClassVar[type[T]]
+    response_model: ClassVar[type[T]]  # pyright: ignore[reportGeneralTypeIssues]
     _is_base_endpoint: ClassVar[bool] = False
 
     def __init_subclass__(cls, **kwargs: Any) -> None:  # noqa: ANN401  # pragma: no mutate
