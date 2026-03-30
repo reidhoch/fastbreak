@@ -65,7 +65,7 @@ class FrozenResponse(BaseModel):
                 StrictResponse = MyResponse.strict()
                 StrictResponse.model_validate(api_data)  # Fails on extra fields
         """
-        return type(
+        return type(  # pyright: ignore[reportReturnType]
             f"Strict{cls.__name__}",
             (cls,),
             {"model_config": ConfigDict(frozen=True, extra="forbid")},

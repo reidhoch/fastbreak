@@ -17,6 +17,15 @@ class TestPlayerIndex:
 
         assert endpoint.league_id == "00"
         assert endpoint.season == get_season_from_date()
+        assert endpoint.season_type == "Regular Season"
+        assert endpoint.team_id == 0
+        assert endpoint.historical == 1
+        assert endpoint.country is None
+        assert endpoint.draft_year is None
+        assert endpoint.draft_round is None
+        assert endpoint.draft_pick is None
+        assert endpoint.height is None
+        assert endpoint.weight is None
 
     def test_init_with_custom_season(self):
         """PlayerIndex accepts custom season."""
@@ -24,14 +33,66 @@ class TestPlayerIndex:
 
         assert endpoint.season == "2023-24"
 
-    def test_params_returns_all_parameters(self):
-        """params() returns all query parameters."""
+    def test_params_returns_all_required_parameters(self):
+        """params() returns all always-sent query parameters."""
         endpoint = PlayerIndex(season="2023-24")
 
         params = endpoint.params()
 
         assert params["LeagueID"] == "00"
         assert params["Season"] == "2023-24"
+        assert params["SeasonType"] == "Regular Season"
+        assert params["TeamID"] == "0"
+        assert params["Historical"] == "1"
+
+    def test_params_excludes_none_optional_params(self):
+        """params() omits optional parameters when not set."""
+        endpoint = PlayerIndex(season="2023-24")
+
+        params = endpoint.params()
+
+        assert "Country" not in params
+        assert "DraftYear" not in params
+        assert "DraftRound" not in params
+        assert "DraftPick" not in params
+        assert "Height" not in params
+        assert "Weight" not in params
+
+    def test_params_includes_optional_params_when_set(self):
+        """params() includes optional parameters when explicitly set."""
+        endpoint = PlayerIndex(
+            season="2023-24",
+            country="France",
+            draft_year=2020,
+            draft_round="1",
+            draft_pick="3",
+            height="GT 6-6",
+            weight="GT 250",
+        )
+
+        params = endpoint.params()
+
+        assert params["Country"] == "France"
+        assert params["DraftYear"] == "2020"
+        assert params["DraftRound"] == "1"
+        assert params["DraftPick"] == "3"
+        assert params["Height"] == "GT 6-6"
+        assert params["Weight"] == "GT 250"
+
+    def test_params_with_custom_always_sent_params(self):
+        """params() respects non-default values for always-sent parameters."""
+        endpoint = PlayerIndex(
+            season="2023-24",
+            season_type="Playoffs",
+            team_id=1610612747,
+            historical=0,
+        )
+
+        params = endpoint.params()
+
+        assert params["SeasonType"] == "Playoffs"
+        assert params["TeamID"] == "1610612747"
+        assert params["Historical"] == "0"
 
     def test_path_is_correct(self):
         """PlayerIndex has correct API path."""

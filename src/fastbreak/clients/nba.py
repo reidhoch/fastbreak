@@ -106,7 +106,7 @@ class _TypedResponseCache:
         )
         raise CacheTypeMismatchError(key, response_type.__name__, cached_type.__name__)
 
-    def set[T: BaseModel](self, key: str, value: T) -> None:
+    def set[T: BaseModel](self, key: str, value: T) -> None:  # pyright: ignore[reportInvalidTypeVarUse]
         """Store a response in the cache with its type."""
         self._cache[key] = (type(value), value)
 
@@ -387,7 +387,7 @@ class NBAClient(AsyncContextManagerMixin):
             )
         return cache_key, cached
 
-    async def _store_in_cache[T: BaseModel](
+    async def _store_in_cache[T: BaseModel](  # pyright: ignore[reportInvalidTypeVarUse]
         self, cache_key: str | None, result: T
     ) -> None:
         """Store a response in the cache if caching is enabled."""
