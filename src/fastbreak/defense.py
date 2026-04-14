@@ -11,7 +11,7 @@ provides zone-based aggregate data instead.
 
 Examples::
 
-    from fastbreak.clients import NBAClient
+    from fastbreak.clients import BaseClient
     from fastbreak.defense import (
         get_team_defense_zones,
         get_team_opponent_stats,
@@ -36,7 +36,7 @@ from fastbreak.tracking import (
 )
 
 if TYPE_CHECKING:
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.endpoints.league_dash_pt_team_defend import DefenseCategory
     from fastbreak.models.box_score_defensive import BoxScoreDefensiveResponse
     from fastbreak.models.league_dash_opp_pt_shot import OppPtShotStats
@@ -74,7 +74,7 @@ def defensive_shot_quality_vs_league(
 
 
 async def get_team_defense_zones(
-    client: NBAClient,
+    client: BaseClient,
     season: Season | None = None,
     season_type: SeasonType = "Regular Season",
     defense_category: DefenseCategory = "Overall",
@@ -110,7 +110,7 @@ async def get_team_defense_zones(
 
 
 async def get_team_opponent_stats(
-    client: NBAClient,
+    client: BaseClient,
     season: Season | None = None,
     season_type: SeasonType = "Regular Season",
 ) -> list[OppPtShotStats]:
@@ -138,7 +138,7 @@ async def get_team_opponent_stats(
 
 
 async def get_box_scores_defensive(
-    client: NBAClient,
+    client: BaseClient,
     game_ids: list[str],
     max_concurrency: int = 5,
 ) -> dict[str, BoxScoreDefensiveResponse]:

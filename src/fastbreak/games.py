@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
+from fastbreak.league import League
 from fastbreak.logging import logger
 from fastbreak.seasons import get_season_from_date
 from fastbreak.types import validate_iso_date
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.box_score_advanced import BoxScoreAdvancedData
     from fastbreak.models.box_score_four_factors import BoxScoreFourFactorsData
     from fastbreak.models.box_score_hustle import BoxScoreHustleData
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
 
 
 async def get_game_ids(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     season: Season | None = None,
     *,
     season_type: SeasonType = "Regular Season",
@@ -87,7 +88,7 @@ async def get_game_ids(  # noqa: PLR0913
 
 
 async def get_games_on_date(
-    client: NBAClient,
+    client: BaseClient,
     game_date: ISODate,
 ) -> list[ScoreboardGame]:
     """Return all games scheduled on a specific date.
@@ -125,7 +126,7 @@ async def get_games_on_date(
     return scoreboard.games
 
 
-async def get_todays_games(client: NBAClient) -> list[ScoreboardGame]:
+async def get_todays_games(client: BaseClient) -> list[ScoreboardGame]:
     """Return all games scheduled for today.
 
     Args:
@@ -141,7 +142,7 @@ async def get_todays_games(client: NBAClient) -> list[ScoreboardGame]:
     return await get_games_on_date(client, datetime.now(tz=_ET).date().isoformat())
 
 
-async def get_yesterdays_games(client: NBAClient) -> list[ScoreboardGame]:
+async def get_yesterdays_games(client: BaseClient) -> list[ScoreboardGame]:
     """Return all games that were scheduled for yesterday.
 
     Args:
@@ -159,7 +160,7 @@ async def get_yesterdays_games(client: NBAClient) -> list[ScoreboardGame]:
 
 
 async def get_game_summary(
-    client: NBAClient,
+    client: BaseClient,
     game_id: str,
 ) -> BoxScoreSummaryData:
     """Return the box score summary for a single game.
@@ -182,7 +183,7 @@ async def get_game_summary(
 
 
 async def _batch_box_scores[T](
-    client: NBAClient,
+    client: BaseClient,
     game_ids: list[str],
     endpoint_cls: type[Any],
     accessor: Callable[[Any], T],
@@ -196,7 +197,7 @@ async def _batch_box_scores[T](
 
 
 async def get_box_scores(
-    client: NBAClient,
+    client: BaseClient,
     game_ids: list[str],
 ) -> dict[str, BoxScoreTraditionalData]:
     """Fetch traditional box scores for multiple games concurrently.
@@ -221,7 +222,7 @@ async def get_box_scores(
 
 
 async def get_box_scores_advanced(
-    client: NBAClient,
+    client: BaseClient,
     game_ids: list[str],
 ) -> dict[str, BoxScoreAdvancedData]:
     """Fetch advanced box scores for multiple games concurrently.
@@ -246,7 +247,7 @@ async def get_box_scores_advanced(
 
 
 async def get_box_scores_hustle(
-    client: NBAClient,
+    client: BaseClient,
     game_ids: list[str],
 ) -> dict[str, BoxScoreHustleData]:
     """Fetch hustle box scores for multiple games concurrently.
@@ -271,7 +272,7 @@ async def get_box_scores_hustle(
 
 
 async def get_box_scores_scoring(
-    client: NBAClient,
+    client: BaseClient,
     game_ids: list[str],
 ) -> dict[str, BoxScoreScoringData]:
     """Fetch scoring distribution box scores for multiple games concurrently.
@@ -296,7 +297,7 @@ async def get_box_scores_scoring(
 
 
 async def get_box_scores_four_factors(
-    client: NBAClient,
+    client: BaseClient,
     game_ids: list[str],
 ) -> dict[str, BoxScoreFourFactorsData]:
     """Fetch four factors box scores for multiple games concurrently.
@@ -321,7 +322,7 @@ async def get_box_scores_four_factors(
 
 
 async def get_play_by_play(
-    client: NBAClient,
+    client: BaseClient,
     game_id: str,
 ) -> list[PlayByPlayAction]:
     """Return all play-by-play actions for a game.
@@ -373,8 +374,7 @@ class GameFlowPoint:
 
 _CLOCK_RE = re.compile(r"PT(\d+)M([\d.]+)S")
 _REGULATION_PERIODS = 4  # Q1-Q4
-_REGULATION_PERIOD_SECONDS = 720  # 12 minutes
-_OT_PERIOD_SECONDS = 300  # 5 minutes
+_OT_PERIOD_SECONDS = 300  # 5 minutes (same for NBA and WNBA)
 
 
 def _parse_clock(clock: str) -> float:
@@ -385,15 +385,19 @@ def _parse_clock(clock: str) -> float:
     return int(m.group(1)) * 60 + float(m.group(2))
 
 
-def elapsed_game_seconds(clock: str, period: int) -> float:
+def elapsed_game_seconds(
+    clock: str, period: int, *, league: League = League.NBA
+) -> float:
     """Return seconds elapsed since tip-off from a game clock and period.
 
-    Regulation periods (1-4) are 12 minutes (720 seconds) each.
-    Overtime periods (5+) are 5 minutes (300 seconds) each.
+    Regulation periods (1-4) use league-specific quarter lengths:
+    NBA = 12 minutes (720 seconds), WNBA = 10 minutes (600 seconds).
+    Overtime periods (5+) are 5 minutes (300 seconds) for both leagues.
 
     Args:
         clock: ISO 8601 duration string (e.g., ``"PT04M32.00S"``).
         period: Period number (1-4 regulation, 5+ overtime).
+        league: League configuration for quarter length (default: NBA).
 
     Returns:
         Total seconds elapsed since the start of the game.
@@ -410,12 +414,13 @@ def elapsed_game_seconds(clock: str, period: int) -> float:
     if period < 1:
         return 0.0
     remaining = _parse_clock(clock)
+    quarter_seconds = league.quarter_seconds
     if period <= _REGULATION_PERIODS:
-        period_offset = (period - 1) * _REGULATION_PERIOD_SECONDS
-        period_duration = _REGULATION_PERIOD_SECONDS
+        period_offset = (period - 1) * quarter_seconds
+        period_duration = quarter_seconds
     else:
         period_offset = (
-            _REGULATION_PERIODS * _REGULATION_PERIOD_SECONDS
+            _REGULATION_PERIODS * quarter_seconds
             + (period - _REGULATION_PERIODS - 1) * _OT_PERIOD_SECONDS
         )
         period_duration = _OT_PERIOD_SECONDS

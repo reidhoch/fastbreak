@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 from yarl import URL
 
 from fastbreak.clients.nba import NBAClient
+from fastbreak.clients.wnba import WNBAClient
 
 
 @pytest.fixture
@@ -188,6 +189,43 @@ def make_mock_client(mocker: MockerFixture):
 
         # Create client with mock session
         client = NBAClient(session=mock_session, **client_kwargs)
+
+        return client, mock_session
+
+    return _make
+
+
+@pytest.fixture
+def make_mock_wnba_client(mocker: MockerFixture):
+    """Factory fixture for creating WNBAClient with mocked session.
+
+    Identical to make_mock_client but creates a WNBAClient (league_id="10").
+    """
+
+    def _make(
+        json_data: dict[str, Any] | None = None,
+        status: int = 200,
+        raise_error: Exception | None = None,
+        headers: dict[str, str] | None = None,
+        **client_kwargs: Any,
+    ) -> tuple[WNBAClient, MagicMock]:
+        response = mocker.AsyncMock()
+        response.status = status
+        response.headers = CIMultiDictProxy(CIMultiDict(headers or {}))
+
+        if raise_error:
+            response.raise_for_status = mocker.MagicMock(side_effect=raise_error)
+        else:
+            response.raise_for_status = mocker.MagicMock()
+
+        response.json = mocker.AsyncMock(return_value=json_data)
+        response.__aenter__ = mocker.AsyncMock(return_value=response)
+        response.__aexit__ = mocker.AsyncMock(return_value=None)
+
+        mock_session = mocker.MagicMock(spec=ClientSession)
+        mock_session.get = mocker.MagicMock(return_value=response)
+
+        client = WNBAClient(session=mock_session, **client_kwargs)
 
         return client, mock_session
 

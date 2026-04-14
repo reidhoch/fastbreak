@@ -6,7 +6,7 @@ BoxScoreMatchupsV3, and PlayerVsPlayer endpoints.
 
 Examples::
 
-    from fastbreak.clients import NBAClient
+    from fastbreak.clients import BaseClient
     from fastbreak.matchups import get_primary_defenders, matchup_ppp
 
     async with NBAClient() as client:
@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Literal
 from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.box_score_matchups_v3 import BoxScoreMatchupsV3Response
     from fastbreak.models.league_season_matchups import SeasonMatchup
     from fastbreak.models.matchups_rollup import MatchupRollupEntry
@@ -78,7 +78,7 @@ def rank_matchups(
 
 
 async def get_season_matchups(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     *,
     off_player_id: int | None = None,
     def_player_id: int | None = None,
@@ -111,7 +111,7 @@ async def get_season_matchups(  # noqa: PLR0913
 
 
 async def get_matchup_rollup(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     *,
     off_team_id: int = 0,
     def_team_id: int = 0,
@@ -144,7 +144,7 @@ async def get_matchup_rollup(  # noqa: PLR0913
 
 
 async def get_game_matchups(
-    client: NBAClient,
+    client: BaseClient,
     game_id: str,
 ) -> BoxScoreMatchupsV3Response:
     """Per-game player-vs-player defensive matchup data.
@@ -157,7 +157,7 @@ async def get_game_matchups(
 
 
 async def get_player_matchup_stats(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     vs_player_id: int,
     *,
@@ -186,7 +186,7 @@ async def get_player_matchup_stats(  # noqa: PLR0913
 
 
 async def get_primary_defenders(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     season: Season | None = None,
@@ -207,7 +207,7 @@ async def get_primary_defenders(  # noqa: PLR0913
 
 
 async def get_defensive_assignments(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     defender_id: int,
     *,
     season: Season | None = None,
@@ -228,7 +228,7 @@ async def get_defensive_assignments(  # noqa: PLR0913
 
 
 async def get_team_matchup_summary(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     off_team_id: int,
     def_team_id: int,
     *,

@@ -270,10 +270,10 @@ class TestArenaCoords:
     """Tests for _ARENA_COORDS completeness."""
 
     def test_covers_all_30_teams(self):
-        """30 entries: one per NBA arena city (LAL in LA, LAC in Inglewood)."""
+        """30 NBA + 4 WNBA-only arena entries."""
         from fastbreak.schedule import _ARENA_COORDS
 
-        assert len(_ARENA_COORDS) == 30
+        assert len(_ARENA_COORDS) == 34
 
     def test_all_coords_are_valid(self):
         """Each entry has (lat, lon, utc_offset) within plausible ranges."""

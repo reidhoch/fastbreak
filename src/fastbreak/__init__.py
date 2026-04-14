@@ -1,4 +1,7 @@
 from fastbreak._version import __version__, __version_tuple__
+from fastbreak.clients.base import BaseClient
+from fastbreak.clients.nba import NBAClient
+from fastbreak.clients.wnba import WNBAClient
 from fastbreak.clutch import (
     ClutchProfile,
     build_clutch_profile,
@@ -74,6 +77,7 @@ from fastbreak.hot_hand import (
     merge_sequences,
     miller_sanjurjo_bias,
 )
+from fastbreak.league import League
 from fastbreak.lineups import (
     get_league_lineup_ratings,
     get_league_lineups,
@@ -123,6 +127,7 @@ from fastbreak.metrics import (
     pace_adjusted_per,
     per,
     per_36,
+    per_40,
     per_48,
     per_100,
     percentile_rank,
@@ -225,8 +230,11 @@ from fastbreak.standings import (
 )
 from fastbreak.teams import (
     TEAMS,
+    WNBA_TEAMS,
     TeamID,
     TeamInfo,
+    WNBATeamID,
+    WNBATeamInfo,
     get_league_averages,
     get_lineup_net_ratings,
     get_lineup_stats,
@@ -240,8 +248,11 @@ from fastbreak.teams import (
     get_team_roster,
     get_team_roster_and_coaches,
     get_team_stats,
+    get_wnba_team,
+    get_wnba_team_id,
     on_off_net_rating_delta,
     search_teams,
+    search_wnba_teams,
     teams_by_conference,
     teams_by_division,
 )
@@ -305,7 +316,10 @@ __all__ = [
     "COMPARISON_METRICS",
     "HIGHER_IS_WORSE",
     "TEAMS",
+    "WNBA_TEAMS",
+    "WNBA_TEAMS",
     "BPMResult",
+    "BaseClient",
     "Classification",
     "ClutchProfile",
     "ComparedPlayer",
@@ -323,11 +337,13 @@ __all__ = [
     "HotHandAnalysis",
     "HotHandResult",
     "ISODate",
+    "League",
     "LeagueAverages",
     "LeagueID",
     "LineupStint",
     "Location",
     "MeasureType",
+    "NBAClient",
     "Outcome",
     "PerMode",
     "Period",
@@ -364,6 +380,9 @@ __all__ = [
     "TransitionSummary",
     "TravelLeg",
     "Trigger",
+    "WNBAClient",
+    "WNBATeamID",
+    "WNBATeamInfo",
     "YesNo",
     "ZoneStats",
     "__version__",
@@ -487,6 +506,8 @@ __all__ = [
     "get_top_lineups",
     "get_transition_stats",
     "get_two_man_combos",
+    "get_wnba_team",
+    "get_wnba_team_id",
     "get_yesterdays_games",
     "help_defense_rate",
     "hit_rate_last_n",
@@ -511,6 +532,7 @@ __all__ = [
     "pace_adjusted_per",
     "per",
     "per_36",
+    "per_40",
     "per_48",
     "per_100",
     "percentile_rank",
@@ -531,6 +553,7 @@ __all__ = [
     "schedule_density",
     "search_players",
     "search_teams",
+    "search_wnba_teams",
     "season_id_to_season",
     "season_start_year",
     "season_to_season_id",

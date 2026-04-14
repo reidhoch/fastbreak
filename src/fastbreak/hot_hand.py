@@ -15,7 +15,7 @@ from math import log2
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.play_by_play import PlayByPlayAction
 
 _DEFAULT_K = 3
@@ -317,7 +317,7 @@ def merge_sequences(
 
 
 async def get_hot_hand_stats(
-    client: NBAClient,
+    client: BaseClient,
     game_id: str,
     *,
     k: int = _DEFAULT_K,

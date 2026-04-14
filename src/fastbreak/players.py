@@ -9,7 +9,7 @@ from fastbreak.logging import logger
 from fastbreak.seasons import get_season_from_date, season_id_to_season
 
 if TYPE_CHECKING:
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models import PlayerIndexEntry
     from fastbreak.models.league_hustle_stats_player import LeagueHustlePlayer
     from fastbreak.models.league_leaders import LeagueLeader
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 async def search_players(
-    client: NBAClient,
+    client: BaseClient,
     query: str,
     *,
     season: Season | None = None,
@@ -84,7 +84,7 @@ async def search_players(
 
 
 async def get_player(
-    client: NBAClient,
+    client: BaseClient,
     identifier: int | str,
     *,
     season: Season | None = None,
@@ -127,7 +127,7 @@ async def get_player(
 
 
 async def get_player_id(
-    client: NBAClient,
+    client: BaseClient,
     name: str,
     *,
     season: Season | None = None,
@@ -151,7 +151,7 @@ async def get_player_id(
 
 
 async def get_player_game_log(
-    client: NBAClient,
+    client: BaseClient,
     *,
     player_id: int,
     season: Season | None = None,
@@ -182,7 +182,7 @@ async def get_player_game_log(
 
 
 async def get_player_stats(
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     per_mode: PerMode = "PerGame",
@@ -208,7 +208,7 @@ async def get_player_stats(
 
 
 async def get_league_leaders(
-    client: NBAClient,
+    client: BaseClient,
     *,
     season: Season | None = None,
     stat_category: StatCategoryAbbreviation = "PTS",
@@ -254,7 +254,7 @@ async def get_league_leaders(
 
 
 async def get_hustle_stats(
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     season: Season | None = None,
@@ -300,7 +300,7 @@ async def get_hustle_stats(
 
 
 async def get_career_game_logs(
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     season_type: SeasonType = "Regular Season",
@@ -346,7 +346,7 @@ async def get_career_game_logs(
 
 
 async def get_on_off_splits(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     team_id: int,
     season: Season | None = None,
@@ -399,7 +399,7 @@ async def get_on_off_splits(  # noqa: PLR0913
 
 
 async def get_player_playtypes(
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     season: Season | None = None,
     *,

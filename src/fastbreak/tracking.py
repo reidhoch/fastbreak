@@ -5,7 +5,7 @@ two profile dataclasses that fetch all sub-endpoints concurrently.
 
 Examples::
 
-    from fastbreak.clients import NBAClient
+    from fastbreak.clients import BaseClient
     from fastbreak.tracking import get_player_tracking_profile, get_team_tracking_profile
 
     async with NBAClient() as client:
@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any, cast
 from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.player_dash_pt_pass import PlayerDashPtPassResponse
     from fastbreak.models.player_dash_pt_reb import PlayerDashPtRebResponse
     from fastbreak.models.player_dash_pt_shot_defend import (
@@ -74,7 +74,7 @@ class TeamTrackingProfile:
 
 
 async def get_player_shots(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     season: Season | None = None,
@@ -110,7 +110,7 @@ async def get_player_shots(  # noqa: PLR0913
 
 
 async def get_player_passes(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     season: Season | None = None,
@@ -146,7 +146,7 @@ async def get_player_passes(  # noqa: PLR0913
 
 
 async def get_player_rebounds(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     season: Season | None = None,
@@ -182,7 +182,7 @@ async def get_player_rebounds(  # noqa: PLR0913
 
 
 async def get_player_shot_defense(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     season: Season | None = None,
@@ -218,7 +218,7 @@ async def get_player_shot_defense(  # noqa: PLR0913
 
 
 async def get_team_shots(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     *,
     season: Season | None = None,
@@ -256,7 +256,7 @@ async def get_team_shots(  # noqa: PLR0913
 
 
 async def get_team_passes(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     *,
     season: Season | None = None,
@@ -292,7 +292,7 @@ async def get_team_passes(  # noqa: PLR0913
 
 
 async def get_team_rebounds(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     *,
     season: Season | None = None,
@@ -328,7 +328,7 @@ async def get_team_rebounds(  # noqa: PLR0913
 
 
 async def get_player_tracking_profile(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     season: Season | None = None,
@@ -392,7 +392,7 @@ async def get_player_tracking_profile(  # noqa: PLR0913
 
 
 async def get_team_tracking_profile(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     *,
     season: Season | None = None,

@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from datetime import date
 
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.schedule_league_v2 import LeagueSchedule, ScheduledGame
     from fastbreak.types import Season
 
@@ -225,7 +225,7 @@ def _collect_team_games(
 
 
 async def _fetch_league_schedule(
-    client: NBAClient, season: Season | None, **log_ctx: object
+    client: BaseClient, season: Season | None, **log_ctx: object
 ) -> LeagueSchedule | None:
     """Fetch the league schedule, returning ``None`` (with warning) when the response contains no ``league_schedule``."""
     from fastbreak.endpoints import ScheduleLeagueV2  # noqa: PLC0415
@@ -245,7 +245,7 @@ async def _fetch_league_schedule(
 
 
 async def get_team_schedule(
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     season: Season | None = None,
 ) -> list[ScheduledGame]:
@@ -325,6 +325,11 @@ _ARENA_COORDS: dict[tuple[str, str], ArenaCoord] = {
     ("San Francisco", "CA"): (37.7680, -122.3877, -8),  # Chase Center
     ("Toronto", "ON"): (43.6435, -79.3791, -5),  # Scotiabank Arena
     ("Washington", "DC"): (38.8981, -77.0209, -5),  # Capital One Arena
+    # WNBA-only arenas (arenas shared with NBA teams are already listed above)
+    ("Uncasville", "CT"): (41.4487, -72.1171, -5),  # Mohegan Sun Arena (Sun)
+    ("Arlington", "TX"): (32.7514, -97.0825, -6),  # College Park Center (Wings)
+    ("Las Vegas", "NV"): (36.0909, -115.1784, -8),  # Michelob Ultra Arena (Aces)
+    ("Seattle", "WA"): (47.6222, -122.3541, -8),  # Climate Pledge Arena (Storm)
 }
 
 _EARTH_RADIUS_MILES: float = 3_958.8
@@ -452,7 +457,7 @@ def travel_distances(
 
 
 async def get_season_schedule(
-    client: NBAClient,
+    client: BaseClient,
     *,
     season: Season | None = None,
 ) -> list[ScheduledGame]:

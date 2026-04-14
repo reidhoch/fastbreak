@@ -6,7 +6,7 @@ baseline, plus league-wide player and team clutch leader queries.
 
 Examples::
 
-    from fastbreak.clients import NBAClient
+    from fastbreak.clients import BaseClient
     from fastbreak.clutch import get_player_clutch_profile, get_league_clutch_leaders
 
     async with NBAClient() as client:
@@ -30,7 +30,7 @@ from fastbreak.metrics import ast_to_tov, stat_delta, true_shooting
 from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.league_dash_player_clutch import LeagueDashPlayerClutchRow
     from fastbreak.models.league_dash_team_clutch import TeamClutchStats
     from fastbreak.models.player_dashboard_by_clutch import (
@@ -186,7 +186,7 @@ def build_clutch_profile(  # noqa: PLR0913
 
 
 async def get_player_clutch_stats(
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     season: Season | None = None,
@@ -217,7 +217,7 @@ async def get_player_clutch_stats(
 
 
 async def get_player_clutch_profile(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     name: str = "",
@@ -259,7 +259,7 @@ async def get_player_clutch_profile(  # noqa: PLR0913
 
 
 async def get_league_clutch_leaders(
-    client: NBAClient,
+    client: BaseClient,
     *,
     season: Season | None = None,
     season_type: SeasonType = "Regular Season",
@@ -304,7 +304,7 @@ async def get_league_clutch_leaders(
 
 
 async def get_league_team_clutch_leaders(
-    client: NBAClient,
+    client: BaseClient,
     *,
     season: Season | None = None,
     season_type: SeasonType = "Regular Season",
@@ -343,7 +343,7 @@ async def get_league_team_clutch_leaders(
 
 
 async def get_team_clutch_stats(
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     *,
     season: Season | None = None,

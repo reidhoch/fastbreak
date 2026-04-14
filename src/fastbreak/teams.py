@@ -1,4 +1,4 @@
-"""Team data, lookup, and API utility functions for the NBA Stats API."""
+"""Team data, lookup, and API utility functions."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from fastbreak.metrics import LeagueAverages, per_48
 from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.common_team_roster import Coach, RosterPlayer
     from fastbreak.models.league_dash_team_stats import LeagueDashTeamStatsRow
     from fastbreak.models.synergy_playtypes import TeamSynergyPlaytype
@@ -550,7 +550,7 @@ def search_teams(query: str, *, limit: int = 5) -> list[TeamInfo]:
 
 
 async def get_team_game_log(
-    client: NBAClient,
+    client: BaseClient,
     *,
     team_id: int | TeamID,
     season: Season | None = None,
@@ -581,7 +581,7 @@ async def get_team_game_log(
 
 
 async def get_team_stats(
-    client: NBAClient,
+    client: BaseClient,
     *,
     season: Season | None = None,
     season_type: SeasonType = "Regular Season",
@@ -613,7 +613,7 @@ async def get_team_stats(
 
 
 async def get_lineup_stats(
-    client: NBAClient,
+    client: BaseClient,
     team_id: int | TeamID,
     *,
     season: Season | None = None,
@@ -657,7 +657,7 @@ def _lineup_net_rtg(plus_minus: float, minutes: float) -> float | None:
 
 
 async def get_lineup_net_ratings(
-    client: NBAClient,
+    client: BaseClient,
     team_id: int | TeamID,
     season: Season | None = None,
     *,
@@ -697,7 +697,7 @@ async def get_lineup_net_ratings(
 
 
 async def get_league_averages(
-    client: NBAClient,
+    client: BaseClient,
     season: Season | None = None,
 ) -> LeagueAverages:
     """Return league-average stats for use with metrics functions.
@@ -756,7 +756,7 @@ async def get_league_averages(
 
 
 async def get_team_playtypes(
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     season: Season | None = None,
     *,
@@ -799,7 +799,7 @@ async def get_team_playtypes(
 
 
 async def get_team_roster(
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     season: Season | None = None,
 ) -> list[RosterPlayer]:
@@ -826,7 +826,7 @@ async def get_team_roster(
 
 
 async def get_team_coaches(
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     season: Season | None = None,
 ) -> list[Coach]:
@@ -853,7 +853,7 @@ async def get_team_coaches(
 
 
 async def get_team_roster_and_coaches(
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     season: Season | None = None,
 ) -> tuple[list[RosterPlayer], list[Coach]]:
@@ -891,7 +891,7 @@ def on_off_net_rating_delta(on_net_rating: float, off_net_rating: float) -> floa
 
 
 async def get_team_on_off_summary(
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     *,
     season: Season | None = None,
@@ -913,7 +913,7 @@ async def get_team_on_off_summary(
 
 
 async def get_team_on_off_details(
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     *,
     season: Season | None = None,
@@ -932,3 +932,253 @@ async def get_team_on_off_details(
             per_mode=per_mode,
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# WNBA Teams
+# ---------------------------------------------------------------------------
+
+
+class WNBATeamID(IntEnum):
+    """WNBA team IDs (verified from live NBA Stats API)."""
+
+    # Active franchises (2025-26 season)
+    LIBERTY = 1611661313
+    MERCURY = 1611661317
+    ACES = 1611661319  # née Utah Starzz → San Antonio Silver Stars/Stars
+    SPARKS = 1611661320
+    WINGS = 1611661321  # née Detroit Shock → Tulsa Shock
+    MYSTICS = 1611661322
+    SUN = 1611661323  # née Orlando Miracle
+    LYNX = 1611661324
+    FEVER = 1611661325
+    STORM = 1611661328
+    SKY = 1611661329
+    DREAM = 1611661330
+    VALKYRIES = 1611661331  # expansion 2025
+    RAPTORS = 1611661332  # expansion 2026
+
+    # Defunct franchises
+    STING = 1611661314  # Charlotte Sting (1997-2006)
+    ROCKERS = 1611661315  # Cleveland Rockers (1997-2003)
+    COMETS = 1611661316  # Houston Comets (1997-2008)
+    MONARCHS = 1611661318  # Sacramento Monarchs (1997-2009)
+    SOL = 1611661326  # Miami Sol (2000-2002)
+    FIRE = 1611661327  # Portland Fire (2000-2002)
+
+
+@dataclass(frozen=True, slots=True)
+class WNBATeamInfo:
+    """Static information about a WNBA team.
+
+    Unlike NBA teams, WNBA teams do not have divisions and conference
+    assignment has varied historically. Conference is optional.
+    """
+
+    id: WNBATeamID
+    abbreviation: str
+    city: str
+    name: str
+    full_name: str
+
+
+WNBA_TEAMS: dict[int, WNBATeamInfo] = {
+    WNBATeamID.LIBERTY: WNBATeamInfo(
+        id=WNBATeamID.LIBERTY,
+        abbreviation="NYL",
+        city="Brooklyn",
+        name="Liberty",
+        full_name="New York Liberty",
+    ),
+    WNBATeamID.MERCURY: WNBATeamInfo(
+        id=WNBATeamID.MERCURY,
+        abbreviation="PHX",
+        city="Phoenix",
+        name="Mercury",
+        full_name="Phoenix Mercury",
+    ),
+    WNBATeamID.ACES: WNBATeamInfo(
+        id=WNBATeamID.ACES,
+        abbreviation="LVA",
+        city="Las Vegas",
+        name="Aces",
+        full_name="Las Vegas Aces",
+    ),
+    WNBATeamID.SPARKS: WNBATeamInfo(
+        id=WNBATeamID.SPARKS,
+        abbreviation="LAS",
+        city="Los Angeles",
+        name="Sparks",
+        full_name="Los Angeles Sparks",
+    ),
+    WNBATeamID.WINGS: WNBATeamInfo(
+        id=WNBATeamID.WINGS,
+        abbreviation="DAL",
+        city="Arlington",
+        name="Wings",
+        full_name="Dallas Wings",
+    ),
+    WNBATeamID.MYSTICS: WNBATeamInfo(
+        id=WNBATeamID.MYSTICS,
+        abbreviation="WAS",
+        city="Washington",
+        name="Mystics",
+        full_name="Washington Mystics",
+    ),
+    WNBATeamID.SUN: WNBATeamInfo(
+        id=WNBATeamID.SUN,
+        abbreviation="CON",
+        city="Uncasville",
+        name="Sun",
+        full_name="Connecticut Sun",
+    ),
+    WNBATeamID.LYNX: WNBATeamInfo(
+        id=WNBATeamID.LYNX,
+        abbreviation="MIN",
+        city="Minneapolis",
+        name="Lynx",
+        full_name="Minnesota Lynx",
+    ),
+    WNBATeamID.FEVER: WNBATeamInfo(
+        id=WNBATeamID.FEVER,
+        abbreviation="IND",
+        city="Indianapolis",
+        name="Fever",
+        full_name="Indiana Fever",
+    ),
+    WNBATeamID.STORM: WNBATeamInfo(
+        id=WNBATeamID.STORM,
+        abbreviation="SEA",
+        city="Seattle",
+        name="Storm",
+        full_name="Seattle Storm",
+    ),
+    WNBATeamID.SKY: WNBATeamInfo(
+        id=WNBATeamID.SKY,
+        abbreviation="CHI",
+        city="Chicago",
+        name="Sky",
+        full_name="Chicago Sky",
+    ),
+    WNBATeamID.DREAM: WNBATeamInfo(
+        id=WNBATeamID.DREAM,
+        abbreviation="ATL",
+        city="Atlanta",
+        name="Dream",
+        full_name="Atlanta Dream",
+    ),
+    WNBATeamID.VALKYRIES: WNBATeamInfo(
+        id=WNBATeamID.VALKYRIES,
+        abbreviation="GSV",
+        city="San Francisco",
+        name="Valkyries",
+        full_name="Golden State Valkyries",
+    ),
+    WNBATeamID.RAPTORS: WNBATeamInfo(
+        id=WNBATeamID.RAPTORS,
+        abbreviation="TOR",
+        city="Toronto",
+        name="Raptors",
+        full_name="Toronto Raptors",
+    ),
+}
+
+# WNBA lookup indices
+_WNBA_TEAMS_BY_ABBREVIATION: dict[str, WNBATeamInfo] = {
+    t.abbreviation: t for t in WNBA_TEAMS.values()
+}
+_WNBA_TEAMS_BY_NAME: dict[str, WNBATeamInfo] = {
+    t.name.lower(): t for t in WNBA_TEAMS.values()
+}
+_WNBA_TEAMS_BY_FULL_NAME: dict[str, WNBATeamInfo] = {
+    t.full_name.lower(): t for t in WNBA_TEAMS.values()
+}
+_WNBA_TEAMS_BY_CITY: dict[str, WNBATeamInfo] = {}
+_wnba_seen_cities: set[str] = set()
+for _wt in WNBA_TEAMS.values():
+    _wk = _wt.city.lower()
+    if _wk in _WNBA_TEAMS_BY_CITY:
+        _wnba_seen_cities.add(_wk)
+    else:
+        _WNBA_TEAMS_BY_CITY[_wk] = _wt
+for _wk in _wnba_seen_cities:
+    del _WNBA_TEAMS_BY_CITY[_wk]
+del _wnba_seen_cities, _wk  # pyright: ignore[reportPossiblyUnboundVariable]
+
+
+def get_wnba_team(identifier: int | str) -> WNBATeamInfo | None:
+    """Look up WNBA team information by ID, abbreviation, name, city, or full name.
+
+    Args:
+        identifier: Team ID (int), abbreviation (e.g., "LVA"),
+                   name (e.g., "Aces"), city (e.g., "Las Vegas"),
+                   or full name (e.g., "Las Vegas Aces")
+
+    Returns:
+        WNBATeamInfo if found, None otherwise.
+    """
+    if isinstance(identifier, int):
+        return WNBA_TEAMS.get(identifier)
+
+    upper = identifier.upper()
+    if upper in _WNBA_TEAMS_BY_ABBREVIATION:
+        return _WNBA_TEAMS_BY_ABBREVIATION[upper]
+
+    lower = identifier.lower()
+    if lower in _WNBA_TEAMS_BY_NAME:
+        return _WNBA_TEAMS_BY_NAME[lower]
+    if lower in _WNBA_TEAMS_BY_FULL_NAME:
+        return _WNBA_TEAMS_BY_FULL_NAME[lower]
+    if lower in _WNBA_TEAMS_BY_CITY:
+        return _WNBA_TEAMS_BY_CITY[lower]
+
+    return None
+
+
+def get_wnba_team_id(identifier: str) -> WNBATeamID | None:
+    """Get a WNBA team's ID by abbreviation, name, city, or full name."""
+    team = get_wnba_team(identifier)
+    return team.id if team else None
+
+
+def search_wnba_teams(query: str, *, limit: int = 5) -> list[WNBATeamInfo]:
+    """Search for WNBA teams by partial abbreviation, name, or city.
+
+    Args:
+        query: Search string (abbreviation, city, or team name).
+        limit: Maximum results to return.
+
+    Returns:
+        List of matching WNBATeamInfo objects, sorted by relevance.
+    """
+    if limit < 1:
+        msg = f"limit must be a positive integer, got {limit}"
+        raise ValueError(msg)
+    if not query or not query.strip():
+        return []
+
+    q = query.strip().lower()
+    q_upper = q.upper()
+    matches: list[tuple[int, WNBATeamInfo]] = []
+
+    for team in WNBA_TEAMS.values():
+        abbr = team.abbreviation.upper()
+        city = team.city.lower()
+        name = team.name.lower()
+        full = team.full_name.lower()
+
+        if abbr == q_upper:
+            priority = 0
+        elif q in (city, name, full):
+            priority = 1
+        elif city.startswith(q) or name.startswith(q) or abbr.startswith(q_upper):
+            priority = 2
+        elif q in city or q in name or q in full:
+            priority = 3
+        else:
+            continue
+
+        matches.append((priority, team))
+
+    matches.sort(key=lambda x: (x[0], x[1].abbreviation))
+    return [team for _, team in matches[:limit]]

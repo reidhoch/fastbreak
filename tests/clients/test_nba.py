@@ -181,10 +181,10 @@ class TestNBAClientGetSession:
         """_get_session creates SSL context using certifi CA bundle."""
         client = NBAClient()
 
-        mock_ssl = mocker.patch("fastbreak.clients.nba.ssl.create_default_context")
-        mocker.patch("fastbreak.clients.nba.TCPConnector")
+        mock_ssl = mocker.patch("fastbreak.clients.base.ssl.create_default_context")
+        mocker.patch("fastbreak.clients.base.TCPConnector")
         mocker.patch(
-            "fastbreak.clients.nba.ClientSession",
+            "fastbreak.clients.base.ClientSession",
             return_value=mocker.MagicMock(spec=ClientSession),
         )
         mock_ssl.return_value = mocker.MagicMock()
@@ -199,11 +199,11 @@ class TestNBAClientGetSession:
         client = NBAClient()
 
         mock_ssl_ctx = mocker.MagicMock()
-        mock_ssl = mocker.patch("fastbreak.clients.nba.ssl.create_default_context")
+        mock_ssl = mocker.patch("fastbreak.clients.base.ssl.create_default_context")
         mock_ssl.return_value = mock_ssl_ctx
-        mock_connector_cls = mocker.patch("fastbreak.clients.nba.TCPConnector")
+        mock_connector_cls = mocker.patch("fastbreak.clients.base.TCPConnector")
         mocker.patch(
-            "fastbreak.clients.nba.ClientSession",
+            "fastbreak.clients.base.ClientSession",
             return_value=mocker.MagicMock(spec=ClientSession),
         )
 
@@ -220,12 +220,12 @@ class TestNBAClientGetSession:
         """_get_session creates ClientSession with correct parameters."""
         client = NBAClient()
 
-        mocker.patch("fastbreak.clients.nba.ssl.create_default_context")
+        mocker.patch("fastbreak.clients.base.ssl.create_default_context")
         mock_connector = mocker.MagicMock()
-        mocker.patch("fastbreak.clients.nba.TCPConnector", return_value=mock_connector)
+        mocker.patch("fastbreak.clients.base.TCPConnector", return_value=mock_connector)
         mock_session = mocker.MagicMock(spec=ClientSession)
         mock_session_cls = mocker.patch(
-            "fastbreak.clients.nba.ClientSession", return_value=mock_session
+            "fastbreak.clients.base.ClientSession", return_value=mock_session
         )
 
         result = await client._get_session()
@@ -254,11 +254,11 @@ class TestNBAClientGetSession:
         """_get_session only creates session on first call."""
         client = NBAClient()
 
-        mocker.patch("fastbreak.clients.nba.ssl.create_default_context")
-        mocker.patch("fastbreak.clients.nba.TCPConnector")
+        mocker.patch("fastbreak.clients.base.ssl.create_default_context")
+        mocker.patch("fastbreak.clients.base.TCPConnector")
         mock_session = mocker.MagicMock(spec=ClientSession)
         mock_session_cls = mocker.patch(
-            "fastbreak.clients.nba.ClientSession", return_value=mock_session
+            "fastbreak.clients.base.ClientSession", return_value=mock_session
         )
 
         session1 = await client._get_session()
@@ -366,7 +366,7 @@ class TestNBAClientClose:
         mock_session = mocker.MagicMock(spec=ClientSession)
         mock_session.close = mocker.AsyncMock()
         client._session = mock_session
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
 
         mock_cancel_scope = mocker.MagicMock()
         mock_cancel_scope.cancelled_caught = True
@@ -394,7 +394,7 @@ class TestNBAClientClose:
         mock_session.close = mocker.AsyncMock()
         mock_session.connector = mock_connector
         client._session = mock_session
-        mocker.patch("fastbreak.clients.nba.logger")
+        mocker.patch("fastbreak.clients.base.logger")
 
         mock_cancel_scope = mocker.MagicMock()
         mock_cancel_scope.cancelled_caught = True
@@ -475,7 +475,7 @@ class TestNBAClientGet:
         client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoint = PlayByPlay(game_id="0022500571")
 
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mock_bound = mocker.MagicMock()
         mock_bound.adebug = mocker.AsyncMock()
         mock_logger.bind.return_value = mock_bound
@@ -505,7 +505,7 @@ class TestNBAClientGet:
         client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoint = PlayByPlay(game_id="0022500571")
 
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mock_bound = mocker.MagicMock()
         mock_bound.adebug = mocker.AsyncMock()
         mock_logger.bind.return_value = mock_bound
@@ -533,7 +533,7 @@ class TestNBAClientGet:
         )
         endpoint = PlayByPlay(game_id="0022500571")
 
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mock_bound = mocker.MagicMock()
         mock_bound.adebug = mocker.AsyncMock()
         mock_logger.bind.return_value = mock_bound
@@ -559,7 +559,7 @@ class TestNBAClientGet:
         client, mock_session = make_mock_client(json_data={"invalid": "data"})
         endpoint = PlayByPlay(game_id="0022500571")
 
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mock_bound = mocker.MagicMock()
         mock_bound.adebug = mocker.AsyncMock()
         mock_bound.awarning = mocker.AsyncMock()
@@ -634,7 +634,7 @@ class TestNBAClientGet:
         )
         endpoint = PlayByPlay(game_id="0022500571")
 
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mock_bound = mocker.MagicMock()
         mock_bound.adebug = mocker.AsyncMock()
         mock_bound.awarning = mocker.AsyncMock()
@@ -664,7 +664,7 @@ class TestNBAClientGet:
         client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoint = PlayByPlay(game_id="0022500571")
 
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mock_bound = mocker.MagicMock()
         mock_bound.adebug = mocker.AsyncMock()
         mock_logger.bind.return_value = mock_bound
@@ -870,7 +870,7 @@ class TestNBAClientGetMany:
         client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoints = [PlayByPlay(game_id="0022500571")]
 
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mock_bound = mocker.MagicMock()
         mock_bound.adebug = mocker.AsyncMock()
         mock_logger.bind.return_value = mock_bound
@@ -891,7 +891,7 @@ class TestNBAClientGetMany:
         client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoints = [PlayByPlay(game_id="0022500571")]
 
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mock_bound = mocker.MagicMock()
         mock_bound.adebug = mocker.AsyncMock()
         mock_logger.bind.return_value = mock_bound
@@ -912,7 +912,7 @@ class TestNBAClientGetMany:
         client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
 
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mock_bound = mocker.MagicMock()
         mock_bound.adebug = mocker.AsyncMock()
         mock_logger.bind.return_value = mock_bound
@@ -936,7 +936,7 @@ class TestNBAClientGetMany:
         client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
 
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mock_bound = mocker.MagicMock()
         mock_bound.adebug = mocker.AsyncMock()
         mock_logger.bind.return_value = mock_bound
@@ -961,7 +961,7 @@ class TestNBAClientGetMany:
             for i in range(BATCH_PROGRESS_THRESHOLD)
         ]
 
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mock_bound = mocker.MagicMock()
         mock_bound.adebug = mocker.AsyncMock()
         mock_logger.bind.return_value = mock_bound
@@ -986,7 +986,7 @@ class TestNBAClientGetMany:
         # Create fewer endpoints than threshold
         endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(3)]
 
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mock_bound = mocker.MagicMock()
         mock_bound.adebug = mocker.AsyncMock()
         mock_logger.bind.return_value = mock_bound
@@ -1280,7 +1280,7 @@ class TestNBAClientCorrelationId:
         client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoint = PlayByPlay(game_id="0022500571")
 
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mock_bound = mocker.MagicMock()
         mock_bound.adebug = mocker.AsyncMock()
         mock_logger.bind.return_value = mock_bound
@@ -1302,7 +1302,7 @@ class TestNBAClientCorrelationId:
         client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoint = PlayByPlay(game_id="0022500571")
 
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mock_bound = mocker.MagicMock()
         mock_bound.adebug = mocker.AsyncMock()
         mock_logger.bind.return_value = mock_bound
@@ -1319,7 +1319,7 @@ class TestNBAClientCorrelationId:
         client, mock_session = make_mock_client(json_data=mock_play_by_play_response)
         endpoints = [PlayByPlay(game_id=f"002250057{i}") for i in range(2)]
 
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mock_bound = mocker.MagicMock()
         mock_bound.adebug = mocker.AsyncMock()
         mock_logger.bind.return_value = mock_bound
@@ -1529,7 +1529,7 @@ class TestNBAClientSignalHandling:
         """_signal_handler_loop emits a debug log when signals are not supported."""
         client = NBAClient(session=mocker.MagicMock())
         mock_scope = mocker.MagicMock(spec=anyio.CancelScope)
-        mock_logger = mocker.patch("fastbreak.clients.nba.logger")
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
         mocker.patch(
             "anyio.open_signal_receiver",
             side_effect=NotImplementedError("not supported on this platform"),
@@ -1634,10 +1634,10 @@ class TestOwnsSessionFlag:
         client = NBAClient()
         assert client._owns_session is True
 
-        mocker.patch("fastbreak.clients.nba.ssl.create_default_context")
-        mocker.patch("fastbreak.clients.nba.TCPConnector")
+        mocker.patch("fastbreak.clients.base.ssl.create_default_context")
+        mocker.patch("fastbreak.clients.base.TCPConnector")
         mocker.patch(
-            "fastbreak.clients.nba.ClientSession",
+            "fastbreak.clients.base.ClientSession",
             return_value=mocker.MagicMock(spec=ClientSession),
         )
 

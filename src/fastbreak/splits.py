@@ -6,7 +6,7 @@ sub-endpoints concurrently.
 
 Examples::
 
-    from fastbreak.clients import NBAClient
+    from fastbreak.clients import BaseClient
     from fastbreak.splits import get_player_splits_profile, get_team_splits_profile, stat_delta
 
     async with NBAClient() as client:
@@ -34,7 +34,7 @@ from fastbreak.metrics import stat_delta as stat_delta  # noqa: PLC0414
 from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.player_dashboard_by_game_splits import (
         PlayerDashboardByGameSplitsResponse,
     )
@@ -81,7 +81,7 @@ class PlayerSplitsProfile:
 
 
 async def get_player_game_splits(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     season: Season | None = None,
@@ -120,7 +120,7 @@ async def get_player_game_splits(  # noqa: PLR0913
 
 
 async def get_player_general_splits(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     season: Season | None = None,
@@ -157,7 +157,7 @@ async def get_player_general_splits(  # noqa: PLR0913
 
 
 async def get_player_shooting_splits(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     season: Season | None = None,
@@ -194,7 +194,7 @@ async def get_player_shooting_splits(  # noqa: PLR0913
 
 
 async def get_player_last_n_games(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     season: Season | None = None,
@@ -231,7 +231,7 @@ async def get_player_last_n_games(  # noqa: PLR0913
 
 
 async def get_player_team_performance_splits(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     season: Season | None = None,
@@ -268,7 +268,7 @@ async def get_player_team_performance_splits(  # noqa: PLR0913
 
 
 async def get_player_splits_profile(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     season: Season | None = None,
@@ -354,7 +354,7 @@ class TeamSplitsProfile:
 
 
 async def get_team_general_splits(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     *,
     season: Season | None = None,
@@ -394,7 +394,7 @@ async def get_team_general_splits(  # noqa: PLR0913
 
 
 async def get_team_shooting_splits(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     *,
     season: Season | None = None,
@@ -432,7 +432,7 @@ async def get_team_shooting_splits(  # noqa: PLR0913
 
 
 async def get_team_splits_profile(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     *,
     season: Season | None = None,

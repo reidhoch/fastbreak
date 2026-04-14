@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.league_standings import TeamStanding
     from fastbreak.types import Conference, Season, SeasonType
 
@@ -45,7 +45,7 @@ def magic_number(
 
 
 async def get_standings(
-    client: NBAClient,
+    client: BaseClient,
     season: Season | None = None,
     *,
     season_type: SeasonType = "Regular Season",
@@ -74,7 +74,7 @@ async def get_standings(
 
 
 async def get_conference_standings(
-    client: NBAClient,
+    client: BaseClient,
     conference: Conference,
     season: Season | None = None,
     *,
