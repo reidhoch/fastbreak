@@ -7,7 +7,7 @@ get_lineup_net_ratings() in fastbreak.teams.
 
 Examples::
 
-    from fastbreak.clients import NBAClient
+    from fastbreak.clients import BaseClient
     from fastbreak.lineups import get_league_lineups, get_top_lineups, lineup_net_rating
 
     async with NBAClient() as client:
@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Literal
 from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.league_dash_lineups import LeagueLineup
     from fastbreak.models.league_lineup_viz import LineupViz
     from fastbreak.types import MeasureType, PerMode, Season, SeasonType
@@ -63,7 +63,7 @@ def rank_lineups(
 
 
 async def get_league_lineups(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     *,
     group_quantity: int = 5,
@@ -94,7 +94,7 @@ async def get_league_lineups(  # noqa: PLR0913
 
 
 async def get_league_lineup_ratings(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     *,
     team_id: int = 0,
     group_quantity: int = 5,
@@ -132,7 +132,7 @@ async def get_league_lineup_ratings(  # noqa: PLR0913
 
 
 async def get_top_lineups(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     *,
     group_quantity: int = 5,
@@ -164,7 +164,7 @@ async def get_top_lineups(  # noqa: PLR0913
 
 
 async def get_two_man_combos(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     *,
     season: Season | None = None,
@@ -188,7 +188,7 @@ async def get_two_man_combos(  # noqa: PLR0913
 
 
 async def get_lineup_efficiency(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     *,
     team_id: int = 0,
     group_quantity: int = 5,

@@ -448,6 +448,21 @@ def per_48(stat: float, minutes: float) -> float | None:
     return stat * 48 / minutes
 
 
+def per_40(stat: float, minutes: float) -> float | None:
+    """Normalize a counting stat to a per-40-minute pace.
+
+    per_40 = stat * 40 / minutes
+
+    40 minutes is one full WNBA game. The WNBA equivalent of
+    :func:`per_48` for intra-league comparisons.
+
+    Returns None when minutes are zero.
+    """
+    if minutes == 0:
+        return None
+    return stat * 40 / minutes
+
+
 def per_100(stat: float, poss: float) -> float | None:
     """Normalize a counting stat to a per-100-possessions rate.
 
@@ -884,31 +899,35 @@ def vorp(
     games: int,
     *,
     replacement_level: float = -2.0,
+    season_games: int = 82,
 ) -> float:
     """Compute Value Over Replacement Player (VORP).
 
-    VORP = (BPM - replacement_level) * poss_pct * (games / 82)
+    VORP = (BPM - replacement_level) * poss_pct * (games / season_games)
 
     Measures a player's total contribution relative to a freely-available
-    replacement-level player, scaled to an 82-game season.  Multiply by
+    replacement-level player, scaled to a full season.  Multiply by
     2.7 to convert to approximate wins above replacement.
 
     Args:
         bpm_total:         Total BPM (from :func:`bpm`).
         poss_pct:          Fraction of team possessions the player
                            participated in -- typically
-                           ``mp / (team_games * 48)``, where
-                           ``team_games * 48`` approximates total
+                           ``mp / (team_games * game_minutes)``, where
+                           ``game_minutes`` is 48 (NBA) or 40 (WNBA)
+                           and the denominator approximates total
                            team minutes divided by 5 (five players
                            on court).
         games:             Team games played.
         replacement_level: BPM of a replacement-level player.
                            Defaults to -2.0 per Myers BPM 2.0.
+        season_games:      Number of regular-season games for the league.
+                           Defaults to 82 (NBA). Use 40 for WNBA.
 
     Returns:
         VORP as a float.  Positive means above replacement level.
     """
-    return (bpm_total - replacement_level) * poss_pct * (games / 82)
+    return (bpm_total - replacement_level) * poss_pct * (games / season_games)
 
 
 def stat_delta(a: float | None, b: float | None) -> float | None:
@@ -1406,23 +1425,30 @@ def win_shares(ows: float | None, dws: float | None) -> float | None:
     return ows + dws
 
 
-def win_shares_per_48(ws: float | None, mp: float) -> float | None:
-    """Win Shares per 48 minutes — WS normalised to a full-game pace.
+def win_shares_per_48(
+    ws: float | None, mp: float, *, game_minutes: float = 48
+) -> float | None:
+    """Win Shares per game — WS normalised to a full-game pace.
 
-    WS/48 = WS * 48 / MP
+    WS/game = WS * game_minutes / MP
 
     Calibrated so that league-average ≈ 0.100; elite players reach 0.200+.
     Useful for comparing players with different playing-time levels.
+
+    The ``game_minutes`` default of 48 matches the NBA convention (WS/48).
+    Use ``game_minutes=40`` for WNBA.
 
     Returns None when ws is None or mp is zero.
 
     Args:
         ws: Total Win Shares (from win_shares()).
         mp: Minutes played (same time window as ws).
+        game_minutes: Regulation game length in minutes
+            (default: 48 for NBA, use 40 for WNBA).
     """
     if ws is None or mp == 0:
         return None
-    return ws * 48 / mp
+    return ws * game_minutes / mp
 
 
 def rolling_avg(

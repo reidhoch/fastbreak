@@ -7,7 +7,7 @@ to produce reliable values even for players with limited sample sizes.
 
 Examples::
 
-    from fastbreak.clients import NBAClient
+    from fastbreak.clients import BaseClient
     from fastbreak.estimated import (
         find_player,
         find_team,
@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING, Literal, get_args
 from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.player_estimated_metrics import PlayerEstimatedMetric
     from fastbreak.models.team_estimated_metrics import TeamEstimatedMetric
     from fastbreak.types import Season, SeasonType
@@ -115,7 +115,7 @@ def rank_estimated_metrics(
 
 
 async def get_player_estimated_metrics(
-    client: NBAClient,
+    client: BaseClient,
     *,
     season: Season | None = None,
     season_type: SeasonType = "Regular Season",
@@ -131,7 +131,7 @@ async def get_player_estimated_metrics(
 
 
 async def get_team_estimated_metrics(
-    client: NBAClient,
+    client: BaseClient,
     *,
     season: Season | None = None,
     season_type: SeasonType = "Regular Season",
@@ -147,7 +147,7 @@ async def get_team_estimated_metrics(
 
 
 async def get_estimated_leaders(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     *,
     metric: _PlayerMetricField = "e_net_rating",
     top_n: int = 10,

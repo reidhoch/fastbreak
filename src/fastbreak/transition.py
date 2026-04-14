@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Literal
 from fastbreak.games import elapsed_game_seconds
 
 if TYPE_CHECKING:
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.play_by_play import PlayByPlayAction
 
 _TRANSITION_WINDOW = 8.0
@@ -337,7 +337,7 @@ def transition_efficiency(
 
 
 async def get_transition_stats(
-    client: NBAClient,
+    client: BaseClient,
     game_id: str,
     *,
     transition_window: float = _TRANSITION_WINDOW,

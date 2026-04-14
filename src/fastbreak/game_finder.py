@@ -11,7 +11,7 @@ from itertools import groupby
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.league_game_finder import GameFinderResult
     from fastbreak.types import Date, Location, Outcome, Season, SeasonType
 
@@ -111,7 +111,7 @@ def _avg_optional(values: list[float | None]) -> float | None:
 
 
 async def find_team_games(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     team_id: int,
     *,
     vs_team_id: int | None = None,
@@ -176,7 +176,7 @@ async def find_team_games(  # noqa: PLR0913
 
 
 async def find_player_games(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     team_id: int | None = None,

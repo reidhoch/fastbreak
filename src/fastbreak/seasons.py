@@ -6,28 +6,33 @@ from datetime import UTC, date, datetime
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
+from fastbreak.league import League
+
 if TYPE_CHECKING:
     from fastbreak.types import Season
 
-_SEASON_START_MONTH = 10
 _SEASON_YEAR_LEN = 4
 
 
-@lru_cache(maxsize=32)
-def _season_from_date(d: date) -> Season:
-    start_year = d.year if d.month >= _SEASON_START_MONTH else d.year - 1
+@lru_cache(maxsize=64)
+def _season_from_date(d: date, start_month: int) -> Season:
+    start_year = d.year if d.month >= start_month else d.year - 1
     return f"{start_year}-{(start_year + 1) % 100:02d}"
 
 
-def get_season_from_date(reference_date: date | None = None) -> Season:
-    """Return the NBA season for a given date in YYYY-YY format.
+def get_season_from_date(
+    reference_date: date | None = None, *, league: League = League.NBA
+) -> Season:
+    """Return the season for a given date in YYYY-YY format.
 
-    The NBA season typically starts in October and ends in June.
-    A season is identified by the year it starts (e.g., "2024-25" for the
-    season that started in October 2024).
+    The season boundary is determined by the league's start month:
+    NBA starts in October, WNBA starts in May. A season is identified
+    by the year it starts (e.g., ``"2024-25"`` for the season that
+    started in October 2024 for NBA, or May 2025 for WNBA ``"2025-26"``).
 
     Args:
-        reference_date: Date to get season for (defaults to today)
+        reference_date: Date to get season for (defaults to today).
+        league: League configuration for season start month (default: NBA).
 
     Returns:
         Season string in YYYY-YY format (e.g., "2024-25")
@@ -39,25 +44,29 @@ def get_season_from_date(reference_date: date | None = None) -> Season:
         '2024-25'
         >>> get_season_from_date(date(2025, 10, 15))
         '2025-26'
-        >>> get_season_from_date()  # doctest: +SKIP
+        >>> get_season_from_date(date(2025, 7, 15), league=League.WNBA)
         '2025-26'
 
     """
-    return _season_from_date(reference_date or datetime.now(tz=UTC).date())
+    d = reference_date or datetime.now(tz=UTC).date()
+    return _season_from_date(d, league.season_start_month)
 
 
-def get_current_season_year() -> str:
-    """Return the current NBA season start year as a YYYY string.
+def get_current_season_year(*, league: League = League.NBA) -> str:
+    """Return the current season start year as a YYYY string.
 
     Used for endpoints that accept season in YYYY format rather than YYYY-YY
     (e.g., CumeStats endpoints). Returns ``"2025"`` when the current season is
     ``"2025-26"``.
 
+    Args:
+        league: League configuration (default: NBA).
+
     Returns:
         Season start year as a 4-digit string (e.g., ``"2025"``).
 
     """
-    return str(season_start_year(get_season_from_date()))
+    return str(season_start_year(get_season_from_date(league=league)))
 
 
 def season_start_year(season: Season) -> int:

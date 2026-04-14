@@ -6,10 +6,12 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from fastbreak.league import League
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.game_rotation import GameRotationResponse, RotationEntry
 
 # ---------------------------------------------------------------------------
@@ -17,9 +19,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 _REGULATION_PERIODS = 4
-_REGULATION_PERIOD_SECONDS = 720
 _OT_PERIOD_SECONDS = 300
-_FULL_REGULATION_SECONDS = _REGULATION_PERIODS * _REGULATION_PERIOD_SECONDS
 _TIME_DIVISOR = 10  # API returns tenths of seconds
 
 
@@ -96,22 +96,24 @@ class RotationSummary:
 # ---------------------------------------------------------------------------
 
 
-def _period_from_seconds(seconds: float) -> int:
+def _period_from_seconds(seconds: float, *, league: League = League.NBA) -> int:
     """Derive the period number from seconds since tip-off.
 
     Periods use half-open intervals ``[start, end)`` so that boundary
     times map to the *next* period, consistent with
     :func:`fastbreak.games.elapsed_game_seconds`:
 
-    - Q1: ``[0, 720)``, Q2: ``[720, 1440)``, Q3: ``[1440, 2160)``,
-      Q4: ``[2160, 2880)``, OT1: ``[2880, 3180)``, …
+    - NBA (12-min quarters): Q1: ``[0, 720)``, Q2: ``[720, 1440)``, …
+    - WNBA (10-min quarters): Q1: ``[0, 600)``, Q2: ``[600, 1200)``, …
     - ``seconds <= 0`` maps to period 1 (tip-off).
     """
     if seconds <= 0:
         return 1
-    if seconds < _FULL_REGULATION_SECONDS:
-        return int(seconds // _REGULATION_PERIOD_SECONDS) + 1
-    ot_seconds = seconds - _FULL_REGULATION_SECONDS
+    quarter_seconds = league.quarter_seconds
+    full_regulation = _REGULATION_PERIODS * quarter_seconds
+    if seconds < full_regulation:
+        return int(seconds // quarter_seconds) + 1
+    ot_seconds = seconds - full_regulation
     return _REGULATION_PERIODS + int(ot_seconds // _OT_PERIOD_SECONDS) + 1
 
 
@@ -325,7 +327,7 @@ def rotation_timeline(entries: Sequence[RotationEntry]) -> list[SubstitutionEven
 
 
 async def get_game_rotations(
-    client: NBAClient,
+    client: BaseClient,
     game_id: str,
 ) -> GameRotationResponse:
     """Fetch rotation data for a game."""
@@ -335,7 +337,7 @@ async def get_game_rotations(
 
 
 async def get_rotation_summary(
-    client: NBAClient,
+    client: BaseClient,
     game_id: str,
     *,
     team_id: int,

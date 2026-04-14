@@ -5,7 +5,7 @@ Provides per-shot coordinate data (ShotChartDetail), league-wide zone averages
 
 Examples::
 
-    from fastbreak.clients import NBAClient
+    from fastbreak.clients import BaseClient
     from fastbreak.shots import get_shot_chart, get_league_shot_zones, zone_breakdown, shot_quality_vs_league
 
     async with NBAClient() as client:
@@ -31,7 +31,7 @@ from typing import TYPE_CHECKING
 from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.league_dash_team_shot_locations import (
         ShotRange,
         TeamShotLocations,
@@ -194,7 +194,7 @@ def xfg_pct(
 
 
 async def get_shot_chart(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_id: int,
     *,
     team_id: int = 0,
@@ -236,7 +236,7 @@ async def get_shot_chart(  # noqa: PLR0913
 
 
 async def get_league_shot_zones(
-    client: NBAClient,
+    client: BaseClient,
     *,
     season: Season | None = None,
 ) -> list[LeagueWideShotZone]:
@@ -289,7 +289,7 @@ def team_distance_breakdown(locations: TeamShotLocations) -> dict[str, ZoneStats
 
 
 async def get_team_shot_locations(
-    client: NBAClient,
+    client: BaseClient,
     *,
     team_id: int = 0,
     season: Season | None = None,

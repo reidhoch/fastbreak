@@ -7,7 +7,7 @@ standalone functions for computation, and a thin async wrapper for API calls.
 
 Examples::
 
-    from fastbreak.clients import NBAClient
+    from fastbreak.clients import BaseClient
     from fastbreak.compare import get_player_comparison
 
     async with NBAClient() as client:
@@ -38,7 +38,7 @@ from fastbreak.metrics import (
 from fastbreak.seasons import get_season_from_date
 
 if TYPE_CHECKING:
-    from fastbreak.clients.nba import NBAClient
+    from fastbreak.clients.base import BaseClient
     from fastbreak.models.player_estimated_metrics import PlayerEstimatedMetric
     from fastbreak.types import PerMode, Season, SeasonType
 
@@ -408,7 +408,7 @@ def compare_players(  # noqa: PLR0913
 
 
 async def get_player_comparison(  # noqa: PLR0913
-    client: NBAClient,
+    client: BaseClient,
     player_a_id: int,
     player_b_id: int,
     *,

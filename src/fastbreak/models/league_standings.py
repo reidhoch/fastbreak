@@ -24,10 +24,10 @@ class TeamStanding(PandasMixin, PolarsMixin, BaseModel):
     playoff_rank: int = Field(alias="PlayoffRank")
     clinch_indicator: str = Field(alias="ClinchIndicator")
 
-    # Division standings
-    division: str = Field(alias="Division")
-    division_record: str = Field(alias="DivisionRecord")
-    division_rank: int = Field(alias="DivisionRank")
+    # Division standings (WNBA has no divisions — these fields are null)
+    division: str | None = Field(default=None, alias="Division")
+    division_record: str | None = Field(default=None, alias="DivisionRecord")
+    division_rank: int | None = Field(default=None, alias="DivisionRank")
 
     # Win/Loss record
     wins: int = Field(alias="WINS")
@@ -68,7 +68,7 @@ class TeamStanding(PandasMixin, PolarsMixin, BaseModel):
 
     # Games back
     conference_games_back: float = Field(alias="ConferenceGamesBack")
-    division_games_back: float = Field(alias="DivisionGamesBack")
+    division_games_back: float | None = Field(default=None, alias="DivisionGamesBack")
 
     # Clinching status
     clinched_conference_title: int | None = Field(
@@ -117,29 +117,29 @@ class TeamStanding(PandasMixin, PolarsMixin, BaseModel):
     opp_points_pg: float = Field(alias="OppPointsPG")
     diff_points_pg: float = Field(alias="DiffPointsPG")
 
-    # Conference matchup records
-    vs_east: str = Field(alias="vsEast")
-    vs_atlantic: str = Field(alias="vsAtlantic")
-    vs_central: str = Field(alias="vsCentral")
-    vs_southeast: str = Field(alias="vsSoutheast")
-    vs_west: str = Field(alias="vsWest")
-    vs_northwest: str = Field(alias="vsNorthwest")
-    vs_pacific: str = Field(alias="vsPacific")
-    vs_southwest: str = Field(alias="vsSouthwest")
+    # Conference matchup records (NBA-specific divisions are null for WNBA)
+    vs_east: str | None = Field(default=None, alias="vsEast")
+    vs_atlantic: str | None = Field(default=None, alias="vsAtlantic")
+    vs_central: str | None = Field(default=None, alias="vsCentral")
+    vs_southeast: str | None = Field(default=None, alias="vsSoutheast")
+    vs_west: str | None = Field(default=None, alias="vsWest")
+    vs_northwest: str | None = Field(default=None, alias="vsNorthwest")
+    vs_pacific: str | None = Field(default=None, alias="vsPacific")
+    vs_southwest: str | None = Field(default=None, alias="vsSouthwest")
 
-    # Monthly records
-    jan: str = Field(alias="Jan")
-    feb: str = Field(alias="Feb")
-    mar: str = Field(alias="Mar")
-    apr: str = Field(alias="Apr")
-    may: str = Field(alias="May")
-    jun: str = Field(alias="Jun")
-    jul: str = Field(alias="Jul")
-    aug: str = Field(alias="Aug")
-    sep: str = Field(alias="Sep")
-    oct: str = Field(alias="Oct")
-    nov: str = Field(alias="Nov")
-    dec: str = Field(alias="Dec")
+    # Monthly records (months outside the league's season are null)
+    jan: str | None = Field(default=None, alias="Jan")
+    feb: str | None = Field(default=None, alias="Feb")
+    mar: str | None = Field(default=None, alias="Mar")
+    apr: str | None = Field(default=None, alias="Apr")
+    may: str | None = Field(default=None, alias="May")
+    jun: str | None = Field(default=None, alias="Jun")
+    jul: str | None = Field(default=None, alias="Jul")
+    aug: str | None = Field(default=None, alias="Aug")
+    sep: str | None = Field(default=None, alias="Sep")
+    oct: str | None = Field(default=None, alias="Oct")
+    nov: str | None = Field(default=None, alias="Nov")
+    dec: str | None = Field(default=None, alias="Dec")
 
     # Score threshold records
     score_80_plus: str = Field(alias="Score_80_Plus")
