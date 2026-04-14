@@ -55,8 +55,8 @@ async def search_players(
 
     from fastbreak.endpoints import PlayerIndex  # noqa: PLC0415
 
-    season = season or get_season_from_date()
-    response = await client.get(PlayerIndex(season=season))
+    season = season or get_season_from_date(league=client.league)
+    response = await client.get(PlayerIndex(season=season, league_id=client.league_id))
 
     q = query.lower().strip()
     matches: list[tuple[int, PlayerIndexEntry]] = []
@@ -107,8 +107,10 @@ async def get_player(
     if isinstance(identifier, int):
         from fastbreak.endpoints import PlayerIndex  # noqa: PLC0415
 
-        season = season or get_season_from_date()
-        response = await client.get(PlayerIndex(season=season))
+        season = season or get_season_from_date(league=client.league)
+        response = await client.get(
+            PlayerIndex(season=season, league_id=client.league_id)
+        )
         for player in response.players:
             if player.person_id == identifier:
                 return player
@@ -174,9 +176,14 @@ async def get_player_game_log(
     """
     from fastbreak.endpoints import PlayerGameLog  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
-        PlayerGameLog(player_id=player_id, season=season, season_type=season_type)
+        PlayerGameLog(
+            player_id=player_id,
+            season=season,
+            season_type=season_type,
+            league_id=client.league_id,
+        )
     )
     return response.games
 
@@ -204,7 +211,11 @@ async def get_player_stats(
     """
     from fastbreak.endpoints import PlayerCareerStats  # noqa: PLC0415
 
-    return await client.get(PlayerCareerStats(player_id=player_id, per_mode=per_mode))
+    return await client.get(
+        PlayerCareerStats(
+            player_id=player_id, per_mode=per_mode, league_id=client.league_id
+        )
+    )
 
 
 async def get_league_leaders(
@@ -241,12 +252,13 @@ async def get_league_leaders(
 
     from fastbreak.endpoints import LeagueLeaders  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
         LeagueLeaders(
             season=season,
             stat_category=stat_category,
             season_type=season_type,
+            league_id=client.league_id,
         )
     )
     leaders = response.leaders
@@ -283,9 +295,11 @@ async def get_hustle_stats(
     """
     from fastbreak.endpoints import LeagueHustleStatsPlayer  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
-        LeagueHustleStatsPlayer(season=season, season_type=season_type)
+        LeagueHustleStatsPlayer(
+            season=season, season_type=season_type, league_id=client.league_id
+        )
     )
     for player in response.players:
         if player.player_id == player_id:
@@ -326,7 +340,9 @@ async def get_career_game_logs(
     """
     from fastbreak.endpoints import PlayerCareerStats, PlayerGameLog  # noqa: PLC0415
 
-    career = await client.get(PlayerCareerStats(player_id=player_id))
+    career = await client.get(
+        PlayerCareerStats(player_id=player_id, league_id=client.league_id)
+    )
     seasons = (
         career.season_totals_regular_season
         if season_type == "Regular Season"
@@ -338,7 +354,12 @@ async def get_career_game_logs(
     season_strings = [season_id_to_season(s.season_id) for s in seasons]
 
     endpoints = [
-        PlayerGameLog(player_id=player_id, season=s, season_type=season_type)
+        PlayerGameLog(
+            player_id=player_id,
+            season=s,
+            season_type=season_type,
+            league_id=client.league_id,
+        )
         for s in season_strings
     ]
     responses = await client.get_many(endpoints)
@@ -379,12 +400,13 @@ async def get_on_off_splits(  # noqa: PLR0913
     """
     from fastbreak.endpoints import LeaguePlayerOnDetails  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     endpoint = LeaguePlayerOnDetails(
         team_id=team_id,
         season=season,
         per_mode=per_mode,
         season_type=season_type,
+        league_id=client.league_id,
     )
     response = await client.get(endpoint)
     on: list[PlayerOnCourtDetail] = []
@@ -432,13 +454,14 @@ async def get_player_playtypes(
 
     warnings.warn(SYNERGY_RESTRICTED_WARNING, UserWarning, stacklevel=2)
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
         SynergyPlaytypes(
             player_or_team="P",
             season_year=season,
             season_type=season_type,
             type_grouping=type_grouping,
+            league_id=client.league_id,
         )
     )
     return [r for r in response.player_stats if r.player_id == player_id]

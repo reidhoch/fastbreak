@@ -123,9 +123,11 @@ async def get_player_estimated_metrics(
     """Fetch estimated advanced metrics for all players in the league."""
     from fastbreak.endpoints import PlayerEstimatedMetrics  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
-        PlayerEstimatedMetrics(season=season, season_type=season_type)
+        PlayerEstimatedMetrics(
+            season=season, season_type=season_type, league_id=client.league_id
+        )
     )
     return response.players
 
@@ -139,9 +141,11 @@ async def get_team_estimated_metrics(
     """Fetch estimated advanced metrics for all teams in the league."""
     from fastbreak.endpoints import TeamEstimatedMetrics  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
-        TeamEstimatedMetrics(season=season, season_type=season_type)
+        TeamEstimatedMetrics(
+            season=season, season_type=season_type, league_id=client.league_id
+        )
     )
     return response.teams
 

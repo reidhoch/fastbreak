@@ -250,7 +250,11 @@ def lineup_stints(entries: Sequence[RotationEntry]) -> list[LineupStint]:
     return merged
 
 
-def rotation_timeline(entries: Sequence[RotationEntry]) -> list[SubstitutionEvent]:
+def rotation_timeline(
+    entries: Sequence[RotationEntry],
+    *,
+    league: League = League.NBA,
+) -> list[SubstitutionEvent]:
     """Build a chronological substitution timeline from rotation entries.
 
     At each time point, pairs "enter" events with "exit" events in
@@ -275,7 +279,7 @@ def rotation_timeline(entries: Sequence[RotationEntry]) -> list[SubstitutionEven
         ins = list(enters.get(t, []))
         outs = list(exits.get(t, []))
         t_sec = t / _TIME_DIVISOR
-        period = _period_from_seconds(t_sec)
+        period = _period_from_seconds(t_sec, league=league)
 
         # Pair ins/outs.
         while ins and outs:
@@ -369,6 +373,6 @@ async def get_rotation_summary(
         player_stints=tuple(player_stints(entries)),
         player_minutes=tuple(player_total_minutes(entries)),
         lineup_stints=tuple(lineup_stints(entries)),
-        substitution_events=tuple(rotation_timeline(entries)),
+        substitution_events=tuple(rotation_timeline(entries, league=client.league)),
         total_game_minutes=total_min,
     )

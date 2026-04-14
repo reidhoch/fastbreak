@@ -107,7 +107,7 @@ async def get_player_game_splits(  # noqa: PLR0913
     """
     from fastbreak.endpoints import PlayerDashboardByGameSplits  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         PlayerDashboardByGameSplits(
             player_id=player_id,
@@ -115,6 +115,7 @@ async def get_player_game_splits(  # noqa: PLR0913
             season_type=season_type,
             per_mode=per_mode,
             last_n_games=last_n_games,
+            league_id=client.league_id,
         )
     )
 
@@ -144,7 +145,7 @@ async def get_player_general_splits(  # noqa: PLR0913
     """
     from fastbreak.endpoints import PlayerDashboardByGeneralSplits  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         PlayerDashboardByGeneralSplits(
             player_id=player_id,
@@ -152,6 +153,7 @@ async def get_player_general_splits(  # noqa: PLR0913
             season_type=season_type,
             per_mode=per_mode,
             last_n_games=last_n_games,
+            league_id=client.league_id,
         )
     )
 
@@ -181,7 +183,7 @@ async def get_player_shooting_splits(  # noqa: PLR0913
     """
     from fastbreak.endpoints import PlayerDashboardByShootingSplits  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         PlayerDashboardByShootingSplits(
             player_id=player_id,
@@ -189,6 +191,7 @@ async def get_player_shooting_splits(  # noqa: PLR0913
             season_type=season_type,
             per_mode=per_mode,
             last_n_games=last_n_games,
+            league_id=client.league_id,
         )
     )
 
@@ -218,7 +221,7 @@ async def get_player_last_n_games(  # noqa: PLR0913
     """
     from fastbreak.endpoints import PlayerDashboardByLastNGames  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         PlayerDashboardByLastNGames(
             player_id=player_id,
@@ -226,6 +229,7 @@ async def get_player_last_n_games(  # noqa: PLR0913
             season_type=season_type,
             per_mode=per_mode,
             last_n_games=last_n_games,
+            league_id=client.league_id,
         )
     )
 
@@ -255,7 +259,7 @@ async def get_player_team_performance_splits(  # noqa: PLR0913
     """
     from fastbreak.endpoints import PlayerDashboardByTeamPerformance  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         PlayerDashboardByTeamPerformance(
             player_id=player_id,
@@ -263,6 +267,7 @@ async def get_player_team_performance_splits(  # noqa: PLR0913
             season_type=season_type,
             per_mode=per_mode,
             last_n_games=last_n_games,
+            league_id=client.league_id,
         )
     )
 
@@ -306,13 +311,14 @@ async def get_player_splits_profile(  # noqa: PLR0913
         PlayerDashboardByTeamPerformance,
     )
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     params: dict[str, Any] = {
         "player_id": player_id,
         "season": season,
         "season_type": season_type,
         "per_mode": per_mode,
         "last_n_games": last_n_games,
+        "league_id": client.league_id,
     }
 
     results: list[Any] = await client.get_many(
@@ -381,7 +387,7 @@ async def get_team_general_splits(  # noqa: PLR0913
     """
     from fastbreak.endpoints import TeamDashboardByGeneralSplits  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         TeamDashboardByGeneralSplits(
             team_id=team_id,
@@ -389,6 +395,7 @@ async def get_team_general_splits(  # noqa: PLR0913
             season_type=season_type,
             per_mode=per_mode,
             last_n_games=last_n_games,
+            league_id=client.league_id,
         )
     )
 
@@ -419,7 +426,7 @@ async def get_team_shooting_splits(  # noqa: PLR0913
     """
     from fastbreak.endpoints import TeamDashboardByShootingSplits  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         TeamDashboardByShootingSplits(
             team_id=team_id,
@@ -427,6 +434,7 @@ async def get_team_shooting_splits(  # noqa: PLR0913
             season_type=season_type,
             per_mode=per_mode,
             last_n_games=last_n_games,
+            league_id=client.league_id,
         )
     )
 
@@ -466,13 +474,14 @@ async def get_team_splits_profile(  # noqa: PLR0913
         TeamDashboardByShootingSplits,
     )
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     params: dict[str, Any] = {
         "team_id": team_id,
         "season": season,
         "season_type": season_type,
         "per_mode": per_mode,
         "last_n_games": last_n_games,
+        "league_id": client.league_id,
     }
 
     results: list[Any] = await client.get_many(

@@ -16,6 +16,8 @@ from dataclasses import dataclass
 import pytest
 from pytest_mock import MockerFixture
 
+from fastbreak.league import League
+
 from fastbreak.compare import (
     COMPARISON_METRICS,
     ComparedPlayer,
@@ -634,7 +636,7 @@ class TestGetPlayerComparison:
         compare_resp = self._mock_compare_response(mocker)
         est_resp = self._mock_estimated_response(mocker)
 
-        client = mocker.MagicMock()
+        client = mocker.MagicMock(league=League.NBA, league_id="00")
         client.get_many = mocker.AsyncMock(return_value=[compare_resp, est_resp])
 
         result = await get_player_comparison(client, 100, 200)
@@ -644,7 +646,7 @@ class TestGetPlayerComparison:
         compare_resp = self._mock_compare_response(mocker)
         est_resp = self._mock_estimated_response(mocker)
 
-        client = mocker.MagicMock()
+        client = mocker.MagicMock(league=League.NBA, league_id="00")
         client.get_many = mocker.AsyncMock(return_value=[compare_resp, est_resp])
 
         result = await get_player_comparison(client, 100, 200)
@@ -655,7 +657,7 @@ class TestGetPlayerComparison:
         compare_resp = self._mock_compare_response(mocker)
         est_resp = self._mock_estimated_response(mocker)
 
-        client = mocker.MagicMock()
+        client = mocker.MagicMock(league=League.NBA, league_id="00")
         client.get_many = mocker.AsyncMock(return_value=[compare_resp, est_resp])
 
         result = await get_player_comparison(client, 100, 200)
@@ -667,7 +669,7 @@ class TestGetPlayerComparison:
         est_resp = mocker.MagicMock()
         est_resp.players = []  # No players in estimated metrics
 
-        client = mocker.MagicMock()
+        client = mocker.MagicMock(league=League.NBA, league_id="00")
         client.get_many = mocker.AsyncMock(return_value=[compare_resp, est_resp])
 
         result = await get_player_comparison(client, 100, 200)
@@ -679,7 +681,7 @@ class TestGetPlayerComparison:
         compare_resp.individual = []  # Empty — bad player IDs
         est_resp = self._mock_estimated_response(mocker)
 
-        client = mocker.MagicMock()
+        client = mocker.MagicMock(league=League.NBA, league_id="00")
         client.get_many = mocker.AsyncMock(return_value=[compare_resp, est_resp])
 
         with pytest.raises(ValueError, match="individual"):
@@ -689,7 +691,7 @@ class TestGetPlayerComparison:
         compare_resp = self._mock_compare_response(mocker)
         est_resp = self._mock_estimated_response(mocker)
 
-        client = mocker.MagicMock()
+        client = mocker.MagicMock(league=League.NBA, league_id="00")
         client.get_many = mocker.AsyncMock(return_value=[compare_resp, est_resp])
 
         await get_player_comparison(client, 100, 200)
@@ -699,7 +701,7 @@ class TestGetPlayerComparison:
         compare_resp = self._mock_compare_response(mocker)
         est_resp = self._mock_estimated_response(mocker)
 
-        client = mocker.MagicMock()
+        client = mocker.MagicMock(league=League.NBA, league_id="00")
         client.get_many = mocker.AsyncMock(return_value=[compare_resp, est_resp])
 
         await get_player_comparison(client, 100, 200, season="2024-25")

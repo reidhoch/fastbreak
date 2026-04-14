@@ -98,12 +98,13 @@ async def get_team_defense_zones(
     """
     from fastbreak.endpoints import LeagueDashPtTeamDefend  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
         LeagueDashPtTeamDefend(
             season=season,
             season_type=season_type,
             defense_category=defense_category,
+            league_id=client.league_id,
         )
     )
     return response.teams
@@ -130,9 +131,11 @@ async def get_team_opponent_stats(
     """
     from fastbreak.endpoints import LeagueDashOppPtShot  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
-        LeagueDashOppPtShot(season=season, season_type=season_type)
+        LeagueDashOppPtShot(
+            season=season, season_type=season_type, league_id=client.league_id
+        )
     )
     return response.teams
 

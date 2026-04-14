@@ -68,8 +68,12 @@ async def get_standings(
     """
     from fastbreak.endpoints import LeagueStandings  # noqa: PLC0415
 
-    season = season or get_season_from_date()
-    response = await client.get(LeagueStandings(season=season, season_type=season_type))
+    season = season or get_season_from_date(league=client.league)
+    response = await client.get(
+        LeagueStandings(
+            season=season, season_type=season_type, league_id=client.league_id
+        )
+    )
     return response.standings
 
 
