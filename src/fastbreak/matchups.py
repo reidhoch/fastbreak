@@ -95,7 +95,7 @@ async def get_season_matchups(  # noqa: PLR0913
     """
     from fastbreak.endpoints import LeagueSeasonMatchups  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
         LeagueSeasonMatchups(
             season=season,
@@ -105,6 +105,7 @@ async def get_season_matchups(  # noqa: PLR0913
             def_player_id=str(def_player_id) if def_player_id is not None else None,
             off_team_id=str(off_team_id) if off_team_id is not None else None,
             def_team_id=str(def_team_id) if def_team_id is not None else None,
+            league_id=client.league_id,
         )
     )
     return response.matchups
@@ -128,7 +129,7 @@ async def get_matchup_rollup(  # noqa: PLR0913
     """
     from fastbreak.endpoints import MatchupsRollup  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
         MatchupsRollup(
             season=season,
@@ -138,6 +139,7 @@ async def get_matchup_rollup(  # noqa: PLR0913
             def_team_id=def_team_id,
             off_player_id=off_player_id,
             def_player_id=def_player_id,
+            league_id=client.league_id,
         )
     )
     return response.matchups
@@ -172,7 +174,7 @@ async def get_player_matchup_stats(  # noqa: PLR0913
     """
     from fastbreak.endpoints import PlayerVsPlayer  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         PlayerVsPlayer(
             player_id=str(player_id),
@@ -181,6 +183,7 @@ async def get_player_matchup_stats(  # noqa: PLR0913
             season_type=season_type,
             per_mode=per_mode,
             measure_type=measure_type,
+            league_id=client.league_id,
         )
     )
 

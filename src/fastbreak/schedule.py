@@ -230,8 +230,10 @@ async def _fetch_league_schedule(
     """Fetch the league schedule, returning ``None`` (with warning) when the response contains no ``league_schedule``."""
     from fastbreak.endpoints import ScheduleLeagueV2  # noqa: PLC0415
 
-    season = season or get_season_from_date()
-    response = await client.get(ScheduleLeagueV2(season=season))
+    season = season or get_season_from_date(league=client.league)
+    response = await client.get(
+        ScheduleLeagueV2(season=season, league_id=client.league_id)
+    )
 
     if response.league_schedule is None:
         logger.warning(

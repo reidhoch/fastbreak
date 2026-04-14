@@ -157,6 +157,7 @@ async def find_team_games(  # noqa: PLR0913
     from fastbreak.endpoints import LeagueGameFinder  # noqa: PLC0415
 
     endpoint = LeagueGameFinder(
+        league_id=client.league_id,
         player_or_team="T",
         team_id=str(team_id),
         vs_team_id=_str_or_none(vs_team_id),
@@ -224,6 +225,7 @@ async def find_player_games(  # noqa: PLR0913
     from fastbreak.endpoints import LeagueGameFinder  # noqa: PLC0415
 
     endpoint = LeagueGameFinder(
+        league_id=client.league_id,
         player_or_team="P",
         player_id=str(player_id),
         team_id=_str_or_none(team_id),

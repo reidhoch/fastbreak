@@ -208,10 +208,13 @@ async def get_player_clutch_stats(
     """
     from fastbreak.endpoints import PlayerDashboardByClutch  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         PlayerDashboardByClutch(
-            player_id=player_id, season=season, season_type=season_type
+            player_id=player_id,
+            season=season,
+            season_type=season_type,
+            league_id=client.league_id,
         )
     )
 
@@ -294,9 +297,11 @@ async def get_league_clutch_leaders(
 
     from fastbreak.endpoints import LeagueDashPlayerClutch  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
-        LeagueDashPlayerClutch(season=season, season_type=season_type)
+        LeagueDashPlayerClutch(
+            season=season, season_type=season_type, league_id=client.league_id
+        )
     )
     qualified = [p for p in response.players if p.min >= min_minutes]
     qualified.sort(key=lambda p: p.plus_minus, reverse=True)
@@ -333,9 +338,11 @@ async def get_league_team_clutch_leaders(
 
     from fastbreak.endpoints import LeagueDashTeamClutch  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
-        LeagueDashTeamClutch(season=season, season_type=season_type)
+        LeagueDashTeamClutch(
+            season=season, season_type=season_type, league_id=client.league_id
+        )
     )
     teams = list(response.teams)
     teams.sort(key=lambda t: t.plus_minus, reverse=True)
@@ -365,9 +372,11 @@ async def get_team_clutch_stats(
     """
     from fastbreak.endpoints import LeagueDashTeamClutch  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
-        LeagueDashTeamClutch(season=season, season_type=season_type)
+        LeagueDashTeamClutch(
+            season=season, season_type=season_type, league_id=client.league_id
+        )
     )
     for team in response.teams:
         if team.team_id == team_id:

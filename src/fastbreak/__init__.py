@@ -317,7 +317,6 @@ __all__ = [
     "HIGHER_IS_WORSE",
     "TEAMS",
     "WNBA_TEAMS",
-    "WNBA_TEAMS",
     "BPMResult",
     "BaseClient",
     "Classification",

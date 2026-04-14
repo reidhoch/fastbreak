@@ -223,9 +223,10 @@ async def get_shot_chart(  # noqa: PLR0913
     """
     from fastbreak.endpoints import ShotChartDetail  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         ShotChartDetail(
+            league_id=client.league_id,
             player_id=player_id,
             team_id=team_id,
             season=season,
@@ -254,9 +255,9 @@ async def get_league_shot_zones(
     """
     from fastbreak.endpoints import ShotChartLeaguewide  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response: ShotChartLeaguewideResponse = await client.get(
-        ShotChartLeaguewide(season=season)
+        ShotChartLeaguewide(league_id=client.league_id, season=season)
     )
     return response.league_wide
 
@@ -302,9 +303,10 @@ async def get_team_shot_locations(
     """
     from fastbreak.endpoints import LeagueDashTeamShotLocations  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
         LeagueDashTeamShotLocations(
+            league_id=client.league_id,
             team_id=0,  # Always fetch all, filter client-side
             season=season,
             season_type=season_type,

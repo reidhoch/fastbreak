@@ -79,9 +79,10 @@ async def get_league_lineups(  # noqa: PLR0913
     """
     from fastbreak.endpoints import LeagueDashLineups  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
         LeagueDashLineups(
+            league_id=client.league_id,
             team_id=team_id,
             group_quantity=group_quantity,
             season=season,
@@ -114,9 +115,10 @@ async def get_league_lineup_ratings(  # noqa: PLR0913
     """
     from fastbreak.endpoints import LeagueLineupViz  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
         LeagueLineupViz(
+            league_id=client.league_id,
             team_id=team_id,
             group_quantity=group_quantity,
             minutes_min=minutes_min,

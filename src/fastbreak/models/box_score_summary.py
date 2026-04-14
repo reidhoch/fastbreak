@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from fastbreak.models.common.arena import Arena
 from fastbreak.models.common.broadcaster import Broadcasters
@@ -34,7 +34,7 @@ class BoxScoreSummaryData(PandasMixin, PolarsMixin, BaseModel):
     ifNecessary: bool | None = None
     isNeutral: bool | None = None
     arena: Arena | None = None
-    officials: list[Official] = []
+    officials: list[Official] = Field(default_factory=list)
     broadcasters: Broadcasters | None = None
     homeTeam: SummaryTeam | None = None
     awayTeam: SummaryTeam | None = None

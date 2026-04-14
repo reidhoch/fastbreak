@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from fastbreak.types import LeagueID
 
 
 class League(Enum):
@@ -12,7 +16,7 @@ class League(Enum):
     WNBA = "10"
 
     @property
-    def league_id(self) -> str:
+    def league_id(self) -> LeagueID:
         """Return the NBA Stats API league ID string."""
         return self.value
 

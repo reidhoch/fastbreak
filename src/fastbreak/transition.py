@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
 from fastbreak.games import elapsed_game_seconds
+from fastbreak.league import League
 
 if TYPE_CHECKING:
     from fastbreak.clients.base import BaseClient
@@ -96,6 +97,7 @@ class _PossessionState:
 def _finalize_possession(
     state: _PossessionState,
     transition_window: float,
+    league: League = League.NBA,
 ) -> TransitionPossession | None:
     """Build a TransitionPossession from accumulated state, or None if empty."""
     if not state.actions:
@@ -104,7 +106,7 @@ def _finalize_possession(
     first_fga_elapsed: float | None = None
     for a in state.actions:
         if a.isFieldGoal == 1:
-            first_fga_elapsed = elapsed_game_seconds(a.clock, a.period)
+            first_fga_elapsed = elapsed_game_seconds(a.clock, a.period, league=league)
             break
 
     classification: Classification
@@ -120,7 +122,7 @@ def _finalize_possession(
     return TransitionPossession(
         team_id=state.team_id,
         period=state.period,
-        game_clock=elapsed_game_seconds(_PERIOD_END_CLOCK, state.period)
+        game_clock=elapsed_game_seconds(_PERIOD_END_CLOCK, state.period, league=league)
         - state.start_elapsed,
         elapsed=elapsed,
         classification=classification,
@@ -150,27 +152,29 @@ def _flush(
     state: _PossessionState,
     possessions: list[TransitionPossession],
     transition_window: float,
+    league: League = League.NBA,
 ) -> None:
     """Finalize the current possession if non-empty and append to the list."""
-    if poss := _finalize_possession(state, transition_window):
+    if poss := _finalize_possession(state, transition_window, league):
         possessions.append(poss)
 
 
-def _end_possession(
+def _end_possession(  # noqa: PLR0913
     action: PlayByPlayAction,
     state: _PossessionState,
     trigger: Trigger,
     possessions: list[TransitionPossession],
     transition_window: float,
+    league: League = League.NBA,
 ) -> _PossessionState:
     """Finalize the current possession and return a fresh state for the next."""
     if state.team_id == 0:
         state.team_id = action.teamId
     state.actions.append(action)
-    _flush(state, possessions, transition_window)
+    _flush(state, possessions, transition_window, league)
     return _PossessionState(
         period=state.period,
-        start_elapsed=elapsed_game_seconds(action.clock, action.period),
+        start_elapsed=elapsed_game_seconds(action.clock, action.period, league=league),
         trigger=trigger,
     )
 
@@ -179,6 +183,7 @@ def classify_possessions(
     actions: list[PlayByPlayAction],
     *,
     transition_window: float = _TRANSITION_WINDOW,
+    league: League = League.NBA,
 ) -> list[TransitionPossession]:
     """Classify possessions as transition or halfcourt based on play-by-play timing.
 
@@ -225,11 +230,13 @@ def classify_possessions(
         # action itself might also end the possession (e.g. a made FG on
         # the very first play of the period).
         if action.period != state.period:
-            _flush(state, possessions, transition_window)
+            _flush(state, possessions, transition_window, league)
             state = _PossessionState(
                 period=action.period,
                 team_id=action.teamId,
-                start_elapsed=elapsed_game_seconds(action.clock, action.period),
+                start_elapsed=elapsed_game_seconds(
+                    action.clock, action.period, league=league
+                ),
                 trigger="start_of_period",
             )
 
@@ -241,6 +248,7 @@ def classify_possessions(
                 "made_fg",
                 possessions,
                 transition_window,
+                league,
             )
             continue
 
@@ -252,16 +260,19 @@ def classify_possessions(
                 "turnover",
                 possessions,
                 transition_window,
+                league,
             )
             continue
 
         # Defensive rebound (team change) starts a new possession.
         if _is_defensive_rebound(action, state.team_id):
-            _flush(state, possessions, transition_window)
+            _flush(state, possessions, transition_window, league)
             state = _PossessionState(
                 period=state.period,
                 team_id=action.teamId,
-                start_elapsed=elapsed_game_seconds(action.clock, action.period),
+                start_elapsed=elapsed_game_seconds(
+                    action.clock, action.period, league=league
+                ),
                 trigger="defensive_rebound",
                 actions=[action],
             )
@@ -272,7 +283,7 @@ def classify_possessions(
             state.team_id = action.teamId
         state.actions.append(action)
 
-    _flush(state, possessions, transition_window)
+    _flush(state, possessions, transition_window, league)
     return possessions
 
 
@@ -362,7 +373,9 @@ async def get_transition_stats(
     from fastbreak.games import get_play_by_play  # noqa: PLC0415
 
     actions = await get_play_by_play(client, game_id)
-    poss = classify_possessions(actions, transition_window=transition_window)
+    poss = classify_possessions(
+        actions, transition_window=transition_window, league=client.league
+    )
     summary = transition_frequency(poss)
     eff = transition_efficiency(poss)
 

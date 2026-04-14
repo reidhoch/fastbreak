@@ -97,7 +97,7 @@ async def get_player_shots(  # noqa: PLR0913
     """
     from fastbreak.endpoints import PlayerDashPtShots  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         PlayerDashPtShots(
             player_id=player_id,
@@ -105,6 +105,7 @@ async def get_player_shots(  # noqa: PLR0913
             season_type=season_type,
             per_mode=per_mode,
             last_n_games=last_n_games,
+            league_id=client.league_id,
         )
     )
 
@@ -133,7 +134,7 @@ async def get_player_passes(  # noqa: PLR0913
     """
     from fastbreak.endpoints import PlayerDashPtPass  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         PlayerDashPtPass(
             player_id=player_id,
@@ -141,6 +142,7 @@ async def get_player_passes(  # noqa: PLR0913
             season_type=season_type,
             per_mode=per_mode,
             last_n_games=last_n_games,
+            league_id=client.league_id,
         )
     )
 
@@ -169,7 +171,7 @@ async def get_player_rebounds(  # noqa: PLR0913
     """
     from fastbreak.endpoints import PlayerDashPtReb  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         PlayerDashPtReb(
             player_id=player_id,
@@ -177,6 +179,7 @@ async def get_player_rebounds(  # noqa: PLR0913
             season_type=season_type,
             per_mode=per_mode,
             last_n_games=last_n_games,
+            league_id=client.league_id,
         )
     )
 
@@ -205,7 +208,7 @@ async def get_player_shot_defense(  # noqa: PLR0913
     """
     from fastbreak.endpoints import PlayerDashPtShotDefend  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         PlayerDashPtShotDefend(
             player_id=player_id,
@@ -213,6 +216,7 @@ async def get_player_shot_defense(  # noqa: PLR0913
             season_type=season_type,
             per_mode=per_mode,
             last_n_games=last_n_games,
+            league_id=client.league_id,
         )
     )
 
@@ -243,7 +247,7 @@ async def get_team_shots(  # noqa: PLR0913
     """
     from fastbreak.endpoints import TeamDashPtShots  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         TeamDashPtShots(
             team_id=team_id,
@@ -251,6 +255,7 @@ async def get_team_shots(  # noqa: PLR0913
             season_type=season_type,
             per_mode=per_mode,
             last_n_games=last_n_games,
+            league_id=client.league_id,
         )
     )
 
@@ -279,7 +284,7 @@ async def get_team_passes(  # noqa: PLR0913
     """
     from fastbreak.endpoints import TeamDashPtPass  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         TeamDashPtPass(
             team_id=team_id,
@@ -287,6 +292,7 @@ async def get_team_passes(  # noqa: PLR0913
             season_type=season_type,
             per_mode=per_mode,
             last_n_games=last_n_games,
+            league_id=client.league_id,
         )
     )
 
@@ -315,7 +321,7 @@ async def get_team_rebounds(  # noqa: PLR0913
     """
     from fastbreak.endpoints import TeamDashPtReb  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         TeamDashPtReb(
             team_id=team_id,
@@ -323,6 +329,7 @@ async def get_team_rebounds(  # noqa: PLR0913
             season_type=season_type,
             per_mode=per_mode,
             last_n_games=last_n_games,
+            league_id=client.league_id,
         )
     )
 
@@ -364,13 +371,14 @@ async def get_player_tracking_profile(  # noqa: PLR0913
         PlayerDashPtShots,
     )
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     params: dict[str, Any] = {
         "player_id": player_id,
         "season": season,
         "season_type": season_type,
         "per_mode": per_mode,
         "last_n_games": last_n_games,
+        "league_id": client.league_id,
     }
 
     results: list[Any] = await client.get_many(
@@ -427,13 +435,14 @@ async def get_team_tracking_profile(  # noqa: PLR0913
         TeamDashPtShots,
     )
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     params: dict[str, Any] = {
         "team_id": team_id,
         "season": season,
         "season_type": season_type,
         "per_mode": per_mode,
         "last_n_games": last_n_games,
+        "league_id": client.league_id,
     }
 
     results: list[Any] = await client.get_many(

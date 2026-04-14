@@ -442,7 +442,7 @@ async def get_player_comparison(  # noqa: PLR0913
         PlayerEstimatedMetrics,
     )
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
 
     results: list[Any] = await client.get_many(
         [
@@ -452,8 +452,11 @@ async def get_player_comparison(  # noqa: PLR0913
                 season=season,
                 season_type=season_type,
                 per_mode=per_mode,
+                league_id=client.league_id,
             ),
-            PlayerEstimatedMetrics(season=season, season_type=season_type),
+            PlayerEstimatedMetrics(
+                season=season, season_type=season_type, league_id=client.league_id
+            ),
         ]
     )
 

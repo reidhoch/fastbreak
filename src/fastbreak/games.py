@@ -67,8 +67,9 @@ async def get_game_ids(  # noqa: PLR0913
     """
     from fastbreak.endpoints import LeagueGameLog  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     endpoint = LeagueGameLog(
+        league_id=client.league_id,
         season=season,
         season_type=season_type,
         player_or_team="T",
@@ -114,7 +115,9 @@ async def get_games_on_date(
 
     from fastbreak.endpoints import ScoreboardV3  # noqa: PLC0415
 
-    response = await client.get(ScoreboardV3(game_date=game_date))
+    response = await client.get(
+        ScoreboardV3(league_id=client.league_id, game_date=game_date)
+    )
     scoreboard = response.scoreboard
     if scoreboard is None:
         logger.warning(
@@ -427,7 +430,11 @@ def elapsed_game_seconds(
     return period_offset + (period_duration - remaining)
 
 
-def game_flow(actions: list[PlayByPlayAction]) -> list[GameFlowPoint]:
+def game_flow(
+    actions: list[PlayByPlayAction],
+    *,
+    league: League = League.NBA,
+) -> list[GameFlowPoint]:
     """Build a score-line timeline from a list of play-by-play actions.
 
     Filters to scoring events (actions where both ``scoreHome`` and
@@ -473,7 +480,7 @@ def game_flow(actions: list[PlayByPlayAction]) -> list[GameFlowPoint]:
         except ValueError:
             continue
 
-        elapsed = elapsed_game_seconds(action.clock, action.period)
+        elapsed = elapsed_game_seconds(action.clock, action.period, league=league)
         result.append(
             GameFlowPoint(
                 period=action.period,

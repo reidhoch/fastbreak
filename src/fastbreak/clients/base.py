@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from structlog import BoundLogger
 
     from fastbreak.models import JSON
+    from fastbreak.types import LeagueID
 
 HTTP_TOO_MANY_REQUESTS = 429
 HTTP_SERVER_ERROR_MIN = 500
@@ -259,7 +260,7 @@ class BaseClient(AsyncContextManagerMixin):
         self._handle_signals = handle_signals
 
     @property
-    def league_id(self) -> str:
+    def league_id(self) -> "LeagueID":
         """Return the NBA Stats API league ID for this client."""
         return self.league.league_id
 

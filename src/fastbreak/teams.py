@@ -573,9 +573,14 @@ async def get_team_game_log(
     """
     from fastbreak.endpoints import TeamGameLog  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
-        TeamGameLog(team_id=team_id, season=season, season_type=season_type)
+        TeamGameLog(
+            team_id=team_id,
+            season=season,
+            season_type=season_type,
+            league_id=client.league_id,
+        )
     )
     return response.games
 
@@ -605,9 +610,14 @@ async def get_team_stats(
     """
     from fastbreak.endpoints import LeagueDashTeamStats  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
-        LeagueDashTeamStats(season=season, season_type=season_type, per_mode=per_mode)
+        LeagueDashTeamStats(
+            season=season,
+            season_type=season_type,
+            per_mode=per_mode,
+            league_id=client.league_id,
+        )
     )
     return response.teams
 
@@ -639,13 +649,14 @@ async def get_lineup_stats(
     """
     from fastbreak.endpoints import TeamDashLineups  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
         TeamDashLineups(
             team_id=team_id,
             season=season,
             season_type=season_type,
             group_quantity=group_quantity,
+            league_id=client.league_id,
         )
     )
     return response.lineups
@@ -682,7 +693,7 @@ async def get_lineup_net_ratings(
         best = lineups[0]
         print(best[0].group_name, best[1])  # "LeBron - AD - ...", 12.4
     """
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     lineups = await get_lineup_stats(client, team_id=team_id, season=season)
     results: list[tuple[LineupStats, float]] = []
     for lineup in lineups:
@@ -718,7 +729,7 @@ async def get_league_averages(
         ts = true_shooting(pts=30, fga=20, fta=5)
         rel = relative_ts(ts, lg)
     """
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     rows = await get_team_stats(client, season=season, per_mode="PerGame")
 
     if not rows:
@@ -786,13 +797,14 @@ async def get_team_playtypes(
 
     warnings.warn(SYNERGY_RESTRICTED_WARNING, UserWarning, stacklevel=2)
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     response = await client.get(
         SynergyPlaytypes(
             player_or_team="T",
             season_year=season,
             season_type=season_type,
             type_grouping=type_grouping,
+            league_id=client.league_id,
         )
     )
     return [r for r in response.team_stats if r.team_id == team_id]
@@ -820,8 +832,10 @@ async def get_team_roster(
     """
     from fastbreak.endpoints import CommonTeamRoster  # noqa: PLC0415
 
-    season = season or get_season_from_date()
-    response = await client.get(CommonTeamRoster(team_id=team_id, season=season))
+    season = season or get_season_from_date(league=client.league)
+    response = await client.get(
+        CommonTeamRoster(team_id=team_id, season=season, league_id=client.league_id)
+    )
     return response.players
 
 
@@ -847,8 +861,10 @@ async def get_team_coaches(
     """
     from fastbreak.endpoints import CommonTeamRoster  # noqa: PLC0415
 
-    season = season or get_season_from_date()
-    response = await client.get(CommonTeamRoster(team_id=team_id, season=season))
+    season = season or get_season_from_date(league=client.league)
+    response = await client.get(
+        CommonTeamRoster(team_id=team_id, season=season, league_id=client.league_id)
+    )
     return response.coaches
 
 
@@ -877,8 +893,10 @@ async def get_team_roster_and_coaches(
     """
     from fastbreak.endpoints import CommonTeamRoster  # noqa: PLC0415
 
-    season = season or get_season_from_date()
-    response = await client.get(CommonTeamRoster(team_id=team_id, season=season))
+    season = season or get_season_from_date(league=client.league)
+    response = await client.get(
+        CommonTeamRoster(team_id=team_id, season=season, league_id=client.league_id)
+    )
     return response.players, response.coaches
 
 
@@ -901,13 +919,14 @@ async def get_team_on_off_summary(
     """Fetch summarized on/off court impact for all players on a team."""
     from fastbreak.endpoints import TeamPlayerOnOffSummary  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         TeamPlayerOnOffSummary(
             team_id=team_id,
             season=season,
             season_type=season_type,
             per_mode=per_mode,
+            league_id=client.league_id,
         )
     )
 
@@ -923,13 +942,14 @@ async def get_team_on_off_details(
     """Fetch detailed on/off court stats for all players on a team."""
     from fastbreak.endpoints import TeamPlayerOnOffDetails  # noqa: PLC0415
 
-    season = season or get_season_from_date()
+    season = season or get_season_from_date(league=client.league)
     return await client.get(
         TeamPlayerOnOffDetails(
             team_id=team_id,
             season=season,
             season_type=season_type,
             per_mode=per_mode,
+            league_id=client.league_id,
         )
     )
 
