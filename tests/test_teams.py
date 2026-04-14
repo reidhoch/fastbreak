@@ -403,6 +403,10 @@ class TestGetTeamId:
         """get_team_id returns the team ID when looking up by city name."""
         assert get_team_id("Boston") == TeamID.CELTICS
 
+    def test_ambiguous_city_returns_none(self) -> None:
+        """Ambiguous city (Los Angeles has LAL + LAC) returns None."""
+        assert get_team_id("Los Angeles") is None
+
     def test_unknown_returns_none(self) -> None:
         """Unknown team returns None."""
         assert get_team_id("Unknown") is None

@@ -468,8 +468,10 @@ async def get_player_comparison(  # noqa: PLR0913
         raise ValueError(msg)
 
     # NBA API returns individual rows in request order (player_id_list first,
-    # vs_player_id_list second). This cannot be validated because
-    # PlayerCompareStats lacks a player_id field.
+    # vs_player_id_list second). Cross-reference with estimated metrics names
+    # when available to detect unexpected row order changes.
+    row_a_stats = compare_resp.individual[0]
+    row_b_stats = compare_resp.individual[1]
 
     estimated_a = find_player(estimated_resp.players, player_a_id)
     if estimated_a is None:
@@ -478,11 +480,28 @@ async def get_player_comparison(  # noqa: PLR0913
     if estimated_b is None:
         logger.debug("estimated_metrics_not_found", player_id=player_b_id)
 
+    if estimated_a is not None and row_a_stats.description != estimated_a.player_name:
+        logger.warning(
+            "compare_row_order_mismatch",
+            expected_player=estimated_a.player_name,
+            got_description=row_a_stats.description,
+            player_id=player_a_id,
+            hint="PlayerCompare row order may have changed",
+        )
+    if estimated_b is not None and row_b_stats.description != estimated_b.player_name:
+        logger.warning(
+            "compare_row_order_mismatch",
+            expected_player=estimated_b.player_name,
+            got_description=row_b_stats.description,
+            player_id=player_b_id,
+            hint="PlayerCompare row order may have changed",
+        )
+
     return compare_players(
         player_a_id=player_a_id,
-        player_a_stats=compare_resp.individual[0],
+        player_a_stats=row_a_stats,
         player_b_id=player_b_id,
-        player_b_stats=compare_resp.individual[1],
+        player_b_stats=row_b_stats,
         estimated_a=estimated_a,
         estimated_b=estimated_b,
     )

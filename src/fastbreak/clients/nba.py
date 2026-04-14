@@ -1,4 +1,3 @@
-import hashlib
 import json
 import signal
 import ssl
@@ -253,8 +252,7 @@ class NBAClient(AsyncContextManagerMixin):
     def _make_cache_key[T: BaseModel](self, endpoint: Endpoint[T]) -> str:
         """Generate a cache key from endpoint path and parameters."""
         params_json = json.dumps(endpoint.params(), sort_keys=True)
-        key_data = f"{endpoint.path}:{params_json}"
-        return hashlib.md5(key_data.encode(), usedforsecurity=False).hexdigest()
+        return f"{endpoint.path}:{params_json}"
 
     async def _get_session(self) -> ClientSession:
         async with self._session_lock:
@@ -281,6 +279,7 @@ class NBAClient(AsyncContextManagerMixin):
         async with self._session_lock:
             if self._owns_session and self._session is not None:
                 try:
+                    connector = self._session.connector
                     with anyio.move_on_after(SESSION_CLOSE_TIMEOUT) as cancel_scope:
                         await self._session.close()
                     if cancel_scope.cancelled_caught:
@@ -289,6 +288,8 @@ class NBAClient(AsyncContextManagerMixin):
                             timeout=SESSION_CLOSE_TIMEOUT,
                             hint="Session close timed out, forcing cleanup",
                         )
+                        if connector is not None and not connector.closed:
+                            await connector.close()
                 except Exception:
                     logger.warning("session_close_error", exc_info=True)
                     raise
@@ -563,10 +564,11 @@ class NBAClient(AsyncContextManagerMixin):
         await log.adebug("batch_complete", total=total)
         return [results[i] for i in range(total)]
 
-    def clear_cache(self) -> None:
+    async def clear_cache(self) -> None:
         """Clear the response cache."""
         if self._cache is not None:
-            self._cache.clear()
+            async with self._cache_lock:
+                self._cache.clear()
 
     @property
     def cache_info(self) -> dict[str, int] | None:

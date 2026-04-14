@@ -319,12 +319,12 @@ info = client.cache_info
 Immediately evicts all cached responses. Useful after mutations or when you know data has changed.
 
 ```python
-client.clear_cache()
+await client.clear_cache()
 ```
 
 ### Cache key generation
 
-The cache key is an MD5 hash of `"{endpoint.path}:{json.dumps(endpoint.params(), sort_keys=True)}"`. Two `Endpoint` instances with the same params always share a cache entry. The cache is type-safe — if a key ever collided across different response types, `CacheTypeMismatchError` is raised rather than silently returning the wrong model.
+The cache key is `"{endpoint.path}:{json.dumps(endpoint.params(), sort_keys=True)}"`. Two `Endpoint` instances with the same params always share a cache entry. The cache is type-safe — if a key ever collided across different response types, `CacheTypeMismatchError` is raised rather than silently returning the wrong model.
 
 ---
 
@@ -656,7 +656,7 @@ async def main() -> None:
                 print(f"{gid}: {top_scorer.name_i} — {top_scorer.statistics.points} pts")
 
         # Invalidate cache before the next run if needed
-        client.clear_cache()
+        await client.clear_cache()
 
 
 asyncio.run(main())

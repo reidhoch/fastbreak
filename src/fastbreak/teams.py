@@ -371,7 +371,19 @@ _TEAMS_BY_NAME: dict[str, TeamInfo] = {t.name.lower(): t for t in TEAMS.values()
 _TEAMS_BY_FULL_NAME: dict[str, TeamInfo] = {
     t.full_name.lower(): t for t in TEAMS.values()
 }
-_TEAMS_BY_CITY: dict[str, TeamInfo] = {t.city.lower(): t for t in TEAMS.values()}
+# Exclude cities shared by multiple teams (e.g. Los Angeles) so that
+# get_team() returns None rather than silently picking one team.
+_TEAMS_BY_CITY: dict[str, TeamInfo] = {}
+_seen_cities: set[str] = set()
+for _t in TEAMS.values():
+    _key = _t.city.lower()
+    if _key in _TEAMS_BY_CITY:
+        _seen_cities.add(_key)
+    else:
+        _TEAMS_BY_CITY[_key] = _t
+for _key in _seen_cities:
+    del _TEAMS_BY_CITY[_key]
+del _seen_cities
 _VALID_CONFERENCES: frozenset[str] = frozenset({t.conference for t in TEAMS.values()})
 _VALID_DIVISIONS: frozenset[str] = frozenset({t.division for t in TEAMS.values()})
 

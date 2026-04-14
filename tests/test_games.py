@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 import pytest
 from pytest_mock import MockerFixture
 
@@ -283,18 +285,18 @@ class TestGetTodaysGames:
         """get_todays_games returns games from today's scoreboard."""
         game = mocker.MagicMock()
         client = _make_scoreboard_client(mocker, [game])
-        mock_date = mocker.patch("fastbreak.games.date")
-        mock_date.today.return_value.isoformat.return_value = "2025-02-25"
+        mock_dt = mocker.patch("fastbreak.games.datetime")
+        mock_dt.now.return_value.date.return_value = date(2025, 2, 25)
 
         result = await get_todays_games(client)
 
         assert result == [game]
 
     async def test_passes_todays_date_to_endpoint(self, mocker: MockerFixture):
-        """get_todays_games uses today's date in YYYY-MM-DD format."""
+        """get_todays_games uses today's date in Eastern Time."""
         client = _make_scoreboard_client(mocker, [])
-        mock_date = mocker.patch("fastbreak.games.date")
-        mock_date.today.return_value.isoformat.return_value = "2025-02-25"
+        mock_dt = mocker.patch("fastbreak.games.datetime")
+        mock_dt.now.return_value.date.return_value = date(2025, 2, 25)
 
         await get_todays_games(client)
 
@@ -309,22 +311,18 @@ class TestGetYesterdaysGames:
         """get_yesterdays_games returns games from yesterday's scoreboard."""
         game = mocker.MagicMock()
         client = _make_scoreboard_client(mocker, [game])
-        mock_date = mocker.patch("fastbreak.games.date")
-        mock_date.today.return_value.__sub__.return_value.isoformat.return_value = (
-            "2025-02-24"
-        )
+        mock_dt = mocker.patch("fastbreak.games.datetime")
+        mock_dt.now.return_value.date.return_value = date(2025, 2, 25)
 
         result = await get_yesterdays_games(client)
 
         assert result == [game]
 
     async def test_passes_yesterdays_date_to_endpoint(self, mocker: MockerFixture):
-        """get_yesterdays_games uses yesterday's date in YYYY-MM-DD format."""
+        """get_yesterdays_games uses yesterday's date in Eastern Time."""
         client = _make_scoreboard_client(mocker, [])
-        mock_date = mocker.patch("fastbreak.games.date")
-        mock_date.today.return_value.__sub__.return_value.isoformat.return_value = (
-            "2025-02-24"
-        )
+        mock_dt = mocker.patch("fastbreak.games.datetime")
+        mock_dt.now.return_value.date.return_value = date(2025, 2, 25)
 
         await get_yesterdays_games(client)
 
@@ -934,6 +932,14 @@ class TestElapsedGameSeconds:
     def test_double_ot(self) -> None:
         """2OT with 5:00 remaining → 3180.0 seconds."""
         assert elapsed_game_seconds("PT05M00.00S", 6) == pytest.approx(3180.0)
+
+    def test_period_zero_returns_zero(self) -> None:
+        """Period 0 (pre-game events) returns 0.0 instead of negative."""
+        assert elapsed_game_seconds("PT12M00.00S", 0) == pytest.approx(0.0)
+
+    def test_negative_period_returns_zero(self) -> None:
+        """Negative period returns 0.0."""
+        assert elapsed_game_seconds("PT05M00.00S", -1) == pytest.approx(0.0)
 
     def test_invalid_clock(self) -> None:
         """Invalid clock string returns period offset (0.0 remaining)."""
