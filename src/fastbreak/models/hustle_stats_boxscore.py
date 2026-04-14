@@ -1,10 +1,23 @@
 """Models for the hustle stats box score endpoint."""
 
-from pydantic import BaseModel, Field, model_validator
+from typing import Annotated
+
+from pydantic import BaseModel, BeforeValidator, Field, model_validator
 
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
 from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import named_result_sets_validator
+
+
+def _empty_str_to_zero(v: object) -> object:
+    """Convert empty string to 0 for int fields in older games."""
+    if v == "":
+        return 0
+    return v
+
+
+_CoercedInt = Annotated[int, BeforeValidator(_empty_str_to_zero)]
+_CoercedMinutes = Annotated[str, BeforeValidator(str)]
 
 
 class HustleStatsAvailable(PandasMixin, PolarsMixin, BaseModel):
@@ -18,14 +31,14 @@ class HustleStatsPlayer(PandasMixin, PolarsMixin, BaseModel):
     """Player-level hustle statistics from a box score."""
 
     game_id: str = Field(alias="GAME_ID")
-    team_id: int = Field(alias="TEAM_ID")
+    team_id: _CoercedInt = Field(alias="TEAM_ID")
     team_abbreviation: str = Field(alias="TEAM_ABBREVIATION")
     team_city: str = Field(alias="TEAM_CITY")
-    player_id: int = Field(alias="PLAYER_ID")
+    player_id: _CoercedInt = Field(alias="PLAYER_ID")
     player_name: str = Field(alias="PLAYER_NAME")
     start_position: str = Field(alias="START_POSITION")
     comment: str = Field(alias="COMMENT")
-    minutes: str = Field(alias="MINUTES")
+    minutes: _CoercedMinutes = Field(alias="MINUTES")
     pts: int = Field(alias="PTS")
     contested_shots: float = Field(alias="CONTESTED_SHOTS")
     contested_shots_2pt: float = Field(alias="CONTESTED_SHOTS_2PT")
@@ -48,11 +61,11 @@ class HustleStatsTeam(PandasMixin, PolarsMixin, BaseModel):
     """Team-level hustle statistics from a box score."""
 
     game_id: str = Field(alias="GAME_ID")
-    team_id: int = Field(alias="TEAM_ID")
+    team_id: _CoercedInt = Field(alias="TEAM_ID")
     team_name: str = Field(alias="TEAM_NAME")
     team_abbreviation: str = Field(alias="TEAM_ABBREVIATION")
     team_city: str = Field(alias="TEAM_CITY")
-    minutes: str = Field(alias="MINUTES")
+    minutes: _CoercedMinutes = Field(alias="MINUTES")
     pts: int = Field(alias="PTS")
     contested_shots: float = Field(alias="CONTESTED_SHOTS")
     contested_shots_2pt: float = Field(alias="CONTESTED_SHOTS_2PT")

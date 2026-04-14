@@ -4,6 +4,7 @@ from datetime import date
 
 import pytest
 
+from fastbreak.league import League
 from fastbreak.seasons import (
     get_current_season_year,
     get_season_from_date,
@@ -49,6 +50,22 @@ class TestGetSeasonFromDate:
         # Just verify it returns a valid format
         assert len(result) == 7
         assert result[4] == "-"
+
+    def test_wnba_may_starts_new_season(self) -> None:
+        """WNBA season starts in May — May is the new season."""
+        assert get_season_from_date(date(2025, 5, 15), league=League.WNBA) == "2025-26"
+
+    def test_wnba_april_is_previous_season(self) -> None:
+        """April is before WNBA season start, so it belongs to the previous season."""
+        assert get_season_from_date(date(2025, 4, 30), league=League.WNBA) == "2024-25"
+
+    def test_wnba_summer_in_season(self) -> None:
+        """July is mid-WNBA-season, same season that started in May."""
+        assert get_season_from_date(date(2025, 7, 15), league=League.WNBA) == "2025-26"
+
+    def test_wnba_january_is_previous_season(self) -> None:
+        """January is off-season for WNBA, belongs to previous season."""
+        assert get_season_from_date(date(2026, 1, 15), league=League.WNBA) == "2025-26"
 
 
 class TestSeasonHelpers:

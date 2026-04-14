@@ -6,6 +6,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from fastbreak.clients.nba import NBAClient
+from fastbreak.league import League
 from fastbreak.games import (
     elapsed_game_seconds,
     get_box_scores,
@@ -944,3 +945,43 @@ class TestElapsedGameSeconds:
     def test_invalid_clock(self) -> None:
         """Invalid clock string returns period offset (0.0 remaining)."""
         assert elapsed_game_seconds("INVALID", 1) == pytest.approx(720.0)
+
+
+class TestElapsedGameSecondsWNBA:
+    """Tests for elapsed_game_seconds() with WNBA 10-minute quarters."""
+
+    def test_q1_start(self) -> None:
+        """WNBA Q1 with 10:00 remaining → 0.0 seconds elapsed."""
+        assert elapsed_game_seconds(
+            "PT10M00.00S", 1, league=League.WNBA
+        ) == pytest.approx(0.0)
+
+    def test_q1_midpoint(self) -> None:
+        """WNBA Q1 with 5:00 remaining → 300.0 seconds elapsed."""
+        assert elapsed_game_seconds(
+            "PT05M00.00S", 1, league=League.WNBA
+        ) == pytest.approx(300.0)
+
+    def test_q2_start(self) -> None:
+        """WNBA Q2 with 10:00 remaining → 600.0 seconds elapsed."""
+        assert elapsed_game_seconds(
+            "PT10M00.00S", 2, league=League.WNBA
+        ) == pytest.approx(600.0)
+
+    def test_q4_end(self) -> None:
+        """WNBA Q4 with 0:00 remaining → 2400.0 seconds (full regulation)."""
+        assert elapsed_game_seconds(
+            "PT00M00.00S", 4, league=League.WNBA
+        ) == pytest.approx(2400.0)
+
+    def test_ot1_start(self) -> None:
+        """WNBA OT1 with 5:00 remaining → 2400.0 seconds."""
+        assert elapsed_game_seconds(
+            "PT05M00.00S", 5, league=League.WNBA
+        ) == pytest.approx(2400.0)
+
+    def test_ot1_midpoint(self) -> None:
+        """WNBA OT1 with 2:30 remaining → 2550.0 seconds."""
+        assert elapsed_game_seconds(
+            "PT02M30.00S", 5, league=League.WNBA
+        ) == pytest.approx(2550.0)

@@ -991,8 +991,8 @@ class WNBATeamID(IntEnum):
 class WNBATeamInfo:
     """Static information about a WNBA team.
 
-    Unlike NBA teams, WNBA teams do not have divisions and conference
-    assignment has varied historically. Conference is optional.
+    Unlike NBA teams, WNBA teams do not have divisions, and conference
+    assignments have varied historically.
     """
 
     id: WNBATeamID

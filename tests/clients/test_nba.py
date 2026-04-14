@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from pytest_mock import MockerFixture
 from tenacity import RetryCallState
 
+from fastbreak.clients.base import BaseClient
 from fastbreak.clients.nba import (
     BATCH_PROGRESS_THRESHOLD,
     HTTP_SERVER_ERROR_MIN,
@@ -1735,3 +1736,21 @@ class TestStoreInCacheWithNullKey:
         await client._store_in_cache("some_key", result)
 
         assert client.cache_info["size"] == 1
+
+
+class TestBaseClientInstantiation:
+    """BaseClient cannot be instantiated directly without a league."""
+
+    def test_direct_instantiation_raises(self) -> None:
+        """BaseClient() raises TypeError — use NBAClient or WNBAClient."""
+        with pytest.raises(TypeError, match="must define a 'league' class variable"):
+            BaseClient()
+
+    def test_subclass_without_league_raises(self) -> None:
+        """A subclass that forgets to set league raises TypeError on init."""
+
+        class BadClient(BaseClient):
+            pass
+
+        with pytest.raises(TypeError, match="must define a 'league' class variable"):
+            BadClient()

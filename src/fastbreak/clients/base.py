@@ -185,8 +185,11 @@ def _make_wait_with_retry_after(
 class BaseClient(AsyncContextManagerMixin):
     """Async client for the NBA Stats API.
 
-    Subclasses set the ``league`` class variable to configure league-specific
-    behavior (e.g. :pyattr:`League.NBA` or :pyattr:`League.WNBA`).
+    Subclasses **must** set the ``league`` class variable to configure
+    league-specific behavior (e.g. :pyattr:`League.NBA` or :pyattr:`League.WNBA`).
+
+    ``BaseClient`` cannot be instantiated directly — use :class:`NBAClient`
+    or :class:`WNBAClient` instead.
     """
 
     BASE_URL = "https://stats.nba.com/stats"
@@ -240,6 +243,12 @@ class BaseClient(AsyncContextManagerMixin):
                 (default: True). Set to False to manage signal handling yourself.
 
         """
+        if not hasattr(type(self), "league"):
+            msg = (
+                f"{type(self).__name__} must define a 'league' class variable. "
+                "Use NBAClient or WNBAClient instead of BaseClient directly."
+            )
+            raise TypeError(msg)
         self._session = session
         self._owns_session = session is None
         self._timeout = timeout or ClientTimeout(total=60)
@@ -313,7 +322,7 @@ class BaseClient(AsyncContextManagerMixin):
 
     def __del__(self) -> None:
         """Warn if client was not properly closed."""
-        if self._owns_session and self._session is not None:
+        if getattr(self, "_owns_session", False) and self._session is not None:
             warnings.warn(
                 f"{type(self).__name__} was not properly closed. "
                 f"Use 'async with {type(self).__name__}() as client:'",

@@ -926,7 +926,13 @@ def vorp(
 
     Returns:
         VORP as a float.  Positive means above replacement level.
+
+    Raises:
+        ValueError: If ``season_games`` is not positive.
     """
+    if season_games <= 0:
+        msg = f"season_games must be > 0, got {season_games}"
+        raise ValueError(msg)
     return (bpm_total - replacement_level) * poss_pct * (games / season_games)
 
 
@@ -1428,15 +1434,15 @@ def win_shares(ows: float | None, dws: float | None) -> float | None:
 def win_shares_per_48(
     ws: float | None, mp: float, *, game_minutes: float = 48
 ) -> float | None:
-    """Win Shares per game — WS normalised to a full-game pace.
+    """Win Shares per ``game_minutes`` minutes (WS/48 for NBA, WS/40 for WNBA).
 
-    WS/game = WS * game_minutes / MP
+    WS/game_minutes = WS * game_minutes / MP
 
     Calibrated so that league-average ≈ 0.100; elite players reach 0.200+.
     Useful for comparing players with different playing-time levels.
 
     The ``game_minutes`` default of 48 matches the NBA convention (WS/48).
-    Use ``game_minutes=40`` for WNBA.
+    Use ``game_minutes=40`` for WNBA (WS/40).
 
     Returns None when ws is None or mp is zero.
 
