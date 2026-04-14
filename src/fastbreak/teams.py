@@ -383,7 +383,7 @@ for _t in TEAMS.values():
         _TEAMS_BY_CITY[_key] = _t
 for _key in _seen_cities:
     del _TEAMS_BY_CITY[_key]
-del _seen_cities
+del _seen_cities, _key  # pyright: ignore[reportPossiblyUnboundVariable]
 _VALID_CONFERENCES: frozenset[str] = frozenset({t.conference for t in TEAMS.values()})
 _VALID_DIVISIONS: frozenset[str] = frozenset({t.division for t in TEAMS.values()})
 
@@ -392,6 +392,7 @@ _TEAMS_BY_DIVISION: dict[str, list[TeamInfo]] = {}
 for _t in TEAMS.values():
     _TEAMS_BY_CONFERENCE.setdefault(_t.conference, []).append(_t)
     _TEAMS_BY_DIVISION.setdefault(_t.division, []).append(_t)
+del _t  # pyright: ignore[reportPossiblyUnboundVariable]
 
 
 def get_team(identifier: int | str) -> TeamInfo | None:
