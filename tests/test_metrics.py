@@ -3324,6 +3324,21 @@ class TestVorp:
         result = vorp(bpm_total=10.0, poss_pct=0.0, games=82)
         assert result == pytest.approx(0.0)
 
+    def test_season_games_zero_raises(self) -> None:
+        """season_games=0 raises ValueError (would cause ZeroDivisionError)."""
+        with pytest.raises(ValueError, match="season_games must be > 0"):
+            vorp(bpm_total=3.0, poss_pct=0.20, games=40, season_games=0)
+
+    def test_season_games_negative_raises(self) -> None:
+        """Negative season_games raises ValueError."""
+        with pytest.raises(ValueError, match="season_games must be > 0"):
+            vorp(bpm_total=3.0, poss_pct=0.20, games=40, season_games=-1)
+
+    def test_wnba_season_games(self) -> None:
+        """WNBA 40-game season scales correctly."""
+        result = vorp(bpm_total=0.0, poss_pct=0.20, games=40, season_games=40)
+        assert result == pytest.approx(0.4)  # (0 - -2) * 0.20 * (40/40)
+
 
 # ---------------------------------------------------------------------------
 # Kubatko et al. (2007) additions
