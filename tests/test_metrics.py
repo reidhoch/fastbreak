@@ -491,6 +491,18 @@ class TestPythagoreanWinPct:
         """Returns None when both teams score 0 (degenerate / no-data case)."""
         assert pythagorean_win_pct(pts=0.0, opp_pts=0.0) is None
 
+    def test_negative_pts_returns_none(self) -> None:
+        """Negative pts (buggy data) returns None instead of crashing."""
+        assert pythagorean_win_pct(pts=-1.0, opp_pts=100.0) is None
+
+    def test_negative_opp_pts_returns_none(self) -> None:
+        """Negative opp_pts returns None instead of crashing."""
+        assert pythagorean_win_pct(pts=100.0, opp_pts=-5.0) is None
+
+    def test_both_negative_returns_none(self) -> None:
+        """Both negative returns None."""
+        assert pythagorean_win_pct(pts=-10.0, opp_pts=-10.0) is None
+
 
 class TestIsDoubleDouble:
     """Tests for is_double_double()."""

@@ -1213,8 +1213,11 @@ def pythagorean_win_pct(
         exp:     Pythagorean exponent (default 13.91).
 
     Returns:
-        Expected win probability in [0, 1], or None when both inputs are zero.
+        Expected win probability in [0, 1], or None when inputs are
+        zero/negative.
     """
+    if pts < 0 or opp_pts < 0:
+        return None
     pts_exp = fpow(pts, exp)
     opp_exp = fpow(opp_pts, exp)
     denominator = pts_exp + opp_exp

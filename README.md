@@ -80,7 +80,7 @@ from fastbreak.endpoints import LeagueStandings
 async with NBAClient(cache_ttl=300, cache_maxsize=256) as client:
     result = await client.get(LeagueStandings(season="2025-26"))  # cached for 5 min
     print(client.cache_info)  # {'size': 1, 'maxsize': 256, 'ttl': 300}
-    client.clear_cache()
+    await client.clear_cache()
 ```
 
 ## Features

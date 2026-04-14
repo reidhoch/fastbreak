@@ -342,6 +342,15 @@ class TestCountStreaks:
         assert result.makes_after_streak == 1
         assert result.misses_after_streak == 1
 
+    def test_large_k(self):
+        """O(n) algorithm handles large k correctly."""
+        shots = (True,) * 50 + (False,)
+        result = count_streaks(shots, k=20)
+        # Positions 20..49 are opportunities (30 total), all makes; pos 50 is miss
+        assert result.streak_opportunities == 31
+        assert result.makes_after_streak == 30
+        assert result.misses_after_streak == 1
+
 
 class TestCountStreaksProperties:
     """Hypothesis property-based tests for count_streaks."""

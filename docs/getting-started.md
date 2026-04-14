@@ -384,7 +384,7 @@ async def main():
         # {'size': 1, 'maxsize': 256, 'ttl': 300}
 
         # Manually invalidate all cached entries
-        client.clear_cache()
+        await client.clear_cache()
         print(client.cache_info)
         # {'size': 0, 'maxsize': 256, 'ttl': 300}
 

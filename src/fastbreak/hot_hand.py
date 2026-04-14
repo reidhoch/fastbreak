@@ -137,13 +137,18 @@ def count_streaks(
     n = len(shots)
     makes = 0
     misses = 0
+    streak = 0
 
-    for i in range(k, n):
-        if all(shots[i - k : i]):
+    for i in range(n):
+        if i >= k and streak >= k:
             if shots[i]:
                 makes += 1
             else:
                 misses += 1
+        if shots[i]:
+            streak += 1
+        else:
+            streak = 0
 
     opportunities = makes + misses
     naive_p: float | None = None

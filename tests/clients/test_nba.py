@@ -384,6 +384,29 @@ class TestNBAClientClose:
         )
         assert client._session is None
 
+    async def test_close_closes_connector_on_timeout(self, mocker: MockerFixture):
+        """close() explicitly closes the connector when session.close() times out."""
+        client = NBAClient()
+        mock_connector = mocker.MagicMock()
+        mock_connector.closed = False
+        mock_connector.close = mocker.AsyncMock()
+        mock_session = mocker.MagicMock(spec=ClientSession)
+        mock_session.close = mocker.AsyncMock()
+        mock_session.connector = mock_connector
+        client._session = mock_session
+        mocker.patch("fastbreak.clients.nba.logger")
+
+        mock_cancel_scope = mocker.MagicMock()
+        mock_cancel_scope.cancelled_caught = True
+        mock_cm = mocker.MagicMock()
+        mock_cm.__enter__ = mocker.MagicMock(return_value=mock_cancel_scope)
+        mock_cm.__exit__ = mocker.MagicMock(return_value=False)
+        mocker.patch("anyio.move_on_after", return_value=mock_cm)
+
+        await client.close()
+
+        mock_connector.close.assert_awaited_once()
+
 
 # Helper to create mock HTTP responses
 def _make_mock_response(
@@ -1221,7 +1244,7 @@ class TestNBAClientCaching:
         # Both should make actual requests
         assert mock_session.get.call_count == 2
 
-    def test_clear_cache(self, mock_play_by_play_response):
+    async def test_clear_cache(self, mock_play_by_play_response):
         """clear_cache() empties the cache."""
         client = NBAClient(cache_ttl=300)
         # Manually add an item using a real model
@@ -1229,7 +1252,7 @@ class TestNBAClientCaching:
         client._cache.set("test_key", test_response)
         assert client.cache_info["size"] == 1
 
-        client.clear_cache()
+        await client.clear_cache()
         assert client.cache_info["size"] == 0
 
     def test_cache_key_generation(self):

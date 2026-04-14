@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
+from zoneinfo import ZoneInfo
 
 from fastbreak.logging import logger
 from fastbreak.seasons import get_season_from_date
 from fastbreak.types import validate_iso_date
+
+_ET = ZoneInfo("America/New_York")
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -135,7 +138,7 @@ async def get_todays_games(client: NBAClient) -> list[ScoreboardGame]:
         games = await get_todays_games(client)
 
     """
-    return await get_games_on_date(client, date.today().isoformat())  # noqa: DTZ011
+    return await get_games_on_date(client, datetime.now(tz=_ET).date().isoformat())
 
 
 async def get_yesterdays_games(client: NBAClient) -> list[ScoreboardGame]:
@@ -151,8 +154,8 @@ async def get_yesterdays_games(client: NBAClient) -> list[ScoreboardGame]:
         games = await get_yesterdays_games(client)
 
     """
-    yesterday = (date.today() - timedelta(days=1)).isoformat()  # noqa: DTZ011
-    return await get_games_on_date(client, yesterday)
+    today = datetime.now(tz=_ET).date()
+    return await get_games_on_date(client, (today - timedelta(days=1)).isoformat())
 
 
 async def get_game_summary(
@@ -404,6 +407,8 @@ def elapsed_game_seconds(clock: str, period: int) -> float:
         2880.0
 
     """
+    if period < 1:
+        return 0.0
     remaining = _parse_clock(clock)
     if period <= _REGULATION_PERIODS:
         period_offset = (period - 1) * _REGULATION_PERIOD_SECONDS
