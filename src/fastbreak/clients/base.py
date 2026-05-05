@@ -75,8 +75,9 @@ class _TypedResponseCache:
     """
 
     def __init__(self, maxsize: int, ttl: int) -> None:
-        self._cache: TTLCache[str, tuple[type[BaseModel], BaseModel]] = TTLCache(
-            maxsize=maxsize, ttl=ttl
+        self._cache: TTLCache[str, tuple[type[BaseModel], BaseModel]] = cast(
+            "TTLCache[str, tuple[type[BaseModel], BaseModel]]",
+            TTLCache(maxsize=maxsize, ttl=ttl),
         )
 
     def get[T: BaseModel](self, key: str, response_type: type[T]) -> T | None:
@@ -131,7 +132,7 @@ class _TypedResponseCache:
     @property
     def ttl(self) -> float:
         """Return the cache TTL in seconds."""
-        return self._cache.ttl
+        return cast("float", self._cache.ttl)
 
 
 def _is_retryable_error(exc: BaseException) -> bool:
