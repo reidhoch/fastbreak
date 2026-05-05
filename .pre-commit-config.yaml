@@ -49,7 +49,7 @@ repos:
           - pydantic>=2.12
           - aiohttp>=3.13
           - anyio>=4.12.1
-          - types-cachetools>=5.5
+          - types-cachetools>=7.0
           - tenacity>=8.0
   - repo: https://github.com/RobertCraigie/pyright-python
     rev: v1.1.409
