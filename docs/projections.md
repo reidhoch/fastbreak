@@ -144,7 +144,7 @@ Where `tau_sq` (τ²) is **between-player variance** of season means — the pri
 - As `n` grows, `sigma_sq / n` shrinks, so `w → 1` (trust recent form).
 - When `sigma_sq` dominates `tau_sq`, `w → 0` (regress to season anchor).
 - If `sigma_sq == 0`: the MLE is trusted completely (returns `rolling_mean`).
-- If `tau_sq == 0`: no prior strength; returns `season_mean`.
+- If `tau_sq == 0`: the prior is degenerate (zero between-player variance = infinitely strong prior at the season anchor), so the function returns `season_mean`. A *weak* prior corresponds to `tau_sq → ∞`, which drives `w → 1`.
 
 **Parameters**
 

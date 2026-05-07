@@ -47,7 +47,9 @@ async def test_project_shai_vs_nuggets() -> None:
         assert sp.prob_over(1000.0) == pytest.approx(0.0, abs=1e-6)
 
     # Empirical Bayes invariant: blended mean near rolling/season, within
-    # adjustment slack. Adjustments can push up to ~19% (opp 0.15 + rest 0.04).
+    # adjustment slack. Adjustments sum to ~+/-21% worst case
+    # (opp +/-0.15, rest -0.04 B2B / +0.015 3+ days, home +/-0.02); the 20%
+    # bound below is a pragmatic envelope that holds in normal matchups.
     for sp in result.stats.values():
         lo, hi = sorted([sp.rolling_mean, sp.season_mean])
         assert lo * 0.80 <= sp.mean <= hi * 1.20

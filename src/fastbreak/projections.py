@@ -99,7 +99,8 @@ def empirical_bayes_blend(
         # No observation noise: the MLE is the rolling mean.
         return rolling_mean
     if tau_sq == 0:
-        # No prior strength: shrink all the way to the season anchor.
+        # Degenerate prior (zero between-player variance = infinitely strong
+        # prior at the season anchor); the weak-prior limit is tau_sq -> inf.
         return season_mean
     denom = tau_sq + sigma_sq / n
     if denom == 0:
@@ -122,6 +123,9 @@ def normal_sf(*, x: float, mean: float, stdev: float) -> float:
     return 0.5 * math.erfc(z)
 
 
+_POISSON_TAIL_EPS = 1e-18
+
+
 def poisson_sf(*, line: float, lam: float) -> float:
     """Survival function P(X > floor(line)) for X ~ Poisson(lam).
 
@@ -142,11 +146,16 @@ def poisson_sf(*, line: float, lam: float) -> float:
     # P(X <= k) = sum_{i=0}^{k} e^{-lam} * lam^i / i!
     # Compute iteratively to avoid overflow for moderate lambda.
     # For typical NBA stat lines k is small (< ~30), so the sum is stable.
+    # Past i=lam the terms shrink monotonically; break once they add no
+    # more information so extreme lines (e.g. k=1000) don't iterate
+    # thousands of times past the tail.
     term = math.exp(-lam)
     cdf = term
     for i in range(1, k + 1):
         term *= lam / i
         cdf += term
+        if i > lam and term < _POISSON_TAIL_EPS:
+            break
     return max(0.0, min(1.0, 1.0 - cdf))
 
 
@@ -331,9 +340,12 @@ async def project_player(  # noqa: PLR0913
         A ``PlayerProjection`` populated with one ``StatProjection`` per stat.
 
     Raises:
-        ValueError: If the player has no logged games, or the opponent team
-            is missing / lacks an estimated defensive rating.
+        ValueError: If ``rolling_n < 1``, the player has no logged games, or
+            the opponent team is missing / lacks an estimated defensive rating.
     """
+    if rolling_n < 1:
+        msg = f"rolling_n must be >= 1, got {rolling_n}"
+        raise ValueError(msg)
     from fastbreak.endpoints import PlayerGameLog, TeamEstimatedMetrics  # noqa: PLC0415
 
     results: list[Any] = await client.get_many(

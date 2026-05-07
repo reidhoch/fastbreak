@@ -660,6 +660,33 @@ def test_project_player_returns_all_four_stats(mocker) -> None:
     anyio.run(run)
 
 
+@pytest.mark.parametrize("bad_rolling_n", [0, -1, -10])
+def test_project_player_raises_on_non_positive_rolling_n(bad_rolling_n: int) -> None:
+    """ValueError when rolling_n < 1 (negative values would silently re-slice)."""
+    import anyio
+    from datetime import date
+
+    from fastbreak.clients.nba import NBAClient
+    from fastbreak.projections import project_player
+
+    async def run() -> None:
+        async with NBAClient() as client:
+            with pytest.raises(ValueError, match="rolling_n must be >= 1"):
+                await project_player(
+                    client,
+                    player_id=2544,
+                    player_name="LeBron James",
+                    opponent_team_id=1610612743,
+                    is_home=True,
+                    game_date=date(2026, 5, 7),
+                    season="2025-26",
+                    days_rest=1,
+                    rolling_n=bad_rolling_n,
+                )
+
+    anyio.run(run)
+
+
 def test_project_player_raises_on_empty_games(mocker) -> None:
     """ValueError when the player's game log returns zero games."""
     import anyio
