@@ -18,6 +18,7 @@
 | [shots.md](shots.md) | Shot chart analysis: `ZoneStats`, per-shot coordinates, zone breakdown, delta vs. league average, team shot locations by distance |
 | [defense.md](defense.md) | Defensive analysis: `get_team_defense_zones`, `get_team_opponent_stats`, `get_box_scores_defensive`, `defensive_shot_quality_vs_league` |
 | [metrics.md](metrics.md) | Pure-computation metrics: true shooting, PER, net rating, pace-adjusted stats |
+| [projections.md](projections.md) | Player projections: `project_player`, `StatProjection`, `PlayerProjection`, Empirical Bayes blend, Normal/Poisson survival, `prob_over(line)` for sportsbook-style queries |
 | [endpoints.md](endpoints.md) | All 100+ endpoint classes: params, response models, type aliases |
 | [models.md](models.md) | Response model patterns: `FrozenResponse`, result set validators, v3 models, DataFrame mixins |
 | [types.md](types.md) | Type aliases: `Season`, `SeasonType`, `PerMode`, `MeasureType`, `LeagueID`, and more |
