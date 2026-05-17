@@ -4,88 +4,64 @@ Usage:
     uv run python scripts/compute_projection_priors.py
 
 What it does:
-    1. Pulls the league-wide player stats (LeagueDashPlayerStats) for 2025-26
-       to identify qualifying players (GP >= 30, MIN per game >= 15).
-    2. Downloads each qualifying player's full PlayerGameLog for the season.
-    3. Computes per-player game-to-game variance (sigma_sq), averaged across
-       the pool.
-    4. Computes between-player variance (tau_sq) of the pool's season means.
-    5. Rewrites src/fastbreak/projections_priors.py with the real numbers.
+    1. Calls ``fastbreak.projections.compute_priors_for_season`` to fetch
+       LeagueDashPlayerStats, identify qualifying players, and compute
+       between-/within-player variances per stat.
+    2. Rewrites ``src/fastbreak/projections_priors.py`` with the real numbers.
 
 This is a one-shot tool — not imported anywhere else in the library.
+The compute logic itself lives in the library so callers can also
+generate priors at runtime without re-running this script.
 """
 
 from __future__ import annotations
 
 import asyncio
-import statistics
+import math
 from pathlib import Path
 from textwrap import dedent
 from typing import TYPE_CHECKING, Final
 
 from fastbreak.clients.nba import NBAClient
-from fastbreak.endpoints import LeagueDashPlayerStats, PlayerGameLog
+from fastbreak.projections import STATS, compute_priors_for_season
 
 if TYPE_CHECKING:
-    from fastbreak.models.player_game_log import PlayerGameLogEntry
+    from collections.abc import Mapping
+
+    from fastbreak.projections import ProjectionStat
+    from fastbreak.projections_priors import StatPrior
 
 SEASON: Final = "2025-26"
 MIN_GAMES: Final = 30
 MIN_MINUTES: Final = 15.0
-STATS: Final = ("pts", "reb", "ast", "fg3m")
-
-
-async def _fetch_eligible_player_ids(client: NBAClient) -> list[int]:
-    resp = await client.get(LeagueDashPlayerStats(season=SEASON))
-    eligible: list[int] = []
-    for p in resp.players:
-        if p.gp >= MIN_GAMES and p.min >= MIN_MINUTES:
-            eligible.append(p.player_id)
-    return eligible
-
-
-async def _fetch_all_game_logs(
-    client: NBAClient, player_ids: list[int]
-) -> dict[int, list[PlayerGameLogEntry]]:
-    endpoints = [PlayerGameLog(player_id=pid, season=SEASON) for pid in player_ids]
-    responses = await client.get_many(endpoints, max_concurrency=3)
-    return {pid: resp.games for pid, resp in zip(player_ids, responses, strict=True)}
-
-
-def _compute_priors(
-    logs: dict[int, list[PlayerGameLogEntry]],
-) -> dict[str, tuple[float, float, int, int]]:
-    """Return {stat: (tau_sq, sigma_sq, n_players, n_games)}."""
-    result: dict[str, tuple[float, float, int, int]] = {}
-    for stat in STATS:
-        per_player_means: list[float] = []
-        per_player_variances: list[float] = []
-        total_games = 0
-        for games in logs.values():
-            if len(games) < 2:
-                continue
-            values = [float(getattr(g, stat)) for g in games]
-            per_player_means.append(statistics.fmean(values))
-            per_player_variances.append(statistics.variance(values))
-            total_games += len(values)
-        if len(per_player_means) < 10:
-            msg = f"Insufficient player pool for {stat}: {len(per_player_means)}"
-            raise RuntimeError(msg)
-        tau_sq = statistics.variance(per_player_means)
-        sigma_sq = statistics.fmean(per_player_variances)
-        result[stat] = (tau_sq, sigma_sq, len(per_player_means), total_games)
-    return result
 
 
 def _write_priors_module(
-    priors: dict[str, tuple[float, float, int, int]],
+    priors: Mapping[ProjectionStat, StatPrior],
 ) -> None:
+    # Validate before writing: a zero/NaN/inf variance silently disables
+    # shrinkage at projection time (and the .6f formatter would mask
+    # near-zero values as 0.000000). StatPrior.__post_init__ already
+    # rejects non-finite/non-positive variance, but the .6f truncation
+    # threshold is stricter than "> 0", so re-check here.
+    min_variance = 1e-6
+    for stat in STATS:
+        prior = priors[stat]
+        for name, val in (("tau_sq", prior.tau_sq), ("sigma_sq", prior.sigma_sq)):
+            if not math.isfinite(val) or val < min_variance:
+                msg = (
+                    f"computed {name} for {stat!r} is degenerate: {val!r} "
+                    f"(must be finite and >= {min_variance})"
+                )
+                raise ValueError(msg)
     rows = []
     for stat in STATS:
-        tau_sq, sigma_sq, n_players, n_games = priors[stat]
+        prior = priors[stat]
         rows.append(
-            f'    "{stat}": StatPrior(tau_sq={tau_sq:.4f}, sigma_sq={sigma_sq:.4f}, '
-            f'season="{SEASON}", n_players={n_players}, n_games={n_games}),'
+            f'    "{stat}": StatPrior(tau_sq={prior.tau_sq:.6f}, '
+            f"sigma_sq={prior.sigma_sq:.6f}, "
+            f'season="{prior.season}", n_players={prior.n_players}, '
+            f"n_games={prior.n_games}),"
         )
     content = dedent(
         '''\
@@ -99,7 +75,9 @@ def _write_priors_module(
 
         from __future__ import annotations
 
+        import math
         from dataclasses import dataclass
+        from typing import Literal
 
 
         @dataclass(frozen=True, slots=True)
@@ -112,8 +90,26 @@ def _write_priors_module(
             n_players: int
             n_games: int
 
+            def __post_init__(self) -> None:
+                # Catch corruption at import time rather than at projection time:
+                # NaN/inf would silently propagate through empirical_bayes_blend, and
+                # zero/negative variance would degenerate the shrinkage to season_mean.
+                for name, val in (("tau_sq", self.tau_sq), ("sigma_sq", self.sigma_sq)):
+                    if not math.isfinite(val) or val <= 0:
+                        msg = f"{name} must be finite and positive, got {val!r}"
+                        raise ValueError(msg)
+                if self.n_players < 1:
+                    msg = f"n_players must be >= 1, got {self.n_players}"
+                    raise ValueError(msg)
+                if self.n_games < 1:
+                    msg = f"n_games must be >= 1, got {self.n_games}"
+                    raise ValueError(msg)
+                if not self.season:
+                    msg = "season must be a non-empty string"
+                    raise ValueError(msg)
 
-        STAT_PRIORS: dict[str, StatPrior] = {
+
+        STAT_PRIORS: dict[Literal["pts", "reb", "ast", "fg3m"], StatPrior] = {
         '''
     )
     content += "\n".join(rows) + "\n}\n"
@@ -123,18 +119,24 @@ def _write_priors_module(
         / "fastbreak"
         / "projections_priors.py"
     )
-    target.write_text(content)
+    # Atomic write: a Ctrl-C / OOM / disk-full between target.open() and the
+    # first flush would otherwise leave projections_priors.py truncated and
+    # break every subsequent `from fastbreak.projections import ...`.
+    tmp = target.with_suffix(target.suffix + ".tmp")
+    tmp.write_text(content)
+    tmp.replace(target)
 
 
 async def main() -> None:
     # request_delay paces requests inside get_many() slots to avoid 429/timeouts
     # when fetching hundreds of game logs back-to-back.
     async with NBAClient(request_delay=1.0) as client:
-        player_ids = await _fetch_eligible_player_ids(client)
-        logs = await _fetch_all_game_logs(client, player_ids)
-        priors = _compute_priors(logs)
-        for _stat, (_tau_sq, _sigma_sq, _n_players, _n_games) in priors.items():
-            pass
+        priors = await compute_priors_for_season(
+            client,
+            season=SEASON,
+            min_games=MIN_GAMES,
+            min_minutes=MIN_MINUTES,
+        )
         _write_priors_module(priors)
 
 
