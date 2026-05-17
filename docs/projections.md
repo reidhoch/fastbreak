@@ -132,7 +132,7 @@ def empirical_bayes_blend(
 ) -> float
 ```
 
-James–Stein shrinkage toward the season mean.
+Empirical Bayes shrinkage toward the season mean — the normal-normal posterior mean (precision-weighted blend). Inspired by James–Stein shrinkage, but classic JS is a minimax estimator on a multivariate mean vector with a different closed form; here we compute a scalar posterior mean per stat.
 
 ```
 w = tau_sq / (tau_sq + sigma_sq / n)
@@ -223,7 +223,7 @@ Higher opponent defensive rating (worse defense) produces a positive delta; the 
 
 ```python
 def adjust_for_rest(
-    *, blended_mean: float, stat: ProjectionStat, days_rest: int
+    *, blended_mean: float, stat: ProjectionStat, days_rest: int | None
 ) -> float
 ```
 
@@ -234,8 +234,9 @@ Additive delta for days of rest.
 | 0 (back-to-back) | −4% |
 | 1 or 2 (normal) | 0% |
 | 3+ (extended) | +1.5% |
+| `None` (unknown) | 0% |
 
-Assists are halved (fatigue affects decision-making less than scoring and rebounding).
+Assists are halved (fatigue affects decision-making less than scoring and rebounding). Negative `days_rest` raises `ValueError`.
 
 ---
 
@@ -262,10 +263,11 @@ async def project_player(
     opponent_team_id: int,
     is_home: bool,
     game_date: date,
-    season: str,
-    days_rest: int,
+    days_rest: int | None,
+    season: Season | None = None,
     rolling_n: int = 10,
     stats: Sequence[ProjectionStat] = STATS,
+    priors: Mapping[ProjectionStat, StatPrior] | None = None,
 ) -> PlayerProjection
 ```
 
@@ -281,16 +283,50 @@ The main entry point. Concurrently fetches the player's season game log and leag
 | `opponent_team_id` | `int` | required | NBA team ID of the upcoming opponent |
 | `is_home` | `bool` | required | `True` if the player's team is home |
 | `game_date` | `date` | required | Date of the projected game |
-| `season` | `str` | required | Season in `YYYY-YY` format (e.g. `"2025-26"`) |
-| `days_rest` | `int` | required | Days of rest before the game (0 = back-to-back) |
+| `days_rest` | `int \| None` | required | Days of rest before the game (0 = back-to-back); pass `None` for unknown rest (no adjustment). Negative values raise `ValueError`. |
+| `season` | `Season \| None` | `None` | Season in `YYYY-YY` format (e.g. `"2025-26"`); defaults to current season via `get_season_from_date` |
 | `rolling_n` | `int` | `10` | Number of most-recent games for the rolling mean |
 | `stats` | `Sequence[ProjectionStat]` | `STATS` | Stats to project |
+| `priors` | `Mapping[ProjectionStat, StatPrior] \| None` | `None` | When `None`, uses the baked `STAT_PRIORS` (the common case). When provided, must contain every key in `STATS` — partial dicts raise `ValueError`. Use `compute_priors_for_season` to build a fresh mapping mid-season without re-running the regeneration script. |
 
 **Returns** `PlayerProjection` populated with one `StatProjection` per stat.
 
-**Raises** `ValueError` when the player has no logged games for the season, or when the opponent team is missing from `TeamEstimatedMetrics` or lacks an `e_def_rating`.
+**Raises** `ValueError` when `rolling_n < 1`, `days_rest` is negative, `stats` contains an unsupported value, `priors` is provided but missing a required key, the player has no logged games for the season, or the opponent team is missing / has an invalid `e_def_rating`.
 
 The caller is responsible for supplying the matchup context — this module does not consult the schedule or infer the next game. This keeps the core layer pure and composable; see the "tonight's game" example below for how to derive `days_rest` and `is_home` from `fastbreak.schedule`.
+
+---
+
+### `compute_priors_for_season`
+
+```python
+async def compute_priors_for_season(
+    client: NBAClient,
+    *,
+    season: Season | None = None,
+    min_games: int = 30,
+    min_minutes: float = 15.0,
+    max_concurrency: int = 3,
+) -> Mapping[ProjectionStat, StatPrior]
+```
+
+Compute Empirical Bayes priors from live NBA Stats data. Identifies qualifying players via `LeagueDashPlayerStats`, then concurrently fetches each player's `PlayerGameLog` to derive per-stat between-player (τ²) and within-player (σ²) variances.
+
+**Long-running** — fetches ~300 game logs and takes ~1–3 minutes (default `request_delay`/`max_concurrency`). For the common case the baked `STAT_PRIORS` is faster and identical in shape; this helper exists so callers can refresh priors mid-season without re-running `scripts/compute_projection_priors.py`.
+
+**Parameters**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `client` | `NBAClient` | required | Active NBA API client |
+| `season` | `Season \| None` | `None` | Season in `YYYY-YY` format; defaults to current season |
+| `min_games` | `int` | `30` | Minimum games played for a player to qualify |
+| `min_minutes` | `float` | `15.0` | Minimum per-game minutes for a player to qualify |
+| `max_concurrency` | `int` | `3` | Concurrent in-flight requests during the per-player fetch |
+
+**Returns** an immutable `Mapping[ProjectionStat, StatPrior]` with one entry per stat in `STATS`. The mapping is wrapped in `MappingProxyType` so callers cannot mutate it and accidentally poison subsequent `project_player` calls.
+
+**Raises** `ValueError` when `min_games < 1`, `min_minutes < 0`, fewer than 10 players qualify, any stat's pool is too small, or the computed priors fail `StatPrior`'s `__post_init__` validation.
 
 ---
 
@@ -358,12 +394,11 @@ async def main() -> None:
     async with NBAClient() as client:
         proj = await project_player(
             client,
-            player_id=2544,            # LeBron James
-            player_name="LeBron James",
-            opponent_team_id=1610612744,  # Golden State Warriors
+            player_id=1641705,            # Victor Wembanyama
+            player_name="Victor Wembanyama",
+            opponent_team_id=1610612743,  # Denver Nuggets
             is_home=True,
             game_date=date(2026, 5, 6),
-            season="2025-26",
             days_rest=1,
             rolling_n=10,
         )
@@ -394,15 +429,15 @@ from fastbreak.schedule import (
     get_team_schedule,
 )
 
-LAKERS_TEAM_ID = 1610612747
-LEBRON_PLAYER_ID = 2544
+SPURS_TEAM_ID = 1610612759
+WEMBANYAMA_PLAYER_ID = 1641705
 
 
 async def main() -> None:
     today = date.today()
 
     async with NBAClient() as client:
-        schedule = await get_team_schedule(client, team_id=LAKERS_TEAM_ID)
+        schedule = await get_team_schedule(client, team_id=SPURS_TEAM_ID)
 
         todays_game = next(
             (g for g in schedule
@@ -410,10 +445,10 @@ async def main() -> None:
             None,
         )
         if todays_game is None or todays_game.home_team is None or todays_game.away_team is None:
-            print(f"Lakers have no confirmed opponent on {today}.")
+            print(f"Spurs have no confirmed opponent on {today}.")
             return
 
-        is_home = todays_game.home_team.team_id == LAKERS_TEAM_ID
+        is_home = todays_game.home_team.team_id == SPURS_TEAM_ID
         opponent_team_id = (
             todays_game.away_team.team_id if is_home else todays_game.home_team.team_id
         )
@@ -421,16 +456,19 @@ async def main() -> None:
         # Derive days of rest by appending today's game to prior game dates.
         prior_dates = [d for d in game_dates_from_schedule(schedule) if d < today]
         synthetic = [*prior_dates, today]
-        days_rest = days_rest_before_game(synthetic, len(synthetic) - 1) or 0
+        # days_rest_before_game returns None for the first game of the season
+        # (no prior game). project_player accepts None to mean "unknown rest"
+        # and applies no rest adjustment in that case.
+        days_rest = days_rest_before_game(synthetic, len(synthetic) - 1)
 
+        # Omitting `season=` lets project_player default to the current season.
         proj = await project_player(
             client,
-            player_id=LEBRON_PLAYER_ID,
-            player_name="LeBron James",
+            player_id=WEMBANYAMA_PLAYER_ID,
+            player_name="Victor Wembanyama",
             opponent_team_id=opponent_team_id,
             is_home=is_home,
             game_date=today,
-            season="2025-26",
             days_rest=days_rest,
         )
 
@@ -440,6 +478,39 @@ async def main() -> None:
 
 asyncio.run(main())
 ```
+
+### Using fresh priors mid-season
+
+The baked `STAT_PRIORS` is a snapshot — a player pool's variances drift over the season. For production callers that need the current state without re-running the regeneration script, compute priors at runtime and inject them into `project_player`:
+
+```python
+import asyncio
+from datetime import date
+
+from fastbreak import NBAClient, compute_priors_for_season, project_player
+
+async def main() -> None:
+    async with NBAClient(request_delay=1.0) as client:
+        # ~1-3 minutes; cache this at the caller's discretion.
+        priors = await compute_priors_for_season(client)  # current season
+
+        proj = await project_player(
+            client,
+            player_id=1641705,            # Victor Wembanyama
+            player_name="Victor Wembanyama",
+            opponent_team_id=1610612743,  # Denver Nuggets
+            is_home=True,
+            game_date=date.today(),
+            days_rest=1,
+            priors=priors,  # override the baked priors
+        )
+    for name, sp in proj.stats.items():
+        print(f"  {name:5s}: mean={sp.mean:5.2f}")
+
+asyncio.run(main())
+```
+
+The `priors` mapping must contain every key in `STATS`; partial dicts raise `ValueError`. Caching is the caller's responsibility — there is no built-in TTL, so wrap in your own `lru_cache` or refresh policy as needed.
 
 ---
 
@@ -451,6 +522,7 @@ asyncio.run(main())
 - **No injury or DNP handling.** Game logs are taken as-is; a three-game absence does not discount the rolling window.
 - **Minutes are not modeled.** An 18-minute blowout and a 36-minute game contribute equally to `rolling_mean`. Inspect `rolling_mean` vs `season_mean` when players have volatile minutes.
 - **Priors are league-wide, not positional.** `τ²` and `σ²` pool across all qualifying players — a guard-vs-big split for `reb` and `ast` would be an obvious v2 improvement.
+- **Baked priors are a snapshot.** `STAT_PRIORS` is regenerated manually via `scripts/compute_projection_priors.py`. For mid-season freshness without re-baking, compute on demand via `compute_priors_for_season(client, season=...)` and pass the result via `project_player(..., priors=...)`.
 
 ---
 
