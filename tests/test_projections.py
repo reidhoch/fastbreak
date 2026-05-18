@@ -187,15 +187,16 @@ def test_internal_mappings_are_immutable() -> None:
         p._STDEV_FLOORS["pts"] = 999.0  # type: ignore[index]
 
 
-def test_priors_writer_rejects_degenerate_variance(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+def test_priors_writer_rejects_degenerate_variance(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     """The priors regeneration script must refuse to overwrite the live
     module with sub-microscopic variance values that the .6f formatter
     would round to 0.000000 (silently disabling shrinkage at projection
     time). NaN/inf cases are caught earlier by StatPrior.__post_init__,
     but the writer's stricter `>= 1e-6` threshold is its own tripwire."""
-    import sys
-
-    sys.path.insert(0, "scripts")
+    # Use monkeypatch.syspath_prepend so the path mutation is reverted
+    # automatically at test teardown — a bare sys.path.insert leaks into
+    # the rest of the worker's tests and could shadow later imports.
+    monkeypatch.syspath_prepend("scripts")
     import compute_projection_priors as cpp  # type: ignore[import-not-found]
 
     from fastbreak.projections_priors import StatPrior
@@ -447,10 +448,27 @@ def test_normal_sf_rejects_nan_x_or_mean() -> None:
 
     from fastbreak.projections import normal_sf
 
-    with pytest.raises(ValueError, match="must not be NaN"):
+    with pytest.raises(ValueError, match="x must not be NaN"):
         normal_sf(x=math.nan, mean=0.0, stdev=1.0)
-    with pytest.raises(ValueError, match="must not be NaN"):
+    with pytest.raises(ValueError, match="mean must be finite"):
         normal_sf(x=0.0, mean=math.nan, stdev=1.0)
+
+
+def test_normal_sf_rejects_inf_mean() -> None:
+    """A normal distribution centered at ±inf is nonsensical; reject it.
+
+    `x = ±inf` is fine (legitimate asymptote — see the existing test for
+    that), but `mean = ±inf` would make the z-score ±inf and propagate
+    into `erfc`. Per the audit comment on PR 182, the contract is now
+    "mean must be finite", separate from the "x must not be NaN" rule."""
+    import math
+
+    from fastbreak.projections import normal_sf
+
+    with pytest.raises(ValueError, match="mean must be finite"):
+        normal_sf(x=0.0, mean=math.inf, stdev=1.0)
+    with pytest.raises(ValueError, match="mean must be finite"):
+        normal_sf(x=0.0, mean=-math.inf, stdev=1.0)
 
 
 def test_normal_sf_accepts_inf_x_at_asymptote() -> None:
@@ -1737,15 +1755,19 @@ def test_project_player_uses_provided_priors(mocker) -> None:  # type: ignore[no
     from fastbreak.projections import STATS, project_player
     from fastbreak.projections_priors import StatPrior
 
-    # 20 games of high scoring (~30 pts) — rolling_mean will diverge from
-    # season_mean if the player has any variance pattern. We make games
-    # alternate to ensure rolling != season.
+    # 20 games of varied scoring; the first 10 rows (PTS=30) represent the
+    # most recent games and the last 10 (PTS=20) the older ones — matches
+    # the real PlayerGameLog response order (newest-first). Dates are
+    # generated descending so chronology lines up with row order.
+    # `_build_stat_projection` slices `values[:rolling_n]`, so PTS=30 is
+    # the rolling window and PTS=25 is the season mean.
     game_rows = [
         [
             f"002250000{i:02d}",
             2544,
             "22025",
-            f"2025-12-{i + 1:02d}",
+            # Newest-first dates: i=0 → 2025-12-20, i=19 → 2025-12-01.
+            f"2025-12-{20 - i:02d}",
             "LAL vs. DEN",
             "W",
             35,
@@ -1766,7 +1788,7 @@ def test_project_player_uses_provided_priors(mocker) -> None:  # type: ignore[no
             1,
             3,
             2,
-            # PTS alternates 30 / 20 so recent-10 mean differs from season mean
+            # First 10 rows (most recent) = 30 PTS; last 10 = 20 PTS.
             30 if i < 10 else 20,
             5,
             0,
@@ -1949,7 +1971,13 @@ def test_project_player_uses_provided_priors(mocker) -> None:  # type: ignore[no
 
 
 def test_compute_priors_for_season_rejects_invalid_thresholds() -> None:
-    """min_games < 1 and min_minutes < 0 each fail before any API call."""
+    """min_games < 1, min_minutes < 0, and max_concurrency < 1 each fail
+    before any API call.
+
+    The max_concurrency case is especially important: BaseClient.get_many
+    does `concurrency = max_concurrency or 3`, so passing 0 silently falls
+    back to 3 without the explicit guard at this layer.
+    """
     import anyio
 
     from fastbreak.clients.nba import NBAClient
@@ -1962,6 +1990,10 @@ def test_compute_priors_for_season_rejects_invalid_thresholds() -> None:
             with pytest.raises(ValueError, match="min_minutes must be >= 0"):
                 await compute_priors_for_season(
                     client, season="2025-26", min_minutes=-1.0
+                )
+            with pytest.raises(ValueError, match="max_concurrency must be >= 1"):
+                await compute_priors_for_season(
+                    client, season="2025-26", max_concurrency=0
                 )
 
     anyio.run(run)

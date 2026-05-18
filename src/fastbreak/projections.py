@@ -182,16 +182,26 @@ def normal_sf(*, x: float, mean: float, stdev: float) -> float:
     Uses math.erfc from stdlib; no scipy dependency.
 
     Raises:
-        ValueError: If ``stdev`` is not a finite positive number, or if
-            ``x`` or ``mean`` is NaN.
+        ValueError: If ``stdev`` is not a finite positive number, if
+            ``mean`` is non-finite (NaN or ±inf), or if ``x`` is NaN.
+            ``x = ±inf`` is allowed and returns the asymptotic limit
+            (P=0 for +inf, P=1 for -inf) — useful for sportsbook-style
+            tail probabilities at extreme lines.
     """
     # `not (stdev > 0)` rejects NaN (NaN comparisons are False) as well as
     # zero/negative; the explicit isfinite guard also rejects +inf.
     if not math.isfinite(stdev) or stdev <= 0:
         msg = f"stdev must be a finite positive number, got {stdev!r}"
         raise ValueError(msg)
-    if math.isnan(x) or math.isnan(mean):
-        msg = f"x and mean must not be NaN, got x={x!r}, mean={mean!r}"
+    # mean must be finite: a normal distribution centered at ±inf is
+    # nonsensical, and erfc would propagate inf into the z-score.
+    if not math.isfinite(mean):
+        msg = f"mean must be finite, got {mean!r}"
+        raise ValueError(msg)
+    # x is allowed to be ±inf (legitimate asymptote for prob_over queries
+    # at extreme lines); only NaN is rejected.
+    if math.isnan(x):
+        msg = f"x must not be NaN, got {x!r}"
         raise ValueError(msg)
     z = (x - mean) / (stdev * math.sqrt(2.0))
     return 0.5 * math.erfc(z)
@@ -447,15 +457,21 @@ async def compute_priors_for_season(
         entry per stat in ``STATS``.
 
     Raises:
-        ValueError: If ``min_games < 1`` or ``min_minutes < 0``; if fewer
-            than 10 players qualify; if any stat's pool is too small;
-            or if the computed priors fail ``StatPrior``'s validation.
+        ValueError: If ``min_games < 1``, ``min_minutes < 0``, or
+            ``max_concurrency < 1``; if fewer than 10 players qualify;
+            if any stat's pool is too small; or if the computed priors
+            fail ``StatPrior``'s validation.
     """
     if min_games < 1:
         msg = f"min_games must be >= 1, got {min_games}"
         raise ValueError(msg)
     if min_minutes < 0:
         msg = f"min_minutes must be >= 0, got {min_minutes}"
+        raise ValueError(msg)
+    if max_concurrency < 1:
+        # `client.get_many` does `concurrency = max_concurrency or 3`, so
+        # passing 0 silently falls back to 3 instead of erroring.
+        msg = f"max_concurrency must be >= 1, got {max_concurrency}"
         raise ValueError(msg)
     from fastbreak.endpoints import (  # noqa: PLC0415
         LeagueDashPlayerStats,
