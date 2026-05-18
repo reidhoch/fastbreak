@@ -54,9 +54,9 @@ async def main() -> None:
         synthetic = [*prior_dates, today]
         days_rest = days_rest_before_game(synthetic, len(synthetic) - 1)
 
-        # Omitting `season=` lets project_player default to the current season
-        # via fastbreak.seasons.get_season_from_date — keeps the example
-        # future-proof without an annual edit.
+        # Omitting `season=` lets project_player derive the season from
+        # `game_date` via fastbreak.seasons.get_season_from_date — keeps
+        # the example future-proof without an annual edit.
         proj = await project_player(
             client,
             player_id=WEMBANYAMA_PLAYER_ID,
