@@ -285,6 +285,26 @@ def test_blend_rejects_nonpositive_n() -> None:
         empirical_bayes_blend(10.0, 20.0, n=0, tau_sq=1.0, sigma_sq=1.0)
 
 
+def test_blend_rejects_non_int_n() -> None:
+    """`n: int` is unenforced at runtime — NaN floats would slip past
+    `n <= 0` (every NaN comparison is False) and propagate NaN through the
+    blend; +inf would silently collapse onto rolling_mean
+    (`sigma_sq / inf == 0`). Reject non-int n up front."""
+    import math
+
+    from fastbreak.projections import empirical_bayes_blend
+
+    for bad in (math.nan, math.inf, 5.5):
+        with pytest.raises(TypeError, match="n must be int"):
+            empirical_bayes_blend(
+                10.0,
+                20.0,
+                n=bad,
+                tau_sq=1.0,
+                sigma_sq=1.0,  # type: ignore[arg-type]
+            )
+
+
 def test_blend_rejects_negative_variance() -> None:
     from fastbreak.projections import empirical_bayes_blend
 

@@ -141,7 +141,17 @@ def empirical_bayes_blend(
         ValueError: If ``n <= 0``; if any of ``rolling_mean``, ``season_mean``,
             ``tau_sq``, ``sigma_sq`` is non-finite (NaN/inf); or if either
             variance is negative.
+        TypeError: If ``n`` is not an ``int`` (the ``int`` annotation is
+            unenforced at runtime; ``float('nan')`` would slip past
+            ``n <= 0`` and ``float('inf')`` would silently collapse the
+            blend onto ``rolling_mean``).
     """
+    # `int | None` style contracts aren't enforced at runtime; reject
+    # non-int `n` explicitly so NaN/inf can't reach the comparison below.
+    # `bool` is a subclass of `int` and is harmless here.
+    if not isinstance(n, int):  # pyright: ignore[reportUnnecessaryIsInstance]
+        msg = f"n must be int, got {type(n).__name__}"  # pyright: ignore[reportUnreachable]
+        raise TypeError(msg)  # pyright: ignore[reportUnreachable]
     # NaN slips past `< 0` and `== 0` comparisons in CPython, so naive guards
     # would silently propagate NaN through the blend. Validate finite first.
     for name, val in (
