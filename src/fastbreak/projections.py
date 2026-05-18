@@ -382,7 +382,7 @@ def _variance(values: Sequence[float]) -> float:
 def _compute_priors_from_logs(
     logs: Mapping[int, Sequence[PlayerGameLogEntry]],
     *,
-    season: str,
+    season: Season,
 ) -> Mapping[ProjectionStat, StatPrior]:
     """Pure function: derive Empirical Bayes priors from per-player game logs.
 
