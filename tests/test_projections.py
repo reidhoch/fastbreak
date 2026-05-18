@@ -713,6 +713,19 @@ def test_rest_negative_raises() -> None:
         adjust_for_rest(blended_mean=25.0, stat="pts", days_rest=-1)
 
 
+def test_rest_rejects_non_int_floats() -> None:
+    """NaN/inf floats slip past `< 0`/`== 0`/`>= 3` (every NaN comparison
+    is False) and would silently land on the neutral 1-2 day branch. The
+    runtime type check prevents that contract violation."""
+    import pytest
+
+    from fastbreak.projections import adjust_for_rest
+
+    for bad in (float("nan"), float("inf"), 1.5):
+        with pytest.raises(TypeError, match="days_rest must be int or None"):
+            adjust_for_rest(blended_mean=25.0, stat="pts", days_rest=bad)  # type: ignore[arg-type]
+
+
 # ---------- adjust_for_home ----------
 
 
@@ -888,12 +901,15 @@ def test_project_player_returns_all_four_stats(mocker) -> None:
     from fastbreak.projections import project_player
 
     # Minimal PlayerGameLog-style payload: 20 games of steady production.
+    # Dates are descending (newest-first) to match the real PlayerGameLog
+    # response ordering — `_build_stat_projection` slices `values[:rolling_n]`
+    # as the recent window.
     game_rows = [
         [
             f"002250000{i:02d}",  # Game_ID
             2544,  # Player_ID
             "22025",  # SEASON_ID
-            f"2025-12-{i + 1:02d}",  # GAME_DATE
+            f"2025-12-{20 - i:02d}",  # GAME_DATE (newest-first)
             "LAL vs. DEN",  # MATCHUP
             "W",  # WL
             35,  # MIN
@@ -1345,13 +1361,14 @@ def test_project_player_raises_on_missing_team(mocker) -> None:
     from fastbreak.clients.nba import NBAClient
     from fastbreak.projections import project_player
 
-    # 3-game log for player 2544
+    # 3-game log for player 2544; descending dates to match real
+    # PlayerGameLog ordering (newest-first).
     game_rows = [
         [
             f"002250000{i:02d}",
             2544,
             "22025",
-            f"2025-12-{i + 1:02d}",
+            f"2025-12-{3 - i:02d}",
             "LAL vs. DEN",
             "W",
             35,
@@ -1528,12 +1545,13 @@ def test_project_player_raises_on_missing_def_rating(mocker) -> None:
     from fastbreak.clients.nba import NBAClient
     from fastbreak.projections import project_player
 
+    # Descending dates to match real PlayerGameLog ordering (newest-first).
     game_rows = [
         [
             f"002250000{i:02d}",
             2544,
             "22025",
-            f"2025-12-{i + 1:02d}",
+            f"2025-12-{3 - i:02d}",
             "LAL vs. DEN",
             "W",
             35,
@@ -1987,14 +2005,37 @@ def test_compute_priors_for_season_rejects_invalid_thresholds() -> None:
         async with NBAClient() as client:
             with pytest.raises(ValueError, match="min_games must be >= 1"):
                 await compute_priors_for_season(client, season="2025-26", min_games=0)
-            with pytest.raises(ValueError, match="min_minutes must be >= 0"):
+            with pytest.raises(
+                ValueError, match="min_minutes must be a finite non-negative number"
+            ):
                 await compute_priors_for_season(
                     client, season="2025-26", min_minutes=-1.0
+                )
+            # NaN/inf would otherwise filter out every player and surface as
+            # a misleading "insufficient eligible players" error.
+            with pytest.raises(
+                ValueError, match="min_minutes must be a finite non-negative number"
+            ):
+                await compute_priors_for_season(
+                    client, season="2025-26", min_minutes=float("nan")
+                )
+            with pytest.raises(
+                ValueError, match="min_minutes must be a finite non-negative number"
+            ):
+                await compute_priors_for_season(
+                    client, season="2025-26", min_minutes=float("inf")
                 )
             with pytest.raises(ValueError, match="max_concurrency must be >= 1"):
                 await compute_priors_for_season(
                     client, season="2025-26", max_concurrency=0
                 )
+            # Empty season string must not silently fall back to the
+            # current season — distinguishes `None` (use default) from `""`
+            # (invalid input).
+            with pytest.raises(
+                ValueError, match="season must be a non-empty string or None"
+            ):
+                await compute_priors_for_season(client, season="")  # type: ignore[arg-type]
 
     anyio.run(run)
 

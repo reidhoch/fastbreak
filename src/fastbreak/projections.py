@@ -319,10 +319,21 @@ def adjust_for_rest(
     ``None`` (unknown rest, e.g. first game of season): 0.
 
     Raises:
-        ValueError: If ``days_rest`` is negative.
+        ValueError: If ``days_rest`` is negative or not an ``int`` (the type
+            annotation is unenforced at runtime; without this guard a
+            ``float('nan')`` would slip past every comparison and silently
+            land on the neutral 1-2 day branch).
     """
     if days_rest is None:
         return 0.0
+    # `int | None` is unenforced at runtime; defend against NaN/inf floats
+    # that would otherwise silently land on the neutral branch (every
+    # comparison against NaN is False). `bool` is a subclass of `int` and is
+    # harmless. Pyright sees this as unreachable given the annotation; the
+    # check exists precisely for callers who violate the type contract.
+    if not isinstance(days_rest, int):  # pyright: ignore[reportUnnecessaryIsInstance]
+        msg = f"days_rest must be int or None, got {type(days_rest).__name__}"  # pyright: ignore[reportUnreachable]
+        raise TypeError(msg)  # pyright: ignore[reportUnreachable]
     if days_rest < 0:
         msg = f"days_rest must be >= 0 or None, got {days_rest}"
         raise ValueError(msg)
@@ -423,6 +434,21 @@ def _compute_priors_from_logs(
     return MappingProxyType(result)
 
 
+def _resolve_season(season: Season | None, default: Season) -> Season:
+    """Resolve a caller-supplied ``season`` to a concrete value.
+
+    ``None`` means "use ``default``"; an empty (or otherwise falsy) string
+    is rejected so ``season = season or default`` cannot silently mask
+    invalid input. Mirrors the validate-at-public-boundary pattern.
+    """
+    if season is None:
+        return default
+    if not season:
+        msg = f"season must be a non-empty string or None, got {season!r}"
+        raise ValueError(msg)
+    return season
+
+
 async def compute_priors_for_season(
     client: NBAClient,
     *,
@@ -457,28 +483,31 @@ async def compute_priors_for_season(
         entry per stat in ``STATS``.
 
     Raises:
-        ValueError: If ``min_games < 1``, ``min_minutes < 0``, or
-            ``max_concurrency < 1``; if fewer than 10 players qualify;
-            if any stat's pool is too small; or if the computed priors
-            fail ``StatPrior``'s validation.
+        ValueError: If ``min_games < 1``, ``min_minutes`` is negative or
+            non-finite, ``max_concurrency < 1``, ``season`` is an empty
+            string, fewer than 10 players qualify, any stat's pool is too
+            small, or the computed priors fail ``StatPrior``'s validation.
     """
     if min_games < 1:
         msg = f"min_games must be >= 1, got {min_games}"
         raise ValueError(msg)
-    if min_minutes < 0:
-        msg = f"min_minutes must be >= 0, got {min_minutes}"
+    # NaN passes `< 0` silently (every NaN comparison is False) and would
+    # then filter out every player, surfacing as a misleading
+    # "insufficient eligible players" error. Reject up front.
+    if not math.isfinite(min_minutes) or min_minutes < 0:
+        msg = f"min_minutes must be a finite non-negative number, got {min_minutes!r}"
         raise ValueError(msg)
     if max_concurrency < 1:
         # `client.get_many` does `concurrency = max_concurrency or 3`, so
         # passing 0 silently falls back to 3 instead of erroring.
         msg = f"max_concurrency must be >= 1, got {max_concurrency}"
         raise ValueError(msg)
+    season = _resolve_season(season, get_season_from_date(league=client.league))
     from fastbreak.endpoints import (  # noqa: PLC0415
         LeagueDashPlayerStats,
         PlayerGameLog,
     )
 
-    season = season or get_season_from_date(league=client.league)
     league_resp = await client.get(LeagueDashPlayerStats(season=season))
     eligible = [
         p.player_id
@@ -608,10 +637,11 @@ async def project_player(  # noqa: PLR0913
 
     Raises:
         ValueError: If ``rolling_n < 1``, ``days_rest`` is negative,
-            ``stats`` contains an unsupported stat, ``priors`` is provided
-            but missing one of the required keys, the player has no
-            logged games, or the opponent team is missing / has an invalid
-            estimated defensive rating (None or non-finite).
+            ``season`` is an empty string, ``stats`` contains an unsupported
+            stat, ``priors`` is provided but missing one of the required
+            keys, the player has no logged games, or the opponent team is
+            missing / has an invalid estimated defensive rating (None or
+            non-finite).
     """
     if rolling_n < 1:
         msg = f"rolling_n must be >= 1, got {rolling_n}"
@@ -633,7 +663,9 @@ async def project_player(  # noqa: PLR0913
     )
     from fastbreak.endpoints import PlayerGameLog, TeamEstimatedMetrics  # noqa: PLC0415
 
-    season = season or get_season_from_date(game_date, league=client.league)
+    season = _resolve_season(
+        season, get_season_from_date(game_date, league=client.league)
+    )
     results: list[Any] = await client.get_many(
         [
             PlayerGameLog(player_id=player_id, season=season),
