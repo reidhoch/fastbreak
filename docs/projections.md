@@ -284,7 +284,7 @@ The main entry point. Concurrently fetches the player's season game log and leag
 | `is_home` | `bool` | required | `True` if the player's team is home |
 | `game_date` | `date` | required | Date of the projected game |
 | `days_rest` | `int \| None` | required | Days of rest before the game (0 = back-to-back); pass `None` for unknown rest (no adjustment). Negative values raise `ValueError`. |
-| `season` | `Season \| None` | `None` | Season in `YYYY-YY` format (e.g. `"2025-26"`); defaults to current season via `get_season_from_date` |
+| `season` | `Season \| None` | `None` | Season in `YYYY-YY` format (e.g. `"2025-26"`); defaults to the season containing `game_date` via `get_season_from_date` |
 | `rolling_n` | `int` | `10` | Number of most-recent games for the rolling mean |
 | `stats` | `Sequence[ProjectionStat]` | `STATS` | Stats to project |
 | `priors` | `Mapping[ProjectionStat, StatPrior] \| None` | `None` | When `None`, uses the baked `STAT_PRIORS` (the common case). When provided, must contain every key in `STATS` — partial dicts raise `ValueError`. Use `compute_priors_for_season` to build a fresh mapping mid-season without re-running the regeneration script. |
@@ -326,7 +326,7 @@ Compute Empirical Bayes priors from live NBA Stats data. Identifies qualifying p
 
 **Returns** an immutable `Mapping[ProjectionStat, StatPrior]` with one entry per stat in `STATS`. The mapping is wrapped in `MappingProxyType` so callers cannot mutate it and accidentally poison subsequent `project_player` calls.
 
-**Raises** `ValueError` when `min_games < 1`, `min_minutes < 0`, fewer than 10 players qualify, any stat's pool is too small, or the computed priors fail `StatPrior`'s `__post_init__` validation.
+**Raises** `ValueError` when `min_games < 1`, `min_minutes < 0`, `max_concurrency < 1`, fewer than 10 players qualify, any stat's pool is too small, or the computed priors fail `StatPrior`'s `__post_init__` validation.
 
 ---
 

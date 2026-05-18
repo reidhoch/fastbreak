@@ -591,7 +591,9 @@ async def project_player(  # noqa: PLR0913
             ``None`` to indicate unknown rest (e.g. first game of season),
             in which case the rest adjustment is 0. Must be ``>= 0``.
         season: Season in YYYY-YY format (e.g. "2025-26"). Defaults to
-            the current season via ``get_season_from_date``.
+            the season containing ``game_date`` via ``get_season_from_date``,
+            so historical backtests and future-schedule projections resolve
+            to the correct season without an explicit override.
         rolling_n: Number of most-recent games for the rolling mean.
         stats: Stats to project (defaults to all four in ``STATS``).
         priors: Optional mapping of per-stat priors. When ``None`` (the
@@ -631,7 +633,7 @@ async def project_player(  # noqa: PLR0913
     )
     from fastbreak.endpoints import PlayerGameLog, TeamEstimatedMetrics  # noqa: PLC0415
 
-    season = season or get_season_from_date(league=client.league)
+    season = season or get_season_from_date(game_date, league=client.league)
     results: list[Any] = await client.get_many(
         [
             PlayerGameLog(player_id=player_id, season=season),
