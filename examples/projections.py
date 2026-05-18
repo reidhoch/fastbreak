@@ -9,7 +9,9 @@ from __future__ import annotations
 import asyncio
 from datetime import date
 
-from fastbreak import NBAClient, project_player
+from aiohttp import ClientTimeout
+
+from fastbreak import NBAClient, compute_priors_for_season, project_player
 from fastbreak.schedule import (
     days_rest_before_game,
     game_dates_from_schedule,
@@ -24,7 +26,12 @@ WEMBANYAMA_PLAYER_ID = 1641705
 async def main() -> None:
     today = date.today()
 
-    async with NBAClient() as client:
+    # The priors fetch issues ~300 game-log requests; pace them out and
+    # extend the timeout so the NBA Stats API doesn't throttle/time out.
+    async with NBAClient(
+        timeout=ClientTimeout(total=120),
+        request_delay=0.5,
+    ) as client:
         schedule = await get_team_schedule(client, team_id=SPURS_TEAM_ID)
 
         todays_game = next(
@@ -54,6 +61,12 @@ async def main() -> None:
         synthetic = [*prior_dates, today]
         days_rest = days_rest_before_game(synthetic, len(synthetic) - 1)
 
+        # Compute Empirical Bayes priors from live data instead of using
+        # the baked STAT_PRIORS snapshot. ~2-4 minutes for ~300 game logs
+        # at this pacing; season is derived from today via
+        # get_season_from_date.
+        priors = await compute_priors_for_season(client, max_concurrency=2)
+
         # Omitting `season=` lets project_player derive the season from
         # `game_date` via fastbreak.seasons.get_season_from_date — keeps
         # the example future-proof without an annual edit.
@@ -66,6 +79,7 @@ async def main() -> None:
             game_date=today,
             days_rest=days_rest,
             rolling_n=10,
+            priors=priors,
         )
 
     opponent = get_team(proj.opponent_team_id)

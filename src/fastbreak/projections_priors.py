@@ -44,15 +44,31 @@ class StatPrior:
 
 STAT_PRIORS: dict[Literal["pts", "reb", "ast", "fg3m"], StatPrior] = {
     "pts": StatPrior(
-        tau_sq=36.1156, sigma_sq=39.8224, season="2025-26", n_players=335, n_games=20785
+        tau_sq=36.115600,
+        sigma_sq=39.822400,
+        season="2025-26",
+        n_players=335,
+        n_games=20785,
     ),
     "reb": StatPrior(
-        tau_sq=4.6643, sigma_sq=6.3483, season="2025-26", n_players=335, n_games=20785
+        tau_sq=4.664300,
+        sigma_sq=6.348300,
+        season="2025-26",
+        n_players=335,
+        n_games=20785,
     ),
     "ast": StatPrior(
-        tau_sq=3.2403, sigma_sq=3.7092, season="2025-26", n_players=335, n_games=20785
+        tau_sq=3.240300,
+        sigma_sq=3.709200,
+        season="2025-26",
+        n_players=335,
+        n_games=20785,
     ),
     "fg3m": StatPrior(
-        tau_sq=0.7310, sigma_sq=1.6802, season="2025-26", n_players=335, n_games=20785
+        tau_sq=0.731000,
+        sigma_sq=1.680200,
+        season="2025-26",
+        n_players=335,
+        n_games=20785,
     ),
 }
