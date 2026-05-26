@@ -16,6 +16,7 @@ from fastbreak.endpoints import (
     BoxScoreScoring,
     BoxScoreSummary,
     BoxScoreTraditional,
+    BoxScoreTraditionalV2,
     BoxScoreUsage,
 )
 
@@ -28,6 +29,7 @@ BOX_SCORE_ENDPOINTS = [
     (BoxScoreScoring, "boxscorescoringv3"),
     (BoxScoreSummary, "boxscoresummaryv3"),
     (BoxScoreTraditional, "boxscoretraditionalv3"),
+    (BoxScoreTraditionalV2, "boxscoretraditionalv2"),
     (BoxScoreUsage, "boxscoreusagev3"),
 ]
 

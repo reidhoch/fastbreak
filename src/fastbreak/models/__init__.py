@@ -145,6 +145,12 @@ if TYPE_CHECKING:
         TraditionalPlayer as TraditionalPlayer,
         TraditionalTeam as TraditionalTeam,
     )
+    from fastbreak.models.box_score_traditional_v2 import (
+        BoxScoreTraditionalV2Response as BoxScoreTraditionalV2Response,
+        TraditionalPlayerV2 as TraditionalPlayerV2,
+        TraditionalStarterBenchV2 as TraditionalStarterBenchV2,
+        TraditionalTeamV2 as TraditionalTeamV2,
+    )
     from fastbreak.models.box_score_traditional_v3 import (
         BoxScoreTraditionalV3Data as BoxScoreTraditionalV3Data,
         BoxScoreTraditionalV3Response as BoxScoreTraditionalV3Response,
