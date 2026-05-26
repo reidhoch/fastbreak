@@ -110,7 +110,7 @@ class TestBoxScoreTraditionalV2:
         assert endpoint.response_model is BoxScoreTraditionalV2Response
 
     def test_endpoint_is_frozen(self):
-        """BoxScoreTraditionalV2 is immutable (frozen dataclass)."""
+        """BoxScoreTraditionalV2 is immutable (frozen Pydantic model)."""
         endpoint = BoxScoreTraditionalV2(game_id="0022400123")
 
         with pytest.raises((AttributeError, ValidationError)):
@@ -340,7 +340,7 @@ class TestBoxScoreTraditionalV2Response:
         assert response.starter_bench_stats == []
 
     def test_parse_dnp_player_with_empty_minutes(self):
-        """DNP rows have empty-string MIN; numeric fields coerce to 0."""
+        """DNP rows have None MIN; numeric fields coerce to 0."""
         # DNP row: every numeric stat field is empty string in some old games
         dnp_row = (
             [
