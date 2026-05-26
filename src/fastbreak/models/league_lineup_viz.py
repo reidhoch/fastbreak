@@ -11,7 +11,11 @@ class LineupViz(PandasMixin, PolarsMixin, BaseModel):
     """Lineup visualization statistics for a player combination."""
 
     group_id: str = Field(alias="GROUP_ID")
-    group_name: str = Field(alias="GROUP_NAME")
+    # NBA stats returns null GROUP_NAME for some lineups (observed in
+    # 2020-21 bubble-season responses). Mirror LineupShot's nullability
+    # in shot_chart_lineup_detail to accept these rows instead of failing
+    # validation on the entire response.
+    group_name: str | None = Field(alias="GROUP_NAME")
     team_id: int = Field(alias="TEAM_ID")
     team_abbreviation: str = Field(alias="TEAM_ABBREVIATION")
     min: float = Field(alias="MIN")

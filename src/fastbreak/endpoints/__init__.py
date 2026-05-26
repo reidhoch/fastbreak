@@ -54,6 +54,9 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.box_score_traditional import (
         BoxScoreTraditional as BoxScoreTraditional,
     )
+    from fastbreak.endpoints.box_score_traditional_v2 import (
+        BoxScoreTraditionalV2 as BoxScoreTraditionalV2,
+    )
     from fastbreak.endpoints.box_score_usage import BoxScoreUsage as BoxScoreUsage
 
     # V3 Box score endpoints (consolidated)

@@ -207,3 +207,80 @@ class TestLeagueLineupVizResponse:
         response = LeagueLineupVizResponse.model_validate(raw_response)
 
         assert response.lineups == []
+
+    def test_parse_response_with_null_group_name(self):
+        """Response parses lineups whose GROUP_NAME is null.
+
+        NBA stats returns null GROUP_NAME for some lineups (observed in
+        2020-21 bubble-season responses). These rows must validate cleanly
+        rather than rejecting the entire response.
+        """
+        raw_response = {
+            "resultSets": [
+                {
+                    "name": "LeagueLineupViz",
+                    "headers": [
+                        "GROUP_ID",
+                        "GROUP_NAME",
+                        "TEAM_ID",
+                        "TEAM_ABBREVIATION",
+                        "MIN",
+                        "OFF_RATING",
+                        "DEF_RATING",
+                        "NET_RATING",
+                        "PACE",
+                        "TS_PCT",
+                        "FTA_RATE",
+                        "TM_AST_PCT",
+                        "PCT_FGA_2PT",
+                        "PCT_FGA_3PT",
+                        "PCT_PTS_2PT_MR",
+                        "PCT_PTS_FB",
+                        "PCT_PTS_FT",
+                        "PCT_PTS_PAINT",
+                        "PCT_AST_FGM",
+                        "PCT_UAST_FGM",
+                        "OPP_FG3_PCT",
+                        "OPP_EFG_PCT",
+                        "OPP_FTA_RATE",
+                        "OPP_TOV_PCT",
+                        "SUM_TM_MIN",
+                    ],
+                    "rowSet": [
+                        [
+                            "-201939-202691-203110-203952-1626172-",
+                            None,
+                            1610612744,
+                            "GSW",
+                            120.0,
+                            115.0,
+                            108.0,
+                            7.0,
+                            99.0,
+                            0.6,
+                            0.2,
+                            0.65,
+                            0.5,
+                            0.5,
+                            0.1,
+                            0.1,
+                            0.15,
+                            0.5,
+                            0.65,
+                            0.35,
+                            0.35,
+                            0.55,
+                            0.2,
+                            0.13,
+                            120.0,
+                        ],
+                    ],
+                },
+            ]
+        }
+
+        response = LeagueLineupVizResponse.model_validate(raw_response)
+
+        assert len(response.lineups) == 1
+        assert response.lineups[0].group_name is None
+        assert response.lineups[0].team_abbreviation == "GSW"
