@@ -35,7 +35,7 @@ repos:
       # Run the cognitive complexity checker.
       - id: complexipy
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.15.14"
+    rev: "v0.15.15"
     hooks:
       - id: ruff-check
         args: [--no-cache]
@@ -52,7 +52,7 @@ repos:
           - types-cachetools>=7.0
           - tenacity>=8.0
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.409
+    rev: v1.1.410
     hooks:
       - id: pyright
   - repo: https://github.com/rhysd/actionlint
