@@ -556,6 +556,117 @@ class TestHelpDefenseRateExact:
         assert result == pytest.approx(1.0)
 
 
+def _make_opponent_split(group_value: str, pts: float = 24.4):
+    """Build a GameSplitStats row keyed by an opponent's full name."""
+    from fastbreak.models.player_dashboard_by_game_splits import GameSplitStats
+
+    base: dict = {
+        "GROUP_SET": "vs. Opponent",
+        "GROUP_VALUE": group_value,
+        "GP": 2,
+        "W": 1,
+        "L": 1,
+        "W_PCT": 0.5,
+        "MIN": 36.0,
+        "FGM": 9.0,
+        "FGA": 18.0,
+        "FG_PCT": 0.5,
+        "FG3M": 2.0,
+        "FG3A": 6.0,
+        "FG3_PCT": 0.333,
+        "FTM": 4.0,
+        "FTA": 5.0,
+        "FT_PCT": 0.8,
+        "OREB": 1.0,
+        "DREB": 7.0,
+        "REB": 8.0,
+        "AST": 8.0,
+        "TOV": 3.0,
+        "STL": 1.0,
+        "BLK": 0.5,
+        "BLKA": 1.0,
+        "PF": 2.0,
+        "PFD": 4.0,
+        "PTS": pts,
+        "PLUS_MINUS": 1.0,
+        "NBA_FANTASY_PTS": 45.0,
+        "DD2": 0,
+        "TD3": 0,
+        "WNBA_FANTASY_PTS": 45.0,
+    }
+    ranks = {
+        f"{k}_RANK": 1
+        for k in (
+            "GP",
+            "W",
+            "L",
+            "W_PCT",
+            "MIN",
+            "FGM",
+            "FGA",
+            "FG_PCT",
+            "FG3M",
+            "FG3A",
+            "FG3_PCT",
+            "FTM",
+            "FTA",
+            "FT_PCT",
+            "OREB",
+            "DREB",
+            "REB",
+            "AST",
+            "TOV",
+            "STL",
+            "BLK",
+            "BLKA",
+            "PF",
+            "PFD",
+            "PTS",
+            "PLUS_MINUS",
+            "NBA_FANTASY_PTS",
+            "DD2",
+            "TD3",
+            "WNBA_FANTASY_PTS",
+        )
+    }
+    return GameSplitStats.model_validate({**base, **ranks, "TEAM_COUNT": 30})
+
+
+class TestSplitVsOpponent:
+    """Tests for split_vs_opponent — resolve a single opponent's split row."""
+
+    def test_matches_opponent_by_team_id(self) -> None:
+        from fastbreak.matchups import split_vs_opponent
+
+        splits = [
+            _make_opponent_split("Atlanta Hawks", pts=30.0),
+            _make_opponent_split("Boston Celtics", pts=21.0),
+        ]
+        # 1610612738 is the Celtics' team ID.
+        row = split_vs_opponent(splits, 1610612738)
+        assert row is not None
+        assert row.group_value == "Boston Celtics"
+        assert row.pts == pytest.approx(21.0)
+
+    def test_unknown_team_id_returns_none(self) -> None:
+        from fastbreak.matchups import split_vs_opponent
+
+        splits = [_make_opponent_split("Boston Celtics")]
+        assert split_vs_opponent(splits, 999) is None
+
+    def test_opponent_not_faced_returns_none(self) -> None:
+        from fastbreak.matchups import split_vs_opponent
+
+        # Only Hawks present; ask for Celtics (a valid ID the player didn't face).
+        splits = [_make_opponent_split("Atlanta Hawks")]
+        assert split_vs_opponent(splits, 1610612738) is None
+
+    def test_empty_splits_returns_none(self) -> None:
+        from fastbreak.matchups import split_vs_opponent
+
+        assert split_vs_opponent([], 1610612738) is None
+
+
 class TestRankMatchupsPpp:
     """Sort-by-PPP tests to kill reverse= sort-order mutant in rank_matchups."""
 

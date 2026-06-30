@@ -26,7 +26,15 @@ if TYPE_CHECKING:
     from fastbreak.models.box_score_matchups_v3 import BoxScoreMatchupsV3Response
     from fastbreak.models.league_season_matchups import SeasonMatchup
     from fastbreak.models.matchups_rollup import MatchupRollupEntry
+    from fastbreak.models.player_dashboard_by_game_splits import GameSplitStats
+    from fastbreak.models.player_dashboard_by_opponent import (
+        PlayerDashboardByOpponentResponse,
+    )
     from fastbreak.models.player_vs_player import PlayerVsPlayerResponse
+    from fastbreak.models.team_dashboard_by_general_splits import TeamSplitStats
+    from fastbreak.models.team_dashboard_by_opponent import (
+        TeamDashboardByOpponentResponse,
+    )
     from fastbreak.types import MeasureType, PerMode, Season, SeasonType
 
 
@@ -251,3 +259,107 @@ async def get_team_matchup_summary(  # noqa: PLR0913
         season_type=season_type,
         per_mode=per_mode,
     )
+
+
+async def get_player_vs_opponents(  # noqa: PLR0913
+    client: BaseClient,
+    player_id: int,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    per_mode: PerMode = "PerGame",
+    measure_type: MeasureType = "Base",
+) -> PlayerDashboardByOpponentResponse:
+    """Player stats split by the opponent faced.
+
+    Wraps PlayerDashboardByOpponent. The ``by_opponent`` result set holds one
+    row per opposing team the player faced (teams not played are omitted), plus
+    ``by_conference`` and ``by_division`` rollups.
+
+    Args:
+        client: NBA API client.
+        player_id: NBA player ID.
+        season: Season in YYYY-YY format (defaults to current season).
+        season_type: \"Regular Season\", \"Playoffs\", or \"Pre Season\".
+        per_mode: \"PerGame\" or \"Totals\".
+        measure_type: \"Base\", \"Advanced\", \"Misc\", etc.
+
+    Returns:
+        PlayerDashboardByOpponentResponse with overall, by_conference,
+        by_division, and by_opponent result sets.
+    """
+    from fastbreak.endpoints import PlayerDashboardByOpponent  # noqa: PLC0415
+
+    season = season or get_season_from_date(league=client.league)
+    return await client.get(
+        PlayerDashboardByOpponent(
+            player_id=player_id,
+            season=season,
+            season_type=season_type,
+            per_mode=per_mode,
+            measure_type=measure_type,
+            league_id=client.league_id,
+        )
+    )
+
+
+async def get_team_vs_opponents(  # noqa: PLR0913
+    client: BaseClient,
+    team_id: int,
+    *,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    per_mode: PerMode = "PerGame",
+    measure_type: MeasureType = "Base",
+) -> TeamDashboardByOpponentResponse:
+    """Team stats split by the opponent faced.
+
+    Wraps TeamDashboardByOpponent. The ``by_opponent`` result set holds one row
+    per opposing team, plus ``by_conference`` and ``by_division`` rollups.
+
+    Args:
+        client: NBA API client.
+        team_id: NBA team ID.
+        season: Season in YYYY-YY format (defaults to current season).
+        season_type: \"Regular Season\", \"Playoffs\", or \"Pre Season\".
+        per_mode: \"PerGame\" or \"Totals\".
+        measure_type: \"Base\", \"Advanced\", \"Misc\", etc.
+
+    Returns:
+        TeamDashboardByOpponentResponse with overall, by_conference,
+        by_division, and by_opponent result sets.
+    """
+    from fastbreak.endpoints import TeamDashboardByOpponent  # noqa: PLC0415
+
+    season = season or get_season_from_date(league=client.league)
+    return await client.get(
+        TeamDashboardByOpponent(
+            team_id=team_id,
+            season=season,
+            season_type=season_type,
+            per_mode=per_mode,
+            measure_type=measure_type,
+            league_id=client.league_id,
+        )
+    )
+
+
+def split_vs_opponent[T: GameSplitStats | TeamSplitStats](
+    splits: list[T],
+    opponent_team_id: int,
+) -> T | None:
+    """Pick the single ``by_opponent`` row for a specific opposing team.
+
+    The opponent dashboards key each row by the opponent's full name (the
+    ``group_value`` field, e.g. \"Atlanta Hawks\"), so this resolves
+    ``opponent_team_id`` to that name via the team registry and matches it.
+
+    Returns None if the team ID is unknown or the player/team did not face
+    that opponent in the requested span.
+    """
+    from fastbreak.teams import get_team  # noqa: PLC0415
+
+    team = get_team(opponent_team_id)
+    if team is None:
+        return None
+    return next((s for s in splits if s.group_value == team.full_name), None)

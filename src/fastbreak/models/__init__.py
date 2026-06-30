@@ -525,6 +525,9 @@ if TYPE_CHECKING:
     from fastbreak.models.player_dashboard_by_last_n_games import (
         PlayerDashboardByLastNGamesResponse as PlayerDashboardByLastNGamesResponse,
     )
+    from fastbreak.models.player_dashboard_by_opponent import (
+        PlayerDashboardByOpponentResponse as PlayerDashboardByOpponentResponse,
+    )
     from fastbreak.models.player_dashboard_by_shooting_splits import (
         AssistedByStats as AssistedByStats,
         PlayerDashboardByShootingSplitsResponse as PlayerDashboardByShootingSplitsResponse,
@@ -692,6 +695,9 @@ if TYPE_CHECKING:
     from fastbreak.models.team_dashboard_by_general_splits import (
         TeamDashboardByGeneralSplitsResponse as TeamDashboardByGeneralSplitsResponse,
         TeamSplitStats as TeamSplitStats,
+    )
+    from fastbreak.models.team_dashboard_by_opponent import (
+        TeamDashboardByOpponentResponse as TeamDashboardByOpponentResponse,
     )
     from fastbreak.models.team_dashboard_by_shooting_splits import (
         TeamDashboardByShootingSplitsResponse as TeamDashboardByShootingSplitsResponse,

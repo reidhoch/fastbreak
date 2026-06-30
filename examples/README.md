@@ -124,6 +124,34 @@ Fetch a team's full season schedule using `get_team_schedule`, detect back-to-ba
 uv run python examples/schedule.py
 ```
 
+### [betting.py](betting.py)
+
+Odds and bankroll math from `fastbreak.betting` across six pure-computation parts (no API call needed):
+
+- **Part 1** — odds conversions: `american_to_decimal`, `american_to_prob`, `decimal_to_american`, `decimal_to_prob`
+- **Part 2** — removing the vig: `remove_vig` turns a posted two-way market into fair probabilities summing to 1.0
+- **Part 3** — bet sizing: `bet_ev` and `kelly_fraction` (full and quarter-Kelly), showing the negative-edge clamp to 0.0
+- **Part 4** — closing-line value: `closing_line_value` for prices that beat, match, or trail the close
+- **Part 5** — `spread_to_win_prob` / `win_prob_to_spread` round-trips with `sigma` sensitivity
+- **Part 6** — `log5` head-to-head win probability from two season win rates
+
+```bash
+uv run python examples/betting.py
+```
+
+### [model_eval.py](model_eval.py)
+
+Score probabilistic forecasts with `fastbreak.model_eval` across four pure-computation parts (no API call needed):
+
+- **Part 1** — proper scoring rules: `brier_score` and `log_loss` for a sharp, a coin-flip, and an overconfident-wrong forecaster
+- **Part 2** — `calibration_curve`: bucket predictions into reliability bins and compare mean predicted vs. observed hit rate
+- **Part 3** — `roi`: realized return across winning, break-even, and losing staking scenarios
+- **Part 4** — end-to-end: combine `fastbreak.betting` (`bet_ev`, `kelly_fraction`) with the scoring rules to bet only +EV games, then score both forecast quality and realized ROI
+
+```bash
+uv run python examples/model_eval.py
+```
+
 ## Advanced Examples
 
 ### [player_advanced.py](player_advanced.py)
