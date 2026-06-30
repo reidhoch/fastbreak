@@ -19,9 +19,14 @@ class BoxScorePlayerV3Base(PandasMixin, PolarsMixin, BaseModel):
 
 
 class BoxScorePlayerV3[T: BaseModel](BoxScorePlayerV3Base):
-    """Player with typed statistics for V3 box scores."""
+    """Player with typed statistics for V3 box scores.
 
-    statistics: T
+    ``statistics`` is optional: pre-1951 games predate the advanced/derived
+    analytics these V3 endpoints report, so the NBA API returns
+    ``statistics: null`` for those games rather than a stats block.
+    """
+
+    statistics: T | None = None
 
 
 class BoxScoreTeamV3Base(PandasMixin, PolarsMixin, BaseModel):
@@ -39,10 +44,16 @@ class BoxScoreTeamV3Base(PandasMixin, PolarsMixin, BaseModel):
 
 
 class BoxScoreTeamV3[T: BaseModel](BoxScoreTeamV3Base):
-    """Team with typed player list for V3 box scores."""
+    """Team with typed player list for V3 box scores.
 
-    players: list[BoxScorePlayerV3[T]]
-    statistics: T
+    ``players`` defaults to empty and ``statistics`` is optional: pre-1951
+    games predate the advanced/derived analytics these V3 endpoints report, so
+    the NBA API returns an empty player list and ``statistics: null`` for those
+    games (e.g. game 0024700041 from 1947-48) rather than a stats block.
+    """
+
+    players: list[BoxScorePlayerV3[T]] = []
+    statistics: T | None = None
 
 
 class BoxScoreDataV3Base(BaseModel):
