@@ -105,6 +105,20 @@ class TestLogLoss:
         with pytest.raises(ValueError, match="empty"):
             log_loss([], [])
 
+    def test_rejects_nonpositive_eps(self) -> None:
+        from fastbreak.model_eval import log_loss
+
+        # eps <= 0 makes the clip ineffective: log(0) for a confident-wrong p.
+        with pytest.raises(ValueError, match="eps"):
+            log_loss([0.0], [1], eps=0.0)
+
+    def test_rejects_eps_at_or_above_half(self) -> None:
+        from fastbreak.model_eval import log_loss
+
+        # eps >= 0.5 inverts the clip window (min(max(p, eps), 1-eps)).
+        with pytest.raises(ValueError, match="eps"):
+            log_loss([0.5], [1], eps=0.5)
+
 
 @given(
     data=st.lists(

@@ -58,9 +58,10 @@ class TestTeamDashboardByOpponentResponse:
 
     @staticmethod
     def _make_headers() -> list[str]:
-        """Return the 53-column header list for the team opponent dashboard.
+        """Return the 54-column header list for the team opponent dashboard.
 
-        Team rows have no fantasy/DD2/TD3/WNBA columns and no TEAM_COUNT.
+        2 identifiers + 26 stats + 26 ranks.  Team rows have no
+        fantasy/DD2/TD3/WNBA columns and no TEAM_COUNT.
         """
         return [
             "GROUP_SET",

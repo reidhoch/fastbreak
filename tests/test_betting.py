@@ -172,6 +172,32 @@ class TestRemoveVig:
         with pytest.raises(ValueError, match="positive"):
             remove_vig([0.0, 0.0])
 
+    def test_rejects_negative_input(self) -> None:
+        from fastbreak.betting import remove_vig
+
+        # A negative prob with a larger positive keeps the sum positive, so it
+        # slips past the sum check and would emit a negative "probability".
+        with pytest.raises(ValueError, match=r"\[0, 1\]"):
+            remove_vig([-0.2, 0.9])
+
+    def test_rejects_above_one_input(self) -> None:
+        from fastbreak.betting import remove_vig
+
+        with pytest.raises(ValueError, match=r"\[0, 1\]"):
+            remove_vig([1.5, 0.3])
+
+    def test_rejects_nan_input(self) -> None:
+        from fastbreak.betting import remove_vig
+
+        with pytest.raises(ValueError, match="finite"):
+            remove_vig([math.nan, 0.5])
+
+    def test_rejects_infinite_input(self) -> None:
+        from fastbreak.betting import remove_vig
+
+        with pytest.raises(ValueError, match="finite"):
+            remove_vig([math.inf, 0.5])
+
 
 @given(
     probs=st.lists(

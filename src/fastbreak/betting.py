@@ -91,11 +91,14 @@ def remove_vig(probs: Sequence[float]) -> list[float]:
     "multiplicative" no-vig method).
 
     Raises:
-        ValueError: If ``probs`` is empty or sums to a non-positive value.
+        ValueError: If ``probs`` is empty, contains a non-finite or
+            out-of-[0, 1] value, or sums to a non-positive value.
     """
     if len(probs) == 0:
         msg = "remove_vig requires at least one probability"
         raise ValueError(msg)
+    for i, p in enumerate(probs):
+        _check_prob(p, f"probs[{i}]")
     total = math.fsum(probs)
     if total <= 0:
         msg = f"implied probabilities must sum to a positive value, got {total!r}"

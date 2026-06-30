@@ -58,7 +58,10 @@ class TestPlayerDashboardByOpponentResponse:
 
     @staticmethod
     def _make_headers() -> list[str]:
-        """Return the 62-column header list for the player opponent dashboard."""
+        """Return the 63-column header list for the player opponent dashboard.
+
+        2 identifiers + 30 stats + 30 ranks + TEAM_COUNT.
+        """
         return [
             "GROUP_SET",
             "GROUP_VALUE",
