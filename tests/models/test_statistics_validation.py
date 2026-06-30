@@ -53,41 +53,53 @@ class TestTraditionalGroupStatisticsValidation:
         assert stats.fieldGoalsMade == 8
         assert stats.reboundsTotal == 8
 
-    def test_field_goals_made_exceeds_attempted_raises(self, valid_data):
-        """fieldGoalsMade > fieldGoalsAttempted should raise ValidationError."""
+    def test_field_goals_made_exceeds_attempted_tolerated(self, valid_data):
+        """fieldGoalsMade > fieldGoalsAttempted is tolerated (unreliable attempts).
+
+        Pre-1951 box scores tracked makes more reliably than attempts, so a
+        row reporting more makes than attempts signals that the *attempts*
+        count is untrustworthy (same class of corruption as attempted == 0).
+        We tolerate it rather than discarding the whole game.
+        """
         valid_data["fieldGoalsMade"] = 20
         valid_data["fieldGoalsAttempted"] = 15
 
-        with pytest.raises(ValidationError) as exc_info:
-            TraditionalGroupStatistics.model_validate(valid_data)
+        stats = TraditionalGroupStatistics.model_validate(valid_data)
+        assert stats.fieldGoalsMade == 20
+        assert stats.fieldGoalsAttempted == 15
 
-        errors = exc_info.value.errors()
-        assert len(errors) == 1
-        assert "fieldGoalsMade (20) > fieldGoalsAttempted (15)" in str(errors[0]["msg"])
-
-    def test_three_pointers_made_exceeds_attempted_raises(self, valid_data):
-        """threePointersMade > threePointersAttempted should raise ValidationError."""
+    def test_three_pointers_made_exceeds_attempted_tolerated(self, valid_data):
+        """threePointersMade > threePointersAttempted is tolerated."""
         valid_data["threePointersMade"] = 10
         valid_data["threePointersAttempted"] = 5
 
-        with pytest.raises(ValidationError) as exc_info:
-            TraditionalGroupStatistics.model_validate(valid_data)
+        stats = TraditionalGroupStatistics.model_validate(valid_data)
+        assert stats.threePointersMade == 10
+        assert stats.threePointersAttempted == 5
 
-        errors = exc_info.value.errors()
-        assert "threePointersMade (10) > threePointersAttempted (5)" in str(
-            errors[0]["msg"]
-        )
-
-    def test_free_throws_made_exceeds_attempted_raises(self, valid_data):
-        """freeThrowsMade > freeThrowsAttempted should raise ValidationError."""
+    def test_free_throws_made_exceeds_attempted_tolerated(self, valid_data):
+        """freeThrowsMade > freeThrowsAttempted is tolerated."""
         valid_data["freeThrowsMade"] = 8
         valid_data["freeThrowsAttempted"] = 5
 
-        with pytest.raises(ValidationError) as exc_info:
-            TraditionalGroupStatistics.model_validate(valid_data)
+        stats = TraditionalGroupStatistics.model_validate(valid_data)
+        assert stats.freeThrowsMade == 8
+        assert stats.freeThrowsAttempted == 5
 
-        errors = exc_info.value.errors()
-        assert "freeThrowsMade (8) > freeThrowsAttempted (5)" in str(errors[0]["msg"])
+    def test_pre_1951_free_throw_row_parses(self, valid_data):
+        """A real 1947-48 row (game 0024700084) parses without error.
+
+        Several players went 4 FTM / 1 FTA, and the team free-throw
+        percentage came back as 1.133 (> 1.0). Both are tolerated.
+        """
+        valid_data["freeThrowsMade"] = 4
+        valid_data["freeThrowsAttempted"] = 1
+        valid_data["freeThrowsPercentage"] = 1.133
+
+        stats = TraditionalGroupStatistics.model_validate(valid_data)
+        assert stats.freeThrowsMade == 4
+        assert stats.freeThrowsAttempted == 1
+        assert stats.freeThrowsPercentage == pytest.approx(1.133)
 
     def test_rebounds_total_mismatch_raises(self, valid_data):
         """reboundsTotal != offensive + defensive should raise ValidationError."""
@@ -172,13 +184,17 @@ class TestTraditionalStatisticsValidation:
 
     def test_inherits_validators(self, valid_data):
         """TraditionalStatistics should inherit validators from parent."""
-        valid_data["fieldGoalsMade"] = 20  # Invalid: exceeds attempted
+        valid_data["reboundsOffensive"] = 2
+        valid_data["reboundsDefensive"] = 6
+        valid_data["reboundsTotal"] = 10  # Invalid: should be 8
 
         with pytest.raises(ValidationError) as exc_info:
             TraditionalStatistics.model_validate(valid_data)
 
         errors = exc_info.value.errors()
-        assert "fieldGoalsMade (20) > fieldGoalsAttempted (15)" in str(errors[0]["msg"])
+        assert "reboundsTotal (10) != reboundsOffensive + reboundsDefensive (8)" in str(
+            errors[0]["msg"]
+        )
 
     def test_negative_plus_minus_valid(self, valid_data):
         """Negative plusMinusPoints is valid."""
@@ -498,13 +514,19 @@ class TestFieldConstraints:
         errors = exc_info.value.errors()
         assert any("greater than or equal to 0" in str(e) for e in errors)
 
-    def test_percentage_above_one_raises(self):
-        """Percentage > 1.0 should raise ValidationError."""
+    def test_percentage_above_one_tolerated(self):
+        """Percentage > 1.0 is tolerated (pre-1951 derived-percentage corruption).
+
+        When makes exceed (untrustworthy) attempts, the API-derived shooting
+        percentage can exceed 1.0 (game 0024700084 reported a team
+        freeThrowsPercentage of 1.133). We keep the ge=0.0 floor but drop the
+        le=1.0 ceiling rather than discarding the game.
+        """
         data = {
             "minutes": "32:45",
             "fieldGoalsMade": 8,
             "fieldGoalsAttempted": 15,
-            "fieldGoalsPercentage": 1.5,  # Invalid: > 1.0
+            "fieldGoalsPercentage": 1.5,  # > 1.0, but tolerated
             "threePointersMade": 2,
             "threePointersAttempted": 5,
             "threePointersPercentage": 0.4,
@@ -522,11 +544,8 @@ class TestFieldConstraints:
             "points": 22,
         }
 
-        with pytest.raises(ValidationError) as exc_info:
-            TraditionalGroupStatistics.model_validate(data)
-
-        errors = exc_info.value.errors()
-        assert any("less than or equal to 1" in str(e) for e in errors)
+        stats = TraditionalGroupStatistics.model_validate(data)
+        assert stats.fieldGoalsPercentage == pytest.approx(1.5)
 
     def test_negative_percentage_raises(self):
         """Percentage < 0.0 should raise ValidationError."""
