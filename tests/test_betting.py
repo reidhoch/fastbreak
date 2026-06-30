@@ -266,6 +266,19 @@ class TestBetEv:
         with pytest.raises(ValueError, match="win_prob"):
             bet_ev(win_prob=1.5, decimal_odds=2.0)
 
+    def test_rejects_nan_odds(self) -> None:
+        from fastbreak.betting import bet_ev
+
+        # NaN bypasses the <= 1.0 guard and would return NaN downstream.
+        with pytest.raises(ValueError, match="decimal_odds"):
+            bet_ev(win_prob=0.5, decimal_odds=math.nan)
+
+    def test_rejects_infinite_odds(self) -> None:
+        from fastbreak.betting import bet_ev
+
+        with pytest.raises(ValueError, match="decimal_odds"):
+            bet_ev(win_prob=0.5, decimal_odds=math.inf)
+
 
 # ---------- kelly_fraction ----------
 
@@ -294,6 +307,18 @@ class TestKellyFraction:
 
         with pytest.raises(ValueError, match="fraction"):
             kelly_fraction(win_prob=0.6, decimal_odds=2.0, fraction=0.0)
+
+    def test_rejects_nan_odds(self) -> None:
+        from fastbreak.betting import kelly_fraction
+
+        with pytest.raises(ValueError, match="decimal_odds"):
+            kelly_fraction(win_prob=0.6, decimal_odds=math.nan)
+
+    def test_rejects_infinite_odds(self) -> None:
+        from fastbreak.betting import kelly_fraction
+
+        with pytest.raises(ValueError, match="decimal_odds"):
+            kelly_fraction(win_prob=0.6, decimal_odds=math.inf)
 
 
 @given(
@@ -341,6 +366,18 @@ class TestClosingLineValue:
 
         assert closing_line_value(bet_decimal=1.9, closing_decimal=2.0) < 0.0
 
+    def test_rejects_nan_bet_decimal(self) -> None:
+        from fastbreak.betting import closing_line_value
+
+        with pytest.raises(ValueError, match="bet_decimal"):
+            closing_line_value(bet_decimal=math.nan, closing_decimal=2.0)
+
+    def test_rejects_infinite_closing_decimal(self) -> None:
+        from fastbreak.betting import closing_line_value
+
+        with pytest.raises(ValueError, match="closing_decimal"):
+            closing_line_value(bet_decimal=2.0, closing_decimal=math.inf)
+
 
 # ---------- spread <-> win_prob ----------
 
@@ -372,6 +409,16 @@ class TestSpreadWinProb:
 
         with pytest.raises(ValueError, match="sigma"):
             spread_to_win_prob(0.0, sigma=0.0)
+
+    def test_rejects_nonfinite_spread_naming_spread(self) -> None:
+        from fastbreak.betting import spread_to_win_prob
+
+        # A non-finite spread already raises (via normal_sf's mean check), but
+        # the error should name `spread` at this boundary, not the internal
+        # `mean`, so the caller knows which argument was bad.
+        for bad in (math.nan, math.inf, -math.inf):
+            with pytest.raises(ValueError, match="spread"):
+                spread_to_win_prob(bad)
 
     def test_win_prob_to_spread_rejects_degenerate(self) -> None:
         from fastbreak.betting import win_prob_to_spread
