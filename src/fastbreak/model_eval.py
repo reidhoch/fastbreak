@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 _LOG_LOSS_EPS = 1e-15
+_LOG_LOSS_MAX_EPS = 0.5
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,8 +93,11 @@ def log_loss(
 
     Raises:
         ValueError: On length mismatch, empty input, probabilities outside
-            [0, 1], or outcomes not in {0, 1}.
+            [0, 1], outcomes not in {0, 1}, or ``eps`` outside (0, 0.5).
     """
+    if not math.isfinite(eps) or not (0.0 < eps < _LOG_LOSS_MAX_EPS):
+        msg = f"eps must be a finite value in (0, {_LOG_LOSS_MAX_EPS}), got {eps!r}"
+        raise ValueError(msg)
     _validate_pairs(probs, outcomes)
     total = 0.0
     for p, y in zip(probs, outcomes, strict=True):
