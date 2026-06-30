@@ -174,6 +174,26 @@ class TestRoi:
         with pytest.raises(ValueError, match="stake"):
             roi(stakes=[0.0, 0.0], profits=[0.0, 0.0])
 
+    def test_rejects_negative_stake(self) -> None:
+        from fastbreak.model_eval import roi
+
+        # A negative stake is nonsensical and can mask a real total via netting.
+        with pytest.raises(ValueError, match="stake"):
+            roi(stakes=[-1.0, 5.0], profits=[0.0, 1.0])
+
+    def test_rejects_nan_profit(self) -> None:
+        from fastbreak.model_eval import roi
+
+        # NaN profit would propagate to a NaN ROI instead of raising.
+        with pytest.raises(ValueError, match="finite"):
+            roi(stakes=[1.0, 1.0], profits=[math.nan, 0.5])
+
+    def test_rejects_infinite_stake(self) -> None:
+        from fastbreak.model_eval import roi
+
+        with pytest.raises(ValueError, match="finite"):
+            roi(stakes=[math.inf, 1.0], profits=[0.5, 0.5])
+
 
 # ---------- calibration_curve ----------
 

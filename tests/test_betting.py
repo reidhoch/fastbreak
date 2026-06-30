@@ -66,6 +66,20 @@ class TestDecimalToAmerican:
         with pytest.raises(ValueError, match="decimal odds"):
             decimal_to_american(1.0)
 
+    def test_rejects_nan(self) -> None:
+        from fastbreak.betting import decimal_to_american
+
+        # NaN slips past the <= 1.0 guard (all NaN comparisons are False) and
+        # would fail deep inside round() with an opaque exception.
+        with pytest.raises(ValueError, match="decimal odds"):
+            decimal_to_american(math.nan)
+
+    def test_rejects_infinity(self) -> None:
+        from fastbreak.betting import decimal_to_american
+
+        with pytest.raises(ValueError, match="decimal odds"):
+            decimal_to_american(math.inf)
+
 
 # ---------- american <-> decimal roundtrip (PBT) ----------
 
@@ -112,6 +126,19 @@ class TestImpliedProbability:
 
         with pytest.raises(ValueError, match="decimal odds"):
             decimal_to_prob(0.9)
+
+    def test_decimal_rejects_nan(self) -> None:
+        from fastbreak.betting import decimal_to_prob
+
+        # NaN slips past the <= 1.0 guard and would return NaN downstream.
+        with pytest.raises(ValueError, match="decimal odds"):
+            decimal_to_prob(math.nan)
+
+    def test_decimal_rejects_infinity(self) -> None:
+        from fastbreak.betting import decimal_to_prob
+
+        with pytest.raises(ValueError, match="decimal odds"):
+            decimal_to_prob(math.inf)
 
 
 @given(

@@ -215,7 +215,8 @@ def demo_spread_win_prob() -> None:
     print("  " + "-" * 36)
     for spread in spreads:
         win_prob = spread_to_win_prob(spread)
-        # Invert (skip the degenerate 50/50 pick'em, which maps to exactly 0).
+        # Invert back to a spread; the 50/50 pick'em (spread 0.0) round-trips
+        # to exactly 0.0.
         recovered = win_prob_to_spread(win_prob)
         print(f"  {spread:>+7.1f}  {win_prob:>7.3f}  {recovered:>+17.2f}")
 

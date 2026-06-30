@@ -53,9 +53,10 @@ def decimal_to_american(decimal: float) -> int:
     Even money (decimal 2.0) maps to +100.
 
     Raises:
-        ValueError: If ``decimal <= 1.0`` (decimal odds always exceed 1).
+        ValueError: If ``decimal`` is non-finite or ``<= 1.0`` (decimal odds
+            always exceed 1).
     """
-    if decimal <= 1.0:
+    if not math.isfinite(decimal) or decimal <= 1.0:
         msg = f"decimal odds must be > 1.0, got {decimal!r}"
         raise ValueError(msg)
     if decimal >= _EVEN_MONEY_DECIMAL:
@@ -67,9 +68,9 @@ def decimal_to_prob(decimal: float) -> float:
     """Implied probability from decimal odds (``1 / decimal``).
 
     Raises:
-        ValueError: If ``decimal <= 1.0``.
+        ValueError: If ``decimal`` is non-finite or ``<= 1.0``.
     """
-    if decimal <= 1.0:
+    if not math.isfinite(decimal) or decimal <= 1.0:
         msg = f"decimal odds must be > 1.0, got {decimal!r}"
         raise ValueError(msg)
     return 1.0 / decimal
