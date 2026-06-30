@@ -113,11 +113,20 @@ def roi(*, stakes: Sequence[float], profits: Sequence[float]) -> float:
     negative for a loss), in the same units as ``stakes``.
 
     Raises:
-        ValueError: On length mismatch or non-positive total stake.
+        ValueError: On length mismatch, a non-finite stake or profit, a
+            negative stake, or a non-positive total stake.
     """
     if len(stakes) != len(profits):
         msg = f"stakes and profits must have equal length, got {len(stakes)} and {len(profits)}"
         raise ValueError(msg)
+    for s in stakes:
+        if not math.isfinite(s) or s < 0.0:
+            msg = f"stakes must be finite and non-negative, got {s!r}"
+            raise ValueError(msg)
+    for p in profits:
+        if not math.isfinite(p):
+            msg = f"profits must be finite, got {p!r}"
+            raise ValueError(msg)
     total_stake = math.fsum(stakes)
     if total_stake <= 0:
         msg = f"total stake must be positive, got {total_stake!r}"
