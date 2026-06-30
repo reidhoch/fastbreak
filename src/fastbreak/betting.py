@@ -56,9 +56,7 @@ def decimal_to_american(decimal: float) -> int:
         ValueError: If ``decimal`` is non-finite or ``<= 1.0`` (decimal odds
             always exceed 1).
     """
-    if not math.isfinite(decimal) or decimal <= 1.0:
-        msg = f"decimal odds must be > 1.0, got {decimal!r}"
-        raise ValueError(msg)
+    _check_decimal_odds(decimal)
     if decimal >= _EVEN_MONEY_DECIMAL:
         return round((decimal - 1.0) * 100.0)
     return round(-100.0 / (decimal - 1.0))
@@ -70,9 +68,7 @@ def decimal_to_prob(decimal: float) -> float:
     Raises:
         ValueError: If ``decimal`` is non-finite or ``<= 1.0``.
     """
-    if not math.isfinite(decimal) or decimal <= 1.0:
-        msg = f"decimal odds must be > 1.0, got {decimal!r}"
-        raise ValueError(msg)
+    _check_decimal_odds(decimal)
     return 1.0 / decimal
 
 
@@ -114,12 +110,11 @@ def bet_ev(*, win_prob: float, decimal_odds: float) -> float:
     fair bet; positive means +EV.
 
     Raises:
-        ValueError: If ``win_prob`` is outside [0, 1] or ``decimal_odds <= 1``.
+        ValueError: If ``win_prob`` is outside [0, 1] or ``decimal_odds`` is
+            non-finite or ``<= 1``.
     """
     _check_prob(win_prob, "win_prob")
-    if decimal_odds <= 1.0:
-        msg = f"decimal_odds must be > 1.0, got {decimal_odds!r}"
-        raise ValueError(msg)
+    _check_decimal_odds(decimal_odds, "decimal_odds")
     b = decimal_odds - 1.0
     return win_prob * b - (1.0 - win_prob)
 
@@ -134,13 +129,11 @@ def kelly_fraction(
     ``fraction`` < 1 for fractional Kelly (e.g. 0.25 for quarter-Kelly).
 
     Raises:
-        ValueError: If ``win_prob`` is outside [0, 1], ``decimal_odds <= 1``,
-            or ``fraction`` is not in (0, 1].
+        ValueError: If ``win_prob`` is outside [0, 1], ``decimal_odds`` is
+            non-finite or ``<= 1``, or ``fraction`` is not in (0, 1].
     """
     _check_prob(win_prob, "win_prob")
-    if decimal_odds <= 1.0:
-        msg = f"decimal_odds must be > 1.0, got {decimal_odds!r}"
-        raise ValueError(msg)
+    _check_decimal_odds(decimal_odds, "decimal_odds")
     if not (0.0 < fraction <= 1.0):
         msg = f"fraction must be in (0, 1], got {fraction!r}"
         raise ValueError(msg)
@@ -158,14 +151,10 @@ def closing_line_value(*, bet_decimal: float, closing_decimal: float) -> float:
     the closing line.
 
     Raises:
-        ValueError: If either price is <= 1.0.
+        ValueError: If either price is non-finite or <= 1.0.
     """
-    if bet_decimal <= 1.0:
-        msg = f"bet_decimal must be > 1.0, got {bet_decimal!r}"
-        raise ValueError(msg)
-    if closing_decimal <= 1.0:
-        msg = f"closing_decimal must be > 1.0, got {closing_decimal!r}"
-        raise ValueError(msg)
+    _check_decimal_odds(bet_decimal, "bet_decimal")
+    _check_decimal_odds(closing_decimal, "closing_decimal")
     return bet_decimal / closing_decimal - 1.0
 
 
@@ -176,8 +165,12 @@ def spread_to_win_prob(spread: float, *, sigma: float = _DEFAULT_SPREAD_SIGMA) -
     the final margin as Normal(-spread, sigma) and returns P(margin > 0).
 
     Raises:
-        ValueError: If ``sigma`` is not a finite positive number.
+        ValueError: If ``spread`` is non-finite or ``sigma`` is not a finite
+            positive number.
     """
+    if not math.isfinite(spread):
+        msg = f"spread must be a finite number, got {spread!r}"
+        raise ValueError(msg)
     if not math.isfinite(sigma) or sigma <= 0:
         msg = f"sigma must be a finite positive number, got {sigma!r}"
         raise ValueError(msg)
@@ -225,6 +218,12 @@ def log5(p_a: float, p_b: float) -> float:
 def _check_prob(value: float, name: str) -> None:
     if not math.isfinite(value) or not (0.0 <= value <= 1.0):
         msg = f"{name} must be a finite probability in [0, 1], got {value!r}"
+        raise ValueError(msg)
+
+
+def _check_decimal_odds(value: float, name: str = "decimal odds") -> None:
+    if not math.isfinite(value) or value <= 1.0:
+        msg = f"{name} must be a finite value > 1.0, got {value!r}"
         raise ValueError(msg)
 
 
