@@ -30,14 +30,31 @@ class TraditionalGroupStatistics(PandasMixin, PolarsMixin, BaseModel):
 
     @model_validator(mode="after")
     def check_made_not_exceeding_attempted(self) -> Self:
-        """Validate that made shots do not exceed attempted shots."""
-        if self.fieldGoalsMade > self.fieldGoalsAttempted:
+        """Validate that made shots do not exceed attempted shots.
+
+        Each check is skipped when ``attempted == 0``: the NBA did not record
+        shots *attempted* until the 1951-52 season, so pre-1951 box scores
+        report makes while leaving attempts at 0 as a "not tracked" sentinel.
+        A correctly tracked game can never have makes without attempts, so
+        guarding on ``attempted > 0`` tolerates the historical sentinel without
+        masking genuine made-exceeds-attempted corruption.
+        """
+        if (
+            self.fieldGoalsAttempted > 0
+            and self.fieldGoalsMade > self.fieldGoalsAttempted
+        ):
             msg = f"fieldGoalsMade ({self.fieldGoalsMade}) > fieldGoalsAttempted ({self.fieldGoalsAttempted})"
             raise ValueError(msg)
-        if self.threePointersMade > self.threePointersAttempted:
+        if (
+            self.threePointersAttempted > 0
+            and self.threePointersMade > self.threePointersAttempted
+        ):
             msg = f"threePointersMade ({self.threePointersMade}) > threePointersAttempted ({self.threePointersAttempted})"
             raise ValueError(msg)
-        if self.freeThrowsMade > self.freeThrowsAttempted:
+        if (
+            self.freeThrowsAttempted > 0
+            and self.freeThrowsMade > self.freeThrowsAttempted
+        ):
             msg = f"freeThrowsMade ({self.freeThrowsMade}) > freeThrowsAttempted ({self.freeThrowsAttempted})"
             raise ValueError(msg)
         return self

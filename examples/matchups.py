@@ -15,10 +15,13 @@ from fastbreak.matchups import (
     get_defensive_assignments,
     get_game_matchups,
     get_player_matchup_stats,
+    get_player_vs_opponents,
     get_primary_defenders,
     get_team_matchup_summary,
+    get_team_vs_opponents,
     matchup_ppp,
     rank_matchups,
+    split_vs_opponent,
 )
 from fastbreak.seasons import get_season_from_date
 from fastbreak.teams import get_team_id
@@ -189,6 +192,76 @@ async def head_to_head(
                 )
 
 
+async def player_opponent_splits(
+    player_id: int,
+    name: str,
+    *,
+    top_n: int = 8,
+    season: str | None = None,
+) -> None:
+    """Print a player's scoring split against each opponent faced.
+
+    Uses get_player_vs_opponents — the by_opponent set holds one row per team
+    the player actually played, so a contender they haven't met yet is absent.
+    """
+    season = season or get_season_from_date()
+
+    async with NBAClient() as client:
+        response = await get_player_vs_opponents(
+            client, player_id=player_id, season=season
+        )
+
+    opponents = sorted(response.by_opponent, key=lambda s: s.pts, reverse=True)
+    if not opponents:
+        print(f"No opponent split data for {name} ({season})")
+        return
+
+    overall_pts = response.overall.pts if response.overall else 0.0
+    print(f"\nOpponent Splits — {name} ({season}), season avg {overall_pts:.1f} pts")
+    print(f"{'Opponent':<24} {'GP':>3} {'PTS':>6} {'FG%':>6} {'+/-':>6}")
+    print("-" * 50)
+    for s in opponents[:top_n]:
+        fg_str = f"{s.fg_pct:.1%}" if s.fg_pct is not None else " N/A"
+        print(
+            f"  {s.group_value!s:<22} {s.gp:>3} {s.pts:>6.1f} "
+            f"{fg_str:>6} {s.plus_minus:>+6.1f}"
+        )
+
+
+async def team_matchup_history(
+    team: str,
+    opponent: str,
+    *,
+    season: str | None = None,
+) -> None:
+    """Print how a team has fared against one specific opponent this season.
+
+    Demonstrates split_vs_opponent: resolve the opponent's row by team ID
+    instead of scanning by name.
+    """
+    season = season or get_season_from_date()
+    team_id = get_team_id(team)
+    opp_id = get_team_id(opponent)
+    if team_id is None or opp_id is None:
+        print(f"Team not found: {team!r} or {opponent!r}")
+        return
+
+    async with NBAClient() as client:
+        response = await get_team_vs_opponents(client, team_id=team_id, season=season)
+
+    row = split_vs_opponent(response.by_opponent, opp_id)
+    if row is None:
+        print(f"{team} have not played {opponent} yet ({season})")
+        return
+
+    fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "N/A"
+    print(f"\n{team} vs {opponent} ({season})")
+    print(
+        f"  {row.gp} games: {row.w}-{row.losses}, "
+        f"{row.pts:.1f} pts on {fg_str} FG, {row.plus_minus:+.1f} net"
+    )
+
+
 async def main() -> None:
     season = "2025-26"
 
@@ -216,6 +289,12 @@ async def main() -> None:
         vs_name="Bam Adebayo",
         season=season,
     )
+
+    # 6. How does a player score against each opponent?
+    await player_opponent_splits(player_id=1628369, name="Jayson Tatum", season=season)
+
+    # 7. A team's record against one specific opponent.
+    await team_matchup_history("Celtics", "Heat", season=season)
 
 
 if __name__ == "__main__":

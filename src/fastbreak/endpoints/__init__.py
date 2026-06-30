@@ -241,6 +241,9 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.player_dashboard_by_last_n_games import (
         PlayerDashboardByLastNGames as PlayerDashboardByLastNGames,
     )
+    from fastbreak.endpoints.player_dashboard_by_opponent import (
+        PlayerDashboardByOpponent as PlayerDashboardByOpponent,
+    )
     from fastbreak.endpoints.player_dashboard_by_shooting_splits import (
         PlayerDashboardByShootingSplits as PlayerDashboardByShootingSplits,
     )
@@ -303,6 +306,9 @@ if TYPE_CHECKING:
     )
     from fastbreak.endpoints.team_dashboard_by_general_splits import (
         TeamDashboardByGeneralSplits as TeamDashboardByGeneralSplits,
+    )
+    from fastbreak.endpoints.team_dashboard_by_opponent import (
+        TeamDashboardByOpponent as TeamDashboardByOpponent,
     )
     from fastbreak.endpoints.team_dashboard_by_shooting_splits import (
         TeamDashboardByShootingSplits as TeamDashboardByShootingSplits,

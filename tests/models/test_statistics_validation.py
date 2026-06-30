@@ -123,6 +123,23 @@ class TestTraditionalGroupStatisticsValidation:
         assert stats.freeThrowsMade == 5
         assert stats.freeThrowsAttempted == 5
 
+    def test_made_with_untracked_attempts_valid(self, valid_data):
+        """Made shots with attempted == 0 (untracked) is valid.
+
+        The NBA did not record field goals *attempted* until the 1951-52
+        season, so pre-1951 box scores (e.g. game 0024800037 from 1948-49)
+        report makes while leaving attempts as 0, a "not tracked" sentinel.
+        Player 0 in that game went 2 FGM / 0 FGA, 1-of-1 from the line, 5 pts.
+        """
+        valid_data["fieldGoalsMade"] = 2
+        valid_data["fieldGoalsAttempted"] = 0
+        valid_data["fieldGoalsPercentage"] = 0.0
+        valid_data["points"] = 5
+
+        stats = TraditionalGroupStatistics.model_validate(valid_data)
+        assert stats.fieldGoalsMade == 2
+        assert stats.fieldGoalsAttempted == 0
+
 
 class TestTraditionalStatisticsValidation:
     """Tests for TraditionalStatistics (inherits from TraditionalGroupStatistics)."""
