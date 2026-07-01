@@ -40,6 +40,7 @@ dependencies = [
     "cachetools>=5.5",
     "certifi>=2026",
     "pydantic>=2.12",
+    "scikit-learn>=1.9.0",
     "structlog>=25.0",
     "tenacity>=8.0",
 ]
@@ -108,6 +109,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["polars", "polars.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["sklearn", "sklearn.*", "scipy", "scipy.*"]
 ignore_missing_imports = true
 
 [tool.pyright]
