@@ -43,11 +43,22 @@ class TraditionalGroupStatistics(PandasMixin, PolarsMixin, BaseModel):
 
     @model_validator(mode="after")
     def check_rebounds_total(self) -> Self:
-        """Validate that reboundsTotal equals offensive + defensive."""
-        expected = self.reboundsOffensive + self.reboundsDefensive
-        if self.reboundsTotal != expected:
-            msg = f"reboundsTotal ({self.reboundsTotal}) != reboundsOffensive + reboundsDefensive ({expected})"
-            raise ValueError(msg)
+        """Validate that reboundsTotal equals offensive + defensive.
+
+        The check is skipped when both components are 0: the NBA Stats API only
+        carries the offensive/defensive rebound split from the 1982-83 season
+        onward, so earlier box scores (e.g. game 0025200046 from 1952-53) report
+        a nonzero reboundsTotal while leaving both components at 0 as a "not
+        tracked" sentinel. Verified across 1952-2023 that this sentinel never
+        co-occurs with a tracked split within a game, so guarding on
+        ``reboundsOffensive or reboundsDefensive`` tolerates the historical gap
+        while still catching genuine mismatches in modern (split-tracked) data.
+        """
+        if self.reboundsOffensive or self.reboundsDefensive:
+            expected = self.reboundsOffensive + self.reboundsDefensive
+            if self.reboundsTotal != expected:
+                msg = f"reboundsTotal ({self.reboundsTotal}) != reboundsOffensive + reboundsDefensive ({expected})"
+                raise ValueError(msg)
         return self
 
 

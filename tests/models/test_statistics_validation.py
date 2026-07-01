@@ -115,6 +115,39 @@ class TestTraditionalGroupStatisticsValidation:
             errors[0]["msg"]
         )
 
+    def test_rebounds_total_with_untracked_split_valid(self, valid_data):
+        """reboundsTotal > 0 with a 0/0 split is valid (untracked split sentinel).
+
+        The NBA Stats API only carries the offensive/defensive rebound split
+        from the 1982-83 season onward; earlier box scores (e.g. game
+        0025200046 from 1952-53) report a nonzero reboundsTotal while leaving
+        both components at 0. Verified across 1952-2023 that this sentinel never
+        co-occurs with a tracked split, so tolerating a 0/0 split does not mask
+        genuine mismatches in modern data.
+        """
+        valid_data["reboundsOffensive"] = 0
+        valid_data["reboundsDefensive"] = 0
+        valid_data["reboundsTotal"] = 17
+
+        stats = TraditionalGroupStatistics.model_validate(valid_data)
+        assert stats.reboundsOffensive == 0
+        assert stats.reboundsDefensive == 0
+        assert stats.reboundsTotal == 17
+
+    def test_rebounds_total_mismatch_with_tracked_split_raises(self, valid_data):
+        """A mismatch is still caught when the split is tracked (one side nonzero)."""
+        valid_data["reboundsOffensive"] = 5
+        valid_data["reboundsDefensive"] = 0
+        valid_data["reboundsTotal"] = 17  # 5 + 0 != 17, and split IS tracked
+
+        with pytest.raises(ValidationError) as exc_info:
+            TraditionalGroupStatistics.model_validate(valid_data)
+
+        errors = exc_info.value.errors()
+        assert "reboundsTotal (17) != reboundsOffensive + reboundsDefensive (5)" in str(
+            errors[0]["msg"]
+        )
+
     def test_zero_attempts_with_zero_made_valid(self, valid_data):
         """Zero made with zero attempted is valid."""
         valid_data["fieldGoalsMade"] = 0
