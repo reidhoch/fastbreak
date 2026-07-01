@@ -2,8 +2,7 @@
 
 Pure solver: callers supply stints (the +1 side, the -1 side, possessions and
 score margin); this module builds a sparse player x stint design matrix and
-solves a possession-weighted ridge regression. See
-docs/superpowers/specs/2026-06-30-rapm-design.md.
+solves a possession-weighted ridge regression.
 """
 
 import math
@@ -129,6 +128,16 @@ def compute_rapm(
     alphas: Sequence[float] | None = None,
 ) -> RAPMResult:
     """Estimate single-combined RAPM via possession-weighted ridge regression."""
+    # Validate the penalty parameters before any early return so that invalid
+    # lambda_/alphas raise consistently whether or not stints is empty.
+    if alphas is not None:
+        if len(alphas) == 0:
+            msg = "alphas must be a non-empty sequence when provided"
+            raise ValueError(msg)
+    elif not math.isfinite(lambda_) or lambda_ < 0:
+        msg = f"lambda_ must be a non-negative finite number, got {lambda_}"
+        raise ValueError(msg)
+
     if not stints:
         return RAPMResult(
             ratings=(), alpha=lambda_, intercept=0.0, n_stints=0, n_players=0
@@ -136,18 +145,10 @@ def compute_rapm(
 
     _validate_stints(stints)
 
-    # Validate lambda_ on the fixed-lambda path (alphas path uses sklearn's validation)
-    if alphas is None and (not math.isfinite(lambda_) or lambda_ < 0):
-        msg = f"lambda_ must be a non-negative finite number, got {lambda_}"
-        raise ValueError(msg)
-
     x, y, w, player_ids = build_design_matrix(stints)
     counts, poss = _player_accounting(stints, player_ids)
 
     if alphas is not None:
-        if len(alphas) == 0:
-            msg = "alphas must be a non-empty sequence when provided"
-            raise ValueError(msg)
         cv_model = RidgeCV(alphas=list(alphas), fit_intercept=False)
         cv_model.fit(x, y, sample_weight=w)
         alpha_used = float(np.asarray(cv_model.alpha_))
