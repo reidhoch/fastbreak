@@ -477,8 +477,10 @@ dependencies = [
     { name = "anyio" },
     { name = "cachetools" },
     { name = "certifi" },
+    { name = "numpy" },
     { name = "pydantic" },
     { name = "scikit-learn" },
+    { name = "scipy" },
     { name = "structlog" },
     { name = "tenacity" },
 ]
@@ -510,8 +512,10 @@ requires-dist = [
     { name = "anyio", specifier = ">=4.12.1" },
     { name = "cachetools", specifier = ">=5.5" },
     { name = "certifi", specifier = ">=2026" },
+    { name = "numpy", specifier = ">=2.0" },
     { name = "pydantic", specifier = ">=2.12" },
     { name = "scikit-learn", specifier = ">=1.9.0" },
+    { name = "scipy", specifier = ">=1.13" },
     { name = "structlog", specifier = ">=25.0" },
     { name = "tenacity", specifier = ">=8.0" },
 ]
