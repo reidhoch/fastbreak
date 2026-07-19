@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
@@ -9,6 +10,8 @@ from fastbreak.games import elapsed_game_seconds
 from fastbreak.league import League
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from fastbreak.clients.base import BaseClient
     from fastbreak.models.play_by_play import PlayByPlayAction
 
@@ -18,8 +21,17 @@ _PERIOD_END_CLOCK = "PT00M00.00S"
 type Classification = Literal["transition", "halfcourt"]
 """Possession classification: transition (fast break) or half-court."""
 
-type Trigger = Literal["made_fg", "turnover", "defensive_rebound", "start_of_period"]
+type Trigger = Literal[
+    "made_fg", "made_ft", "turnover", "defensive_rebound", "start_of_period"
+]
 """How a possession started."""
+
+# A made *final* free throw of a normal trip ("Free Throw N of N") ends the
+# possession -- the defense inbounds.  Technical/flagrant/clear-path FTs carry
+# an inserted word (e.g. "Free Throw Flagrant 2 of 2") and RETAIN possession
+# for the fouled team, so the backreference \1 (N == N) plus the absence of any
+# extra word deliberately excludes them.  Verified against live playbyplayv3.
+_FINAL_FT_SUBTYPE = re.compile(r"^Free Throw (\d+) of \1$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,14 +45,16 @@ class TransitionPossession:
         elapsed: Seconds from possession start to first field goal attempt
             (``0.0`` if no FGA in the possession).
         classification: ``"transition"`` or ``"halfcourt"``.
-        trigger: How this possession started: ``"made_fg"``,
+        trigger: How this possession started: ``"made_fg"``, ``"made_ft"``,
             ``"turnover"``, ``"defensive_rebound"``, or
             ``"start_of_period"``.
         actions: All play-by-play actions in this possession.
         points_scored: Points scored by the offensive team on this possession,
-            counting made field goals and made free throws. (And-one bonus free
-            throws are attributed to the adjacent possession, since a made field
-            goal closes the current one.)
+            counting made field goals and made free throws. A made *final* free
+            throw (``"N of N"``) closes the possession, so the fouled team's
+            free throws are attributed to their own possession. (And-one bonus
+            free throws are likewise attributed to the adjacent possession,
+            since a made field goal closes the current one.)
     """
 
     team_id: int
@@ -159,8 +173,37 @@ def _action_points(action: PlayByPlayAction) -> int:
     return 0
 
 
+def _is_possession_ending_ft(action: PlayByPlayAction) -> bool:
+    """True for a made *final* free throw that hands the ball to the defense.
+
+    Only the plain ``"Free Throw N of N"`` form ends a possession.  Intermediate
+    FTs (``"1 of 2"``) keep the trip open, and technical/flagrant/clear-path FTs
+    retain possession for the fouled team, so they are excluded by the strict
+    ``N == N`` (backreference) pattern with no inserted word.
+    """
+    return _is_made_ft(action) and _FINAL_FT_SUBTYPE.match(action.subType) is not None
+
+
 def _is_turnover(action: PlayByPlayAction) -> bool:
     return action.actionType.lower() == "turnover"
+
+
+# Actions that end the current possession and hand the ball to the other team,
+# in priority order.  Each entry maps a predicate to the trigger recorded on the
+# *next* possession.  Checked before defensive rebounds and plain accumulation.
+_POSSESSION_ENDERS: tuple[tuple[Callable[[PlayByPlayAction], bool], Trigger], ...] = (
+    (_is_made_fg, "made_fg"),
+    (_is_possession_ending_ft, "made_ft"),
+    (_is_turnover, "turnover"),
+)
+
+
+def _possession_ending_trigger(action: PlayByPlayAction) -> Trigger | None:
+    """Return the trigger if *action* ends the current possession, else None."""
+    for predicate, trigger in _POSSESSION_ENDERS:
+        if predicate(action):
+            return trigger
+    return None
 
 
 def _is_defensive_rebound(action: PlayByPlayAction, current_team_id: int) -> bool:
@@ -219,6 +262,9 @@ def classify_possessions(
 
     - **Made field goal** (``isFieldGoal == 1`` and
       ``shotResult == "Made"``).
+    - **Made final free throw** (a made ``"Free Throw N of N"``;
+      technical/flagrant/clear-path FTs are excluded because the fouled
+      team retains possession).
     - **Turnover** (``actionType`` is ``"turnover"``, case-insensitive).
     - **Defensive rebound** (``actionType`` is ``"rebound"``,
       case-insensitive, ``subType`` is not ``"offensive"`` (case-insensitive),
@@ -263,24 +309,14 @@ def classify_possessions(
                 trigger="start_of_period",
             )
 
-        # Made field goal ends the current possession.
-        if _is_made_fg(action):
+        # A made FG, made final FT ("N of N"), or turnover ends the current
+        # possession and hands the ball to the other team.  Technical/flagrant
+        # FTs are deliberately excluded (they retain possession).
+        if (trigger := _possession_ending_trigger(action)) is not None:
             state = _end_possession(
                 action,
                 state,
-                "made_fg",
-                possessions,
-                transition_window,
-                league,
-            )
-            continue
-
-        # Turnover ends the current possession.
-        if _is_turnover(action):
-            state = _end_possession(
-                action,
-                state,
-                "turnover",
+                trigger,
                 possessions,
                 transition_window,
                 league,
