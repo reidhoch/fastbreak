@@ -37,7 +37,10 @@ class TransitionPossession:
             ``"turnover"``, ``"defensive_rebound"``, or
             ``"start_of_period"``.
         actions: All play-by-play actions in this possession.
-        points_scored: Points scored by the offensive team.
+        points_scored: Points scored by the offensive team on this possession,
+            counting made field goals and made free throws. (And-one bonus free
+            throws are attributed to the adjacent possession, since a made field
+            goal closes the current one.)
     """
 
     team_id: int
@@ -117,7 +120,7 @@ def _finalize_possession(
         elapsed = 0.0
         classification = "halfcourt"
 
-    points = sum(a.shotValue for a in state.actions if _is_made_fg(a))
+    points = sum(a.shotValue for a in state.actions if _is_made_fg(a) or _is_made_ft(a))
 
     return TransitionPossession(
         team_id=state.team_id,
@@ -134,6 +137,12 @@ def _finalize_possession(
 
 def _is_made_fg(action: PlayByPlayAction) -> bool:
     return action.isFieldGoal == 1 and action.shotResult == "Made"
+
+
+def _is_made_ft(action: PlayByPlayAction) -> bool:
+    # Free throws carry isFieldGoal=0; a made one is worth shotValue (1) points.
+    # Counting these keeps points-per-possession honest for shooting-foul trips.
+    return action.actionType.lower() == "free throw" and action.shotResult == "Made"
 
 
 def _is_turnover(action: PlayByPlayAction) -> bool:

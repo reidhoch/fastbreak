@@ -16,7 +16,9 @@ Examples::
         if profile and profile.score is not None:
             print(f"{profile.name}: clutch score {profile.score:+.2f}")
 
-        leaders = await get_league_clutch_leaders(client, min_minutes=25.0, top_n=10)
+        # Clutch MIN is a small season total (~3-15 min even for stars), so
+        # keep min_minutes low — a threshold near 20 excludes everyone.
+        leaders = await get_league_clutch_leaders(client, min_minutes=3.0, top_n=10)
         for row in leaders:
             print(f"{row.player_name}: {row.plus_minus:+.1f} in clutch")
 """
@@ -266,7 +268,7 @@ async def get_league_clutch_leaders(
     *,
     season: Season | None = None,
     season_type: SeasonType = "Regular Season",
-    min_minutes: float = 20.0,
+    min_minutes: float = 3.0,
     top_n: int = 10,
 ) -> list[LeagueDashPlayerClutchRow]:
     """Fetch league-wide clutch leaders sorted by plus/minus.
@@ -278,7 +280,11 @@ async def get_league_clutch_leaders(
         client: NBA API client.
         season: Season in YYYY-YY format (defaults to current season).
         season_type: "Regular Season", "Playoffs", etc.
-        min_minutes: Minimum clutch minutes to qualify (default 20).
+        min_minutes: Minimum clutch minutes to qualify (default 3.0). Clutch
+            MIN is a small season *total*, not a per-game average — even elite
+            players accumulate only ~3-15 minutes across a season, so this
+            threshold must be small. A default of ~20 would exclude every
+            player and return an empty list.
         top_n: Maximum number of players to return (default 10).
 
     Returns:

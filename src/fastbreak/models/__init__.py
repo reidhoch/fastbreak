@@ -386,9 +386,22 @@ if TYPE_CHECKING:
         LeagueDashPlayerClutchResponse as LeagueDashPlayerClutchResponse,
         LeagueDashPlayerClutchRow as LeagueDashPlayerClutchRow,
     )
+    from fastbreak.models.league_dash_player_pt_shot import (
+        LeagueDashPlayerPtShotResponse as LeagueDashPlayerPtShotResponse,
+        PlayerPtShotStats as PlayerPtShotStats,
+    )
+    from fastbreak.models.league_dash_player_shot_locations import (
+        LeagueDashPlayerShotLocationsResponse as LeagueDashPlayerShotLocationsResponse,
+        PlayerShotLocations as PlayerShotLocations,
+        ShotZone as ShotZone,
+    )
     from fastbreak.models.league_dash_player_stats import (
         LeagueDashPlayerStatsResponse as LeagueDashPlayerStatsResponse,
         LeagueDashPlayerStatsRow as LeagueDashPlayerStatsRow,
+    )
+    from fastbreak.models.league_dash_pt_defend import (
+        LeagueDashPtDefendResponse as LeagueDashPtDefendResponse,
+        PlayerDefendStats as PlayerDefendStats,
     )
     from fastbreak.models.league_dash_pt_stats import (
         LeagueDashPtStatsResponse as LeagueDashPtStatsResponse,
@@ -546,6 +559,10 @@ if TYPE_CHECKING:
         PlayerEstimatedMetric as PlayerEstimatedMetric,
         PlayerEstimatedMetricsResponse as PlayerEstimatedMetricsResponse,
     )
+    from fastbreak.models.player_fantasy_profile import (
+        FantasyProfileStats as FantasyProfileStats,
+        PlayerFantasyProfileResponse as PlayerFantasyProfileResponse,
+    )
     from fastbreak.models.player_fantasy_profile_bar_graph import (
         FantasyStats as FantasyStats,
         PlayerFantasyProfileBarGraphResponse as PlayerFantasyProfileBarGraphResponse,
@@ -692,15 +709,30 @@ if TYPE_CHECKING:
         TeamShotTypeStats as TeamShotTypeStats,
         TeamTouchTimeStats as TeamTouchTimeStats,
     )
+    from fastbreak.models.team_dashboard_by_clutch import (
+        TeamDashboardByClutchResponse as TeamDashboardByClutchResponse,
+    )
+    from fastbreak.models.team_dashboard_by_game_splits import (
+        TeamDashboardByGameSplitsResponse as TeamDashboardByGameSplitsResponse,
+    )
     from fastbreak.models.team_dashboard_by_general_splits import (
         TeamDashboardByGeneralSplitsResponse as TeamDashboardByGeneralSplitsResponse,
         TeamSplitStats as TeamSplitStats,
+    )
+    from fastbreak.models.team_dashboard_by_last_n_games import (
+        TeamDashboardByLastNGamesResponse as TeamDashboardByLastNGamesResponse,
     )
     from fastbreak.models.team_dashboard_by_opponent import (
         TeamDashboardByOpponentResponse as TeamDashboardByOpponentResponse,
     )
     from fastbreak.models.team_dashboard_by_shooting_splits import (
         TeamDashboardByShootingSplitsResponse as TeamDashboardByShootingSplitsResponse,
+    )
+    from fastbreak.models.team_dashboard_by_team_performance import (
+        TeamDashboardByTeamPerformanceResponse as TeamDashboardByTeamPerformanceResponse,
+    )
+    from fastbreak.models.team_dashboard_by_year_over_year import (
+        TeamDashboardByYearOverYearResponse as TeamDashboardByYearOverYearResponse,
     )
     from fastbreak.models.team_details import (
         TeamAward as TeamAward,

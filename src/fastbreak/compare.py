@@ -114,6 +114,16 @@ COMPARISON_METRICS: tuple[str, ...] = (
 
 HIGHER_IS_WORSE: frozenset[str] = frozenset({"tov", "pf", "e_def_rating"})
 
+# Volume / context metrics that have no "better" direction: pace and minutes are
+# situational, raw attempt counts (fga/fg3a/fta) measure opportunity/role rather
+# than skill (and the shooter usually already leads in makes), and usage is how
+# much offense runs through a player, not its quality. These are still reported
+# in ``comparison_deltas`` but excluded from the ``comparison_edges`` lead tally
+# so the headline count reflects quality, not role.
+NEUTRAL_METRICS: frozenset[str] = frozenset(
+    {"min", "fga", "fg3a", "fta", "e_pace", "e_usg_pct"}
+)
+
 # NBA stats have ~3 decimal places of precision; 1e-9 absorbs only IEEE 754
 # rounding noise, not real stat differences.
 _TOLERANCE: float = 1e-9
@@ -168,18 +178,30 @@ class ComparedPlayer:
 
 @dataclass(frozen=True)
 class EdgeSummary:
-    """Lead/trail/tie counts across comparison metrics."""
+    """Lead/trail/tie counts across comparison metrics.
+
+    ``neutral`` holds metrics in :data:`NEUTRAL_METRICS` (pace, minutes, raw
+    attempt volume, usage) — dimensions with no "better" direction, excluded
+    from the a/b lead tally so the headline count reflects quality rather than
+    role. ``total`` accounts for every comparison metric across all buckets.
+    """
 
     a_leads: int
     b_leads: int
     ties: int
     unavailable: int
     total: int
+    neutral: int = 0
 
     def __post_init__(self) -> None:
-        expected = self.a_leads + self.b_leads + self.ties + self.unavailable
+        expected = (
+            self.a_leads + self.b_leads + self.ties + self.neutral + self.unavailable
+        )
         if self.total != expected:
-            msg = f"total ({self.total}) != a_leads + b_leads + ties + unavailable ({expected})"
+            msg = (
+                f"total ({self.total}) != a_leads + b_leads + ties + neutral + "
+                f"unavailable ({expected})"
+            )
             raise ValueError(msg)
 
 
@@ -300,17 +322,21 @@ def comparison_edges(
     deltas: dict[str, float | None],
     *,
     higher_is_worse: frozenset[str] = HIGHER_IS_WORSE,
+    neutral: frozenset[str] = NEUTRAL_METRICS,
 ) -> EdgeSummary:
     """Count how many metrics each player leads in.
 
     For metrics in ``higher_is_worse`` (e.g. turnovers, fouls, defensive
     rating), a positive delta means player A has *more*, which is bad — so
-    player B leads. Metrics with ``None`` deltas (missing data for one or
+    player B leads. Metrics in ``neutral`` (pace, minutes, raw attempt volume,
+    usage) have no "better" direction and are tallied separately rather than
+    credited as a lead. Metrics with ``None`` deltas (missing data for one or
     both players) are counted as ``unavailable``, not as ties.
 
     Args:
         deltas: Metric deltas from ``comparison_deltas``.
         higher_is_worse: Metrics where lower is better.
+        neutral: Metrics with no quality direction, excluded from the lead tally.
 
     Returns:
         EdgeSummary with counts.
@@ -318,10 +344,16 @@ def comparison_edges(
     a_leads = 0
     b_leads = 0
     ties = 0
+    neutral_count = 0
     unavailable = 0
     for metric, val in deltas.items():
         if val is None:
             unavailable += 1
+            continue
+        # Neutral metrics are bucketed regardless of value (even a tie-valued
+        # neutral metric is "neutral", not a "tie" between quality dimensions).
+        if metric in neutral:
+            neutral_count += 1
             continue
         if abs(val) < _TOLERANCE:
             ties += 1
@@ -335,8 +367,9 @@ def comparison_edges(
         a_leads=a_leads,
         b_leads=b_leads,
         ties=ties,
+        neutral=neutral_count,
         unavailable=unavailable,
-        total=a_leads + b_leads + ties + unavailable,
+        total=a_leads + b_leads + ties + neutral_count + unavailable,
     )
 
 

@@ -331,11 +331,17 @@ class TestComparisonEdges:
     """Step 3: comparison_edges counts wins/losses/ties."""
 
     def test_identical_all_ties(self) -> None:
+        from fastbreak.compare import NEUTRAL_METRICS
+
         deltas = dict.fromkeys(COMPARISON_METRICS, 0.0)
         edges = comparison_edges(deltas)
-        assert edges.ties == edges.total
+        # Identical players: every quality metric ties; neutral metrics bucket
+        # separately regardless of value. Together they account for the total.
         assert edges.a_leads == 0
         assert edges.b_leads == 0
+        assert edges.neutral == len(NEUTRAL_METRICS)
+        assert edges.ties == len(COMPARISON_METRICS) - len(NEUTRAL_METRICS)
+        assert edges.ties + edges.neutral == edges.total
 
     def test_a_leads_on_positive_delta(self) -> None:
         deltas = dict.fromkeys(COMPARISON_METRICS, 0.0)
@@ -377,7 +383,11 @@ class TestComparisonEdges:
         deltas["e_net_rating"] = None
         edges = comparison_edges(deltas)
         assert (
-            edges.a_leads + edges.b_leads + edges.ties + edges.unavailable
+            edges.a_leads
+            + edges.b_leads
+            + edges.ties
+            + edges.neutral
+            + edges.unavailable
             == edges.total
         )
 
@@ -385,6 +395,43 @@ class TestComparisonEdges:
         deltas = dict.fromkeys(COMPARISON_METRICS, 0.0)
         edges = comparison_edges(deltas)
         assert edges.total == len(COMPARISON_METRICS)
+
+    def test_neutral_metrics_not_counted_as_leads(self) -> None:
+        """Volume/context metrics (pace, minutes, attempts, usage) are neutral.
+
+        A higher pace, more minutes, more raw attempts, or higher usage is not
+        a quality 'lead' — crediting them inflates the headline edge count with
+        role/opportunity dimensions. They land in the ``neutral`` bucket.
+        """
+        from fastbreak.compare import NEUTRAL_METRICS
+
+        deltas: dict[str, float | None] = dict.fromkeys(COMPARISON_METRICS, 0.0)
+        # Give player A a large positive delta on every neutral metric.
+        for m in NEUTRAL_METRICS:
+            deltas[m] = 10.0
+        edges = comparison_edges(deltas)
+
+        # None of the neutral metrics should have added to a_leads.
+        assert edges.a_leads == 0
+        assert edges.b_leads == 0
+        assert edges.neutral == len(NEUTRAL_METRICS)
+
+    def test_neutral_metrics_membership(self) -> None:
+        """The neutral set is exactly the volume/context metrics chosen."""
+        from fastbreak.compare import NEUTRAL_METRICS
+
+        assert NEUTRAL_METRICS == frozenset(
+            {"min", "fga", "fg3a", "fta", "e_pace", "e_usg_pct"}
+        )
+
+    def test_quality_metric_still_counts_with_neutral_present(self) -> None:
+        """A real quality lead is still counted even when neutral metrics move."""
+        deltas: dict[str, float | None] = dict.fromkeys(COMPARISON_METRICS, 0.0)
+        deltas["pts"] = 5.0  # genuine quality lead for A
+        deltas["fga"] = 8.0  # neutral: A shoots more, not a lead
+        edges = comparison_edges(deltas)
+        assert edges.a_leads == 1
+        assert edges.neutral >= 1
 
 
 # ---------------------------------------------------------------------------

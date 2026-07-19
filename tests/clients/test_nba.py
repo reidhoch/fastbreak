@@ -678,6 +678,73 @@ class TestNBAClientGet:
         ]
         assert len(rate_limit_calls) == 0
 
+    async def test_get_honors_retry_after_on_503(
+        self, make_client_response_error, make_mock_client, mocker: MockerFixture
+    ):
+        """A 503 carrying Retry-After is captured under 'retry_after_received'."""
+        error = make_client_response_error(503, "https://stats.nba.com/stats/test")
+        client, mock_session = make_mock_client(
+            status=503,
+            raise_error=error,
+            headers={"Retry-After": "45"},
+            max_retries=0,
+            retry_wait_min=0.01,
+        )
+        endpoint = PlayByPlay(game_id="0022500571")
+
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
+        mock_bound = mocker.MagicMock()
+        mock_bound.adebug = mocker.AsyncMock()
+        mock_logger.bind.return_value = mock_bound
+
+        with pytest.raises(ClientResponseError):
+            await client.get(endpoint)
+
+        # 5xx + Retry-After engages the retry-after path (not the 429-only
+        # "rate_limited" event).
+        received = [
+            c
+            for c in mock_bound.adebug.call_args_list
+            if c[0][0] == "retry_after_received"
+        ]
+        assert len(received) == 1
+        assert received[0][1]["status"] == 503
+        assert received[0][1]["retry_after"] == 45.0
+        # And it is NOT logged as rate_limited (that stays 429-only).
+        rate_limited = [
+            c for c in mock_bound.adebug.call_args_list if c[0][0] == "rate_limited"
+        ]
+        assert len(rate_limited) == 0
+
+    async def test_get_503_without_retry_after_uses_backoff(
+        self, make_client_response_error, make_mock_client, mocker: MockerFixture
+    ):
+        """A bare 503 (no Retry-After) is left to exponential backoff, unchanged."""
+        error = make_client_response_error(503, "https://stats.nba.com/stats/test")
+        client, mock_session = make_mock_client(
+            status=503,
+            raise_error=error,
+            max_retries=0,
+            retry_wait_min=0.01,
+        )
+        endpoint = PlayByPlay(game_id="0022500571")
+
+        mock_logger = mocker.patch("fastbreak.clients.base.logger")
+        mock_bound = mocker.MagicMock()
+        mock_bound.adebug = mocker.AsyncMock()
+        mock_logger.bind.return_value = mock_bound
+
+        with pytest.raises(ClientResponseError):
+            await client.get(endpoint)
+
+        # No Retry-After header → neither retry-after event fires.
+        engaged = [
+            c
+            for c in mock_bound.adebug.call_args_list
+            if c[0][0] in ("rate_limited", "retry_after_received")
+        ]
+        assert len(engaged) == 0
+
 
 class TestNBAClientRetry:
     """Tests for retry logic."""
@@ -1547,13 +1614,17 @@ class TestMakeWaitWithRetryAfter:
     def test_returns_callable(self):
         """Factory returns a callable wait function."""
         state = _RetryAfterState()
-        wait_func = _make_wait_with_retry_after(state, initial=1.0, max_wait=10.0)
+        wait_func = _make_wait_with_retry_after(
+            state, initial=1.0, max_wait=10.0, retry_after_max=120.0
+        )
         assert callable(wait_func)
 
     def test_returns_retry_after_when_set(self, mocker: MockerFixture):
-        """Wait function returns min(retry_after, max_wait) when retry_after is set."""
+        """Wait function returns the server Retry-After when set and within bounds."""
         state = _RetryAfterState()
-        wait_func = _make_wait_with_retry_after(state, initial=1.0, max_wait=60.0)
+        wait_func = _make_wait_with_retry_after(
+            state, initial=1.0, max_wait=60.0, retry_after_max=120.0
+        )
 
         state.set_retry_after(5.0)
         mock_retry_state = mocker.MagicMock(spec=RetryCallState)
@@ -1562,22 +1633,44 @@ class TestMakeWaitWithRetryAfter:
 
         assert result == pytest.approx(5.0)
 
-    def test_caps_retry_after_at_max_wait(self, mocker: MockerFixture):
-        """Wait function caps retry_after at max_wait."""
-        state = _RetryAfterState()
-        wait_func = _make_wait_with_retry_after(state, initial=1.0, max_wait=10.0)
+    def test_retry_after_not_capped_at_backoff_max(self, mocker: MockerFixture):
+        """A server Retry-After above max_wait (the backoff cap) is still honored.
 
-        state.set_retry_after(30.0)
+        Regression guard for the finding that a Retry-After of 60s was being
+        truncated to the 10s exponential-backoff cap.
+        """
+        state = _RetryAfterState()
+        wait_func = _make_wait_with_retry_after(
+            state, initial=1.0, max_wait=10.0, retry_after_max=120.0
+        )
+
+        state.set_retry_after(60.0)
         mock_retry_state = mocker.MagicMock(spec=RetryCallState)
 
         result = wait_func(mock_retry_state)
 
-        assert result == pytest.approx(10.0)
+        assert result == pytest.approx(60.0)
+
+    def test_caps_retry_after_at_retry_after_max(self, mocker: MockerFixture):
+        """Wait function caps retry_after at retry_after_max (the safety bound)."""
+        state = _RetryAfterState()
+        wait_func = _make_wait_with_retry_after(
+            state, initial=1.0, max_wait=10.0, retry_after_max=120.0
+        )
+
+        state.set_retry_after(86400.0)  # hostile/buggy header: 1 day
+        mock_retry_state = mocker.MagicMock(spec=RetryCallState)
+
+        result = wait_func(mock_retry_state)
+
+        assert result == pytest.approx(120.0)
 
     def test_falls_back_to_exponential_when_no_retry_after(self, mocker: MockerFixture):
         """Wait function falls back to exponential backoff when no retry_after."""
         state = _RetryAfterState()
-        wait_func = _make_wait_with_retry_after(state, initial=1.0, max_wait=10.0)
+        wait_func = _make_wait_with_retry_after(
+            state, initial=1.0, max_wait=10.0, retry_after_max=120.0
+        )
 
         # Do not set retry_after — state should return None
         mock_retry_state = mocker.MagicMock(spec=RetryCallState)
@@ -1593,7 +1686,9 @@ class TestMakeWaitWithRetryAfter:
     def test_clears_retry_after_after_use(self, mocker: MockerFixture):
         """Retry_after value is consumed (cleared) after one call."""
         state = _RetryAfterState()
-        wait_func = _make_wait_with_retry_after(state, initial=1.0, max_wait=60.0)
+        wait_func = _make_wait_with_retry_after(
+            state, initial=1.0, max_wait=60.0, retry_after_max=120.0
+        )
         mock_retry_state = mocker.MagicMock(spec=RetryCallState)
         mock_retry_state.attempt_number = 1
 
