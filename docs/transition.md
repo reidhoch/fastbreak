@@ -47,7 +47,7 @@ A single classified possession from a game's play-by-play data.
 | `classification` | `str` | `"transition"` or `"halfcourt"` |
 | `trigger` | `str` | How the possession started — see table below |
 | `actions` | `tuple[PlayByPlayAction, ...]` | All play-by-play actions in this possession |
-| `points_scored` | `int` | Points scored by the offensive team (sum of `shotValue` on made FGs) |
+| `points_scored` | `int` | Points scored by the offensive team (made FGs at `shotValue` + made free throws at 1 each) |
 
 **Trigger values**
 
@@ -55,6 +55,7 @@ A single classified possession from a game's play-by-play data.
 |---------|---------|
 | `"start_of_period"` | First possession of a period (Q1, Q2, OT, etc.) |
 | `"made_fg"` | Previous team scored — new team inbounds |
+| `"made_ft"` | Previous team made a final free throw (`"N of N"`) — new team inbounds |
 | `"turnover"` | Previous team turned the ball over |
 | `"defensive_rebound"` | Rebounding team gained possession after a missed shot |
 

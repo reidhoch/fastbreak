@@ -183,7 +183,9 @@ class TestClassifyPossessions:
         is encoded only in ``description`` (``"... (N PTS)"`` for a make, a
         leading ``"MISS "`` for a miss). Each made FT is worth exactly 1 point.
         A shooting foul sending a player to the line for two made FTs (no made
-        field goal) is a real scoring possession worth 2 points.
+        field goal) is a real scoring possession worth 2 points. The made
+        final FT (``"2 of 2"``) closes the possession on its own, so no extra
+        closing action is needed.
         """
         actions = [
             _make_action(
@@ -207,13 +209,6 @@ class TestClassifyPossessions:
                 shot_value=0,
                 description="Gobert Free Throw 2 of 2 (2 PTS)",
                 action_number=2,
-            ),
-            # Opponent defensive rebound-like possession change to close it out.
-            _make_action(
-                action_type="turnover",
-                team_id=100,
-                clock="PT09M40.00S",
-                action_number=3,
             ),
         ]
         result = classify_possessions(actions)
@@ -250,8 +245,10 @@ class TestClassifyPossessions:
     def test_made_technical_free_throw_counts_one_point(self):
         """A made technical FT ("Free Throw Technical (N PTS)") scores 1 point.
 
-        Technical/flagrant FTs have no "N of M" sub-type but still carry the
-        "(N PTS)" make marker on the real API; each is worth 1 point.
+        Verified live: a technical FT's sub-type is ``"Free Throw Technical"``
+        (no "N of M"), while flagrant FTs do carry an "N of M"
+        (e.g. ``"Free Throw Flagrant 2 of 2"``). Both still carry the
+        "(N PTS)" make marker; each made FT is worth 1 point.
         """
         actions = [
             _make_action(
@@ -274,6 +271,135 @@ class TestClassifyPossessions:
         ]
         result = classify_possessions(actions)
         assert result[0].points_scored == 1
+
+    def test_made_final_ft_ends_possession_and_opponent_points_stay_separate(self):
+        """A made *final* FT (``N of N``) ends the possession like a made FG.
+
+        Real ``playbyplayv3`` contract (verified live): after a made final free
+        throw the defense inbounds, so the possession changes hands.  Opponent
+        free-throw points must NOT merge into the shooter's possession.
+
+        Regression for the case flagged in review: counting made FTs toward
+        ``points_scored`` without also treating a made final FT as a
+        possession-ending event let a following opponent free throw be
+        appended to (and scored in) the shooter's still-open possession.
+        """
+        actions = [
+            # Team 100 makes both shots of a two-shot trip.
+            _make_action(
+                action_type="Free Throw",
+                sub_type="Free Throw 1 of 2",
+                team_id=100,
+                clock="PT09M50.00S",
+                is_field_goal=0,
+                description="Gobert Free Throw 1 of 2 (1 PTS)",
+                action_number=1,
+            ),
+            _make_action(
+                action_type="Free Throw",
+                sub_type="Free Throw 2 of 2",
+                team_id=100,
+                clock="PT09M49.00S",
+                is_field_goal=0,
+                description="Gobert Free Throw 2 of 2 (2 PTS)",
+                action_number=2,
+            ),
+            # Opponent (team 200) is then fouled and makes a free throw.
+            _make_action(
+                action_type="Free Throw",
+                sub_type="Free Throw 1 of 1",
+                team_id=200,
+                clock="PT09M30.00S",
+                is_field_goal=0,
+                description="Leonard Free Throw 1 of 1 (1 PTS)",
+                action_number=3,
+            ),
+        ]
+        result = classify_possessions(actions)
+        # Team 100's two made FTs are one possession worth 2 -- not 3.
+        assert result[0].team_id == 100
+        assert result[0].points_scored == 2
+        # Team 200's free throw is a distinct possession worth 1, and its
+        # trigger records that the prior possession ended on a made FT.
+        assert result[1].team_id == 200
+        assert result[1].points_scored == 1
+        assert result[1].trigger == "made_ft"
+
+    def test_made_technical_ft_does_not_end_possession(self):
+        """A made technical FT keeps the ball with the shooting team.
+
+        Verified live: a technical FT has no ``"N of N"`` sub-type
+        (``"Free Throw Technical"``) and the fouled team RETAINS possession,
+        so it must not trigger a possession change the way a normal final FT
+        does.  The technical point stays in the same possession as the
+        follow-up field goal.
+        """
+        actions = [
+            _make_action(
+                action_type="Free Throw",
+                sub_type="Free Throw Technical",
+                team_id=100,
+                clock="PT09M50.00S",
+                is_field_goal=0,
+                description="Powell Free Throw Technical (7 PTS)",
+                action_number=1,
+            ),
+            _make_action(
+                action_type="2pt",
+                team_id=100,
+                clock="PT09M45.00S",
+                shot_result="Made",
+                shot_value=2,
+                description="Powell Layup (9 PTS)",
+                action_number=2,
+            ),
+        ]
+        result = classify_possessions(actions)
+        assert len(result) == 1
+        assert result[0].points_scored == 3
+
+    def test_made_flagrant_final_ft_does_not_end_possession(self):
+        """A made flagrant final FT keeps the ball despite an ``N of N``.
+
+        Verified live: flagrant FT sub-types carry an ``"N of M"``
+        (e.g. ``"Free Throw Flagrant 2 of 2"``), but the fouled team RETAINS
+        possession after a flagrant.  The possession-ending rule must key off
+        the plain ``"Free Throw N of N"`` form only, excluding
+        flagrant/technical, or this possession would be wrongly split.
+        """
+        actions = [
+            _make_action(
+                action_type="Free Throw",
+                sub_type="Free Throw Flagrant 1 of 2",
+                team_id=100,
+                clock="PT09M50.00S",
+                is_field_goal=0,
+                description="Wade Free Throw Flagrant 1 of 2 (1 PTS)",
+                action_number=1,
+            ),
+            _make_action(
+                action_type="Free Throw",
+                sub_type="Free Throw Flagrant 2 of 2",
+                team_id=100,
+                clock="PT09M49.00S",
+                is_field_goal=0,
+                description="Wade Free Throw Flagrant 2 of 2 (2 PTS)",
+                action_number=2,
+            ),
+            # Fouled team retains possession and scores.
+            _make_action(
+                action_type="2pt",
+                team_id=100,
+                clock="PT09M40.00S",
+                shot_result="Made",
+                shot_value=2,
+                description="Wade Layup (4 PTS)",
+                action_number=3,
+            ),
+        ]
+        result = classify_possessions(actions)
+        assert len(result) == 1
+        assert result[0].points_scored == 4
 
     def test_made_field_goal_points_unchanged(self):
         """Made field-goal point counting is unaffected by the FT fix.
