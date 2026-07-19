@@ -28,6 +28,7 @@ from fastbreak.clutch import (
 from fastbreak.compare import (
     COMPARISON_METRICS,
     HIGHER_IS_WORSE,
+    NEUTRAL_METRICS,
     ComparedPlayer,
     ComparisonResult,
     EdgeSummary,
@@ -41,6 +42,7 @@ from fastbreak.compare import (
 from fastbreak.defense import (
     defensive_shot_quality_vs_league,
     get_box_scores_defensive,
+    get_player_defense_zones,
     get_team_defense_zones,
     get_team_opponent_stats,
 )
@@ -356,6 +358,7 @@ from fastbreak.types import (
 __all__ = [
     "COMPARISON_METRICS",
     "HIGHER_IS_WORSE",
+    "NEUTRAL_METRICS",
     "TEAMS",
     "WNBA_TEAMS",
     "BPMResult",
@@ -516,6 +519,7 @@ __all__ = [
     "get_player_clutch_profile",
     "get_player_clutch_stats",
     "get_player_comparison",
+    "get_player_defense_zones",
     "get_player_estimated_metrics",
     "get_player_game_log",
     "get_player_game_splits",

@@ -105,6 +105,19 @@ def _avg_optional(values: list[float | None]) -> float | None:
     return sum(valid) / len(valid)
 
 
+def _weighted_pct(makes: int, attempts: int) -> float | None:
+    """Shooting percentage over a span: total makes / total attempts.
+
+    Volume-weighted (the analytically correct aggregation). Returns None when
+    there were no attempts, so "no data" is distinct from a genuine 0%.
+    Averaging per-game percentages instead would give a low-volume game the
+    same weight as a high-volume one.
+    """
+    if attempts == 0:
+        return None
+    return makes / attempts
+
+
 # ---------------------------------------------------------------------------
 # Async search functions
 # ---------------------------------------------------------------------------
@@ -253,9 +266,12 @@ async def find_player_games(  # noqa: PLR0913
 def aggregate_games(games: list[GameFinderResult]) -> GameAverages:
     """Compute average stats across a list of games.
 
-    Counting stats (pts, reb, ast, stl, blk, tov) are always averaged.
-    Percentage fields and plus_minus are averaged from non-None values only;
-    if all values are None the result is None.
+    Counting stats (pts, reb, ast, stl, blk, tov) are per-game averages.
+    Shooting percentages (fg_pct, fg3_pct, ft_pct) are **volume-weighted** —
+    recomputed as total makes / total attempts across the span, not a mean of
+    per-game percentages (which would give a 1-shot game the same weight as a
+    20-shot game). A percentage is None only when there were zero attempts of
+    that type across every game. plus_minus is averaged from non-None values.
 
     Args:
         games: List of ``GameFinderResult`` to aggregate.
@@ -286,9 +302,9 @@ def aggregate_games(games: list[GameFinderResult]) -> GameAverages:
         stl=sum(g.stl for g in games) / n,
         blk=sum(g.blk for g in games) / n,
         tov=sum(g.tov for g in games) / n,
-        fg_pct=_avg_optional([g.fg_pct for g in games]),
-        fg3_pct=_avg_optional([g.fg3_pct for g in games]),
-        ft_pct=_avg_optional([g.ft_pct for g in games]),
+        fg_pct=_weighted_pct(sum(g.fgm for g in games), sum(g.fga for g in games)),
+        fg3_pct=_weighted_pct(sum(g.fg3m for g in games), sum(g.fg3a for g in games)),
+        ft_pct=_weighted_pct(sum(g.ftm for g in games), sum(g.fta for g in games)),
         plus_minus=_avg_optional([g.plus_minus for g in games]),
     )
 

@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.league_dash_pt_team_defend import DefenseCategory
     from fastbreak.models.box_score_defensive import BoxScoreDefensiveResponse
     from fastbreak.models.league_dash_opp_pt_shot import OppPtShotStats
+    from fastbreak.models.league_dash_pt_defend import PlayerDefendStats
     from fastbreak.models.league_dash_pt_team_defend import TeamDefendStats
     from fastbreak.types import Season, SeasonType
 
@@ -108,6 +109,45 @@ async def get_team_defense_zones(
         )
     )
     return response.teams
+
+
+async def get_player_defense_zones(
+    client: BaseClient,
+    season: Season | None = None,
+    season_type: SeasonType = "Regular Season",
+    defense_category: DefenseCategory = "Overall",
+) -> list[PlayerDefendStats]:
+    """League-wide per-player defensive breakdown by shot category.
+
+    Wraps LeagueDashPtDefend — the player-level counterpart to
+    ``get_team_defense_zones``. Returns each defender's contested-shot
+    frequency and the FG% they allow vs. the shooter's normal FG%
+    (``pct_plusminus``; negative = better defense). This is the natural way to
+    rank rim protectors and perimeter defenders league-wide.
+
+    Args:
+        client: NBA API client.
+        season: Season in YYYY-YY format (defaults to current season).
+        season_type: "Regular Season", "Playoffs", or "Pre Season".
+        defense_category: Shot category to analyze ("Overall", "3 Pointers",
+            "2 Pointers", "Less Than 6Ft", "Less Than 10Ft",
+            "Greater Than 15Ft"). Defaults to "Overall".
+
+    Returns:
+        list[PlayerDefendStats], one entry per qualifying defender.
+    """
+    from fastbreak.endpoints import LeagueDashPtDefend  # noqa: PLC0415
+
+    season = season or get_season_from_date(league=client.league)
+    response = await client.get(
+        LeagueDashPtDefend(
+            season=season,
+            season_type=season_type,
+            defense_category=defense_category,
+            league_id=client.league_id,
+        )
+    )
+    return response.players
 
 
 async def get_team_opponent_stats(

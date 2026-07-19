@@ -175,6 +175,69 @@ class TestClassifyPossessions:
         result = classify_possessions(actions)
         assert len(result) == 1
 
+    def test_made_free_throws_count_toward_points(self):
+        """A possession scoring only on made free throws reports those points.
+
+        A shooting foul that sends a player to the line for two made FTs (no
+        made field goal) is a real scoring possession worth 2 points. Free
+        throws carry isFieldGoal=0, so a FG-only points sum would report 0 and
+        deflate points-per-possession.
+        """
+        actions = [
+            _make_action(
+                action_type="Free Throw",
+                sub_type="1 of 2",
+                team_id=100,
+                clock="PT09M50.00S",
+                shot_result="Made",
+                is_field_goal=0,
+                shot_value=1,
+                action_number=1,
+            ),
+            _make_action(
+                action_type="Free Throw",
+                sub_type="2 of 2",
+                team_id=100,
+                clock="PT09M49.00S",
+                shot_result="Made",
+                is_field_goal=0,
+                shot_value=1,
+                action_number=2,
+            ),
+            # Opponent defensive rebound-like possession change to close it out.
+            _make_action(
+                action_type="turnover",
+                team_id=100,
+                clock="PT09M40.00S",
+                action_number=3,
+            ),
+        ]
+        result = classify_possessions(actions)
+        assert result[0].points_scored == 2
+
+    def test_missed_free_throw_scores_zero(self):
+        """A missed free throw contributes no points."""
+        actions = [
+            _make_action(
+                action_type="Free Throw",
+                sub_type="1 of 1",
+                team_id=100,
+                clock="PT09M50.00S",
+                shot_result="Missed",
+                is_field_goal=0,
+                shot_value=1,
+                action_number=1,
+            ),
+            _make_action(
+                action_type="turnover",
+                team_id=100,
+                clock="PT09M40.00S",
+                action_number=2,
+            ),
+        ]
+        result = classify_possessions(actions)
+        assert result[0].points_scored == 0
+
     def test_fast_shot_is_transition(self):
         """A shot 3s after a turnover is classified as transition."""
         actions = [

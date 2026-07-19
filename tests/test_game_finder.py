@@ -471,29 +471,45 @@ class TestAggregateGames:
         assert result.blk == pytest.approx(2.0)
         assert result.tov == pytest.approx(3.0)
 
-    def test_averages_pct_fields(self):
-        """Percentage fields are averaged from non-None values."""
+    def test_pct_fields_are_volume_weighted(self):
+        """Percentages recompute from summed makes/attempts, not a mean of per-game %s.
+
+        Volume-weighting is the analytically correct aggregation: a shooting
+        percentage over a span is sum(makes)/sum(attempts), which weights each
+        game by its shot volume rather than giving a 1-shot game the same weight
+        as a 20-shot game.
+        """
         from fastbreak.game_finder import aggregate_games
 
-        g1 = _make_result(FG_PCT=0.500, FG3_PCT=0.400, FT_PCT=0.800)
-        g2 = _make_result(FG_PCT=0.600, FG3_PCT=0.300, FT_PCT=0.900)
+        # g1: 4/8 FG, 2/4 3P, 3/4 FT   g2: 6/12 FG, 1/6 3P, 9/16 FT
+        g1 = _make_result(FGM=4, FGA=8, FG3M=2, FG3A=4, FTM=3, FTA=4)
+        g2 = _make_result(FGM=6, FGA=12, FG3M=1, FG3A=6, FTM=9, FTA=16)
         result = aggregate_games([g1, g2])
 
-        assert result.fg_pct == pytest.approx(0.550)
-        assert result.fg3_pct == pytest.approx(0.350)
-        assert result.ft_pct == pytest.approx(0.850)
+        assert result.fg_pct == pytest.approx((4 + 6) / (8 + 12))  # 10/20 = 0.500
+        assert result.fg3_pct == pytest.approx((2 + 1) / (4 + 6))  # 3/10 = 0.300
+        assert result.ft_pct == pytest.approx((3 + 9) / (4 + 16))  # 12/20 = 0.600
 
-    def test_none_pct_excluded_from_average(self):
-        """Games with None pct are excluded; average computed from non-None only."""
+    def test_pct_not_distorted_by_low_volume_game(self):
+        """A 1/1 game does not drag a 0/10 game up to 50% (the ratio-of-averages bug)."""
         from fastbreak.game_finder import aggregate_games
 
-        g1 = _make_result(FG_PCT=0.500, FG3_PCT=None, FT_PCT=0.800)
-        g2 = _make_result(FG_PCT=0.600, FG3_PCT=None, FT_PCT=0.900)
+        g1 = _make_result(FGM=1, FGA=1)  # 100%
+        g2 = _make_result(FGM=0, FGA=10)  # 0%
         result = aggregate_games([g1, g2])
 
-        assert result.fg_pct == pytest.approx(0.550)
+        # Volume-weighted truth is 1/11 ≈ 0.091, NOT the naive mean 0.550.
+        assert result.fg_pct == pytest.approx(1 / 11)
+
+    def test_pct_none_when_no_attempts(self):
+        """A field with zero total attempts across all games yields None (unknown)."""
+        from fastbreak.game_finder import aggregate_games
+
+        g1 = _make_result(FG3M=0, FG3A=0)
+        g2 = _make_result(FG3M=0, FG3A=0)
+        result = aggregate_games([g1, g2])
+
         assert result.fg3_pct is None
-        assert result.ft_pct == pytest.approx(0.850)
 
     def test_averages_plus_minus(self):
         """plus_minus is averaged from non-None values."""

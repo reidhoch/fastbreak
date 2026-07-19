@@ -164,8 +164,17 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.league_dash_player_clutch import (
         LeagueDashPlayerClutch as LeagueDashPlayerClutch,
     )
+    from fastbreak.endpoints.league_dash_player_pt_shot import (
+        LeagueDashPlayerPtShot as LeagueDashPlayerPtShot,
+    )
+    from fastbreak.endpoints.league_dash_player_shot_locations import (
+        LeagueDashPlayerShotLocations as LeagueDashPlayerShotLocations,
+    )
     from fastbreak.endpoints.league_dash_player_stats import (
         LeagueDashPlayerStats as LeagueDashPlayerStats,
+    )
+    from fastbreak.endpoints.league_dash_pt_defend import (
+        LeagueDashPtDefend as LeagueDashPtDefend,
     )
     from fastbreak.endpoints.league_dash_pt_stats import (
         LeagueDashPtStats as LeagueDashPtStats,
@@ -256,6 +265,9 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.player_estimated_metrics import (
         PlayerEstimatedMetrics as PlayerEstimatedMetrics,
     )
+    from fastbreak.endpoints.player_fantasy_profile import (
+        PlayerFantasyProfile as PlayerFantasyProfile,
+    )
     from fastbreak.endpoints.player_fantasy_profile_bar_graph import (
         PlayerFantasyProfileBarGraph as PlayerFantasyProfileBarGraph,
     )
@@ -304,14 +316,29 @@ if TYPE_CHECKING:
     from fastbreak.endpoints.team_dash_pt_shots import (
         TeamDashPtShots as TeamDashPtShots,
     )
+    from fastbreak.endpoints.team_dashboard_by_clutch import (
+        TeamDashboardByClutch as TeamDashboardByClutch,
+    )
+    from fastbreak.endpoints.team_dashboard_by_game_splits import (
+        TeamDashboardByGameSplits as TeamDashboardByGameSplits,
+    )
     from fastbreak.endpoints.team_dashboard_by_general_splits import (
         TeamDashboardByGeneralSplits as TeamDashboardByGeneralSplits,
+    )
+    from fastbreak.endpoints.team_dashboard_by_last_n_games import (
+        TeamDashboardByLastNGames as TeamDashboardByLastNGames,
     )
     from fastbreak.endpoints.team_dashboard_by_opponent import (
         TeamDashboardByOpponent as TeamDashboardByOpponent,
     )
     from fastbreak.endpoints.team_dashboard_by_shooting_splits import (
         TeamDashboardByShootingSplits as TeamDashboardByShootingSplits,
+    )
+    from fastbreak.endpoints.team_dashboard_by_team_performance import (
+        TeamDashboardByTeamPerformance as TeamDashboardByTeamPerformance,
+    )
+    from fastbreak.endpoints.team_dashboard_by_year_over_year import (
+        TeamDashboardByYearOverYear as TeamDashboardByYearOverYear,
     )
     from fastbreak.endpoints.team_details import TeamDetails as TeamDetails
     from fastbreak.endpoints.team_estimated_metrics import (

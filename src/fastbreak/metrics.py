@@ -1369,17 +1369,21 @@ def defensive_win_shares(  # noqa: PLR0913
         return None
 
     # --- team-level defensive rates ---
-    drb_pct = team_dreb / (team_dreb + opp_oreb) if (team_dreb + opp_oreb) > 0 else 0.0
+    # DOR% = opponent offensive-rebound rate = opp_oreb / (opp_oreb + team_dreb).
+    # Basketball Reference's stops formula keys on DOR%, NOT its complement, the
+    # team defensive-rebound rate. (They sum to 1; using the wrong one inverts
+    # FMwt and the stop factor.)
+    dor_pct = opp_oreb / (opp_oreb + team_dreb) if (opp_oreb + team_dreb) > 0 else 0.0
     dfg_pct = opp_fgm / opp_fga if opp_fga > 0 else 0.0
-    lg_fg_pct = lg.lg_fgm / lg.lg_fga  # lg_fga always > 0 (validated in __post_init__)
 
     # --- FMwt: weight for how much of a missed FG turns into a player stop ---
-    fmwt_num = dfg_pct * (1 - drb_pct)
-    fmwt_den = fmwt_num + lg_fg_pct * drb_pct
+    # FMwt = DFG%(1-DOR%) / (DFG%(1-DOR%) + (1-DFG%)DOR%)  (Dean Oliver / BBR).
+    fmwt_num = dfg_pct * (1 - dor_pct)
+    fmwt_den = fmwt_num + (1 - dfg_pct) * dor_pct
     fmwt = fmwt_num / fmwt_den if fmwt_den > 0 else 0.0
 
     # --- individual stops ---
-    stop_factor = 1 - 1.07 * drb_pct
+    stop_factor = 1 - 1.07 * dor_pct
     stops1 = stl + blk * fmwt * stop_factor + dreb * (1 - fmwt)
 
     rate_a = ((opp_fga - opp_fgm - team_blk) / team_mp) * fmwt * stop_factor

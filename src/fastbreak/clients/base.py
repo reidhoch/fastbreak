@@ -165,18 +165,28 @@ def _make_wait_with_retry_after(
     retry_after_state: _RetryAfterState,
     initial: float,
     max_wait: float,
+    retry_after_max: float,
 ) -> Callable[[RetryCallState], float]:
     """Create a wait strategy that respects Retry-After headers.
 
     Falls back to exponential backoff with jitter if no Retry-After is present.
+
+    A server-supplied ``Retry-After`` is honored up to ``retry_after_max``,
+    which is deliberately separate from ``max_wait`` (the cap on *our*
+    exponential backoff). Capping an explicit server instruction at the small
+    backoff ceiling (default 10s) would defeat long rate-limit windows — a
+    ``Retry-After: 60`` would be truncated to 10s and the client would keep
+    hammering a throttled endpoint. ``retry_after_max`` still bounds it so a
+    buggy or hostile header (e.g. ``Retry-After: 86400``) cannot hang a
+    request indefinitely.
     """
     base_wait = wait_exponential_jitter(initial=initial, max=max_wait)
 
     def wait_func(retry_state: RetryCallState) -> float:
         retry_after = retry_after_state.get_and_clear()
         if retry_after is not None:
-            # Respect the server's Retry-After, but cap it at max_wait
-            return min(retry_after, max_wait)
+            # Honor the server's explicit instruction, bounded by a safety cap.
+            return min(retry_after, retry_after_max)
         # Fall back to exponential backoff with jitter
         return base_wait(retry_state)
 
@@ -212,6 +222,12 @@ class BaseClient(AsyncContextManagerMixin):
         "Sec-Fetch-Dest": "empty",
         "Sec-Fetch-Mode": "cors",
         "Sec-Fetch-Site": "same-site",
+        # stats.nba.com gatekeeps its private backend by inspecting these two
+        # headers, which the nba.com front-end attaches to every XHR. They are
+        # not credentials (the token is the literal string "true"); omitting
+        # them can cause the server to hang rather than return an error.
+        "x-nba-stats-origin": "stats",
+        "x-nba-stats-token": "true",
     }
 
     league: ClassVar[League]
@@ -223,6 +239,7 @@ class BaseClient(AsyncContextManagerMixin):
         max_retries: int = 3,
         retry_wait_min: float = 1.0,
         retry_wait_max: float = 10.0,
+        retry_after_max: float = 120.0,
         request_delay: float = 0.0,
         cache_ttl: int = 0,
         cache_maxsize: int = DEFAULT_CACHE_MAXSIZE,
@@ -236,7 +253,13 @@ class BaseClient(AsyncContextManagerMixin):
             timeout: Request timeout configuration (default: 60s total)
             max_retries: Maximum retry attempts for transient failures (default: 3)
             retry_wait_min: Minimum wait time between retries in seconds (default: 1.0)
-            retry_wait_max: Maximum wait time between retries in seconds (default: 10.0)
+            retry_wait_max: Maximum wait time for *exponential backoff* between
+                retries in seconds (default: 10.0)
+            retry_after_max: Maximum wait honored for a server-supplied
+                ``Retry-After`` header, in seconds (default: 120.0). Separate
+                from ``retry_wait_max`` so an explicit server instruction is not
+                truncated to the small backoff cap, while still bounding a
+                buggy/hostile header.
             request_delay: Delay between requests in get_many() for rate limiting
             cache_ttl: TTL in seconds for response caching (0 = disabled, default)
             cache_maxsize: Maximum number of cached responses (default: 256)
@@ -260,6 +283,7 @@ class BaseClient(AsyncContextManagerMixin):
         self._max_retries = max_retries
         self._retry_wait_min = retry_wait_min
         self._retry_wait_max = retry_wait_max
+        self._retry_after_max = retry_after_max
 
         # Response caching
         self._cache: _TypedResponseCache | None = None
@@ -450,7 +474,10 @@ class BaseClient(AsyncContextManagerMixin):
         retry = AsyncRetrying(
             stop=stop_after_attempt(self._max_retries + 1),
             wait=_make_wait_with_retry_after(
-                retry_after_state, self._retry_wait_min, self._retry_wait_max
+                retry_after_state,
+                self._retry_wait_min,
+                self._retry_wait_max,
+                self._retry_after_max,
             ),
             retry=retry_if_exception(_is_retryable_error),
             reraise=True,
@@ -490,15 +517,29 @@ class BaseClient(AsyncContextManagerMixin):
         attempt_num: int,
         retry_after_state: _RetryAfterState,
     ) -> None:
-        """Handle rate limit response by storing Retry-After for the wait strategy."""
-        if resp.status != HTTP_TOO_MANY_REQUESTS:
+        """Capture a server ``Retry-After`` hint for the wait strategy.
+
+        Honored on ``429`` (always) and on ``5xx`` server errors *when a
+        ``Retry-After`` header is present* — per RFC 9110, ``503 Service
+        Unavailable`` commonly carries it. A bare 5xx with no header is left to
+        exponential backoff, preserving prior behavior. ``raise_for_status``
+        fires immediately after this returns, so the stored value is consumed
+        by the wait strategy on the next retry.
+        """
+        is_rate_limited = resp.status == HTTP_TOO_MANY_REQUESTS
+        retry_after_raw = resp.headers.get("Retry-After")
+        # 429 always engages (matching prior behavior); a 5xx only engages when
+        # the server actually sent a hint, so plain server errors still back off
+        # exponentially and "rate_limited" stays a 429-only log event.
+        if not is_rate_limited and (
+            resp.status < HTTP_SERVER_ERROR_MIN or retry_after_raw is None
+        ):
             return
 
-        retry_after_raw = resp.headers.get("Retry-After")
         retry_after = self._parse_retry_after(retry_after_raw)
         retry_after_state.set_retry_after(retry_after)
         await log.adebug(
-            "rate_limited",
+            "rate_limited" if is_rate_limited else "retry_after_received",
             status=resp.status,
             retry_after=retry_after,
             retry_after_raw=retry_after_raw,

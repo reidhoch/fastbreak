@@ -186,7 +186,7 @@ class TestDeltaIdentity:
 
 
 class TestEdgeSumInvariant:
-    """a_leads + b_leads + ties + unavailable == total always."""
+    """a_leads + b_leads + ties + neutral + unavailable == total always."""
 
     @given(a=compared_player_st(), b=compared_player_st())
     @settings(suppress_health_check=_XDIST)
@@ -194,7 +194,11 @@ class TestEdgeSumInvariant:
         deltas = comparison_deltas(a, b)
         edges = comparison_edges(deltas)
         assert (
-            edges.a_leads + edges.b_leads + edges.ties + edges.unavailable
+            edges.a_leads
+            + edges.b_leads
+            + edges.ties
+            + edges.neutral
+            + edges.unavailable
             == edges.total
         )
 

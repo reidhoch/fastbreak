@@ -572,6 +572,34 @@ class TestGetLeagueClutchLeaders:
         result = await get_league_clutch_leaders(client, min_minutes=0.0)
         assert len(result) == 1
 
+    async def test_default_min_minutes_admits_realistic_clutch_players(
+        self, mocker: MockerFixture
+    ) -> None:
+        """The DEFAULT call returns real players given realistic clutch minutes.
+
+        Clutch MIN is a small season total — even elite players accumulate only
+        ~3-15 minutes across a season (documented in CLAUDE.md). The prior
+        default of 20.0 excluded literally everyone, so the documented default
+        call silently returned []. This pins the default low enough to admit a
+        player at the bottom of the realistic range (3 min).
+        """
+        response = mocker.MagicMock()
+        response.players = [
+            self._make_row(
+                mocker, player_id=1, name="Star", team="X", plus_minus=8.0, minutes=12.0
+            ),
+            self._make_row(
+                mocker, player_id=2, name="Role", team="X", plus_minus=2.0, minutes=3.0
+            ),
+        ]
+        client = NBAClient(session=mocker.MagicMock())
+        client.get = mocker.AsyncMock(return_value=response)
+
+        result = await get_league_clutch_leaders(client)  # default min_minutes
+
+        assert len(result) == 2, "default must not filter out realistic clutch players"
+        assert [r.player_id for r in result] == [1, 2]
+
     async def test_min_minutes_negative_raises(self, mocker: MockerFixture) -> None:
         """min_minutes=-1 raises ValueError."""
         client = NBAClient(session=mocker.MagicMock())

@@ -1558,27 +1558,33 @@ class TestDefensiveWinShares:
         assert result is not None
         assert result > 0
 
-    def test_typical_starter_formula_value(self, sample_league: LeagueAverages) -> None:
-        """Full pipeline: DWS for league-average aligned inputs.
+    def test_typical_starter_matches_basketball_reference_gold(
+        self, sample_league: LeagueAverages
+    ) -> None:
+        """DWS equals the Basketball-Reference gold value for the fixture inputs.
 
-        Opponent stats set equal to sample_league × 82 games so team_drtg
-        equals the league vop * 100.  Expected value derived step-by-step:
+        The expected value is an EXTERNAL anchor, not a replay of this module's
+        arithmetic. It was computed from an independent transcription of Dean
+        Oliver's individual-DRtg / DWS formula as published by Basketball
+        Reference and cross-checked against two open-source implementations
+        (peteryushunli/nba_pbp_analysis, dwu764160/BKE). The canonical formula
+        uses DOR% = opp_oreb / (opp_oreb + team_dreb):
 
-        drb_pct  = 2460/(2460+820) = 0.75 (= lg.drb_pct)
-        dfg_pct  = 3280/6970       = 0.4706 (= lg_fg_pct)
-        fmwt     = 0.25
-        stops1   = 100 + 40*0.25*0.1975 + 400*0.75 = 401.975
-        stops2   = (rate_a + rate_b)*mp + pf_stops  ≈ 69.1
-        stop%    ≈ 0.4799
-        team_drtg ≈ 104.38 (= opp_pts/opp_poss * 100)
-        PlayerDRtg ≈ 105.41
-        MargDef  ≈ 71.92
-        DWS      ≈ 71.92 / 32.0 ≈ 2.247
+            DOR%        = 820 / (820 + 2460) = 0.2500
+            DFG%        = 3280 / 6970        = 0.4706
+            FMwt        = (DFG%(1-DOR%)) / (DFG%(1-DOR%) + (1-DFG%)DOR%) = 0.7273
+            stop_factor = 1 - 1.07*DOR%      = 0.7325
+            stop%       = 0.5099
+            PlayerDRtg  = 104.143
+            DWS         = 2.636556
+
+        (The prior test asserted 2.247, which was the value produced by the
+        buggy FMwt / stop-factor that used team DReb% = 0.75 in place of DOR%.)
         """
         result = defensive_win_shares(
             **_DWS_PLAYER, **_DWS_TEAM, **_DWS_OPP, lg=sample_league
         )
-        assert result == pytest.approx(2.247, abs=0.001)
+        assert result == pytest.approx(2.636556, abs=1e-4)
 
     def test_zero_minutes_returns_none(self, sample_league: LeagueAverages) -> None:
         """Returns None when the player has zero court time."""
@@ -1646,52 +1652,68 @@ class TestDefensiveWinShares:
         assert better is not None
         assert better > base
 
-    def test_formula_components_match_output(
+    def test_low_dor_fixture_matches_basketball_reference_gold(
         self, sample_league: LeagueAverages
     ) -> None:
-        """Cross-check: inline step-by-step derivation must equal function output."""
-        stl, blk, dreb, mp, pf = 100.0, 40.0, 400.0, 2460.0, 200.0
-        team_mp, team_blk, team_stl = 19680.0, 360.0, 640.0
-        team_dreb, team_pf = 2460.0, 1476.0
-        opp_fga, opp_fgm = 6970.0, 3280.0
-        opp_fta, opp_ftm = 1640.0, 1230.0
-        opp_tov, opp_oreb, opp_pts = 984.0, 820.0, 8200.0
+        """Second gold anchor at a non-average DOR% where buggy/correct diverge.
 
-        # --- intermediate values (manual formula walk-through) ---
-        drb_pct_v = team_dreb / (team_dreb + opp_oreb)
-        dfg_pct = opp_fgm / opp_fga
-        lg_fg_pct = sample_league.lg_fgm / sample_league.lg_fga
-        fmwt_num = dfg_pct * (1 - drb_pct_v)
-        fmwt = fmwt_num / (fmwt_num + lg_fg_pct * drb_pct_v)
+        The prior fixture sits at DOR% = 0.25, close to the league norm. This
+        one uses low opponent OReb / high team DReb -> DOR% = 0.10, so the
+        buggy formula (which used drb_pct = 1 - DOR% = 0.90) and the canonical
+        one (DOR% = 0.10) diverge sharply. The expected value is again an
+        EXTERNAL anchor from the independent Basketball-Reference transcription,
+        not a replay of this module's arithmetic:
 
-        stop_factor = 1 - 1.07 * drb_pct_v
-        stops1 = stl + blk * fmwt * stop_factor + dreb * (1 - fmwt)
-
-        rate_a = ((opp_fga - opp_fgm - team_blk) / team_mp) * fmwt * stop_factor
-        rate_b = (opp_tov - team_stl) / team_mp
-        ft_pct = opp_ftm / opp_fta
-        pf_stops = (pf / team_pf) * 0.4 * opp_fta * (1 - ft_pct) ** 2
-        stops2 = (rate_a + rate_b) * mp + pf_stops
-
-        opp_poss = possessions(opp_fga, opp_oreb, opp_tov, opp_fta)
-        stop_pct = (stops1 + stops2) * team_mp / (opp_poss * mp)
-
-        sc_poss_ft = opp_fta * (1 - (1 - ft_pct) ** 2) * 0.4
-        d_pts_per_sc_poss = opp_pts / (opp_fgm + sc_poss_ft)
-
-        team_drtg_v = opp_pts / opp_poss * 100
-        player_drtg = team_drtg_v + 0.2 * (
-            100 * d_pts_per_sc_poss * (1 - stop_pct) - team_drtg_v
-        )
-        marg_def = (
-            (mp / team_mp) * opp_poss * (1.08 * sample_league.vop - player_drtg / 100)
-        )
-        expected = marg_def / (0.32 * sample_league.lg_pts)
-
+            DOR% = 300 / (300 + 2700) = 0.1000
+            DWS  = 5.888989
+        """
+        low_dor_team = {
+            "team_mp": 19680.0,
+            "team_blk": 400.0,
+            "team_stl": 700.0,
+            "team_dreb": 2700.0,
+            "team_pf": 1500.0,
+        }
+        low_dor_opp = {
+            "opp_fga": 7000.0,
+            "opp_fgm": 3200.0,
+            "opp_fta": 1600.0,
+            "opp_ftm": 1200.0,
+            "opp_tov": 1000.0,
+            "opp_oreb": 300.0,
+            "opp_pts": 8100.0,
+        }
         result = defensive_win_shares(
-            **_DWS_PLAYER, **_DWS_TEAM, **_DWS_OPP, lg=sample_league
+            stl=120.0,
+            blk=60.0,
+            dreb=500.0,
+            mp=2600.0,
+            pf=180.0,
+            **low_dor_team,
+            **low_dor_opp,
+            lg=sample_league,
         )
-        assert result == pytest.approx(expected, abs=1e-9)
+        assert result == pytest.approx(5.888989, abs=1e-4)
+
+    def test_canonical_fmwt_and_stop_factor_definitions(self) -> None:
+        """The DOR%-based FMwt and stop-factor sit near 0.73 for a normal team.
+
+        Pins the Basketball-Reference intermediate definitions directly (no
+        call into the module), documenting the external ground truth that the
+        gold-value tests above depend on. Both references
+        (peteryushunli/nba_pbp_analysis, dwu764160/BKE) publish FMwt ~= 0.73;
+        the original bug produced ~0.20-0.25 by using team DReb% in place of
+        DOR%.
+        """
+        dor_pct = 820.0 / (820.0 + 2460.0)  # opp_oreb / (opp_oreb + team_dreb)
+        dfg_pct = 3280.0 / 6970.0
+        fmwt = (dfg_pct * (1 - dor_pct)) / (
+            dfg_pct * (1 - dor_pct) + (1 - dfg_pct) * dor_pct
+        )
+        stop_factor = 1 - 1.07 * dor_pct
+        assert dor_pct == pytest.approx(0.25)
+        assert fmwt == pytest.approx(0.7273, abs=1e-4)
+        assert stop_factor == pytest.approx(0.7325, abs=1e-4)
 
     def test_degenerate_zero_opp_possessions_returns_none(
         self, sample_league: LeagueAverages

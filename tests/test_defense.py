@@ -12,6 +12,7 @@ from hypothesis import given, settings, strategies as st
 from fastbreak.defense import (
     defensive_shot_quality_vs_league,
     get_box_scores_defensive,
+    get_player_defense_zones,
     get_team_defense_zones,
     get_team_opponent_stats,
 )
@@ -252,6 +253,89 @@ class TestGetTeamDefenseZones:
         client, _ = make_mock_client(json_data=_make_team_defend_response([]))
 
         result = await get_team_defense_zones(client, defense_category="3 Pointers")
+
+        assert result == []
+
+
+# ─── Player defend fixture helper ──────────────────────────────────────────────
+
+_PLAYER_DEFEND_HEADERS = [
+    "CLOSE_DEF_PERSON_ID",
+    "PLAYER_NAME",
+    "PLAYER_LAST_TEAM_ID",
+    "PLAYER_LAST_TEAM_ABBREVIATION",
+    "PLAYER_POSITION",
+    "AGE",
+    "GP",
+    "G",
+    "FREQ",
+    "D_FGM",
+    "D_FGA",
+    "D_FG_PCT",
+    "NORMAL_FG_PCT",
+    "PCT_PLUSMINUS",
+]
+
+
+def _make_player_defend_response(rows: list[list]) -> dict:
+    return {
+        "resource": "leaguedashptdefend",
+        "parameters": {},
+        "resultSets": [
+            {
+                "name": "LeagueDashPTDefend",
+                "headers": _PLAYER_DEFEND_HEADERS,
+                "rowSet": rows,
+            }
+        ],
+    }
+
+
+class TestGetPlayerDefenseZones:
+    """Tests for get_player_defense_zones() async fetcher."""
+
+    async def test_returns_list_of_player_defend_stats(self, make_mock_client) -> None:
+        json_data = _make_player_defend_response(
+            [
+                [
+                    1630700,
+                    "Dyson Daniels",
+                    1610612737,
+                    "ATL",
+                    "G",
+                    22.0,
+                    70,
+                    70,
+                    0.5,
+                    6.0,
+                    14.0,
+                    0.429,
+                    0.470,
+                    -0.041,
+                ]
+            ]
+        )
+        client, _ = make_mock_client(json_data=json_data)
+
+        result = await get_player_defense_zones(client)
+
+        assert len(result) == 1
+        assert result[0].close_def_person_id == 1630700
+        assert result[0].player_name == "Dyson Daniels"
+        assert result[0].pct_plusminus == pytest.approx(-0.041)
+
+    async def test_empty_result_set_returns_empty_list(self, make_mock_client) -> None:
+        client, _ = make_mock_client(json_data=_make_player_defend_response([]))
+
+        result = await get_player_defense_zones(client)
+
+        assert result == []
+
+    async def test_defense_category_kwarg_accepted(self, make_mock_client) -> None:
+        """Explicit defense_category= kwarg does not raise."""
+        client, _ = make_mock_client(json_data=_make_player_defend_response([]))
+
+        result = await get_player_defense_zones(client, defense_category="3 Pointers")
 
         assert result == []
 
