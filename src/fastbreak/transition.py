@@ -120,7 +120,7 @@ def _finalize_possession(
         elapsed = 0.0
         classification = "halfcourt"
 
-    points = sum(a.shotValue for a in state.actions if _is_made_fg(a) or _is_made_ft(a))
+    points = sum(_action_points(a) for a in state.actions)
 
     return TransitionPossession(
         team_id=state.team_id,
@@ -140,9 +140,23 @@ def _is_made_fg(action: PlayByPlayAction) -> bool:
 
 
 def _is_made_ft(action: PlayByPlayAction) -> bool:
-    # Free throws carry isFieldGoal=0; a made one is worth shotValue (1) points.
-    # Counting these keeps points-per-possession honest for shooting-foul trips.
-    return action.actionType.lower() == "free throw" and action.shotResult == "Made"
+    # On live playbyplayv3, free throws carry shotResult="" and shotValue=0
+    # (NOT "Made"/1), so make/miss is only knowable from the description string:
+    # a made FT reads "... (N PTS)" while a miss begins with "MISS ".  Each made
+    # FT is worth exactly 1 point regardless of the "N of M" / technical subtype.
+    if action.actionType.lower() != "free throw":
+        return False
+    desc = action.description
+    return "(" in desc and "PTS)" in desc and not desc.lstrip().startswith("MISS")
+
+
+def _action_points(action: PlayByPlayAction) -> int:
+    """Points scored by a single action (made FG worth shotValue, made FT worth 1)."""
+    if _is_made_fg(action):
+        return action.shotValue
+    if _is_made_ft(action):
+        return 1
+    return 0
 
 
 def _is_turnover(action: PlayByPlayAction) -> bool:

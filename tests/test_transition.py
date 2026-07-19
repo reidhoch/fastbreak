@@ -178,30 +178,34 @@ class TestClassifyPossessions:
     def test_made_free_throws_count_toward_points(self):
         """A possession scoring only on made free throws reports those points.
 
-        A shooting foul that sends a player to the line for two made FTs (no
-        made field goal) is a real scoring possession worth 2 points. Free
-        throws carry isFieldGoal=0, so a FG-only points sum would report 0 and
-        deflate points-per-possession.
+        Fixtures use the REAL ``playbyplayv3`` contract (verified live): free
+        throws carry ``shotResult == ""`` and ``shotValue == 0``, and made-ness
+        is encoded only in ``description`` (``"... (N PTS)"`` for a make, a
+        leading ``"MISS "`` for a miss). Each made FT is worth exactly 1 point.
+        A shooting foul sending a player to the line for two made FTs (no made
+        field goal) is a real scoring possession worth 2 points.
         """
         actions = [
             _make_action(
                 action_type="Free Throw",
-                sub_type="1 of 2",
+                sub_type="Free Throw 1 of 2",
                 team_id=100,
                 clock="PT09M50.00S",
-                shot_result="Made",
+                shot_result="",
                 is_field_goal=0,
-                shot_value=1,
+                shot_value=0,
+                description="Gobert Free Throw 1 of 2 (1 PTS)",
                 action_number=1,
             ),
             _make_action(
                 action_type="Free Throw",
-                sub_type="2 of 2",
+                sub_type="Free Throw 2 of 2",
                 team_id=100,
                 clock="PT09M49.00S",
-                shot_result="Made",
+                shot_result="",
                 is_field_goal=0,
-                shot_value=1,
+                shot_value=0,
+                description="Gobert Free Throw 2 of 2 (2 PTS)",
                 action_number=2,
             ),
             # Opponent defensive rebound-like possession change to close it out.
@@ -216,16 +220,21 @@ class TestClassifyPossessions:
         assert result[0].points_scored == 2
 
     def test_missed_free_throw_scores_zero(self):
-        """A missed free throw contributes no points."""
+        """A missed free throw contributes no points.
+
+        Real contract: a missed FT's ``description`` begins with ``"MISS "`` and
+        carries no ``"(N PTS)"`` marker (``shotResult == ""``, ``shotValue == 0``).
+        """
         actions = [
             _make_action(
                 action_type="Free Throw",
-                sub_type="1 of 1",
+                sub_type="Free Throw 1 of 1",
                 team_id=100,
                 clock="PT09M50.00S",
-                shot_result="Missed",
+                shot_result="",
                 is_field_goal=0,
-                shot_value=1,
+                shot_value=0,
+                description="MISS Reid Free Throw 1 of 1",
                 action_number=1,
             ),
             _make_action(
@@ -237,6 +246,64 @@ class TestClassifyPossessions:
         ]
         result = classify_possessions(actions)
         assert result[0].points_scored == 0
+
+    def test_made_technical_free_throw_counts_one_point(self):
+        """A made technical FT ("Free Throw Technical (N PTS)") scores 1 point.
+
+        Technical/flagrant FTs have no "N of M" sub-type but still carry the
+        "(N PTS)" make marker on the real API; each is worth 1 point.
+        """
+        actions = [
+            _make_action(
+                action_type="Free Throw",
+                sub_type="Free Throw Technical",
+                team_id=100,
+                clock="PT09M50.00S",
+                shot_result="",
+                is_field_goal=0,
+                shot_value=0,
+                description="Powell Free Throw Technical (7 PTS)",
+                action_number=1,
+            ),
+            _make_action(
+                action_type="turnover",
+                team_id=100,
+                clock="PT09M40.00S",
+                action_number=2,
+            ),
+        ]
+        result = classify_possessions(actions)
+        assert result[0].points_scored == 1
+
+    def test_made_field_goal_points_unchanged(self):
+        """Made field-goal point counting is unaffected by the FT fix.
+
+        A made 3pt (shotValue=3) followed by a made 2pt (shotValue=2, next
+        possession) must still report 3 and 2 respectively.
+        """
+        actions = [
+            _make_action(
+                action_type="3pt",
+                team_id=100,
+                clock="PT10M00.00S",
+                shot_result="Made",
+                shot_value=3,
+                description="Curry 26' 3PT (3 PTS)",
+                action_number=1,
+            ),
+            _make_action(
+                action_type="2pt",
+                team_id=200,
+                clock="PT09M40.00S",
+                shot_result="Made",
+                shot_value=2,
+                description="Zubac Dunk (2 PTS)",
+                action_number=2,
+            ),
+        ]
+        result = classify_possessions(actions)
+        assert result[0].points_scored == 3
+        assert result[1].points_scored == 2
 
     def test_fast_shot_is_transition(self):
         """A shot 3s after a turnover is classified as transition."""
