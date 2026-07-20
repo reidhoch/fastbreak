@@ -127,16 +127,21 @@ def _zone_fields_from_labels(category: dict[str, Any] | None) -> list[str]:
     labels = category.get("columnNames")
     if not isinstance(labels, list) or not labels:
         return default
-    mapped = [
-        _ZONE_LABEL_TO_FIELD[label] for label in labels if label in _ZONE_LABEL_TO_FIELD
-    ]
     unknown = [label for label in labels if label not in _ZONE_LABEL_TO_FIELD]
     if unknown:
+        # An unknown label means the label->column correspondence can no longer
+        # be trusted: dropping it from the field list while its three columns
+        # remain in the row would shift every subsequent (FGM, FGA, FG_PCT)
+        # triplet -- the exact misalignment this parser exists to prevent. Fall
+        # back to the known default layout, which the row's column count still
+        # matches, rather than parsing a corrupted subset.
         logger.warning(
             "player_shot_locations_unknown_zone_label",
             labels=unknown,
-            hint="Zone label(s) not in the known By Zone set; skipped",
+            hint="Unknown zone label(s); falling back to default layout",
         )
+        return default
+    mapped = [_ZONE_LABEL_TO_FIELD[label] for label in labels]
     return mapped or default
 
 
