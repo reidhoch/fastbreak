@@ -30,12 +30,12 @@ repos:
     hooks:
       - id: validate-pyproject
   - repo: https://github.com/rohaquinlop/complexipy-pre-commit
-    rev: v5.1.0
+    rev: v6.2.0
     hooks:
       # Run the cognitive complexity checker.
       - id: complexipy
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.15.22"
+    rev: "v0.16.0"
     hooks:
       - id: ruff-check
         args: [--no-cache]
