@@ -285,7 +285,7 @@ class BPMResult:
     defensive: float
 
 
-def four_factors(  # noqa: PLR0913
+def four_factors(  # noqa: PLR0913, PLR0917
     fgm: float,
     fg3m: float,
     fga: float,
@@ -355,7 +355,7 @@ def assist_ratio(ast: float, fga: float, fta: float, tov: float) -> float | None
     return ast / denominator * 100
 
 
-def game_score(  # noqa: PLR0913
+def game_score(  # noqa: PLR0913, PLR0917
     pts: float,
     fgm: float,
     fga: float,
@@ -392,7 +392,7 @@ def game_score(  # noqa: PLR0913
     )
 
 
-def nba_efficiency(  # noqa: PLR0913
+def nba_efficiency(  # noqa: PLR0913, PLR0917
     pts: float,
     reb: float,
     ast: float,
@@ -510,7 +510,7 @@ def is_triple_double(
     return _count_double_digit_categories(pts, reb, ast, stl, blk) >= 3  # noqa: PLR2004
 
 
-def usage_pct(  # noqa: PLR0913
+def usage_pct(  # noqa: PLR0913, PLR0917
     fga: float,
     fta: float,
     tov: float,
@@ -651,7 +651,7 @@ def blk_pct(
     return _possession_pct(blk, mp, team_mp, opp_fg2a)
 
 
-def pace_adjusted_per(  # noqa: PLR0913
+def pace_adjusted_per(  # noqa: PLR0913, PLR0917
     fgm: float,
     fga: float,
     fg3m: float,
@@ -744,7 +744,7 @@ def per(aper: float, lg_aper: float) -> float | None:
     return aper * (15 / lg_aper)
 
 
-def bpm(  # noqa: PLR0913
+def bpm(  # noqa: PLR0913, PLR0917
     pts: float,
     fg3m: float,
     ast: float,
@@ -997,7 +997,7 @@ def possessions(fga: float, oreb: float, tov: float, fta: float) -> float:
     return fga - oreb + tov + 0.44 * fta
 
 
-def possessions_general(  # noqa: PLR0913
+def possessions_general(  # noqa: PLR0913, PLR0917
     fgm: float,
     fga: float,
     ftm: float,
@@ -1290,7 +1290,7 @@ def bell_curve_win_pct(
     return 0.5 * (1.0 + erf(z / fsqrt(2.0)))
 
 
-def defensive_win_shares(  # noqa: PLR0913
+def defensive_win_shares(  # noqa: PLR0913, PLR0917
     stl: float,
     blk: float,
     dreb: float,
