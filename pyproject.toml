@@ -74,7 +74,7 @@ exclude = ["src/fastbreak/_version.py"]
 [tool.ruff.lint]
 exclude = ["tests/**/*", "src/fastbreak/_version.py"]
 select = ["ALL"]
-ignore = ["COM812", "D", "E501", "N815"]
+ignore = ["COM812", "CPY001", "D", "E501", "N815"]
 
 [tool.ruff.lint.per-file-ignores]
 "example.py" = ["T201"]    # Allow print in example file
@@ -133,7 +133,7 @@ addopts = ["-m", "not live_api"]
 
 [dependency-groups]
 dev = [
-    "complexipy>=5.1.0",
+    "complexipy>=6.2.0",
     "hypothesis>=6.151.4",
     "mypy>=1.19.1",
     "pandas>=3.0.0",
