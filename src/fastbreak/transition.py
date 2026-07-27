@@ -225,7 +225,7 @@ def _flush(
         possessions.append(poss)
 
 
-def _end_possession(  # noqa: PLR0913
+def _end_possession(  # noqa: PLR0913, PLR0917
     action: PlayByPlayAction,
     state: _PossessionState,
     trigger: Trigger,
