@@ -598,6 +598,47 @@ def _build_stat_projection(  # noqa: PLR0913
     )
 
 
+def _resolve_opponent_def_ratings(
+    team_resp: TeamEstimatedMetricsResponse, opponent_team_id: int
+) -> tuple[float, float]:
+    """Resolve the opponent's and the league-average defensive ratings.
+
+    Looks up ``opponent_team_id`` in the league-wide estimated-metrics
+    response, validates its defensive rating is present and finite, and
+    computes the league average over all teams with a valid rating.
+    Mirrors the validate-at-public-boundary pattern: a missing opponent or
+    a None/non-finite rating raises rather than silently degrading.
+
+    Returns:
+        A ``(opponent_def_rating, league_avg_def_rating)`` tuple.
+
+    Raises:
+        ValueError: If the opponent team is absent from the response, or
+            its ``e_def_rating`` is None or non-finite.
+    """
+    try:
+        opp = next(t for t in team_resp.teams if t.team_id == opponent_team_id)
+    except StopIteration as exc:
+        msg = f"Opponent team_id={opponent_team_id} not found in team estimated metrics"
+        raise ValueError(msg) from exc
+    if opp.e_def_rating is None or not math.isfinite(opp.e_def_rating):
+        msg = (
+            f"Opponent team_id={opponent_team_id} has invalid e_def_rating: "
+            f"{opp.e_def_rating!r}"
+        )
+        raise ValueError(msg)
+    # Filter both None and non-finite values: a single NaN/inf in the list
+    # would poison _mean and silently feed adjust_for_opponent with garbage.
+    league_avg_def = _mean(
+        [
+            t.e_def_rating
+            for t in team_resp.teams
+            if t.e_def_rating is not None and math.isfinite(t.e_def_rating)
+        ]
+    )
+    return opp.e_def_rating, league_avg_def
+
+
 async def project_player(  # noqa: PLR0913
     client: NBAClient,
     *,
@@ -688,32 +729,15 @@ async def project_player(  # noqa: PLR0913
     if not log_resp.games:
         msg = f"No games found for player_id={player_id} in season {season}"
         raise ValueError(msg)
-    try:
-        opp = next(t for t in team_resp.teams if t.team_id == opponent_team_id)
-    except StopIteration as exc:
-        msg = f"Opponent team_id={opponent_team_id} not found in team estimated metrics"
-        raise ValueError(msg) from exc
-    if opp.e_def_rating is None or not math.isfinite(opp.e_def_rating):
-        msg = (
-            f"Opponent team_id={opponent_team_id} has invalid e_def_rating: "
-            f"{opp.e_def_rating!r}"
-        )
-        raise ValueError(msg)
-    # Filter both None and non-finite values: a single NaN/inf in the list
-    # would poison _mean and silently feed adjust_for_opponent with garbage.
-    league_avg_def = _mean(
-        [
-            t.e_def_rating
-            for t in team_resp.teams
-            if t.e_def_rating is not None and math.isfinite(t.e_def_rating)
-        ]
+    opp_def_rating, league_avg_def = _resolve_opponent_def_ratings(
+        team_resp, opponent_team_id
     )
     projections: dict[ProjectionStat, StatProjection] = {
         stat: _build_stat_projection(
             stat,
             log_resp.games,
             rolling_n=rolling_n,
-            opp_def_rating=opp.e_def_rating,
+            opp_def_rating=opp_def_rating,
             league_avg_def_rating=league_avg_def,
             days_rest=days_rest,
             is_home=is_home,

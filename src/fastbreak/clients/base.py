@@ -232,7 +232,7 @@ class BaseClient(AsyncContextManagerMixin):
 
     league: ClassVar[League]
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         session: ClientSession | None = None,
         timeout: ClientTimeout | None = None,
