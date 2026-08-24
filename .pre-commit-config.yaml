@@ -26,7 +26,7 @@ repos:
         args: [--branch, main]
       - id: trailing-whitespace
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.25
+    rev: '0.26'
     hooks:
       - id: validate-pyproject
   - repo: https://github.com/rohaquinlop/complexipy-pre-commit
@@ -35,7 +35,7 @@ repos:
       # Run the cognitive complexity checker.
       - id: complexipy
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.16.3"
+    rev: "v0.16.4"
     hooks:
       - id: ruff-check
         args: [--no-cache]
