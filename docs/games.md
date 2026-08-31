@@ -696,7 +696,8 @@ if halftime:
 
 # Lead changes
 lead_changes = sum(
-    1 for a, b in zip(flow, flow[1:], strict=False)
+    1
+    for a, b in zip(flow, flow[1:], strict=False)
     if (a.margin > 0) != (b.margin > 0) and b.margin != 0
 )
 print(f"Lead changes: {lead_changes}")
@@ -819,6 +820,7 @@ Fetch yesterday's final scores and then pull full box scores for all games:
 from fastbreak.clients import NBAClient
 from fastbreak.games import get_box_scores, get_yesterdays_games
 
+
 async def main() -> None:
     async with NBAClient() as client:
         games = await get_yesterdays_games(client)
@@ -907,7 +909,9 @@ async def main() -> None:
                 away = game.away_team.team_tricode if game.away_team else "N/A"
                 home = game.home_team.team_tricode if game.home_team else "N/A"
                 if game.game_time_utc:
-                    local = datetime.fromisoformat(game.game_time_utc).astimezone(tz=None)
+                    local = datetime.fromisoformat(game.game_time_utc).astimezone(
+                        tz=None
+                    )
                     tip = local.strftime("%I:%M %p %Z")
                 else:
                     tip = game.game_status_text or "TBD"
@@ -1045,9 +1049,7 @@ async def main() -> None:
         print(f"\n3PT: {len(made_threes)}/{len(threes)}")
 
         # Fourth-quarter scoring plays
-        q4_made = [
-            a for a in actions if a.period == 4 and a.shotResult == "Made"
-        ]
+        q4_made = [a for a in actions if a.period == 4 and a.shotResult == "Made"]
         print(f"\n4th-quarter made shots: {len(q4_made)}")
         print("\nLast 5 scoring plays:")
         scoring = [a for a in actions if a.shotResult == "Made"]
@@ -1122,8 +1124,8 @@ if __name__ == "__main__":
 from fastbreak.endpoints import PlayByPlay
 
 response = await client.get(PlayByPlay(game_id="0022500571"))
-game = response.game       # PlayByPlayGame
-actions = game.actions     # list[PlayByPlayAction]
+game = response.game  # PlayByPlayGame
+actions = game.actions  # list[PlayByPlayAction]
 ```
 
 **`game_status` integer values.** On `ScoreboardGame`, `game_status` uses integer codes: `1` = scheduled, `2` = in progress, `3` = final. On `BoxScoreSummaryData`, the equivalent field is `gameStatus` (camelCase, no alias). `game_status_text` / `gameStatusText` provides a human-readable equivalent.

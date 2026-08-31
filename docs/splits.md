@@ -261,15 +261,21 @@ async with NBAClient() as client:
     profile = await get_player_splits_profile(client, player_id=player_id)
 
 # Home vs road FG% delta
-home = next((s for s in profile.general_splits.by_location if s.group_value == "Home"), None)
-road = next((s for s in profile.general_splits.by_location if s.group_value == "Road"), None)
+home = next(
+    (s for s in profile.general_splits.by_location if s.group_value == "Home"), None
+)
+road = next(
+    (s for s in profile.general_splits.by_location if s.group_value == "Road"), None
+)
 delta = stat_delta(home.fg_pct if home else None, road.fg_pct if road else None)
 if delta is not None:
     print(f"Home/road FG% edge: {delta:+.3f}")
 
 # Recent form vs season baseline
 if profile.last_n_games.last_5 and profile.last_n_games.overall:
-    pts_trend = stat_delta(profile.last_n_games.last_5.pts, profile.last_n_games.overall.pts)
+    pts_trend = stat_delta(
+        profile.last_n_games.last_5.pts, profile.last_n_games.overall.pts
+    )
     print(f"L5 vs season: {pts_trend:+.1f} PTS")
 ```
 
@@ -375,7 +381,9 @@ from fastbreak.clients import NBAClient
 from fastbreak.splits import get_team_shooting_splits
 
 async with NBAClient() as client:
-    shooting = await get_team_shooting_splits(client, team_id=1610612754, season="2025-26")
+    shooting = await get_team_shooting_splits(
+        client, team_id=1610612754, season="2025-26"
+    )
 
 print("Pacers FG% by court area:")
 for row in shooting.by_shot_area:
@@ -413,7 +421,9 @@ from fastbreak.clients import NBAClient
 from fastbreak.splits import get_team_splits_profile, stat_delta
 
 async with NBAClient() as client:
-    profile = await get_team_splits_profile(client, team_id=1610612738, season="2025-26")
+    profile = await get_team_splits_profile(
+        client, team_id=1610612738, season="2025-26"
+    )
 
 # Celtics home vs road win percentage
 home = next((s for s in profile.general.by_location if s.group_value == "Home"), None)
@@ -444,10 +454,10 @@ Compute `a - b`. Returns `None` if either argument is `None`. Useful for compari
 from fastbreak.splits import stat_delta
 
 # Home vs road FG% edge
-stat_delta(home.fg_pct, road.fg_pct)    # e.g., 0.027 (home 2.7pp better)
+stat_delta(home.fg_pct, road.fg_pct)  # e.g., 0.027 (home 2.7pp better)
 
 # None-safe: returns None if data is missing for either window
-stat_delta(last_5.pts, None)            # → None
+stat_delta(last_5.pts, None)  # → None
 ```
 
 **Properties** (verified by property-based tests):
@@ -465,7 +475,9 @@ stat_delta(last_5.pts, None)            # → None
 from fastbreak.splits import get_player_general_splits, stat_delta
 
 async with NBAClient() as client:
-    splits = await get_player_general_splits(client, player_id=1641705, season="2025-26")
+    splits = await get_player_general_splits(
+        client, player_id=1641705, season="2025-26"
+    )
 
 home = next((s for s in splits.by_location if s.group_value == "Home"), None)
 road = next((s for s in splits.by_location if s.group_value == "Road"), None)
@@ -500,7 +512,9 @@ if last_n.last_5 and last_n.overall:
 from fastbreak.splits import get_player_shooting_splits
 
 async with NBAClient() as client:
-    shooting = await get_player_shooting_splits(client, player_id=201939, season="2025-26")
+    shooting = await get_player_shooting_splits(
+        client, player_id=201939, season="2025-26"
+    )
 
 print("FG% by court area:")
 for row in shooting.by_shot_area:
@@ -513,12 +527,16 @@ for row in shooting.by_shot_area:
 from fastbreak.splits import get_player_game_splits
 
 async with NBAClient() as client:
-    game_splits = await get_player_game_splits(client, player_id=203999, season="2025-26")
+    game_splits = await get_player_game_splits(
+        client, player_id=203999, season="2025-26"
+    )
 
 print("Stats by score margin:")
 for row in game_splits.by_score_margin:
     fg_str = f"{row.fg_pct:.1%}" if row.fg_pct is not None else "N/A"
-    print(f"  {str(row.group_value):<20} {row.gp:>3} GP  {fg_str} FG%  {row.pts:.1f} PTS")
+    print(
+        f"  {str(row.group_value):<20} {row.gp:>3} GP  {fg_str} FG%  {row.pts:.1f} PTS"
+    )
 ```
 
 ---

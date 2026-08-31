@@ -11,11 +11,13 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.endpoints.scoreboard_v2 import ScoreboardV2
 
+
 async def main() -> None:
     async with NBAClient() as client:
         scoreboard = await client.get(ScoreboardV2(game_date="2026-02-27"))
         for game in scoreboard.game_header:
             print(game.game_id, game.home_team_id, game.visitor_team_id)
+
 
 asyncio.run(main())
 ```
@@ -74,11 +76,13 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.endpoints.player_game_log import PlayerGameLog
 
+
 async def main() -> None:
     async with NBAClient() as client:
         log = await client.get(PlayerGameLog(player_id=2544, season="2025-26"))
         for row in log.games:
             print(row.game_date, row.pts)
+
 
 asyncio.run(main())
 ```
@@ -88,6 +92,7 @@ asyncio.run(main())
 ```python
 from aiohttp import ClientTimeout
 from fastbreak.clients import NBAClient
+
 
 async def main() -> None:
     timeout = ClientTimeout(total=30, connect=5)
@@ -102,6 +107,7 @@ Pass an existing `ClientSession` when you want to manage connection pooling your
 ```python
 import aiohttp
 from fastbreak.clients import NBAClient
+
 
 async def main() -> None:
     async with aiohttp.ClientSession() as session:
@@ -134,6 +140,7 @@ from fastbreak.clients import NBAClient
 
 client: NBAClient | None = None
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global client
@@ -142,11 +149,14 @@ async def lifespan(app: FastAPI):
     if client is not None:
         await client.close()
 
+
 app = FastAPI(lifespan=lifespan)
+
 
 @app.get("/leaders")
 async def leaders():
     from fastbreak.endpoints.league_leaders import LeagueLeaders
+
     assert client is not None
     result = await client.get(LeagueLeaders())
     return result.leaders
@@ -190,6 +200,7 @@ Fetches one endpoint and returns the parsed, validated response model.
 from fastbreak.clients import NBAClient
 from fastbreak.endpoints.box_scores_v3 import BoxScoreTraditionalV3
 
+
 async def fetch_box_score(game_id: str) -> None:
     async with NBAClient() as client:
         box = await client.get(BoxScoreTraditionalV3(game_id=game_id))
@@ -202,6 +213,7 @@ async def fetch_box_score(game_id: str) -> None:
 ```python
 import uuid
 from fastbreak.clients import NBAClient
+
 
 async def fetch_with_trace(game_id: str, trace_id: str) -> None:
     async with NBAClient() as client:
@@ -252,6 +264,7 @@ Fetches multiple endpoints using `anyio` task groups. Results are returned in th
 from fastbreak.clients import NBAClient
 from fastbreak.endpoints.box_scores_v3 import BoxScoreTraditionalV3
 
+
 async def fetch_multiple_box_scores(game_ids: list[str]) -> None:
     endpoints = [BoxScoreTraditionalV3(game_id=gid) for gid in game_ids]
 
@@ -266,6 +279,7 @@ async def fetch_multiple_box_scores(game_ids: list[str]) -> None:
 
 ```python
 from fastbreak.clients import NBAClient
+
 
 async def safe_fetch_many(endpoints):
     async with NBAClient() as client:
@@ -386,6 +400,7 @@ Raised for non-retryable HTTP errors (4xx except 429) or after all retry attempt
 import aiohttp
 from fastbreak.clients import NBAClient
 
+
 async def main() -> None:
     async with NBAClient() as client:
         try:
@@ -402,6 +417,7 @@ Raised when the API response does not match the expected schema. This usually me
 ```python
 from pydantic import ValidationError
 from fastbreak.clients import NBAClient
+
 
 async def main() -> None:
     async with NBAClient() as client:
@@ -420,6 +436,7 @@ Python 3.11+ exception groups are used when any request in a `get_many()` batch 
 ```python
 from fastbreak.clients import NBAClient
 import aiohttp
+
 
 async def main() -> None:
     async with NBAClient() as client:
@@ -480,9 +497,9 @@ For large batches where you want both proactive throttling and safe recovery fro
 
 ```python
 async with NBAClient(
-    request_delay=0.5,      # ~120 req/min proactively
-    max_retries=5,          # retry up to 5 times
-    retry_wait_max=60.0,    # honour long Retry-After values
+    request_delay=0.5,  # ~120 req/min proactively
+    max_retries=5,  # retry up to 5 times
+    retry_wait_max=60.0,  # honour long Retry-After values
 ) as client:
     results = await client.get_many(large_endpoint_list)
 ```
@@ -511,6 +528,7 @@ from fastbreak.clients import NBAClient
 
 _client: NBAClient | None = None
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _client
@@ -518,6 +536,7 @@ async def lifespan(app: FastAPI):
     yield
     if _client:
         await _client.close()
+
 
 app = FastAPI(lifespan=lifespan)
 ```
@@ -527,11 +546,14 @@ app = FastAPI(lifespan=lifespan)
 from aiohttp import web
 from fastbreak.clients import NBAClient
 
+
 async def on_startup(app: web.Application) -> None:
     app["nba"] = NBAClient(handle_signals=False)
 
+
 async def on_cleanup(app: web.Application) -> None:
     await app["nba"].close()
+
 
 app = web.Application()
 app.on_startup.append(on_startup)
@@ -552,6 +574,7 @@ Pass an `aiohttp.ClientSession` you created yourself. fastbreak will use it for 
 import aiohttp
 from fastbreak.clients import NBAClient
 
+
 async def main() -> None:
     connector = aiohttp.TCPConnector(limit=20, limit_per_host=5)
     async with aiohttp.ClientSession(connector=connector) as session:
@@ -565,6 +588,7 @@ async def main() -> None:
 ```python
 from aiohttp.test_utils import TestClient, TestServer
 from fastbreak.clients import NBAClient
+
 
 async def test_with_mock_server(aiohttp_client, app) -> None:
     test_client = await aiohttp_client(app)
@@ -621,14 +645,13 @@ async def main() -> None:
     game_ids: list[str] = []
 
     async with NBAClient(
-        cache_ttl=600,       # cache responses for 10 minutes
+        cache_ttl=600,  # cache responses for 10 minutes
         cache_maxsize=512,
-        request_delay=0.5,   # ~120 req/min in batches
+        request_delay=0.5,  # ~120 req/min in batches
         max_retries=4,
         retry_wait_min=1.0,
         retry_wait_max=30.0,
     ) as client:
-
         # Fetch all regular-season game IDs for one team this season
         game_ids = await get_game_ids(client, "2025-26", team_id=1610612747)
         # Filter to regular season only (game IDs starting with "002")
@@ -651,9 +674,15 @@ async def main() -> None:
         print(f"Cache after: {client.cache_info}")
 
         for gid, box in zip(regular_season, box_scores):
-            top_scorer = max(box.box_score_traditional.home_team.players, key=lambda p: p.statistics.points or 0, default=None)
+            top_scorer = max(
+                box.box_score_traditional.home_team.players,
+                key=lambda p: p.statistics.points or 0,
+                default=None,
+            )
             if top_scorer:
-                print(f"{gid}: {top_scorer.name_i} — {top_scorer.statistics.points} pts")
+                print(
+                    f"{gid}: {top_scorer.name_i} — {top_scorer.statistics.points} pts"
+                )
 
         # Invalidate cache before the next run if needed
         await client.clear_cache()

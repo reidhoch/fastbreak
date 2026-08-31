@@ -215,10 +215,7 @@ deltas = defensive_shot_quality_vs_league(zones, team_id=1610612738)
 # {"BOS": -0.021}  — opponents shoot 2.1pp below league average (elite defense)
 
 # Sort all teams by zone defense quality (best first)
-all_deltas = [
-    (stats.team_abbreviation, stats.pct_plusminus)
-    for stats in zones
-]
+all_deltas = [(stats.team_abbreviation, stats.pct_plusminus) for stats in zones]
 ranked = sorted(all_deltas, key=lambda x: x[1])  # most negative = best
 for abbr, delta in ranked[:5]:
     print(f"{abbr}: {delta:+.3f}")

@@ -225,6 +225,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.clutch import get_player_clutch_profile
 
+
 async def main():
     async with NBAClient() as client:
         profile = await get_player_clutch_profile(
@@ -250,6 +251,7 @@ async def main():
             print(f"  Composite score: {profile.score:+.2f}")
         else:
             print(f"  Composite score: N/A (< 5 clutch minutes)")
+
 
 asyncio.run(main())
 ```
@@ -314,6 +316,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.clutch import get_league_clutch_leaders
 
+
 async def main():
     async with NBAClient() as client:
         leaders = await get_league_clutch_leaders(
@@ -334,7 +337,10 @@ async def main():
         ts = row.pts / (2 * (row.fga + 0.44 * row.fta)) if row.fga or row.fta else None
         ts_str = f"{ts:.3f}" if ts is not None else "  N/A"
         pm_str = f"{row.plus_minus:+.1f}"
-        print(f"{rank:<3} {row.player_name:<25} {row.team_abbreviation:<5} {row.min:>5.1f} {pm_str:>6} {ts_str:>6}")
+        print(
+            f"{rank:<3} {row.player_name:<25} {row.team_abbreviation:<5} {row.min:>5.1f} {pm_str:>6} {ts_str:>6}"
+        )
+
 
 asyncio.run(main())
 ```
@@ -393,6 +399,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.clutch import get_league_team_clutch_leaders
 
+
 async def main():
     async with NBAClient() as client:
         leaders = await get_league_team_clutch_leaders(
@@ -414,6 +421,7 @@ async def main():
             f"{rank:<3} {row.team_name:<25} {row.gp:>3} {row.min:>6.1f} "
             f"{row.pts:>5.1f} {row.plus_minus:>+6.1f} {w_pct:>6}"
         )
+
 
 asyncio.run(main())
 ```
@@ -452,6 +460,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.clutch import get_team_clutch_stats
 
+
 async def main():
     async with NBAClient() as client:
         stats = await get_team_clutch_stats(
@@ -472,6 +481,7 @@ async def main():
     print(f"  FG%:       {stats.fg_pct:.3f}")
     print(f"  3PT%:      {stats.fg3_pct:.3f}")
 
+
 asyncio.run(main())
 ```
 
@@ -486,6 +496,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.clutch import get_league_clutch_leaders
 
+
 async def main():
     async with NBAClient() as client:
         # Top 15 by plus/minus, requiring 30+ clutch minutes
@@ -495,7 +506,9 @@ async def main():
             top_n=15,
         )
 
-    print(f"{'Rank':<5} {'Player':<25} {'Team':<5} {'GP':>3} {'Min':>5} {'PTS':>5} {'+/-':>6} {'W%':>6}")
+    print(
+        f"{'Rank':<5} {'Player':<25} {'Team':<5} {'GP':>3} {'Min':>5} {'PTS':>5} {'+/-':>6} {'W%':>6}"
+    )
     print("-" * 65)
     for i, row in enumerate(leaders, 1):
         w_pct = f"{row.w_pct:.3f}" if row.w_pct is not None else "  N/A"
@@ -504,6 +517,7 @@ async def main():
             f"{row.gp:>3} {row.min:>5.1f} {row.pts:>5.1f} "
             f"{row.plus_minus:>+6.1f} {w_pct:>6}"
         )
+
 
 asyncio.run(main())
 ```
@@ -515,6 +529,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.clutch import get_player_clutch_profile
 from fastbreak.players import get_player_id
+
 
 async def clutch_report(client, name: str, season: str) -> None:
     player_id = await get_player_id(client, name)
@@ -533,7 +548,9 @@ async def clutch_report(client, name: str, season: str) -> None:
         print(f"  {name}: no clutch data")
         return
 
-    score_str = f"{profile.score:+.2f}" if profile.score is not None else "N/A (< 5 min)"
+    score_str = (
+        f"{profile.score:+.2f}" if profile.score is not None else "N/A (< 5 min)"
+    )
     ts_str = f"{profile.ts_delta:+.3f}" if profile.ts_delta is not None else "N/A"
     ato_str = f"{profile.ato_delta:+.2f}" if profile.ato_delta is not None else "N/A"
     print(
@@ -541,6 +558,7 @@ async def clutch_report(client, name: str, season: str) -> None:
         f"TS%Δ {ts_str}  A/TOΔ {ato_str}  "
         f"+/- {profile.clutch_plus_minus:>+5.1f}  score {score_str}"
     )
+
 
 async def main():
     season = "2024-25"
@@ -560,6 +578,7 @@ async def main():
         for name in players:
             await clutch_report(client, name, season)
 
+
 asyncio.run(main())
 ```
 
@@ -570,6 +589,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.clutch import build_clutch_profile, get_player_clutch_stats
 
+
 async def main():
     async with NBAClient() as client:
         # Fetch all eleven clutch splits for Nikola Jokic (ID: 203999)
@@ -577,8 +597,8 @@ async def main():
 
     definitions = {
         "Last 5 min, ≤5 pts (standard)": response.last_5_min_lte_5_pts,
-        "Last 3 min, ≤5 pts":            response.last_3_min_lte_5_pts,
-        "Last 1 min, ≤5 pts":            response.last_1_min_lte_5_pts,
+        "Last 3 min, ≤5 pts": response.last_3_min_lte_5_pts,
+        "Last 1 min, ≤5 pts": response.last_1_min_lte_5_pts,
     }
 
     print("Nikola Jokic — clutch profile by time window")
@@ -591,12 +611,15 @@ async def main():
             continue
 
         profile = build_clutch_profile(
-            203999, "Nikola Jokic", "DEN",
+            203999,
+            "Nikola Jokic",
+            "DEN",
             response.overall,
             clutch_stats,
         )
         score_str = f"{profile.score:+.2f}" if profile.score is not None else "   N/A"
         print(f"{label:<30} {profile.clutch_min:>6.1f} {score_str:>8}")
+
 
 asyncio.run(main())
 ```
@@ -623,6 +646,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.clutch import build_clutch_profile, get_player_clutch_stats
 
+
 async def main():
     async with NBAClient() as client:
         response = await get_player_clutch_stats(client, player_id=201939)
@@ -630,12 +654,15 @@ async def main():
     # Last 30 seconds, score within 3 points — much tighter than standard
     if response.last_30_sec_lte_3_pts:
         profile = build_clutch_profile(
-            201939, "Stephen Curry", "GSW",
+            201939,
+            "Stephen Curry",
+            "GSW",
             response.overall,
             response.last_30_sec_lte_3_pts,
-            min_threshold=5.0,   # lower threshold for very tight window
+            min_threshold=5.0,  # lower threshold for very tight window
         )
         print(f"Last 30 sec (≤3 pts): score = {profile.score}")
+
 
 asyncio.run(main())
 ```

@@ -8,16 +8,27 @@ The `fastbreak.teams` module provides two categories of functionality:
 ```python
 from fastbreak.teams import (
     # Static registry
-    TEAMS, TeamID, TeamInfo,
+    TEAMS,
+    TeamID,
+    TeamInfo,
     # Sync lookups
-    get_team, get_team_id, search_teams,
-    teams_by_conference, teams_by_division,
+    get_team,
+    get_team_id,
+    search_teams,
+    teams_by_conference,
+    teams_by_division,
     # Async API helpers
-    get_team_game_log, get_team_stats, get_lineup_stats,
-    get_lineup_net_ratings, get_league_averages, get_team_playtypes,
-    get_team_roster, get_team_coaches,
+    get_team_game_log,
+    get_team_stats,
+    get_lineup_stats,
+    get_lineup_net_ratings,
+    get_league_averages,
+    get_team_playtypes,
+    get_team_roster,
+    get_team_coaches,
     # On/off court impact
-    get_team_on_off_summary, get_team_on_off_details,
+    get_team_on_off_summary,
+    get_team_on_off_details,
     on_off_net_rating_delta,
 )
 ```
@@ -39,7 +50,7 @@ for team_id, team in TEAMS.items():
 
 # Direct lookup by integer ID
 lakers = TEAMS[1610612747]
-print(lakers.full_name)   # "Los Angeles Lakers"
+print(lakers.full_name)  # "Los Angeles Lakers"
 ```
 
 ### `TeamInfo`
@@ -65,9 +76,9 @@ An `IntEnum` with a member for every NBA team, organized by conference and divis
 ```python
 from fastbreak.teams import TeamID
 
-print(TeamID.CELTICS)       # 1610612738
-print(TeamID.LAKERS)        # 1610612747
-print(TeamID.PACERS)        # 1610612754
+print(TeamID.CELTICS)  # 1610612738
+print(TeamID.LAKERS)  # 1610612747
+print(TeamID.PACERS)  # 1610612754
 
 # Works anywhere an int is accepted
 team = TEAMS[TeamID.WARRIORS]
@@ -111,21 +122,21 @@ Returns `None` if no team matches.
 from fastbreak.teams import get_team
 
 # By integer ID
-get_team(1610612747)              # TeamInfo for Los Angeles Lakers
+get_team(1610612747)  # TeamInfo for Los Angeles Lakers
 
 # By abbreviation (case-insensitive)
-get_team("LAL")                   # TeamInfo for Los Angeles Lakers
-get_team("lal")                   # same result
+get_team("LAL")  # TeamInfo for Los Angeles Lakers
+get_team("lal")  # same result
 
 # By nickname
-get_team("Lakers")                # TeamInfo for Los Angeles Lakers
-get_team("celtics")               # TeamInfo for Boston Celtics
+get_team("Lakers")  # TeamInfo for Los Angeles Lakers
+get_team("celtics")  # TeamInfo for Boston Celtics
 
 # By city — returns the first match when multiple teams share a city
-get_team("Los Angeles")           # TeamInfo for Los Angeles Lakers (city dict key)
+get_team("Los Angeles")  # TeamInfo for Los Angeles Lakers (city dict key)
 
 # No match
-get_team("Heatles")               # None
+get_team("Heatles")  # None
 ```
 
 > Note: The city lookup uses an exact dict match against `team.city`. Los Angeles has two teams (`Clippers` and `Lakers`); the city dict retains only one. LAL (Lakers) appears after LAC (Clippers) in the registry, so Lakers wins the `"los angeles"` key. Prefer abbreviation or nickname for Los Angeles teams to avoid ambiguity.
@@ -141,8 +152,8 @@ def get_team_id(identifier: str) -> TeamID | None: ...
 ```python
 from fastbreak.teams import get_team_id
 
-get_team_id("LAL")      # 1610612747
-get_team_id("Lakers")   # 1610612747
+get_team_id("LAL")  # 1610612747
+get_team_id("Lakers")  # 1610612747
 get_team_id("Unknown")  # None
 ```
 
@@ -163,11 +174,13 @@ Returns an empty list for blank queries. Raises `ValueError` if `limit < 1`.
 ```python
 from fastbreak.teams import search_teams
 
-search_teams("LAL")     # [TeamInfo(LAL, Los Angeles Lakers)]
+search_teams("LAL")  # [TeamInfo(LAL, Los Angeles Lakers)]
 search_teams("lakers")  # [TeamInfo(LAL, Los Angeles Lakers)]
-search_teams("New")     # [TeamInfo(NOP, New Orleans Pelicans), TeamInfo(NYK, New York Knicks)]
-search_teams("Los")     # [TeamInfo(LAC, ...), TeamInfo(LAL, ...)]
-search_teams("")        # []
+search_teams(
+    "New"
+)  # [TeamInfo(NOP, New Orleans Pelicans), TeamInfo(NYK, New York Knicks)]
+search_teams("Los")  # [TeamInfo(LAC, ...), TeamInfo(LAL, ...)]
+search_teams("")  # []
 ```
 
 ### `teams_by_conference(conference) -> list[TeamInfo]`
@@ -183,8 +196,8 @@ def teams_by_conference(conference: str) -> list[TeamInfo]: ...
 ```python
 from fastbreak.teams import teams_by_conference
 
-east = teams_by_conference("East")    # 15 Eastern Conference teams
-west = teams_by_conference("west")    # 15 Western Conference teams, case-insensitive
+east = teams_by_conference("East")  # 15 Eastern Conference teams
+west = teams_by_conference("west")  # 15 Western Conference teams, case-insensitive
 ```
 
 ### `teams_by_division(division) -> list[TeamInfo]`
@@ -202,7 +215,7 @@ Raises `ValueError` for unrecognized values.
 ```python
 from fastbreak.teams import teams_by_division
 
-atlantic = teams_by_division("Atlantic")    # BOS, BKN, NYK, PHI, TOR
+atlantic = teams_by_division("Atlantic")  # BOS, BKN, NYK, PHI, TOR
 southwest = teams_by_division("southwest")  # case-insensitive
 ```
 
@@ -670,22 +683,26 @@ Fetches detailed on/off court stats for all players on a team. Returns full box 
 
 ```python
 from fastbreak.teams import (
-    get_team, get_team_id, search_teams,
-    teams_by_conference, teams_by_division,
-    TeamID, TEAMS,
+    get_team,
+    get_team_id,
+    search_teams,
+    teams_by_conference,
+    teams_by_division,
+    TeamID,
+    TEAMS,
 )
 
 # Lookup by abbreviation, nickname, or ID
 celtics = get_team("BOS")
-lakers  = get_team("Lakers")
-pacers  = get_team(1610612754)
+lakers = get_team("Lakers")
+pacers = get_team(1610612754)
 
-print(celtics.full_name)   # Boston Celtics
-print(lakers.division)     # Pacific
-print(pacers.abbreviation) # IND
+print(celtics.full_name)  # Boston Celtics
+print(lakers.division)  # Pacific
+print(pacers.abbreviation)  # IND
 
 # Get just the numeric ID
-tid = get_team_id("GSW")   # 1610612744
+tid = get_team_id("GSW")  # 1610612744
 
 # Partial-match search
 results = search_teams("New")
@@ -738,6 +755,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.teams import get_team_game_log, TeamID
 
+
 async def main() -> None:
     async with NBAClient() as client:
         games = await get_team_game_log(
@@ -751,6 +769,7 @@ async def main() -> None:
         result = game.wl or "?"
         print(f"  {game.game_date:20s}  {game.matchup:25s}  {result}  {game.pts} pts")
 
+
 asyncio.run(main())
 ```
 
@@ -761,6 +780,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.teams import get_team_stats
 from fastbreak.metrics import ortg
+
 
 async def main() -> None:
     async with NBAClient() as client:
@@ -786,6 +806,7 @@ async def main() -> None:
     for rank, (name, rating) in enumerate(ranked, 1):
         print(f"{rank:4d}  {name:<30s}  {rating:6.1f}")
 
+
 asyncio.run(main())
 ```
 
@@ -795,6 +816,7 @@ asyncio.run(main())
 import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.teams import get_lineup_net_ratings, TeamID
+
 
 async def main() -> None:
     async with NBAClient() as client:
@@ -810,11 +832,9 @@ async def main() -> None:
     print(f"\n{'Net Rtg':>8s}  {'Min/G':>6s}  {'GP':>4s}  Lineup")
     for lineup, net_rtg in results[:10]:
         print(
-            f"{net_rtg:+8.1f}"
-            f"  {lineup.min:6.1f}"
-            f"  {lineup.gp:4d}"
-            f"  {lineup.group_name}"
+            f"{net_rtg:+8.1f}  {lineup.min:6.1f}  {lineup.gp:4d}  {lineup.group_name}"
         )
+
 
 asyncio.run(main())
 ```
@@ -831,6 +851,7 @@ from fastbreak.clients import NBAClient
 from fastbreak.teams import get_team_stats, get_league_averages
 from fastbreak.metrics import true_shooting, relative_ts, effective_fg_pct, relative_efg
 
+
 async def main() -> None:
     async with NBAClient() as client:
         teams, lg = await asyncio.gather(
@@ -846,21 +867,22 @@ async def main() -> None:
     # Relative shooting efficiency for every team
     results = []
     for t in teams:
-        ts  = true_shooting(pts=t.pts, fga=t.fga, fta=t.fta)
+        ts = true_shooting(pts=t.pts, fga=t.fga, fta=t.fta)
         efg = effective_fg_pct(fgm=t.fgm, fg3m=t.fg3m, fga=t.fga)
-        rel_ts  = relative_ts(ts, lg)
+        rel_ts = relative_ts(ts, lg)
         rel_efg = relative_efg(efg, lg)
         results.append((t.team_name, ts, rel_ts, efg, rel_efg))
 
-    results.sort(key=lambda x: (x[2] or 0.0), reverse=True)
+    results.sort(key=lambda x: x[2] or 0.0, reverse=True)
 
     print(f"{'Team':<30s}  {'TS%':>6s}  {'Rel TS':>8s}  {'eFG%':>6s}  {'Rel eFG':>9s}")
     for name, ts, rel_ts, efg, rel_efg in results:
-        ts_s      = f"{ts:.3f}"      if ts      is not None else "  N/A"
-        rel_ts_s  = f"{rel_ts:+.3f}" if rel_ts  is not None else "    N/A"
-        efg_s     = f"{efg:.3f}"     if efg     is not None else "  N/A"
+        ts_s = f"{ts:.3f}" if ts is not None else "  N/A"
+        rel_ts_s = f"{rel_ts:+.3f}" if rel_ts is not None else "    N/A"
+        efg_s = f"{efg:.3f}" if efg is not None else "  N/A"
         rel_efg_s = f"{rel_efg:+.3f}" if rel_efg is not None else "     N/A"
         print(f"{name:<30s}  {ts_s:>6s}  {rel_ts_s:>8s}  {efg_s:>6s}  {rel_efg_s:>9s}")
+
 
 asyncio.run(main())
 ```
@@ -882,8 +904,11 @@ See [fastbreak.metrics](metrics.md) for the full reference.
 import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.teams import (
-    get_team_on_off_summary, on_off_net_rating_delta, TeamID,
+    get_team_on_off_summary,
+    on_off_net_rating_delta,
+    TeamID,
 )
+
 
 async def main() -> None:
     async with NBAClient() as client:
@@ -913,6 +938,7 @@ async def main() -> None:
     print(f"{'Player':<25s}  {'On':>7s}  {'Off':>7s}  {'Delta':>7s}")
     for name, on_rtg, off_rtg, delta in rows:
         print(f"{name:<25s}  {on_rtg:+7.1f}  {off_rtg:+7.1f}  {delta:+7.1f}")
+
 
 asyncio.run(main())
 ```

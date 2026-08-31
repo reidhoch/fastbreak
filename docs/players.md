@@ -68,11 +68,18 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import search_players
 
+
 async def main():
     async with NBAClient() as client:
         results = await search_players(client, "curry")
         for p in results:
-            print(p.person_id, p.player_first_name, p.player_last_name, p.team_abbreviation)
+            print(
+                p.person_id,
+                p.player_first_name,
+                p.player_last_name,
+                p.team_abbreviation,
+            )
+
 
 asyncio.run(main())
 ```
@@ -112,6 +119,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import get_player
 
+
 async def main():
     async with NBAClient() as client:
         # Look up by player ID
@@ -123,7 +131,10 @@ async def main():
         player = await get_player(client, "Stephen Curry")
         if player:
             print(f"Found by name: #{player.jersey_number}, {player.team_abbreviation}")
-            print(f"  {player.pts:.1f} pts / {player.reb:.1f} reb / {player.ast:.1f} ast")
+            print(
+                f"  {player.pts:.1f} pts / {player.reb:.1f} reb / {player.ast:.1f} ast"
+            )
+
 
 asyncio.run(main())
 ```
@@ -160,6 +171,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import get_player_id
 
+
 async def main():
     async with NBAClient() as client:
         player_id = await get_player_id(client, "Giannis Antetokounmpo")
@@ -167,6 +179,7 @@ async def main():
             print(f"Giannis player ID: {player_id}")
         else:
             print("Player not found")
+
 
 asyncio.run(main())
 ```
@@ -226,6 +239,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import get_player_game_log
 
+
 async def main():
     async with NBAClient() as client:
         # LeBron James (ID: 2544) current season game log
@@ -247,6 +261,7 @@ async def main():
             season_type="Playoffs",
         )
         print(f"Playoff games: {len(playoff_games)}")
+
 
 asyncio.run(main())
 ```
@@ -311,6 +326,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import get_player_stats
 
+
 async def main():
     async with NBAClient() as client:
         # Stephen Curry (ID: 201939) career per-game stats
@@ -332,7 +348,10 @@ async def main():
         # Career highs
         print("\nCareer highs:")
         for high in stats.career_highs:
-            print(f"  {high.stat}: {high.stat_value} vs {high.vs_team_abbreviation} ({high.game_date})")
+            print(
+                f"  {high.stat}: {high.stat_value} vs {high.vs_team_abbreviation} ({high.game_date})"
+            )
+
 
 asyncio.run(main())
 ```
@@ -401,19 +420,24 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import get_league_leaders
 
+
 async def main():
     async with NBAClient() as client:
         # Top 10 scorers
         scorers = await get_league_leaders(client, stat_category="PTS", limit=10)
         print("Top 10 scorers:")
         for leader in scorers:
-            print(f"  {leader.rank:>2}. {leader.player:<25} {leader.team:<4} {leader.pts:.1f} ppg")
+            print(
+                f"  {leader.rank:>2}. {leader.player:<25} {leader.team:<4} {leader.pts:.1f} ppg"
+            )
 
         # Top 5 assist leaders
         assisters = await get_league_leaders(client, stat_category="AST", limit=5)
         print("\nTop 5 assist leaders:")
         for leader in assisters:
-            print(f"  {leader.rank:>2}. {leader.player:<25} {leader.team:<4} {leader.ast:.1f} apg")
+            print(
+                f"  {leader.rank:>2}. {leader.player:<25} {leader.team:<4} {leader.ast:.1f} apg"
+            )
 
         # Playoff rebounding leaders
         rebounders = await get_league_leaders(
@@ -425,6 +449,7 @@ async def main():
         print("\nPlayoff rebounding leaders:")
         for leader in rebounders:
             print(f"  {leader.rank:>2}. {leader.player:<25} {leader.reb:.1f} rpg")
+
 
 asyncio.run(main())
 ```
@@ -490,6 +515,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import get_hustle_stats
 
+
 async def main():
     async with NBAClient() as client:
         # Stephen Curry hustle stats
@@ -504,6 +530,7 @@ async def main():
             print(f"  Loose balls:     {hustle.loose_balls_recovered:.1f}/game")
         else:
             print("Player not found in hustle stats (may not qualify)")
+
 
 asyncio.run(main())
 ```
@@ -548,6 +575,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import get_career_game_logs
 
+
 async def main():
     async with NBAClient() as client:
         # LeBron James (ID: 2544) — entire career
@@ -571,6 +599,7 @@ async def main():
             client, player_id=2544, season_type="Playoffs"
         )
         print(f"Total playoff games: {len(playoff_games)}")
+
 
 asyncio.run(main())
 ```
@@ -637,6 +666,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import get_on_off_splits
 
+
 async def main():
     async with NBAClient() as client:
         # LeBron James (2544) on the Los Angeles Lakers (1610612747)
@@ -653,19 +683,26 @@ async def main():
             on = on_rows[0]
             print(f"With LeBron ON court:")
             print(f"  Team pts/game: {on.pts:.1f}")
-            print(f"  Team FG%:      {on.fg_pct:.3f}" if on.fg_pct else "  Team FG%: N/A")
+            print(
+                f"  Team FG%:      {on.fg_pct:.3f}" if on.fg_pct else "  Team FG%: N/A"
+            )
             print(f"  Net rating:    {on.plus_minus:+.1f}")
 
         if off_rows:
             off = off_rows[0]
             print(f"\nWith LeBron OFF court:")
             print(f"  Team pts/game: {off.pts:.1f}")
-            print(f"  Team FG%:      {off.fg_pct:.3f}" if off.fg_pct else "  Team FG%: N/A")
+            print(
+                f"  Team FG%:      {off.fg_pct:.3f}"
+                if off.fg_pct
+                else "  Team FG%: N/A"
+            )
             print(f"  Net rating:    {off.plus_minus:+.1f}")
 
         if on_rows and off_rows:
             diff = on_rows[0].pts - off_rows[0].pts
             print(f"\nImpact (on - off pts/game): {diff:+.1f}")
+
 
 asyncio.run(main())
 ```
@@ -741,6 +778,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import get_player_playtypes
 
+
 async def main():
     async with NBAClient() as client:
         # NOTE: This will return an empty list — Synergy data is restricted
@@ -760,6 +798,7 @@ async def main():
         else:
             print("No play-type data available (endpoint restricted on public API)")
 
+
 asyncio.run(main())
 ```
 
@@ -774,6 +813,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import get_player, search_players
 
+
 async def main():
     async with NBAClient() as client:
         # Search by partial name
@@ -781,7 +821,9 @@ async def main():
         print(f"Found {len(results)} matches for 'ant':")
         for p in results:
             team = p.team_abbreviation or "FA"
-            print(f"  {p.person_id}  {p.player_first_name} {p.player_last_name}  ({team})")
+            print(
+                f"  {p.person_id}  {p.player_first_name} {p.player_last_name}  ({team})"
+            )
 
         print()
 
@@ -790,12 +832,17 @@ async def main():
         if player:
             print(f"Anthony Edwards profile:")
             print(f"  ID:       {player.person_id}")
-            print(f"  Team:     {player.team_city} {player.team_name} ({player.team_abbreviation})")
+            print(
+                f"  Team:     {player.team_city} {player.team_name} ({player.team_abbreviation})"
+            )
             print(f"  Position: {player.position}")
             print(f"  Height:   {player.height}")
             print(f"  College:  {player.college}")
             if player.pts is not None:
-                print(f"  Stats:    {player.pts:.1f} pts / {player.reb:.1f} reb / {player.ast:.1f} ast")
+                print(
+                    f"  Stats:    {player.pts:.1f} pts / {player.reb:.1f} reb / {player.ast:.1f} ast"
+                )
+
 
 asyncio.run(main())
 ```
@@ -807,6 +854,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import get_player_game_log
 
+
 async def main():
     async with NBAClient() as client:
         # Stephen Curry last 10 games
@@ -814,7 +862,9 @@ async def main():
         recent = games[:10]
 
         print(f"Stephen Curry — last {len(recent)} games")
-        print(f"{'Date':<15} {'Matchup':<22} {'W/L':<4} {'PTS':>4} {'REB':>4} {'AST':>4} {'3PM':>4}")
+        print(
+            f"{'Date':<15} {'Matchup':<22} {'W/L':<4} {'PTS':>4} {'REB':>4} {'AST':>4} {'3PM':>4}"
+        )
         print("-" * 65)
         for g in recent:
             result = g.wl or " "
@@ -825,7 +875,10 @@ async def main():
 
         avg_pts = sum(g.pts for g in recent) / len(recent)
         avg_3pm = sum(g.fg3m for g in recent) / len(recent)
-        print(f"\nAverage over last {len(recent)} games: {avg_pts:.1f} pts, {avg_3pm:.1f} 3PM")
+        print(
+            f"\nAverage over last {len(recent)} games: {avg_pts:.1f} pts, {avg_3pm:.1f} 3PM"
+        )
+
 
 asyncio.run(main())
 ```
@@ -837,18 +890,22 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import get_player_stats
 
+
 async def main():
     async with NBAClient() as client:
         stats = await get_player_stats(client, 2544)  # LeBron James
 
         print("LeBron James — career scoring by season")
-        print(f"{'Season':<10} {'Team':<5} {'GP':>4} {'PTS':>6} {'AST':>5} {'REB':>5} {'FG%':>6}")
+        print(
+            f"{'Season':<10} {'Team':<5} {'GP':>4} {'PTS':>6} {'AST':>5} {'REB':>5} {'FG%':>6}"
+        )
         print("-" * 45)
         for s in stats.season_totals_regular_season:
             print(
                 f"{s.season_id:<10} {s.team_abbreviation:<5} "
                 f"{s.gp:>4} {s.pts:>6.1f} {s.ast:>5.1f} {s.reb:>5.1f} {s.fg_pct:>6.3f}"
             )
+
 
 asyncio.run(main())
 ```
@@ -859,6 +916,7 @@ asyncio.run(main())
 import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import get_league_leaders
+
 
 async def main():
     async with NBAClient() as client:
@@ -878,7 +936,10 @@ async def main():
                 if value is None:
                     # percentage fields have different attr names
                     value = getattr(leader, stat.lower().replace("_pct", "_pct"), 0.0)
-                print(f"  {leader.rank}. {leader.player:<25} {leader.team:<5} {value:.1f}")
+                print(
+                    f"  {leader.rank}. {leader.player:<25} {leader.team:<5} {value:.1f}"
+                )
+
 
 asyncio.run(main())
 ```
@@ -889,6 +950,7 @@ asyncio.run(main())
 import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import get_career_game_logs
+
 
 async def main():
     async with NBAClient(cache_ttl=600) as client:
@@ -906,8 +968,7 @@ async def main():
 
         # Triple-doubles
         triple_doubles = [
-            g for g in all_games
-            if g.pts >= 10 and g.reb >= 10 and g.ast >= 10
+            g for g in all_games if g.pts >= 10 and g.reb >= 10 and g.ast >= 10
         ]
         print(f"  Triple-doubles: {len(triple_doubles)}")
 
@@ -915,8 +976,15 @@ async def main():
         playoff_games = await get_career_game_logs(
             client, player_id=2544, season_type="Playoffs"
         )
-        avg_playoff_pts = sum(g.pts for g in playoff_games) / len(playoff_games) if playoff_games else 0
-        print(f"  Playoff games:  {len(playoff_games)}  ({avg_playoff_pts:.1f} pts avg)")
+        avg_playoff_pts = (
+            sum(g.pts for g in playoff_games) / len(playoff_games)
+            if playoff_games
+            else 0
+        )
+        print(
+            f"  Playoff games:  {len(playoff_games)}  ({avg_playoff_pts:.1f} pts avg)"
+        )
+
 
 asyncio.run(main())
 ```
@@ -945,6 +1013,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.endpoints import PlayerGameLog
 
+
 async def main():
     async with NBAClient() as client:
         # Raw endpoint access: date_from / date_to params not exposed by the helper
@@ -959,6 +1028,7 @@ async def main():
         print(f"Games in date range: {len(response.games)}")
         for g in response.games:
             print(f"  {g.game_date}  {g.matchup}  {g.pts} pts")
+
 
 asyncio.run(main())
 ```

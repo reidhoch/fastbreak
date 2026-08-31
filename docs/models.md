@@ -114,7 +114,7 @@ If the data is not tabular (i.e., it is v3 nested JSON, or it is already a pre-t
 
 ```python
 # Shape 1 — tabular
-is_tabular_response({"resultSets": [...]})   # True
+is_tabular_response({"resultSets": [...]})  # True
 
 # Shape 2 — nested v3
 is_tabular_response({"meta": {...}, "boxScoreSummary": {...}})  # False
@@ -203,24 +203,29 @@ from pydantic import BaseModel, model_validator
 from fastbreak.models.common.response import FrozenResponse
 from fastbreak.models.common.result_set import tabular_validator
 
+
 class TeamRecord(BaseModel):
     team_id: int
     team_name: str
     wins: int
 
+
 class TeamRecordResponse(FrozenResponse):
     teams: list[TeamRecord]
     from_result_sets = model_validator(mode="before")(tabular_validator("teams"))
 
+
 data = {
-    "resultSets": [{
-        "name": "Teams",
-        "headers": ["TeamID", "TeamName", "WINS"],
-        "rowSet": [
-            [1610612760, "Thunder", 36],
-            [1610612765, "Pistons", 31],
-        ]
-    }]
+    "resultSets": [
+        {
+            "name": "Teams",
+            "headers": ["TeamID", "TeamName", "WINS"],
+            "rowSet": [
+                [1610612760, "Thunder", 36],
+                [1610612765, "Pistons", 31],
+            ],
+        }
+    ]
 }
 
 response = TeamRecordResponse.model_validate(data)
@@ -274,18 +279,20 @@ class LeagueDashTeamShotsResponse(FrozenResponse):
 ```python
 data = {
     "resultSets": [
-        {
-            "name": "SomethingElse",
-            "headers": ["TEAM_ID"],
-            "rowSet": []
-        },
+        {"name": "SomethingElse", "headers": ["TEAM_ID"], "rowSet": []},
         {
             "name": "LeagueDashPTShots",
-            "headers": ["TEAM_ID", "TEAM_ABBREVIATION", "FGA_FREQUENCY", "FG_PCT", "EFG_PCT"],
+            "headers": [
+                "TEAM_ID",
+                "TEAM_ABBREVIATION",
+                "FGA_FREQUENCY",
+                "FG_PCT",
+                "EFG_PCT",
+            ],
             "rowSet": [
                 [1610612738, "BOS", 0.45, 0.512, 0.587],
-            ]
-        }
+            ],
+        },
     ]
 }
 
@@ -441,6 +448,7 @@ A small number of NBA API endpoints return `"resultSet"` (singular) instead of `
 ```python
 from fastbreak.models.common.result_set import singular_result_set_validator
 
+
 class LeadersTilesResponse(FrozenResponse):
     leaders: list[LeaderTile]
     all_time_high: list[AllTimeHigh]
@@ -477,6 +485,7 @@ The top-level response inherits `FrozenResponse`. All nested models use plain `B
 
 ```python
 from fastbreak.models.common.meta import Meta
+
 
 class Meta(PandasMixin, PolarsMixin, BaseModel):
     version: int | None = None
@@ -643,7 +652,7 @@ data = {
             "arenaCountry": "US",
             "arenaTimezone": "America/New_York",
             "arenaStreetAddress": "100 Legends Way",
-            "arenaPostalCode": "02114"
+            "arenaPostalCode": "02114",
         },
         "officials": [
             {
@@ -653,7 +662,7 @@ data = {
                 "firstName": "Tony",
                 "familyName": "Brothers",
                 "jerseyNum": "25",
-                "assignment": "Crew Chief"
+                "assignment": "Crew Chief",
             }
         ],
         "broadcasters": {},
@@ -665,7 +674,7 @@ data = {
             "teamWins": 32,
             "teamLosses": 12,
             "score": 112,
-            "seed": None
+            "seed": None,
         },
         "awayTeam": {
             "teamId": 1610612760,
@@ -675,9 +684,9 @@ data = {
             "teamWins": 36,
             "teamLosses": 8,
             "score": 108,
-            "seed": None
-        }
-    }
+            "seed": None,
+        },
+    },
 }
 
 response = BoxScoreSummaryV3Response.model_validate(data)
@@ -735,6 +744,7 @@ When using both mixins, always list them before `BaseModel`:
 ```python
 from pydantic import BaseModel
 from fastbreak.models.common.dataframe import PandasMixin, PolarsMixin
+
 
 class MyRow(PandasMixin, PolarsMixin, BaseModel):
     player_id: int
@@ -953,22 +963,69 @@ data = {
         {
             "name": "PlayerSeasonStats",
             "headers": [
-                "PLAYER_ID", "SEASON_ID", "TEAM_ID", "TEAM_ABBREVIATION",
-                "PLAYER_AGE", "GP", "MIN", "PTS", "REB", "AST",
-                "STL", "BLK", "TOV", "FG_PCT", "FG3_PCT", "FT_PCT"
+                "PLAYER_ID",
+                "SEASON_ID",
+                "TEAM_ID",
+                "TEAM_ABBREVIATION",
+                "PLAYER_AGE",
+                "GP",
+                "MIN",
+                "PTS",
+                "REB",
+                "AST",
+                "STL",
+                "BLK",
+                "TOV",
+                "FG_PCT",
+                "FG3_PCT",
+                "FT_PCT",
             ],
             "rowSet": [
-                [2544, "2003-04", 1610612739, "CLE", 19.0, 79, 39.5, 20.9, 5.5, 7.2, 1.6, 0.7, 3.5, 0.417, 0.290, 0.754],
-                [2544, "2004-05", 1610612739, "CLE", 20.0, 80, 42.4, 27.2, 7.4, 7.2, 2.2, 0.7, 3.3, 0.472, 0.351, 0.750],
-            ]
+                [
+                    2544,
+                    "2003-04",
+                    1610612739,
+                    "CLE",
+                    19.0,
+                    79,
+                    39.5,
+                    20.9,
+                    5.5,
+                    7.2,
+                    1.6,
+                    0.7,
+                    3.5,
+                    0.417,
+                    0.290,
+                    0.754,
+                ],
+                [
+                    2544,
+                    "2004-05",
+                    1610612739,
+                    "CLE",
+                    20.0,
+                    80,
+                    42.4,
+                    27.2,
+                    7.4,
+                    7.2,
+                    2.2,
+                    0.7,
+                    3.3,
+                    0.472,
+                    0.351,
+                    0.750,
+                ],
+            ],
         },
         {
             "name": "CareerAverages",
             "headers": ["PLAYER_ID", "GP", "MIN", "PTS", "REB", "AST", "FG_PCT"],
             "rowSet": [
                 [2544, 1492, 38.1, 27.1, 7.5, 7.4, 0.504],
-            ]
-        }
+            ],
+        },
     ]
 }
 
@@ -1015,20 +1072,49 @@ def test_schema_unchanged():
             {
                 "name": "PlayerSeasonStats",
                 "headers": [
-                    "PLAYER_ID", "SEASON_ID", "TEAM_ID", "TEAM_ABBREVIATION",
-                    "PLAYER_AGE", "GP", "MIN", "PTS", "REB", "AST",
-                    "STL", "BLK", "TOV", "FG_PCT", "FG3_PCT", "FT_PCT"
+                    "PLAYER_ID",
+                    "SEASON_ID",
+                    "TEAM_ID",
+                    "TEAM_ABBREVIATION",
+                    "PLAYER_AGE",
+                    "GP",
+                    "MIN",
+                    "PTS",
+                    "REB",
+                    "AST",
+                    "STL",
+                    "BLK",
+                    "TOV",
+                    "FG_PCT",
+                    "FG3_PCT",
+                    "FT_PCT",
                 ],
                 "rowSet": [
-                    [2544, "2024-25", 1610612739, "CLE", 40.0, 70, 35.1, 24.3, 7.1, 8.5,
-                     1.3, 0.6, 3.2, 0.521, 0.401, 0.748],
-                ]
+                    [
+                        2544,
+                        "2024-25",
+                        1610612739,
+                        "CLE",
+                        40.0,
+                        70,
+                        35.1,
+                        24.3,
+                        7.1,
+                        8.5,
+                        1.3,
+                        0.6,
+                        3.2,
+                        0.521,
+                        0.401,
+                        0.748,
+                    ],
+                ],
             },
             {
                 "name": "CareerAverages",
                 "headers": ["PLAYER_ID", "GP", "MIN", "PTS", "REB", "AST", "FG_PCT"],
-                "rowSet": [[2544, 1492, 38.1, 27.1, 7.5, 7.4, 0.504]]
-            }
+                "rowSet": [[2544, 1492, 38.1, 27.1, 7.5, 7.4, 0.504]],
+            },
         ]
     }
     StrictResponse = PlayerSeasonStatsResponse.strict()
@@ -1040,7 +1126,9 @@ def test_strict_rejects_unknown_fields():
     """strict() raises ValidationError when the API adds new fields."""
     StrictResponse = PlayerSeasonStatsResponse.strict()
     with pytest.raises(ValidationError) as exc_info:
-        StrictResponse.model_validate({"new_top_level_field": "unexpected", "resultSets": []})
+        StrictResponse.model_validate(
+            {"new_top_level_field": "unexpected", "resultSets": []}
+        )
 
     errors = exc_info.value.errors()
     assert any(e["type"] == "extra_forbidden" for e in errors)
@@ -1093,21 +1181,50 @@ FIXTURE_PLAYER_SEASON_STATS = {
         {
             "name": "PlayerSeasonStats",
             "headers": [
-                "PLAYER_ID", "SEASON_ID", "TEAM_ID", "TEAM_ABBREVIATION",
-                "PLAYER_AGE", "GP", "MIN", "PTS", "REB", "AST",
-                "STL", "BLK", "TOV", "FG_PCT", "FG3_PCT", "FT_PCT"
+                "PLAYER_ID",
+                "SEASON_ID",
+                "TEAM_ID",
+                "TEAM_ABBREVIATION",
+                "PLAYER_AGE",
+                "GP",
+                "MIN",
+                "PTS",
+                "REB",
+                "AST",
+                "STL",
+                "BLK",
+                "TOV",
+                "FG_PCT",
+                "FG3_PCT",
+                "FT_PCT",
             ],
             "rowSet": [
-                [2544, "2024-25", 1610612739, "CLE", 40.0, 70, 35.1,
-                 24.3, 7.1, 8.5, 1.3, 0.6, 3.2, 0.521, 0.401, 0.748],
-            ]
+                [
+                    2544,
+                    "2024-25",
+                    1610612739,
+                    "CLE",
+                    40.0,
+                    70,
+                    35.1,
+                    24.3,
+                    7.1,
+                    8.5,
+                    1.3,
+                    0.6,
+                    3.2,
+                    0.521,
+                    0.401,
+                    0.748,
+                ],
+            ],
         },
         {
             "name": "CareerAverages",
             "headers": ["PLAYER_ID", "GP", "MIN", "PTS", "REB", "AST", "FG_PCT"],
-            "rowSet": [[2544, 1492, 38.1, 27.1, 7.5, 7.4, 0.504]]
-        }
-    ]
+            "rowSet": [[2544, 1492, 38.1, 27.1, 7.5, 7.4, 0.504]],
+        },
+    ],
 }
 
 

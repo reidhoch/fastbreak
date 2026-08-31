@@ -10,31 +10,66 @@ fastbreak API helpers, but it has no dependency on them and can be used with any
 ```python
 from fastbreak.metrics import (
     # Efficiency
-    true_shooting, effective_fg_pct, game_score, nba_efficiency,
-    relative_ts, relative_efg,
+    true_shooting,
+    effective_fg_pct,
+    game_score,
+    nba_efficiency,
+    relative_ts,
+    relative_efg,
     # Rate stats
-    per_36, per_100, free_throw_rate, three_point_rate, ast_to_tov, assist_ratio,
+    per_36,
+    per_100,
+    free_throw_rate,
+    three_point_rate,
+    ast_to_tov,
+    assist_ratio,
     # Counting / thresholds
-    is_double_double, is_triple_double,
+    is_double_double,
+    is_triple_double,
     # On-floor impact
-    usage_pct, ast_pct, oreb_pct, dreb_pct, stl_pct, blk_pct,
+    usage_pct,
+    ast_pct,
+    oreb_pct,
+    dreb_pct,
+    stl_pct,
+    blk_pct,
     # PER
-    pace_adjusted_per, per,
+    pace_adjusted_per,
+    per,
     # BPM / VORP
-    BPMResult, bpm, vorp,
+    BPMResult,
+    bpm,
+    vorp,
     # Team ratings
-    possessions, possessions_general, plays, floor_pct, play_pct,
-    ortg, drtg, net_rtg,
+    possessions,
+    possessions_general,
+    plays,
+    floor_pct,
+    play_pct,
+    ortg,
+    drtg,
+    net_rtg,
     # Win metrics
-    offensive_win_shares, defensive_win_shares,
-    win_shares, win_shares_per_48,
-    pythagorean_win_pct, bell_curve_win_pct,
+    offensive_win_shares,
+    defensive_win_shares,
+    win_shares,
+    win_shares_per_48,
+    pythagorean_win_pct,
+    bell_curve_win_pct,
     # Rolling / windowed
-    rolling_avg, ewma,
+    rolling_avg,
+    ewma,
     # Distribution
-    stat_floor, stat_ceiling, stat_median, prop_hit_rate,
-    percentile_rank, stat_consistency, streak_count,
-    rolling_consistency, expected_stat, hit_rate_last_n,
+    stat_floor,
+    stat_ceiling,
+    stat_median,
+    prop_hit_rate,
+    percentile_rank,
+    stat_consistency,
+    streak_count,
+    rolling_consistency,
+    expected_stat,
+    hit_rate_last_n,
     # League context
     LeagueAverages,
 )
@@ -130,6 +165,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.teams import get_league_averages
 
+
 async def main():
     async with NBAClient() as client:
         # Current season
@@ -141,6 +177,7 @@ async def main():
     print(f"League TS%: {lg.ts:.3f}")
     print(f"League eFG%: {lg.efg:.3f}")
     print(f"League pace: {lg.lg_pace:.1f}")
+
 
 asyncio.run(main())
 ```
@@ -182,8 +219,8 @@ Note: `oreb_pct` here is the **team-level** formula (no per-minute correction) �
 
 ```python
 ff = four_factors(fgm=40, fg3m=12, fga=88, tov=14, fta=20, oreb=10, opp_dreb=32)
-print(ff.efg_pct)   # 0.523
-print(ff.tov_pct)   # 0.126
+print(ff.efg_pct)  # 0.523
+print(ff.tov_pct)  # 0.126
 ```
 
 ---
@@ -231,8 +268,8 @@ on a very small FGA sample). Always check before clamping.
 Returns `None` when both `fga` and `fta` are zero.
 
 ```python
-ts = true_shooting(pts=28, fga=18, fta=6)   # → 0.678
-ts = true_shooting(pts=0,  fga=0,  fta=0)   # → None
+ts = true_shooting(pts=28, fga=18, fta=6)  # → 0.678
+ts = true_shooting(pts=0, fga=0, fta=0)  # → None
 ```
 
 ---
@@ -283,8 +320,18 @@ Never returns `None`.
 
 ```python
 gs = game_score(
-    pts=28, fgm=11, fga=19, ftm=7, fta=9,
-    oreb=1, dreb=8, stl=2, ast=8, blk=1, pf=3, tov=4,
+    pts=28,
+    fgm=11,
+    fga=19,
+    ftm=7,
+    fta=9,
+    oreb=1,
+    dreb=8,
+    stl=2,
+    ast=8,
+    blk=1,
+    pf=3,
+    tov=4,
 )
 # → 24.5
 ```
@@ -311,8 +358,16 @@ Never returns `None`.
 
 ```python
 eff = nba_efficiency(
-    pts=25, reb=10, ast=5, stl=2, blk=1,
-    tov=3, fgm=10, fga=18, ftm=5, fta=6,
+    pts=25,
+    reb=10,
+    ast=5,
+    stl=2,
+    blk=1,
+    tov=3,
+    fgm=10,
+    fga=18,
+    ftm=5,
+    fta=6,
 )
 # → 31
 ```
@@ -331,8 +386,8 @@ the player is more efficient than league average.
 Returns `None` when `player_ts` is `None` (no shot attempts).
 
 ```python
-ts  = true_shooting(pts=30, fga=20, fta=5)
-rel = relative_ts(ts, lg)   # positive → above-average shooter
+ts = true_shooting(pts=30, fga=20, fta=5)
+rel = relative_ts(ts, lg)  # positive → above-average shooter
 ```
 
 ---
@@ -367,7 +422,7 @@ Returns `None` when `minutes` is zero.
 
 ```python
 pts_per_36 = per_36(stat=20, minutes=30)  # → 24.0
-reb_per_36 = per_36(stat=8,  minutes=30)  # → 9.6
+reb_per_36 = per_36(stat=8, minutes=30)  # → 9.6
 ```
 
 ---
@@ -390,7 +445,7 @@ Returns `None` when possessions are zero.
 
 ```python
 pts_per_100 = per_100(stat=25, poss=96.4)  # → 25.934
-reb_per_100 = per_100(stat=10, poss=100)   # → 10.0
+reb_per_100 = per_100(stat=10, poss=100)  # → 10.0
 ```
 
 ---
@@ -489,7 +544,7 @@ turnovers — everything that "uses" a possession for or by the player.
 Returns `None` when the denominator is zero (no activity at all).
 
 ```python
-ratio = assist_ratio(ast=8, fga=0, fta=0, tov=3)   # pure passer: → 72.7
+ratio = assist_ratio(ast=8, fga=0, fta=0, tov=3)  # pure passer: → 72.7
 ratio = assist_ratio(ast=8, fga=18, fta=6, tov=2)  # typical guard
 ```
 
@@ -510,7 +565,7 @@ assists, steals, blocks) are at 10 or above.
 
 ```python
 is_double_double(pts=22, reb=11, ast=4, stl=1, blk=0)  # → True
-is_double_double(pts=18, reb=9,  ast=4, stl=1, blk=0)  # → False
+is_double_double(pts=18, reb=9, ast=4, stl=1, blk=0)  # → False
 ```
 
 ---
@@ -563,8 +618,14 @@ Returns `None` when `mp` or team possessions are zero.
 
 ```python
 usg = usage_pct(
-    fga=18, fta=6, tov=3, mp=34,
-    team_fga=88, team_fta=22, team_tov=13, team_mp=240,
+    fga=18,
+    fta=6,
+    tov=3,
+    mp=34,
+    team_fga=88,
+    team_fta=22,
+    team_tov=13,
+    team_mp=240,
 )
 ```
 
@@ -804,8 +865,9 @@ The default (alpha=1, lam=0.44) reduces to the standard `possessions()` formula.
 poss = possessions_general(fgm=40, fga=88, ftm=15, fta=20, oreb=10, dreb_opp=30, tov=13)
 
 # "Possessions gained" variant
-poss_gained = possessions_general(fgm=40, fga=88, ftm=15, fta=20,
-                                   oreb=10, dreb_opp=30, tov=13, alpha=0.0)
+poss_gained = possessions_general(
+    fgm=40, fga=88, ftm=15, fta=20, oreb=10, dreb_opp=30, tov=13, alpha=0.0
+)
 ```
 
 ---
@@ -948,7 +1010,9 @@ generate 8% more value than average replacement level to produce positive win sh
 Returns `None` when `lg.lg_pts` is zero.
 
 ```python
-ows = offensive_win_shares(pts=28, fga=18, fta=6, tov=3, lg=lg)  # positive → above replacement
+ows = offensive_win_shares(
+    pts=28, fga=18, fta=6, tov=3, lg=lg
+)  # positive → above replacement
 ```
 
 ---
@@ -1013,10 +1077,23 @@ scoring-possession denominator is zero, or `lg.lg_pts` is zero. Can return
 
 ```python
 dws = defensive_win_shares(
-    stl=164, blk=82, dreb=410, mp=2870, pf=164,
-    team_mp=19_680, team_blk=410, team_stl=656, team_dreb=2_624, team_pf=1_640,
-    opp_fga=7_380, opp_fgm=3_444, opp_fta=1_804, opp_ftm=1_394,
-    opp_tov=1_148, opp_oreb=820, opp_pts=9_430,
+    stl=164,
+    blk=82,
+    dreb=410,
+    mp=2870,
+    pf=164,
+    team_mp=19_680,
+    team_blk=410,
+    team_stl=656,
+    team_dreb=2_624,
+    team_pf=1_640,
+    opp_fga=7_380,
+    opp_fgm=3_444,
+    opp_fta=1_804,
+    opp_ftm=1_394,
+    opp_tov=1_148,
+    opp_oreb=820,
+    opp_pts=9_430,
     lg=lg,
 )
 ```
@@ -1038,8 +1115,10 @@ missing ORTG or DRTG. This strict propagation avoids silently dropping one side 
 formula when data for only half the calculation is available.
 
 ```python
-ws = win_shares(ows=4.2, dws=2.1)   # → 6.3
-ws = win_shares(ows=4.2, dws=None)  # → None (DWS unavailable — don't produce a partial result)
+ws = win_shares(ows=4.2, dws=2.1)  # → 6.3
+ws = win_shares(
+    ows=4.2, dws=None
+)  # → None (DWS unavailable — don't produce a partial result)
 ```
 
 ---
@@ -1068,9 +1147,9 @@ Calibrated so that league-average ≈ 0.100. A useful rule of thumb:
 Returns `None` when `ws` is `None` or `mp` is zero.
 
 ```python
-ws48 = win_shares_per_48(ws=6.3, mp=2870)   # → ~0.105  (league-average territory)
+ws48 = win_shares_per_48(ws=6.3, mp=2870)  # → ~0.105  (league-average territory)
 ws48 = win_shares_per_48(ws=None, mp=2870)  # → None
-ws48 = win_shares_per_48(ws=6.3,  mp=0)    # → None
+ws48 = win_shares_per_48(ws=6.3, mp=0)  # → None
 ```
 
 ---
@@ -1091,7 +1170,7 @@ Pairs naturally with `TeamStanding.points_pg` and `TeamStanding.opp_points_pg`:
 
 ```python
 expected = pythagorean_win_pct(s.points_pg, s.opp_points_pg)
-luck = s.win_pct - expected   # positive = "lucky", negative = "unlucky"
+luck = s.win_pct - expected  # positive = "lucky", negative = "unlucky"
 ```
 
 Returns `None` when both inputs are zero.
@@ -1146,7 +1225,7 @@ from fastbreak.metrics import BPMResult, bpm, vorp
 ```python
 @dataclass(frozen=True, slots=True)
 class BPMResult:
-    total: float      # total BPM (raw, before team adjustment)
+    total: float  # total BPM (raw, before team adjustment)
     offensive: float  # OBPM component
     defensive: float  # DBPM component = total - offensive
 ```
@@ -1202,12 +1281,25 @@ from fastbreak.metrics import BPMResult, bpm, vorp
 
 # LeBron James 2009-10 per-100 stats (Cleveland Cavaliers, first MVP season)
 result = bpm(
-    pts=34.3, fg3m=1.6, ast=9.8, tov=3.9,
-    orb=1.4, drb=7.3, stl=1.9, blk=1.1, pf=2.5,
-    fga=26.5, fta=10.2,
-    pct_team_trb=0.168, pct_team_stl=0.203, pct_team_pf=0.108,
-    pct_team_ast=0.406, pct_team_blk=0.192, pct_team_pts=0.291,
-    listed_position=3.0, mp=2966,
+    pts=34.3,
+    fg3m=1.6,
+    ast=9.8,
+    tov=3.9,
+    orb=1.4,
+    drb=7.3,
+    stl=1.9,
+    blk=1.1,
+    pf=2.5,
+    fga=26.5,
+    fta=10.2,
+    pct_team_trb=0.168,
+    pct_team_stl=0.203,
+    pct_team_pf=0.108,
+    pct_team_ast=0.406,
+    pct_team_blk=0.192,
+    pct_team_pts=0.291,
+    listed_position=3.0,
+    mp=2966,
 )
 # result.total + (-7.0) ≈ +10.8  (BR published: +10.8)
 # result.offensive + (-7.0) ≈ +6.5  (BR published: +6.5)
@@ -1242,7 +1334,7 @@ The default replacement level is `−2.0` (a freely available reserve-quality pl
 
 ```python
 v = vorp(bpm_total=8.9, poss_pct=0.81, games=81)  # ≈ 8.7
-war = v * 2.7                                       # ≈ 23.5 wins
+war = v * 2.7  # ≈ 23.5 wins
 ```
 
 **Gotcha:** Pass the **team-adjusted** `bpm_total`, not the raw value from `bpm()`. Raw BPM is not comparable across teams.
@@ -1299,6 +1391,7 @@ avgs_5 = rolling_avg(pts, window=5)
 from fastbreak.clients import NBAClient
 from fastbreak.metrics import rolling_avg
 from fastbreak.players import get_player_game_log
+
 
 async def main() -> None:
     async with NBAClient() as client:
@@ -1381,6 +1474,7 @@ from fastbreak.clients import NBAClient
 from fastbreak.metrics import ewma
 from fastbreak.players import get_player_game_log
 
+
 async def main() -> None:
     async with NBAClient() as client:
         games = await get_player_game_log(client, player_id=201939)  # Curry
@@ -1436,9 +1530,9 @@ Returns `None` when `values` contains no non-`None` entries.
 
 ```python
 pts = [22.0, 18.0, None, 30.0, 25.0, 20.0]
-stat_floor(pts)          # 10th pct ≈ 18.4  (DNP excluded)
-stat_floor(pts, 25.0)    # 25th pct ≈ 19.5
-stat_floor(pts, 0.0)     # minimum = 18.0
+stat_floor(pts)  # 10th pct ≈ 18.4  (DNP excluded)
+stat_floor(pts, 25.0)  # 25th pct ≈ 19.5
+stat_floor(pts, 0.0)  # minimum = 18.0
 ```
 
 ---
@@ -1465,9 +1559,9 @@ Returns `None` when `values` contains no non-`None` entries.
 
 ```python
 pts = [22.0, 18.0, None, 30.0, 25.0, 20.0]
-stat_ceiling(pts)          # 90th pct ≈ 29.6
-stat_ceiling(pts, 75.0)    # 75th pct ≈ 26.5
-stat_ceiling(pts, 100.0)   # maximum = 30.0
+stat_ceiling(pts)  # 90th pct ≈ 29.6
+stat_ceiling(pts, 75.0)  # 75th pct ≈ 26.5
+stat_ceiling(pts, 100.0)  # maximum = 30.0
 ```
 
 ---
@@ -1486,7 +1580,7 @@ percentile.
 
 ```python
 pts = [22.0, 18.0, None, 30.0, 25.0, 20.0]
-stat_median(pts)    # 22.0  (median of [18, 20, 22, 25, 30])
+stat_median(pts)  # 22.0  (median of [18, 20, 22, 25, 30])
 stat_median([10.0, 30.0])  # 20.0  (interpolated midpoint)
 ```
 
@@ -1518,14 +1612,14 @@ Returns `None` when `values` contains no non-`None` entries.
 
 ```python
 pts = [22.0, 25.0, 18.0, 30.0, 25.0]
-prop_hit_rate(pts, 24.5)    # 3/5 = 0.60  (25, 30, 25 qualify)
-prop_hit_rate(pts, 25.0)    # 3/5 = 0.60  (>= 25 counts)
-prop_hit_rate(pts, 30.0)    # 1/5 = 0.20
-prop_hit_rate(pts, 31.0)    # 0/5 = 0.0
+prop_hit_rate(pts, 24.5)  # 3/5 = 0.60  (25, 30, 25 qualify)
+prop_hit_rate(pts, 25.0)  # 3/5 = 0.60  (>= 25 counts)
+prop_hit_rate(pts, 30.0)  # 1/5 = 0.20
+prop_hit_rate(pts, 31.0)  # 0/5 = 0.0
 
 # DNPs excluded:
 pts_with_dnp = [22.0, None, 25.0, 18.0, 30.0]
-prop_hit_rate(pts_with_dnp, 20.0)   # 3/4 = 0.75  (4 games played, 3 qualify)
+prop_hit_rate(pts_with_dnp, 20.0)  # 3/4 = 0.75  (4 games played, 3 qualify)
 ```
 
 **Guaranteed properties:**
@@ -1558,12 +1652,12 @@ this value rank in the reference distribution?"*
 
 ```python
 ref = [10.0, 20.0, 30.0]
-percentile_rank(20.0, ref)   # 50.0  — median
-percentile_rank(10.0, ref)   # 0.0   — minimum
-percentile_rank(30.0, ref)   # 100.0 — maximum
-percentile_rank(15.0, ref)   # 25.0  — linear interpolation
-percentile_rank(35.0, ref)   # 100.0 — clamped (above max)
-percentile_rank(5.0,  ref)   # 0.0   — clamped (below min)
+percentile_rank(20.0, ref)  # 50.0  — median
+percentile_rank(10.0, ref)  # 0.0   — minimum
+percentile_rank(30.0, ref)  # 100.0 — maximum
+percentile_rank(15.0, ref)  # 25.0  — linear interpolation
+percentile_rank(35.0, ref)  # 100.0 — clamped (above max)
+percentile_rank(5.0, ref)  # 0.0   — clamped (below min)
 ```
 
 **Roundtrip property** (holds for unique-value references):
@@ -1602,11 +1696,11 @@ valid entry returns 0.0.
 
 ```python
 pts = [20.0, 25.0, 18.0, 30.0, 22.0]
-stat_consistency(pts)         # ≈ 4.07  (moderate variance)
+stat_consistency(pts)  # ≈ 4.07  (moderate variance)
 stat_consistency([20.0] * 5)  # 0.0    (perfectly consistent)
 
 # DNPs excluded:
-stat_consistency([20.0, None, 30.0])   # 10.0  (std dev of [20, 30])
+stat_consistency([20.0, None, 30.0])  # 10.0  (std dev of [20, 30])
 ```
 
 **Guaranteed properties:**
@@ -1642,18 +1736,20 @@ missed the line, or if there are no non-`None` games.
 
 ```python
 pts = [10.0, 25.0, 30.0, 28.0]
-streak_count(pts, 20.0)                        # 3  (last three: 28, 30, 25 all ≥ 20)
+streak_count(pts, 20.0)  # 3  (last three: 28, 30, 25 all ≥ 20)
 pts[-1] = 15.0
-streak_count(pts, 20.0)                        # 0  (most recent game is 15 < 20 → streak ends)
+streak_count(pts, 20.0)  # 0  (most recent game is 15 < 20 → streak ends)
 
 # DNPs do not break a streak:
-streak_count([20.0, 25.0, None, 30.0], 20.0)   # 3  (None skipped; 30, 25, 20 all qualify)
-streak_count([10.0, None, 30.0], 20.0)          # 1  (None skipped; 10 misses → streak stops)
+streak_count(
+    [20.0, 25.0, None, 30.0], 20.0
+)  # 3  (None skipped; 30, 25, 20 all qualify)
+streak_count([10.0, None, 30.0], 20.0)  # 1  (None skipped; 10 misses → streak stops)
 
 # Boundary cases:
-streak_count([], 20.0)                          # 0
-streak_count([None, None], 20.0)               # 0
-streak_count([20.0, 20.0], 20.0)               # 2  (>= semantics)
+streak_count([], 20.0)  # 0
+streak_count([None, None], 20.0)  # 0
+streak_count([20.0, 20.0], 20.0)  # 2  (>= semantics)
 ```
 
 **Guaranteed properties:**
@@ -1696,8 +1792,8 @@ rolling_consistency(pts, 3)
 #  warm-up      std dev of each 3-game window
 
 # DNP in window propagates to None:
-rolling_consistency([20.0, None, 30.0], 2)   # [None, None, None]
-rolling_consistency([20.0, 30.0, None], 2)   # [None, 5.0, None]
+rolling_consistency([20.0, None, 30.0], 2)  # [None, None, None]
+rolling_consistency([20.0, 30.0, None], 2)  # [None, 5.0, None]
 ```
 
 **Guaranteed properties:**
@@ -1736,14 +1832,14 @@ one-off blowup game won't move the number as much as a straight average would.
 
 ```python
 pts = [10.0, 25.0, 30.0, 28.0, 15.0, None, 20.0]
-expected_stat(pts)                      # ≈21.9  (floor=12.5, median=22.5, ceiling=29.0)
-expected_stat([25.0, 25.0, 25.0])       # 25.0   (constant: floor = median = ceiling)
+expected_stat(pts)  # ≈21.9  (floor=12.5, median=22.5, ceiling=29.0)
+expected_stat([25.0, 25.0, 25.0])  # 25.0   (constant: floor = median = ceiling)
 
 # Symmetric distribution: expected == median
-expected_stat([10.0, 20.0, 30.0])       # 20.0
+expected_stat([10.0, 20.0, 30.0])  # 20.0
 
-expected_stat([])                        # None
-expected_stat([None, None])              # None
+expected_stat([])  # None
+expected_stat([None, None])  # None
 ```
 
 **Guaranteed properties:**
@@ -1781,13 +1877,13 @@ If fewer than `n` non-`None` games are available, all available games are used.
 
 ```python
 pts = [10.0, 25.0, 30.0, 15.0, 28.0]
-hit_rate_last_n(pts, 20.0, 3)    # 2/3 ≈ 0.667  (last 3: 28, 15, 30; 28 and 30 hit)
-hit_rate_last_n(pts, 20.0, 1)    # 1.0           (most recent: 28 >= 20)
-hit_rate_last_n(pts, 20.0, 10)   # 3/5 = 0.600  (only 5 games available; uses all)
+hit_rate_last_n(pts, 20.0, 3)  # 2/3 ≈ 0.667  (last 3: 28, 15, 30; 28 and 30 hit)
+hit_rate_last_n(pts, 20.0, 1)  # 1.0           (most recent: 28 >= 20)
+hit_rate_last_n(pts, 20.0, 10)  # 3/5 = 0.600  (only 5 games available; uses all)
 
 # Comparing recent vs full-season form:
-full   = prop_hit_rate(pts, 20.0)          # 0.6  (3 of 5 hit over the season)
-recent = hit_rate_last_n(pts, 20.0, 3)     # 0.667 (hotter recently)
+full = prop_hit_rate(pts, 20.0)  # 0.6  (3 of 5 hit over the season)
+recent = hit_rate_last_n(pts, 20.0, 3)  # 0.667 (hotter recently)
 ```
 
 **Guaranteed properties:**
@@ -1806,18 +1902,25 @@ together to compare player consistency:
 
 ```python
 from fastbreak.metrics import (
-    stat_floor, stat_median, stat_ceiling, prop_hit_rate,
-    stat_consistency, streak_count, percentile_rank,
-    rolling_consistency, expected_stat, hit_rate_last_n,
+    stat_floor,
+    stat_median,
+    stat_ceiling,
+    prop_hit_rate,
+    stat_consistency,
+    streak_count,
+    percentile_rank,
+    rolling_consistency,
+    expected_stat,
+    hit_rate_last_n,
 )
 
 # A streaky star and a consistent scorer with the same average
-streaky    = [38.0, 12.0, 41.0, 14.0, 35.0, 9.0, 44.0, 22.0, 31.0, 18.0]
+streaky = [38.0, 12.0, 41.0, 14.0, 35.0, 9.0, 44.0, 22.0, 31.0, 18.0]
 consistent = [26.0, 22.0, 28.0, 21.0, 27.0, 24.0, 25.0, 23.0, 26.0, 22.0]
 
 for label, pts in [("Streaky", streaky), ("Consistent", consistent)]:
     print(
-        f"{label}: avg={sum(pts)/len(pts):.1f}  "
+        f"{label}: avg={sum(pts) / len(pts):.1f}  "
         f"floor={stat_floor(pts):.1f}  median={stat_median(pts):.1f}  "
         f"ceiling={stat_ceiling(pts):.1f}  hit(20+)={prop_hit_rate(pts, 20.0):.0%}  "
         f"consistency={stat_consistency(pts):.2f}  "
@@ -1911,8 +2014,9 @@ from fastbreak.teams import get_league_averages
 from fastbreak.players import get_player_game_log
 from fastbreak.metrics import pace_adjusted_per, per
 
-PLAYER_ID = 2544   # LeBron James
+PLAYER_ID = 2544  # LeBron James
 TEAM_PACE = 100.0  # replace with actual team pace from box scores
+
 
 async def main():
     async with NBAClient() as client:
@@ -1938,8 +2042,8 @@ async def main():
             pf=game.pf,
             tov=game.tov,
             mp=game.minutes,
-            team_ast=26.0,    # league-average proxy; use actual team box score data
-            team_fgm=42.0,    # league-average proxy
+            team_ast=26.0,  # league-average proxy; use actual team box score data
+            team_fgm=42.0,  # league-average proxy
             team_pace=TEAM_PACE,
             lg=lg,
         )
@@ -1963,6 +2067,7 @@ async def main():
     #
     #   player_per = per(aper=aper_val, lg_aper=lg_aper)
 
+
 asyncio.run(main())
 ```
 
@@ -1975,22 +2080,28 @@ counting stats, using only hardcoded numbers.
 from fastbreak.metrics import ortg, drtg, net_rtg
 
 # Team's box score
-team_pts  = 115
-team_fga  = 87
+team_pts = 115
+team_fga = 87
 team_oreb = 8
-team_tov  = 12
-team_fta  = 24
+team_tov = 12
+team_fta = 24
 
 # Opponent's box score (needed for the opponent possession estimate in drtg)
-opp_pts  = 108
-opp_fga  = 85
+opp_pts = 108
+opp_fga = 85
 opp_oreb = 9
-opp_tov  = 14
-opp_fta  = 20
+opp_tov = 14
+opp_fta = 20
 
 off_rtg = ortg(pts=team_pts, fga=team_fga, oreb=team_oreb, tov=team_tov, fta=team_fta)
-def_rtg = drtg(opp_pts=opp_pts, opp_fga=opp_fga, opp_oreb=opp_oreb, opp_tov=opp_tov, opp_fta=opp_fta)
-net     = net_rtg(off_rtg, def_rtg)
+def_rtg = drtg(
+    opp_pts=opp_pts,
+    opp_fga=opp_fga,
+    opp_oreb=opp_oreb,
+    opp_tov=opp_tov,
+    opp_fta=opp_fta,
+)
+net = net_rtg(off_rtg, def_rtg)
 
 if off_rtg and def_rtg and net:
     print(f"ORTG: {off_rtg:.1f}")
@@ -2008,13 +2119,14 @@ from fastbreak.metrics import is_double_double, is_triple_double
 
 PLAYER_ID = 203999  # Nikola Jokic
 
+
 async def main():
     async with NBAClient() as client:
         log = await get_player_game_log(client, player_id=PLAYER_ID)
 
     double_doubles = 0
     triple_doubles = 0
-    games_played   = 0
+    games_played = 0
 
     for game in log:
         # game_id[:3] == "002" filters out All-Star games
@@ -2022,9 +2134,7 @@ async def main():
             continue
 
         games_played += 1
-        pts, reb, ast, stl, blk = (
-            game.pts, game.reb, game.ast, game.stl, game.blk
-        )
+        pts, reb, ast, stl, blk = (game.pts, game.reb, game.ast, game.stl, game.blk)
 
         if is_triple_double(pts=pts, reb=reb, ast=ast, stl=stl, blk=blk):
             triple_doubles += 1
@@ -2035,6 +2145,7 @@ async def main():
     print(f"Double-doubles: {double_doubles}")
     print(f"Triple-doubles: {triple_doubles}")
     print(f"DD/TD rate:     {(double_doubles + triple_doubles) / games_played:.1%}")
+
 
 asyncio.run(main())
 ```
@@ -2052,6 +2163,7 @@ from fastbreak.metrics import stat_floor, stat_median, stat_ceiling, prop_hit_ra
 
 PLAYER_ID = 201939  # Stephen Curry
 
+
 async def main():
     async with NBAClient() as client:
         log = await get_player_game_log(client, player_id=PLAYER_ID)
@@ -2059,10 +2171,12 @@ async def main():
     # Filter to regular-season games only
     regular = [g for g in log if g.game_id[:3] == "002"]
 
-    pts: list[float | None] = [float(g.pts) if g.pts is not None else None for g in regular]
+    pts: list[float | None] = [
+        float(g.pts) if g.pts is not None else None for g in regular
+    ]
 
-    floor   = stat_floor(pts)    # 10th pct: conservative downside
-    median  = stat_median(pts)   # 50th pct: typical output
+    floor = stat_floor(pts)  # 10th pct: conservative downside
+    median = stat_median(pts)  # 50th pct: typical output
     ceiling = stat_ceiling(pts)  # 90th pct: high-end upside
 
     print(f"Floor (10th):   {floor:.1f}")
@@ -2074,6 +2188,7 @@ async def main():
     for line in [19.5, 24.5, 29.5, 34.5]:
         rate = prop_hit_rate(pts, line)
         print(f"  >= {line}: {rate:.0%}" if rate is not None else f"  >= {line}: n/a")
+
 
 asyncio.run(main())
 ```

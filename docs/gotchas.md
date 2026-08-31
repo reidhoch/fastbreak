@@ -147,7 +147,7 @@ splits = await get_on_off_splits(
     per_mode="PerGame",
 )
 
-on_pts  = splits["on"][0].pts   # team points per game with player on court
+on_pts = splits["on"][0].pts  # team points per game with player on court
 off_pts = splits["off"][0].pts  # team points per game with player off court
 
 # A positive difference means the team scores more with the player on the floor
@@ -207,6 +207,7 @@ from fastbreak.clients import NBAClient
 
 client: NBAClient | None = None
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global client
@@ -216,11 +217,14 @@ async def lifespan(app: FastAPI):
     # Shutdown
     await client.close()
 
+
 app = FastAPI(lifespan=lifespan)
+
 
 @app.get("/players/{player_id}/stats")
 async def player_stats(player_id: int):
     from fastbreak.players import get_player_stats
+
     return await get_player_stats(client, player_id=player_id)
 ```
 
@@ -246,6 +250,7 @@ Use `MyResponse.strict()` in your tests to create a version of the model that ra
 
 ```python
 from fastbreak.models import PlayerGameLogResponse
+
 
 def test_player_game_log_schema(fixture_data: dict):
     # This raises ValidationError if the API fixture contains fields
@@ -397,10 +402,10 @@ from datetime import date
 from fastbreak.seasons import get_season_from_date
 
 # September: still returns "2024-25"
-get_season_from_date(date(2025, 9, 15))   # → "2024-25"
+get_season_from_date(date(2025, 9, 15))  # → "2024-25"
 
 # October 1st onward: returns new season
-get_season_from_date(date(2025, 10, 1))   # → "2025-26"
+get_season_from_date(date(2025, 10, 1))  # → "2025-26"
 get_season_from_date(date(2025, 10, 15))  # → "2025-26"
 ```
 
@@ -454,8 +459,8 @@ from datetime import date
 
 d = date(2026, 1, 15)
 
-iso_format = d.strftime("%Y-%m-%d")     # "2026-01-15"  → for get_games_on_date()
-nba_format = d.strftime("%m/%d/%Y")     # "01/15/2026"  → for Date type params
+iso_format = d.strftime("%Y-%m-%d")  # "2026-01-15"  → for get_games_on_date()
+nba_format = d.strftime("%m/%d/%Y")  # "01/15/2026"  → for Date type params
 ```
 
 ---

@@ -39,7 +39,9 @@ async with NBAClient() as client:
         client, player_id=1628369, season="2025-26", top_n=5
     )
     for d in defenders:
-        print(f"{d.def_player_name}: {d.matchup_min:.1f} min, {d.partial_poss:.1f} poss")
+        print(
+            f"{d.def_player_name}: {d.matchup_min:.1f} min, {d.partial_poss:.1f} poss"
+        )
 ```
 
 ```python
@@ -62,7 +64,7 @@ for m in ranked[:5]:
 from fastbreak.matchups import matchup_ppp, help_defense_rate
 
 # Points per possession
-ppp = matchup_ppp(player_pts=12.0, partial_poss=8.5)   # → 1.41
+ppp = matchup_ppp(player_pts=12.0, partial_poss=8.5)  # → 1.41
 
 # Fraction of shots where help defense was involved
 rate = help_defense_rate(matchup_fga=80.0, help_fga=20.0)  # → 0.2
@@ -375,7 +377,7 @@ Points per possession in matchup situations. Returns `None` if `partial_poss <= 
 
 ```python
 ppp = matchup_ppp(player_pts=12.0, partial_poss=8.5)  # → 1.41
-ppp = matchup_ppp(player_pts=0.0, partial_poss=0.0)   # → None
+ppp = matchup_ppp(player_pts=0.0, partial_poss=0.0)  # → None
 ```
 
 ---
@@ -395,7 +397,7 @@ Fraction of opponent shots that involved help defense (0–1). Returns `None` if
 
 ```python
 rate = help_defense_rate(matchup_fga=80.0, help_fga=20.0)  # → 0.2 (20% help defense)
-rate = help_defense_rate(matchup_fga=0.0, help_fga=0.0)    # → None
+rate = help_defense_rate(matchup_fga=0.0, help_fga=0.0)  # → None
 ```
 
 ---

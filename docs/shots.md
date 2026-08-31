@@ -239,7 +239,9 @@ expected = xfg_pct(shots, lg_zones, player_zones=breakdown)
 actual = zone_fg_pct(shots)
 
 if actual is not None and expected is not None:
-    print(f"FG%: {actual:.1%}  xFG%: {expected:.1%}  Shot-making: {actual - expected:+.1%}")
+    print(
+        f"FG%: {actual:.1%}  xFG%: {expected:.1%}  Shot-making: {actual - expected:+.1%}"
+    )
 ```
 
 **Invariants verified by tests:**
@@ -323,7 +325,11 @@ async with NBAClient() as client:
     if lal:
         breakdown = team_distance_breakdown(lal[0])
         for label, stats in breakdown.items():
-            print(f"{label}: {stats.fgm}/{stats.fga} ({stats.fg_pct:.1%})" if stats.fg_pct else f"{label}: 0 FGA")
+            print(
+                f"{label}: {stats.fgm}/{stats.fga} ({stats.fg_pct:.1%})"
+                if stats.fg_pct
+                else f"{label}: 0 FGA"
+            )
 
         # Compare rim vs. long-range
         rim = breakdown["Less Than 5ft"]
@@ -340,9 +346,9 @@ async with NBAClient() as client:
 ```python
 @dataclass(frozen=True)
 class ZoneStats:
-    zone: str           # matches Shot.shot_zone_basic
-    fga: float          # field goal attempts (count or per-game average)
-    fgm: float          # field goals made (count or per-game average)
+    zone: str  # matches Shot.shot_zone_basic
+    fga: float  # field goal attempts (count or per-game average)
+    fgm: float  # field goals made (count or per-game average)
     fg_pct: float | None  # fgm / fga, or None if fga == 0
 ```
 
@@ -423,8 +429,11 @@ three_pt_shots = [s for s in response.shots if s.shot_type == "3PT Field Goal"]
 three_pt_breakdown = zone_breakdown(three_pt_shots)
 
 # Only corner 3s
-corner_3s = [s for s in response.shots
-             if s.shot_zone_basic in ("Left Corner 3", "Right Corner 3")]
+corner_3s = [
+    s
+    for s in response.shots
+    if s.shot_zone_basic in ("Left Corner 3", "Right Corner 3")
+]
 corner_3_pct = zone_fg_pct(corner_3s)
 ```
 
@@ -434,7 +443,7 @@ corner_3_pct = zone_fg_pct(corner_3s)
 response = await get_shot_chart(client, player_id=201939)
 
 # Separate made and missed shots
-made  = [(s.loc_x, s.loc_y) for s in response.shots if s.shot_made_flag == 1]
+made = [(s.loc_x, s.loc_y) for s in response.shots if s.shot_made_flag == 1]
 missed = [(s.loc_x, s.loc_y) for s in response.shots if s.shot_made_flag == 0]
 
 # Pass to matplotlib scatter or any visualization library
@@ -466,11 +475,11 @@ regular = await get_shot_chart(client, player_id=2544, season_type="Regular Seas
 playoffs = await get_shot_chart(client, player_id=2544, season_type="Playoffs")
 
 reg_breakdown = zone_breakdown(regular.shots)
-po_breakdown  = zone_breakdown(playoffs.shots)
+po_breakdown = zone_breakdown(playoffs.shots)
 
 # Compare rim FG% between regular season and playoffs
 rim_reg = reg_breakdown.get("Restricted Area")
-rim_po  = po_breakdown.get("Restricted Area")
+rim_po = po_breakdown.get("Restricted Area")
 if rim_reg and rim_po and rim_reg.fg_pct and rim_po.fg_pct:
     print(f"Rim FG%  reg: {rim_reg.fg_pct:.1%}  playoffs: {rim_po.fg_pct:.1%}")
 ```

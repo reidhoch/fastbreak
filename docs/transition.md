@@ -239,6 +239,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.transition import get_transition_stats
 
+
 async def main():
     async with NBAClient() as client:
         analysis = await get_transition_stats(client, "0022500571")
@@ -250,6 +251,7 @@ async def main():
     print(f"Transition rate:    {s.transition_pct:.1%}")
     print(f"Transition PPP:     {e.transition_ppp:.2f}")
     print(f"Half-court PPP:     {e.halfcourt_ppp:.2f}")
+
 
 asyncio.run(main())
 ```
@@ -286,6 +288,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.transition import get_transition_stats
 
+
 async def main():
     async with NBAClient() as client:
         analysis = await get_transition_stats(client, "0022500571")
@@ -305,6 +308,7 @@ async def main():
         print(f"Half-court PPP:  {e.halfcourt_ppp:.2f}")
         print(f"Transition is {abs(diff):.2f} PPP {label} efficient")
 
+
 asyncio.run(main())
 ```
 
@@ -316,6 +320,7 @@ from fastbreak.clients import NBAClient
 from fastbreak.games import get_play_by_play
 from fastbreak.transition import classify_possessions, transition_frequency
 
+
 async def main():
     async with NBAClient() as client:
         actions = await get_play_by_play(client, "0022500571")
@@ -325,6 +330,7 @@ async def main():
         s = transition_frequency(poss)
         pct = f"{s.transition_pct:.1%}" if s.transition_pct is not None else "N/A"
         print(f"Window {window:.0f}s: {s.transition_possessions} transition ({pct})")
+
 
 asyncio.run(main())
 ```
@@ -337,6 +343,7 @@ from fastbreak.clients import NBAClient
 from fastbreak.games import get_play_by_play
 from fastbreak.transition import classify_possessions
 
+
 async def main():
     async with NBAClient() as client:
         actions = await get_play_by_play(client, "0022500571")
@@ -345,7 +352,8 @@ async def main():
 
     # Find transition possessions that scored
     fast_break_scores = [
-        p for p in possessions
+        p
+        for p in possessions
         if p.classification == "transition" and p.points_scored > 0
     ]
 
@@ -357,6 +365,7 @@ async def main():
             f"pts={p.points_scored}  "
             f"trigger={p.trigger}"
         )
+
 
 asyncio.run(main())
 ```

@@ -11,7 +11,9 @@ Endpoints are **generic over their response type** `T`. The `response_model` cla
 ```python
 class BoxScoreTraditional(GameIdEndpoint[BoxScoreTraditionalResponse]):
     path: ClassVar[str] = "boxscoretraditionalv3"
-    response_model: ClassVar[type[BoxScoreTraditionalResponse]] = BoxScoreTraditionalResponse
+    response_model: ClassVar[type[BoxScoreTraditionalResponse]] = (
+        BoxScoreTraditionalResponse
+    )
 ```
 
 Every endpoint must define:
@@ -41,10 +43,12 @@ async with NBAClient() as client:
     log = await client.get(PlayerGameLog(player_id=2544, season="2024-25"))
 
     # Multiple requests concurrently — all endpoints must return the same response type
-    log1, log2 = await client.get_many([
-        PlayerGameLog(player_id=2544, season="2024-25"),
-        PlayerGameLog(player_id=201939, season="2024-25"),
-    ])
+    log1, log2 = await client.get_many(
+        [
+            PlayerGameLog(player_id=2544, season="2024-25"),
+            PlayerGameLog(player_id=201939, season="2024-25"),
+        ]
+    )
 ```
 
 All parameters have defaults where possible. Season defaults to the current season (computed at construction time). `league_id` defaults to `"00"` (NBA).
@@ -77,7 +81,9 @@ For endpoints requiring only a `game_id`. Covers all box score endpoints and oth
 ```python
 class BoxScoreTraditional(GameIdEndpoint[BoxScoreTraditionalResponse]):
     path: ClassVar[str] = "boxscoretraditionalv3"
-    response_model: ClassVar[type[BoxScoreTraditionalResponse]] = BoxScoreTraditionalResponse
+    response_model: ClassVar[type[BoxScoreTraditionalResponse]] = (
+        BoxScoreTraditionalResponse
+    )
 ```
 
 ### `PlayerIdEndpoint[T]`
@@ -464,7 +470,7 @@ from fastbreak.endpoints import PlayerGameLog
 async with NBAClient() as client:
     log = await client.get(
         PlayerGameLog(
-            player_id=2544,          # LeBron James
+            player_id=2544,  # LeBron James
             season="2024-25",
             season_type="Regular Season",
         )
@@ -493,14 +499,20 @@ async with NBAClient() as client:
         home = result.box_score_traditional.home_team
         for player in home.players:
             stats = player.statistics
-            print(f"{gid} — {player.name_i}: {stats.points} pts, {stats.rebounds_total} reb")
+            print(
+                f"{gid} — {player.name_i}: {stats.points} pts, {stats.rebounds_total} reb"
+            )
 ```
 
 For **different endpoint types** on the same game, make individual `get()` calls. These can be run concurrently with `anyio.create_task_group()` if needed:
 
 ```python
 from fastbreak.clients import NBAClient
-from fastbreak.endpoints import BoxScoreTraditionalV3, BoxScoreAdvancedV3, BoxScoreSummaryV3
+from fastbreak.endpoints import (
+    BoxScoreTraditionalV3,
+    BoxScoreAdvancedV3,
+    BoxScoreSummaryV3,
+)
 
 game_id = "0022500571"
 
@@ -523,11 +535,11 @@ from fastbreak.endpoints import PlayerDashboardByGeneralSplits
 async with NBAClient() as client:
     splits = await client.get(
         PlayerDashboardByGeneralSplits(
-            player_id=201939,           # Stephen Curry
+            player_id=201939,  # Stephen Curry
             season="2024-25",
             per_mode="PerGame",
             measure_type="Base",
-            location="Home",            # Home games only
+            location="Home",  # Home games only
             date_from="11/01/2024",
             date_to="02/28/2025",
         )
@@ -543,8 +555,8 @@ from fastbreak.endpoints import ShotChartDetail
 async with NBAClient() as client:
     chart = await client.get(
         ShotChartDetail(
-            player_id=203954,           # Joel Embiid
-            team_id=1610612755,         # 76ers
+            player_id=203954,  # Joel Embiid
+            team_id=1610612755,  # 76ers
             season="2024-25",
             season_type="Regular Season",
             context_measure="FGA",
@@ -613,6 +625,7 @@ class MyBoxScore(GameIdEndpoint[MyBoxScoreResponse]):
     path: ClassVar[str] = "myboxscore"
     response_model: ClassVar[type[MyBoxScoreResponse]] = MyBoxScoreResponse
 
+
 # Only needs player_id + season:
 class MyPlayerLog(PlayerSeasonEndpoint[MyPlayerLogResponse]):
     path: ClassVar[str] = "myplayerlog"
@@ -650,15 +663,18 @@ For multiple named result sets:
 from fastbreak.models.common.result_set import named_result_sets_validator
 from pydantic import model_validator
 
+
 class MyEndpointResponse(FrozenResponse):
     stats: list[StatsRow] = Field(default_factory=list)
     summary: SummaryRow | None = None
 
     from_result_sets = model_validator(mode="before")(
-        named_result_sets_validator({
-            "stats": "StatsResultSet",
-            "summary": ("SummaryResultSet", True),  # True = single row, not a list
-        })
+        named_result_sets_validator(
+            {
+                "stats": "StatsResultSet",
+                "summary": ("SummaryResultSet", True),  # True = single row, not a list
+            }
+        )
     )
 ```
 

@@ -538,8 +538,8 @@ season_type: SeasonType = "Playoffs"
 ep = PlayerCareerStats(player_id=2544, per_mode=per_mode)
 
 # ValidationError at construction — not at request time
-ep = PlayerCareerStats(player_id=2544, per_mode="Per48")   # valid
-ep = PlayerCareerStats(player_id=2544, per_mode="invalid") # raises ValidationError!
+ep = PlayerCareerStats(player_id=2544, per_mode="Per48")  # valid
+ep = PlayerCareerStats(player_id=2544, per_mode="invalid")  # raises ValidationError!
 
 # League leaders for blocks, post All-Star, playoffs
 leaders_ep = LeagueLeaders(
@@ -566,14 +566,14 @@ chart_ep = ShotChartDetail(
 ```python
 from fastbreak.types import Season, SeasonType, PerMode
 
+
 async def fetch_player_averages(
     client,
     player_id: int,
     season: Season,
     season_type: SeasonType = "Regular Season",
     per_mode: PerMode = "PerGame",
-) -> None:
-    ...
+) -> None: ...
 ```
 
 The type aliases are transparent to the type checker — `Season` is `str`, `PerMode` is `str`, etc. The `Annotated` metadata is consumed only by Pydantic during model validation.

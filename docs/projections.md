@@ -192,9 +192,9 @@ Computed by summing the Poisson CDF iteratively (stable for typical NBA stat lin
 
 ```python
 poisson_sf(line=2.5, lam=3.1)  # P(X >= 3) under Poisson(3.1) → 0.598
-poisson_sf(line=2,   lam=3.1)  # P(X > 2)  under Poisson(3.1) → 0.598 (same bucket)
-poisson_sf(line=-1,  lam=3.1)  # → 1.0
-poisson_sf(line=5,   lam=0)    # → 0.0 (all mass at 0)
+poisson_sf(line=2, lam=3.1)  # P(X > 2)  under Poisson(3.1) → 0.598 (same bucket)
+poisson_sf(line=-1, lam=3.1)  # → 1.0
+poisson_sf(line=5, lam=0)  # → 0.0 (all mass at 0)
 ```
 
 ---
@@ -394,7 +394,7 @@ async def main() -> None:
     async with NBAClient() as client:
         proj = await project_player(
             client,
-            player_id=1641705,            # Victor Wembanyama
+            player_id=1641705,  # Victor Wembanyama
             player_name="Victor Wembanyama",
             opponent_team_id=1610612743,  # Denver Nuggets
             is_home=True,
@@ -405,7 +405,9 @@ async def main() -> None:
 
     print(f"{proj.player_name} vs. team {proj.opponent_team_id} on {proj.game_date}")
     for name, sp in proj.stats.items():
-        print(f"  {name:5s}: mean={sp.mean:5.2f}  stdev={sp.stdev:4.2f}  dist={sp.distribution}")
+        print(
+            f"  {name:5s}: mean={sp.mean:5.2f}  stdev={sp.stdev:4.2f}  dist={sp.distribution}"
+        )
         # Sportsbook-style P(over) for three lines around the mean.
         for line in (sp.mean - sp.stdev, sp.mean, sp.mean + sp.stdev):
             print(f"    P(over {line:5.2f}) = {sp.prob_over(line):.3f}")
@@ -440,11 +442,18 @@ async def main() -> None:
         schedule = await get_team_schedule(client, team_id=SPURS_TEAM_ID)
 
         todays_game = next(
-            (g for g in schedule
-             if g.game_date_est and g.game_date_est[:10] == today.isoformat()),
+            (
+                g
+                for g in schedule
+                if g.game_date_est and g.game_date_est[:10] == today.isoformat()
+            ),
             None,
         )
-        if todays_game is None or todays_game.home_team is None or todays_game.away_team is None:
+        if (
+            todays_game is None
+            or todays_game.home_team is None
+            or todays_game.away_team is None
+        ):
             print(f"Spurs have no confirmed opponent on {today}.")
             return
 
@@ -473,7 +482,9 @@ async def main() -> None:
         )
 
     for name, sp in proj.stats.items():
-        print(f"  {name:5s}: mean={sp.mean:5.2f}  rolling={sp.rolling_mean:5.2f}  season={sp.season_mean:5.2f}")
+        print(
+            f"  {name:5s}: mean={sp.mean:5.2f}  rolling={sp.rolling_mean:5.2f}  season={sp.season_mean:5.2f}"
+        )
 
 
 asyncio.run(main())
@@ -489,6 +500,7 @@ from datetime import date
 
 from fastbreak import NBAClient, compute_priors_for_season, project_player
 
+
 async def main() -> None:
     async with NBAClient(request_delay=1.0) as client:
         # ~1-3 minutes; cache this at the caller's discretion.
@@ -496,7 +508,7 @@ async def main() -> None:
 
         proj = await project_player(
             client,
-            player_id=1641705,            # Victor Wembanyama
+            player_id=1641705,  # Victor Wembanyama
             player_name="Victor Wembanyama",
             opponent_team_id=1610612743,  # Denver Nuggets
             is_home=True,
@@ -506,6 +518,7 @@ async def main() -> None:
         )
     for name, sp in proj.stats.items():
         print(f"  {name:5s}: mean={sp.mean:5.2f}")
+
 
 asyncio.run(main())
 ```

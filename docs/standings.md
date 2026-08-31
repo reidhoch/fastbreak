@@ -168,7 +168,9 @@ async def main() -> None:
         print("\nEastern Conference:")
         east = await get_conference_standings(client, "East")
         for s in east:
-            print(f"  {s.playoff_rank:>2}. {s.team_city} {s.team_name:<18}  {s.wins}-{s.losses}")
+            print(
+                f"  {s.playoff_rank:>2}. {s.team_city} {s.team_name:<18}  {s.wins}-{s.losses}"
+            )
 
 
 if __name__ == "__main__":
