@@ -294,6 +294,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.compare import get_player_comparison
 
+
 async def main():
     async with NBAClient() as client:
         result = await get_player_comparison(client, 2544, 203999)
@@ -311,6 +312,7 @@ async def main():
     e = result.edges
     print(f"Edge: {a.name} {e.a_leads} - {b.name} {e.b_leads} (ties {e.ties})")
 
+
 asyncio.run(main())
 ```
 
@@ -326,6 +328,7 @@ from fastbreak.clients import NBAClient
 from fastbreak.compare import HIGHER_IS_WORSE, get_player_comparison, stat_leader
 from fastbreak.players import get_player_id
 
+
 async def main():
     async with NBAClient() as client:
         pid_a = await get_player_id(client, "Jayson Tatum")
@@ -337,17 +340,25 @@ async def main():
     a, b = result.player_a, result.player_b
     print(f"{a.name} vs {b.name}")
 
-    for label, metric in [("PTS", "pts"), ("REB", "reb"), ("AST", "ast"),
-                           ("TS%", "ts_pct"), ("NET", "e_net_rating")]:
+    for label, metric in [
+        ("PTS", "pts"),
+        ("REB", "reb"),
+        ("AST", "ast"),
+        ("TS%", "ts_pct"),
+        ("NET", "e_net_rating"),
+    ]:
         hiw = metric in HIGHER_IS_WORSE
         lid = stat_leader(a, b, metric, higher_is_worse=hiw)
         arrow = "←" if lid == a.player_id else ("→" if lid == b.player_id else "=")
         delta = result.deltas[metric]
         d_str = f"{delta:+.1f}" if delta is not None else "N/A"
-        print(f"  {label:<5} {getattr(a, metric):>8} {arrow} {getattr(b, metric):>8}  ({d_str})")
+        print(
+            f"  {label:<5} {getattr(a, metric):>8} {arrow} {getattr(b, metric):>8}  ({d_str})"
+        )
 
     e = result.edges
     print(f"\nEdge: {a.name} {e.a_leads} - {b.name} {e.b_leads} (ties {e.ties})")
+
 
 asyncio.run(main())
 ```

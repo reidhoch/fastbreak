@@ -9,7 +9,12 @@ These utilities show up everywhere in fastbreak. Every helper in `fastbreak.play
 All three functions are also re-exported from the top-level `fastbreak` package:
 
 ```python
-from fastbreak.seasons import get_season_from_date, season_start_year, season_to_season_id
+from fastbreak.seasons import (
+    get_season_from_date,
+    season_start_year,
+    season_to_season_id,
+)
+
 # or equivalently:
 from fastbreak import get_season_from_date, season_start_year, season_to_season_id
 ```
@@ -78,19 +83,19 @@ season = get_season_from_date()
 print(season)  # "2025-26"
 
 # Date in October — new season has started
-print(get_season_from_date(date(2025, 10, 1)))   # "2025-26"
+print(get_season_from_date(date(2025, 10, 1)))  # "2025-26"
 print(get_season_from_date(date(2025, 10, 22)))  # "2025-26"  (Opening Night)
 
 # Date in September — still the previous season
-print(get_season_from_date(date(2025, 9, 30)))   # "2024-25"
-print(get_season_from_date(date(2025, 9, 15)))   # "2024-25"
+print(get_season_from_date(date(2025, 9, 30)))  # "2024-25"
+print(get_season_from_date(date(2025, 9, 15)))  # "2024-25"
 
 # Mid-season and Finals
-print(get_season_from_date(date(2025, 2, 27)))   # "2024-25"
-print(get_season_from_date(date(2025, 6, 15)))   # "2024-25"
+print(get_season_from_date(date(2025, 2, 27)))  # "2024-25"
+print(get_season_from_date(date(2025, 6, 15)))  # "2024-25"
 
 # Century-turn edge case
-print(get_season_from_date(date(1999, 11, 1)))   # "1999-00"
+print(get_season_from_date(date(1999, 11, 1)))  # "1999-00"
 ```
 
 ---
@@ -126,7 +131,7 @@ print(season_start_year("1999-00"))  # 1999
 
 # Useful for arithmetic
 year = season_start_year("2025-26")
-previous_season_start = year - 1     # 2024
+previous_season_start = year - 1  # 2024
 ```
 
 ---
@@ -187,11 +192,13 @@ from fastbreak.clients import NBAClient
 from fastbreak.players import get_player_game_log
 from fastbreak.teams import get_team_stats
 
+
 async def main():
     async with NBAClient() as client:
         # Both default to the current season automatically
         log = await get_player_game_log(client, player_id=2544)
         teams = await get_team_stats(client)
+
 
 asyncio.run(main())
 ```
@@ -223,10 +230,12 @@ endpoint = PlayerIndex(season="2024-25")
 ```python
 from fastbreak.seasons import get_season_from_date, season_start_year
 
+
 def make_season(start_year: int) -> str:
     """Build a season string from a start year integer."""
     end_suffix = (start_year + 1) % 100
     return f"{start_year}-{end_suffix:02d}"
+
 
 # Last five seasons ending at the current one
 current = get_season_from_date()
@@ -243,9 +252,11 @@ from fastbreak.clients import NBAClient
 from fastbreak.seasons import get_season_from_date, season_start_year
 from fastbreak.players import get_player_game_log
 
+
 def make_season(start_year: int) -> str:
     end_suffix = (start_year + 1) % 100
     return f"{start_year}-{end_suffix:02d}"
+
 
 async def main():
     current = get_season_from_date()
@@ -257,6 +268,7 @@ async def main():
         for season in seasons:
             log = await get_player_game_log(client, player_id=201939, season=season)
             print(f"{season}: {len(log)} games")
+
 
 asyncio.run(main())
 ```
@@ -278,10 +290,10 @@ from fastbreak.seasons import (
 )
 
 # get_season_from_date
-print(get_season_from_date())                        # "2025-26"  (today: 2026-02-27)
-print(get_season_from_date(date(2025, 10, 22)))      # "2025-26"  (Opening Night)
-print(get_season_from_date(date(2025, 9, 30)))       # "2024-25"  (day before boundary)
-print(get_season_from_date(date(2025, 10, 1)))       # "2025-26"  (on the boundary)
+print(get_season_from_date())  # "2025-26"  (today: 2026-02-27)
+print(get_season_from_date(date(2025, 10, 22)))  # "2025-26"  (Opening Night)
+print(get_season_from_date(date(2025, 9, 30)))  # "2024-25"  (day before boundary)
+print(get_season_from_date(date(2025, 10, 1)))  # "2025-26"  (on the boundary)
 
 # season_start_year
 print(season_start_year("2025-26"))  # 2025
@@ -299,9 +311,11 @@ print(season_to_season_id("1999-00"))  # "21999"
 ```python
 from fastbreak.seasons import get_season_from_date, season_start_year
 
+
 def make_season(start_year: int) -> str:
     end_suffix = (start_year + 1) % 100
     return f"{start_year}-{end_suffix:02d}"
+
 
 current = get_season_from_date()
 current_year = season_start_year(current)
@@ -325,13 +339,13 @@ from datetime import date
 from fastbreak.seasons import get_season_from_date
 
 boundary_cases = [
-    date(2025, 9, 30),   # Last day of old season window
-    date(2025, 10, 1),   # First day of new season window
+    date(2025, 9, 30),  # Last day of old season window
+    date(2025, 10, 1),  # First day of new season window
     date(2025, 10, 31),  # Late October
-    date(2026, 1, 1),    # New Year — still same season
-    date(2026, 6, 30),   # End of Finals window
-    date(2026, 9, 30),   # Late September — still same season
-    date(2026, 10, 1),   # Season rolls over again
+    date(2026, 1, 1),  # New Year — still same season
+    date(2026, 6, 30),  # End of Finals window
+    date(2026, 9, 30),  # Late September — still same season
+    date(2026, 10, 1),  # Season rolls over again
 ]
 
 for d in boundary_cases:

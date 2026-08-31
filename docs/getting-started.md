@@ -67,12 +67,14 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.endpoints import LeagueStandings
 
+
 async def main():
     async with NBAClient() as client:
         standings = await client.get(LeagueStandings(season="2025-26"))
 
         for team in standings.standings[:5]:
             print(f"{team.team_name}: {team.wins}-{team.losses}")
+
 
 asyncio.run(main())
 ```
@@ -111,10 +113,12 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.endpoints import LeagueStandings
 
+
 async def main():
     async with NBAClient() as client:
         standings = await client.get(LeagueStandings(season="2025-26"))
         print(standings.standings[0].team_name)
+
 
 asyncio.run(main())
 ```
@@ -142,11 +146,11 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.players import get_player_game_log
 
+
 async def main():
     # NBAClient is the entry point for all API calls.
     # Use it as an async context manager to ensure the session is closed.
     async with NBAClient() as client:
-
         # get_player_game_log() is a convenience helper in fastbreak.players.
         # player_id=2544 is LeBron James. Season format is "YYYY-YY".
         log = await get_player_game_log(client, player_id=2544, season="2025-26")
@@ -160,6 +164,7 @@ async def main():
                 f"{game.game_date}  {game.matchup:<15}"
                 f"  {game.pts} pts  {game.reb} reb  {game.ast} ast"
             )
+
 
 asyncio.run(main())
 ```
@@ -178,13 +183,13 @@ Response models use Python-style snake_case field names, regardless of how the N
 
 ```python
 # All of these are typed str | int | float | None — no guessing
-game.game_date    # "FEB 26, 2026"
-game.matchup      # "LAL vs. MEM"
-game.pts          # 28
-game.reb          # 7
-game.ast          # 10
-game.fg_pct       # 0.537
-game.wl           # "W"
+game.game_date  # "FEB 26, 2026"
+game.matchup  # "LAL vs. MEM"
+game.pts  # 28
+game.reb  # 7
+game.ast  # 10
+game.fg_pct  # 0.537
+game.wl  # "W"
 ```
 
 ### Calling endpoints directly
@@ -196,17 +201,17 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.endpoints import PlayerCareerStats
 
+
 async def main():
     async with NBAClient() as client:
-        career = await client.get(
-            PlayerCareerStats(player_id=2544, per_mode="PerGame")
-        )
+        career = await client.get(PlayerCareerStats(player_id=2544, per_mode="PerGame"))
 
         for season in career.season_totals_regular_season[-5:]:
             print(
                 f"{season.season_id}  {season.team_abbreviation}"
                 f"  {season.gp} GP  {season.pts} / {season.reb} / {season.ast}"
             )
+
 
 asyncio.run(main())
 ```
@@ -226,6 +231,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.endpoints import BoxScoreTraditional
 
+
 async def main():
     game_ids = ["0022500571", "0022500572", "0022500573"]
 
@@ -240,6 +246,7 @@ async def main():
         home = box.boxScoreTraditional.homeTeam
         away = box.boxScoreTraditional.awayTeam
         print(f"{game_id}: {away.teamTricode} @ {home.teamTricode}")
+
 
 asyncio.run(main())
 ```
@@ -276,6 +283,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.endpoints import BoxScoreTraditional
 
+
 async def main():
     game_ids = ["0022500571", "0022500572", "invalid-id"]
 
@@ -288,6 +296,7 @@ async def main():
             # eg.exceptions is a list of the individual failures
             for exc in eg.exceptions:
                 print(f"Request failed: {exc}")
+
 
 asyncio.run(main())
 ```
@@ -308,6 +317,7 @@ from fastbreak.clients import NBAClient
 from fastbreak.endpoints import LeagueStandings
 from fastbreak.models import TeamStanding
 
+
 async def main():
     async with NBAClient() as client:
         standings = await client.get(LeagueStandings(season="2025-26"))
@@ -316,6 +326,7 @@ async def main():
     df = TeamStanding.to_pandas(standings.standings)
 
     print(df[["team_name", "wins", "losses", "win_pct"]].head(10))
+
 
 asyncio.run(main())
 ```
@@ -328,6 +339,7 @@ from fastbreak.clients import NBAClient
 from fastbreak.endpoints import LeagueStandings
 from fastbreak.models import TeamStanding
 
+
 async def main():
     async with NBAClient() as client:
         standings = await client.get(LeagueStandings(season="2025-26"))
@@ -335,6 +347,7 @@ async def main():
     df = TeamStanding.to_polars(standings.standings)
 
     print(df.select(["team_name", "wins", "losses", "win_pct"]).head(10))
+
 
 asyncio.run(main())
 ```
@@ -366,10 +379,10 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.endpoints import LeagueStandings
 
+
 async def main():
     # Cache responses for 5 minutes, hold up to 256 entries
     async with NBAClient(cache_ttl=300, cache_maxsize=256) as client:
-
         # First call hits the API
         s1 = await client.get(LeagueStandings(season="2025-26"))
 
@@ -387,6 +400,7 @@ async def main():
         await client.clear_cache()
         print(client.cache_info)
         # {'size': 0, 'maxsize': 256, 'ttl': 300}
+
 
 asyncio.run(main())
 ```
@@ -439,6 +453,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.endpoints import LeagueStandings
 
+
 async def main():
     # More retries, tighter backoff window — good for rate-limited batch jobs
     async with NBAClient(
@@ -449,6 +464,7 @@ async def main():
         standings = await client.get(LeagueStandings(season="2025-26"))
         print(f"Fetched {len(standings.standings)} teams")
 
+
 asyncio.run(main())
 ```
 
@@ -457,11 +473,13 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.endpoints import LeagueStandings
 
+
 async def main():
     # Fewer retries — fail fast during development
     async with NBAClient(max_retries=1) as client:
         standings = await client.get(LeagueStandings(season="2025-26"))
         print(standings.standings[0].team_name)
+
 
 asyncio.run(main())
 ```
@@ -526,6 +544,7 @@ FASTBREAK_LOG_LEVEL=DEBUG python my_script.py
 
 ```python
 import os
+
 os.environ["FASTBREAK_LOG_LEVEL"] = "DEBUG"
 os.environ["FASTBREAK_LOG_FORMAT"] = "json"
 

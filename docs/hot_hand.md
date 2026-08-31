@@ -353,6 +353,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.hot_hand import get_hot_hand_stats
 
+
 async def main():
     async with NBAClient() as client:
         analysis = await get_hot_hand_stats(client, "0022500571")
@@ -361,6 +362,7 @@ async def main():
     for r in analysis.results:
         if r.score is not None:
             print(f"  {r.player_name:<22} delta={r.delta:+.3f}  score={r.score:+.1f}")
+
 
 asyncio.run(main())
 ```
@@ -376,16 +378,19 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.hot_hand import get_hot_hand_stats
 
+
 async def main():
     async with NBAClient() as client:
         analysis = await get_hot_hand_stats(client, "0022500571")
 
     # Players with enough streak opportunities to compute a score
     scorable = [r for r in analysis.results if r.score is not None]
-    scorable.sort(key=lambda r: (r.score or 0.0), reverse=True)
+    scorable.sort(key=lambda r: r.score or 0.0, reverse=True)
 
     print(f"Hot Hand Analysis — Game {analysis.game_id}")
-    print(f"{'Player':<22} {'FGA':>4} {'Base%':>6} {'Naive':>6} {'Corr':>6} {'Delta':>7} {'Score':>7}")
+    print(
+        f"{'Player':<22} {'FGA':>4} {'Base%':>6} {'Naive':>6} {'Corr':>6} {'Delta':>7} {'Score':>7}"
+    )
     print("-" * 65)
     for r in scorable:
         assert r.baseline_p is not None and r.naive_p is not None
@@ -395,6 +400,7 @@ async def main():
             f"{r.naive_p:>6.1%} {r.corrected_p:>6.1%} "
             f"{r.delta:>+7.3f} {r.score:>+7.1f}"
         )
+
 
 asyncio.run(main())
 ```
@@ -406,6 +412,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.games import get_game_ids, get_play_by_play
 from fastbreak.hot_hand import extract_shot_sequences, merge_sequences, hot_hand_result
+
 
 async def main():
     async with NBAClient() as client:
@@ -432,6 +439,7 @@ async def main():
                 f"{result.streak_opportunities:>5} "
                 f"{result.delta:>+7.3f} {result.score:>+7.1f}"
             )
+
 
 asyncio.run(main())
 ```

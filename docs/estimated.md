@@ -32,7 +32,9 @@ from fastbreak.estimated import (
 
 async with NBAClient() as client:
     # Top 10 players by estimated net rating (2025-26 season)
-    leaders = await get_estimated_leaders(client, metric="e_net_rating", top_n=10, min_gp=20)
+    leaders = await get_estimated_leaders(
+        client, metric="e_net_rating", top_n=10, min_gp=20
+    )
     for rank, p in enumerate(leaders, 1):
         print(f"{rank}. {p.player_name}: {p.e_net_rating:+.1f}")
 
@@ -40,7 +42,9 @@ async with NBAClient() as client:
     players = await get_player_estimated_metrics(client, season="2025-26")
     hali = find_player(players, player_id=1641705)
     if hali:
-        print(f"{hali.player_name}: OFF {hali.e_off_rating:.1f} / DEF {hali.e_def_rating:.1f}")
+        print(
+            f"{hali.player_name}: OFF {hali.e_off_rating:.1f} / DEF {hali.e_def_rating:.1f}"
+        )
 
     # Team metrics
     teams = await get_team_estimated_metrics(client, season="2025-26")
@@ -152,7 +156,9 @@ Convenience wrapper: fetches all players via `get_player_estimated_metrics()`, a
 
 ```python
 # Top 10 by net rating (min 20 games)
-leaders = await get_estimated_leaders(client, metric="e_net_rating", top_n=10, min_gp=20)
+leaders = await get_estimated_leaders(
+    client, metric="e_net_rating", top_n=10, min_gp=20
+)
 
 # Top 5 by offensive rating (min 30 min/g)
 off_leaders = await get_estimated_leaders(
@@ -160,7 +166,9 @@ off_leaders = await get_estimated_leaders(
 )
 
 # Most efficient ball-handlers by AST ratio
-ast_leaders = await get_estimated_leaders(client, metric="e_ast_ratio", top_n=10, min_gp=15)
+ast_leaders = await get_estimated_leaders(
+    client, metric="e_ast_ratio", top_n=10, min_gp=15
+)
 
 # Worst turnover rate (highest e_tov_pct)
 worst_tov = await get_estimated_leaders(
@@ -192,7 +200,9 @@ players = await get_player_estimated_metrics(client, season="2025-26")
 # Tyrese Haliburton
 hali = find_player(players, player_id=1641705)
 if hali:
-    print(f"{hali.player_name}: e_net={hali.e_net_rating:+.1f}, rank #{hali.e_net_rating_rank}")
+    print(
+        f"{hali.player_name}: e_net={hali.e_net_rating:+.1f}, rank #{hali.e_net_rating_rank}"
+    )
 ```
 
 ---
@@ -219,7 +229,9 @@ teams = await get_team_estimated_metrics(client, season="2025-26")
 # Indiana Pacers
 pacers = find_team(teams, team_id=1610612754)
 if pacers:
-    print(f"{pacers.team_name}: pace={pacers.e_pace:.1f}, net={pacers.e_net_rating:+.1f}")
+    print(
+        f"{pacers.team_name}: pace={pacers.e_pace:.1f}, net={pacers.e_net_rating:+.1f}"
+    )
 ```
 
 ---

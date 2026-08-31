@@ -57,12 +57,16 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.schedule import get_team_schedule
 
+
 async def main():
     async with NBAClient() as client:
         games = await get_team_schedule(client, team_id=1610612754)
         print(f"Found {len(games)} games")
         for g in games[:5]:
-            print(g.game_date_est, g.away_team.team_tricode, "@", g.home_team.team_tricode)
+            print(
+                g.game_date_est, g.away_team.team_tricode, "@", g.home_team.team_tricode
+            )
+
 
 asyncio.run(main())
 ```
@@ -180,6 +184,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.schedule import get_team_schedule, travel_distance
 
+
 async def main():
     async with NBAClient() as client:
         games = await get_team_schedule(client, team_id=1610612754)  # Pacers
@@ -195,7 +200,10 @@ async def main():
             print(f"  {date_str}  {away} @ {home}  —  opener / neutral site")
         else:
             direction = "→E" if leg.tz_shift > 0 else "←W" if leg.tz_shift < 0 else "  "
-            print(f"  {date_str}  {away} @ {home}  {leg.miles:>6.0f} mi  {direction}  tz {leg.tz_shift:+d}h")
+            print(
+                f"  {date_str}  {away} @ {home}  {leg.miles:>6.0f} mi  {direction}  tz {leg.tz_shift:+d}h"
+            )
+
 
 asyncio.run(main())
 ```
@@ -221,6 +229,7 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.schedule import get_team_schedule, travel_distances
 
+
 async def main():
     async with NBAClient() as client:
         games = await get_team_schedule(client, team_id=1610612754)  # Pacers
@@ -236,7 +245,10 @@ async def main():
         away = game.away_team.team_tricode if game.away_team else "?"
         home = game.home_team.team_tricode if game.home_team else "?"
         if leg:
-            print(f"  {(game.game_date_est or '')[:10]}  {away} @ {home}  {leg.miles:.0f} mi  tz {leg.tz_shift:+d}h")
+            print(
+                f"  {(game.game_date_est or '')[:10]}  {away} @ {home}  {leg.miles:.0f} mi  tz {leg.tz_shift:+d}h"
+            )
+
 
 asyncio.run(main())
 ```
@@ -348,13 +360,17 @@ Count the number of games in the `window`-day period ending on `game_dates[game_
 `IndexError` if `game_index` is out of range for `game_dates`.
 
 ```python
-from fastbreak.schedule import get_team_schedule, game_dates_from_schedule, schedule_density
+from fastbreak.schedule import (
+    get_team_schedule,
+    game_dates_from_schedule,
+    schedule_density,
+)
 
 games = await get_team_schedule(client, team_id=1610612754)
 dates = game_dates_from_schedule(games)
 for i in range(min(10, len(dates))):
     d = schedule_density(dates, i)
-    print(f"  Game {i+1} ({dates[i]}): {d} games in last 7 days")
+    print(f"  Game {i + 1} ({dates[i]}): {d} games in last 7 days")
 ```
 
 ---
@@ -379,10 +395,12 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.schedule import get_season_schedule
 
+
 async def main():
     async with NBAClient() as client:
         all_games = await get_season_schedule(client, season="2025-26")
     print(f"Total league games: {len(all_games)}")
+
 
 asyncio.run(main())
 ```
@@ -511,12 +529,14 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.schedule import get_team_schedule, days_rest_before_game
 
+
 async def main():
     async with NBAClient() as client:
         games = await get_team_schedule(client, team_id=1610612754)  # Pacers
 
     # Filter out games without a date, then build the dates list
     from datetime import date
+
     dated_games = [g for g in games if g.game_date_est is not None]
     dates = [date.fromisoformat(g.game_date_est[:10]) for g in dated_games]
 
@@ -531,9 +551,12 @@ async def main():
         opp = (
             game.away_team.team_tricode
             if game.home_team and game.home_team.team_id == 1610612754
-            else game.home_team.team_tricode if game.home_team else "?"
+            else game.home_team.team_tricode
+            if game.home_team
+            else "?"
         )
         print(f"  {game_date}  vs/@ {opp}")
+
 
 asyncio.run(main())
 ```
@@ -548,6 +571,7 @@ from collections import Counter
 from datetime import date
 from fastbreak.clients import NBAClient
 from fastbreak.schedule import get_team_schedule, days_rest_before_game
+
 
 async def main():
     async with NBAClient() as client:
@@ -570,6 +594,7 @@ async def main():
         label = "back-to-back" if days == 0 else f"{days} day(s) rest"
         print(f"  {label}: {rest_counts[days]} games")
 
+
 asyncio.run(main())
 ```
 
@@ -581,7 +606,12 @@ Combine `travel_distances` with `is_back_to_back` to identify the most punishing
 import asyncio
 from datetime import date
 from fastbreak.clients import NBAClient
-from fastbreak.schedule import days_rest_before_game, get_team_schedule, travel_distances
+from fastbreak.schedule import (
+    days_rest_before_game,
+    get_team_schedule,
+    travel_distances,
+)
+
 
 async def main():
     async with NBAClient() as client:
@@ -600,7 +630,10 @@ async def main():
         if rest == 0 and leg is not None and leg.miles >= 1000:
             away = game.away_team.team_tricode if game.away_team else "?"
             home = game.home_team.team_tricode if game.home_team else "?"
-            print(f"  {(game.game_date_est or '')[:10]}  {away} @ {home}  {leg.miles:.0f} mi  tz {leg.tz_shift:+d}h")
+            print(
+                f"  {(game.game_date_est or '')[:10]}  {away} @ {home}  {leg.miles:.0f} mi  tz {leg.tz_shift:+d}h"
+            )
+
 
 asyncio.run(main())
 ```
@@ -615,6 +648,7 @@ from datetime import date
 from fastbreak.clients import NBAClient
 from fastbreak.schedule import get_team_schedule
 
+
 async def main():
     today = date.today()
 
@@ -622,7 +656,8 @@ async def main():
         games = await get_team_schedule(client, team_id=1610612754)  # Pacers
 
     upcoming = [
-        g for g in games
+        g
+        for g in games
         if g.game_date_est is not None
         and date.fromisoformat(g.game_date_est[:10]) >= today
     ]
@@ -631,8 +666,13 @@ async def main():
     for g in upcoming[:10]:
         home = g.home_team.team_tricode if g.home_team else "?"
         away = g.away_team.team_tricode if g.away_team else "?"
-        location = "HOME" if g.home_team and g.home_team.team_id == 1610612754 else "AWAY"
-        print(f"  {g.game_date_est[:10]}  {away} @ {home}  [{location}]  {g.game_status_text}")
+        location = (
+            "HOME" if g.home_team and g.home_team.team_id == 1610612754 else "AWAY"
+        )
+        print(
+            f"  {g.game_date_est[:10]}  {away} @ {home}  [{location}]  {g.game_status_text}"
+        )
+
 
 asyncio.run(main())
 ```
@@ -723,7 +763,9 @@ async def main() -> None:
     for game in national_tv_games:
         home = game.home_team.team_tricode if game.home_team else "???"
         away = game.away_team.team_tricode if game.away_team else "???"
-        print(f"  {game.game_date_est[:10] if game.game_date_est else 'TBD'}  {away} @ {home}")
+        print(
+            f"  {game.game_date_est[:10] if game.game_date_est else 'TBD'}  {away} @ {home}"
+        )
 
 
 asyncio.run(main())
@@ -781,7 +823,9 @@ async def main() -> None:
 
     if legs_with_data:
         g, leg = max(legs_with_data, key=lambda t: t[1].miles)
-        print(f"  Longest leg: {_matchup(g)}  {leg.miles:.0f} mi  tz {leg.tz_shift:+d}h")
+        print(
+            f"  Longest leg: {_matchup(g)}  {leg.miles:.0f} mi  tz {leg.tz_shift:+d}h"
+        )
         print(f"    Date: {(g.game_date_est or '')[:10]}")
 
 

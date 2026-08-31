@@ -70,7 +70,11 @@ Find games for a team matching the given filters. All ID and threshold parameter
 ```python
 # All Celtics home wins this season
 games = await find_team_games(
-    client, team_id=1610612738, season="2025-26", outcome="W", location="Home",
+    client,
+    team_id=1610612738,
+    season="2025-26",
+    outcome="W",
+    location="Home",
 )
 
 # Celtics vs Lakers games where they scored 110+
@@ -132,13 +136,14 @@ Find games for a player matching the given filters. Same parameters as `find_tea
 
 ```python
 # Curry's 30+ point games this season
-games = await find_player_games(
-    client, player_id=201939, season="2025-26", gt_pts=30
-)
+games = await find_player_games(client, player_id=201939, season="2025-26", gt_pts=30)
 
 # Tatum's road games vs the Heat
 games = await find_player_games(
-    client, player_id=1628369, vs_team_id=1610612748, location="Road",
+    client,
+    player_id=1628369,
+    vs_team_id=1610612748,
+    location="Road",
 )
 ```
 
@@ -217,7 +222,10 @@ Compute the win-loss record from a list of games. Games with `wl=None` are exclu
 
 ```python
 games = await find_team_games(
-    client, team_id=1610612738, season="2025-26", location="Road",
+    client,
+    team_id=1610612738,
+    season="2025-26",
+    location="Road",
 )
 record = summarize_record(games)
 print(f"Road record: {record.wins}-{record.losses} ({record.win_pct:.3f})")

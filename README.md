@@ -28,12 +28,14 @@ import asyncio
 from fastbreak.clients import NBAClient
 from fastbreak.endpoints import LeagueStandings
 
+
 async def main():
     async with NBAClient() as client:
         standings = await client.get(LeagueStandings(season="2025-26"))
 
         for team in standings.standings[:5]:
             print(f"{team.team_name}: {team.wins}-{team.losses}")
+
 
 asyncio.run(main())
 ```
@@ -142,8 +144,8 @@ from fastbreak.games import get_todays_games
 
 async with NBAClient() as client:
     players = await search_players(client, "Jokić")
-    log     = await get_player_game_log(client, player_id=players[0].person_id)
-    games   = await get_todays_games(client)
+    log = await get_player_game_log(client, player_id=players[0].person_id)
+    games = await get_todays_games(client)
 ```
 
 ## Available Endpoints
