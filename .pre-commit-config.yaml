@@ -30,12 +30,12 @@ repos:
     hooks:
       - id: validate-pyproject
   - repo: https://github.com/rohaquinlop/complexipy-pre-commit
-    rev: v7.0.1
+    rev: v8.0.1
     hooks:
       # Run the cognitive complexity checker.
       - id: complexipy
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.16.5"
+    rev: "v0.16.7"
     hooks:
       - id: ruff-check
         args: [--no-cache]
@@ -52,7 +52,7 @@ repos:
           - types-cachetools>=7.0
           - tenacity>=8.0
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.411
+    rev: v1.1.414
     hooks:
       - id: pyright
   - repo: https://github.com/rhysd/actionlint
