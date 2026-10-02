@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints.cume_stats_team import CumeStatsTeam
 from fastbreak.models.cume_stats_team import CumeStatsTeamResponse
+from fastbreak.seasons import get_current_season_year
 
 
 class TestCumeStatsTeam:
@@ -15,7 +16,7 @@ class TestCumeStatsTeam:
         endpoint = CumeStatsTeam(team_id=1610612747)
 
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2025"
+        assert endpoint.season == get_current_season_year()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.team_id == 1610612747
         assert endpoint.game_ids == ""
