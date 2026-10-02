@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints.cume_stats_team_games import CumeStatsTeamGames
 from fastbreak.models.cume_stats_team_games import CumeStatsTeamGamesResponse
+from fastbreak.seasons import get_current_season_year
 
 
 class TestCumeStatsTeamGames:
@@ -15,7 +16,7 @@ class TestCumeStatsTeamGames:
         endpoint = CumeStatsTeamGames(team_id=1610612747)
 
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2025"
+        assert endpoint.season == get_current_season_year()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.team_id == 1610612747
 
@@ -62,7 +63,7 @@ class TestCumeStatsTeamGames:
 
     def test_params_returns_required_and_vs_team_id(self):
         """params() returns required params plus VsTeamID (always included)."""
-        endpoint = CumeStatsTeamGames(team_id=1610612745)
+        endpoint = CumeStatsTeamGames(team_id=1610612745, season="2025")
 
         params = endpoint.params()
 

@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from fastbreak.endpoints.cume_stats_player_games import CumeStatsPlayerGames
 from fastbreak.models.cume_stats_player_games import CumeStatsPlayerGamesResponse
+from fastbreak.seasons import get_current_season_year
 
 
 class TestCumeStatsPlayerGames:
@@ -15,7 +16,7 @@ class TestCumeStatsPlayerGames:
         endpoint = CumeStatsPlayerGames(player_id=2544)
 
         assert endpoint.league_id == "00"
-        assert endpoint.season == "2025"
+        assert endpoint.season == get_current_season_year()
         assert endpoint.season_type == "Regular Season"
         assert endpoint.player_id == 2544
 
@@ -62,7 +63,7 @@ class TestCumeStatsPlayerGames:
 
     def test_params_returns_required_only_when_no_optionals(self):
         """params() returns only required params when no optionals set."""
-        endpoint = CumeStatsPlayerGames(player_id=2544)
+        endpoint = CumeStatsPlayerGames(player_id=2544, season="2025")
 
         params = endpoint.params()
 
